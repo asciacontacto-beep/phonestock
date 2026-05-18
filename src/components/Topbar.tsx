@@ -23,9 +23,7 @@ export function Topbar({ page, user, onMenu }: TopbarProps) {
   return (
     <div className="topbar no-print">
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <button className="mobile-menu-btn" onClick={(e) => { e.stopPropagation(); onMenu(); }}>
-          <Menu size={20} />
-        </button>
+
         <div>
           <div className="tb-title">{TITLES[page] || 'Stackr'}</div>
           <div className="tb-sub">Bienvenido, {user.name}</div>

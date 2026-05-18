@@ -5,6 +5,7 @@ import { Smartphone, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { confirmUserEmail } from "@/app/actions";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -123,20 +124,28 @@ export default function LoginPage() {
       } else if (msg.includes("Password should be at least")) {
         msg = "La contraseña debe tener al menos 6 caracteres.";
       } else if (msg.toLowerCase().includes("email not confirmed")) {
-        // Auto-send magic link so user can login without manual confirmation
+        // Auto-confirm server-side using admin API, then retry login
         try {
-          await supabase.auth.signInWithOtp({
-            email: email.trim().toLowerCase(),
-            options: { shouldCreateUser: false }
-          });
-          setError("");
-          toast.success("Te enviamos un enlace mágico al email. Hacé clic en él para entrar directamente.");
+          const result = await confirmUserEmail(cleanEmail);
+          if (result.success) {
+            // Retry login now that email is confirmed
+            const { data, error: retryErr } = await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password: cleanPassword,
+            });
+            if (retryErr) throw retryErr;
+            if (data.user) {
+              router.push("/dashboard");
+              router.refresh();
+              setLoading(false);
+              return;
+            }
+          } else {
+            msg = result.error || "Error al confirmar cuenta.";
+          }
         } catch {
-          msg = "Tu cuenta requiere confirmación. Usá el botón \"¿Olvidaste tu contraseña?\" para acceder.";
-          setError(msg);
+          msg = "Error al confirmar cuenta. Contactá al administrador.";
         }
-        setLoading(false);
-        return;
       }
       setError(msg);
     } finally {

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/Downloads/phonestock-main/phonestock-main/src/middleware.ts"],"sourcesContent":["import { type NextRequest } from 'next/server'\nimport { updateSession } from '../utils/supabase/middleware'\n\nexport async function middleware(request: NextRequest) {\n  return await updateSession(request)\n}\n\nexport const config = {\n  matcher: [\n    /*\n     * Match all request paths except for the ones starting with:\n     * - _next/static (static files)\n     * - _next/image (image optimization files)\n     * - favicon.ico (favicon file)\n     * Feel free to modify this pattern to include more paths.\n     */\n    '/((?!_next/static|_next/image|favicon.ico|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',\n  ],\n}\n"],"names":["middleware","request","updateSession","config","matcher"],"mappings":";;;;;;;;;;;;AAGO,eAAeA,WAAWC,OAAoB;IACnD,OAAO,MAAMC,cAAcD;AAC7B;AAEO,MAAME,SAAS;IACpBC,SAAS;QACP;;;;;;KAMC,GACD;KACD;AACH"}}]
+}

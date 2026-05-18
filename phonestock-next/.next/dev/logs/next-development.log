@@ -1,0 +1,4 @@
+{"timestamp":"00:14:28.961","source":"Server","level":"ERROR","message":"Error: ENOENT: no such file or directory, scandir 'C:\\Users\\juanp\\Downloads\\phonestock-main\\phonestock-main\\phonestock-next\\src\\app'"}
+{"timestamp":"00:14:28.968","source":"Server","level":"ERROR","message":"⨯ \"unhandledRejection:\" Error: ENOENT: no such file or directory, scandir 'C:\\Users\\juanp\\Downloads\\phonestock-main\\phonestock-main\\phonestock-next\\src\\app'"}
+{"timestamp":"00:14:28.972","source":"Server","level":"ERROR","message":"⨯ \"unhandledRejection: \" Error: ENOENT: no such file or directory, scandir 'C:\\Users\\juanp\\Downloads\\phonestock-main\\phonestock-main\\phonestock-next\\src\\app'"}
+{"timestamp":"00:14:29.012","source":"Server","level":"LOG","message":"✓ Compiled in 4.3s"}

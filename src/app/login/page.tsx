@@ -122,6 +122,21 @@ export default function LoginPage() {
         msg = "Email o contraseña incorrectos.";
       } else if (msg.includes("Password should be at least")) {
         msg = "La contraseña debe tener al menos 6 caracteres.";
+      } else if (msg.toLowerCase().includes("email not confirmed")) {
+        // Auto-send magic link so user can login without manual confirmation
+        try {
+          await supabase.auth.signInWithOtp({
+            email: email.trim().toLowerCase(),
+            options: { shouldCreateUser: false }
+          });
+          setError("");
+          toast.success("Te enviamos un enlace mágico al email. Hacé clic en él para entrar directamente.");
+        } catch {
+          msg = "Tu cuenta requiere confirmación. Usá el botón \"¿Olvidaste tu contraseña?\" para acceder.";
+          setError(msg);
+        }
+        setLoading(false);
+        return;
       }
       setError(msg);
     } finally {

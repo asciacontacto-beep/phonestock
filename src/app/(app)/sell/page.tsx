@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server"
 import { SellClient } from "./SellClient"
 
+export const revalidate = 30 // cache for 30 seconds
+
 export default async function SellPage() {
   const supabase = await createClient()
 

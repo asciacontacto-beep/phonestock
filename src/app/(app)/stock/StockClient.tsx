@@ -72,6 +72,7 @@ export function StockClient() {
       setStock(p => p.map(s => s.id === editItem.id ? updatedItem : s));
       setEditItem(null);
       router.refresh();
+      toast.success('Equipo actualizado');
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
   };
@@ -208,6 +209,75 @@ export function StockClient() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {editItem && (
+        <div className="mo" style={{ zIndex: 1100 }} onClick={() => setEditItem(null)}>
+          <div className="mb" onClick={e => e.stopPropagation()}>
+            <div className="mh">
+              <div>
+                <div className="mh-title">Editar Equipo</div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
+                  {editItem.brand} {editItem.model}
+                </div>
+              </div>
+              <button className="btn-icon" onClick={() => setEditItem(null)}><X size={18} /></button>
+            </div>
+            <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label className="lbl">Almacenamiento</label>
+                  <select className="inp" value={editItem.storage} onChange={e => setEditItem({...editItem, storage: e.target.value})}>
+                    {(MODEL_STORAGES[editItem.model] || STORAGES).map((s: string) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="lbl">Color</label>
+                  <select className="inp" value={editItem.color} onChange={e => setEditItem({...editItem, color: e.target.value})}>
+                    {(COLORS[editItem.model] || COLORS[editItem.brand] || ['Negro']).map((c: string) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label className="lbl">Precio</label>
+                  <input className="inp" type="text" inputMode="decimal" value={editItem.price || ''} onChange={e => setEditItem({...editItem, price: e.target.value.replace(/[^0-9.]/g, '')})} />
+                </div>
+                <div>
+                  <label className="lbl">Moneda</label>
+                  <select className="inp" value={editItem.currency} onChange={e => setEditItem({...editItem, currency: e.target.value})}>
+                    <option value="USD">USD</option>
+                    <option value="ARS">ARS</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label className="lbl">Condición</label>
+                  <select className="inp" value={editItem.condition} onChange={e => setEditItem({...editItem, condition: e.target.value})}>
+                    <option value="new">Sellado</option>
+                    <option value="used">Usado</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="lbl">Depósito</label>
+                  <select className="inp" value={String(editItem.deposit)} onChange={e => setEditItem({...editItem, deposit: e.target.value})}>
+                    {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setEditItem(null)}>Cancelar</button>
+                <button className="btn btn-dark" style={{ flex: 1 }} onClick={handleUpdate} disabled={loading}>
+                  {loading ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

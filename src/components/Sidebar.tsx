@@ -1,5 +1,8 @@
+"use client"
+import { useState, useEffect } from 'react';
 import { LayoutGrid, Box, ScanLine, ShoppingCart, Wallet, LogOut, Smartphone, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
   user: any;
@@ -11,12 +14,16 @@ interface SidebarProps {
 }
 
 export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }: SidebarProps) {
+  const pathname = usePathname();
+  // Derive active from real pathname so it updates instantly on navigation
+  const currentPage = pathname.replace('/', '') || 'dashboard';
+
   const nav = isSuperAdmin ?
     [
       { g: 'Stackr Admin' },
       { id: 'superadmin', l: 'Negocios', i: <ShieldAlert size={18} /> },
     ] :
-    user.role === 'owner' ? 
+    user.role === 'owner' ?
     [
       { g: 'Sistema' },
       { id: 'dashboard', l: 'Resumen', i: <LayoutGrid size={18} /> },
@@ -49,9 +56,14 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
         </div>
       </div>
       <div className="s-nav">
-        {nav.map((it: any, i) => it.g ? 
-          <div key={i} className="s-group">{it.g}</div> : 
-          <Link key={it.id} href={`/${it.id}`} className={`s-item ${page === it.id || (page === '' && it.id === 'dashboard') ? 'on' : ''}`} onClick={() => setPage(it.id)}>
+        {nav.map((it: any, i) => it.g ?
+          <div key={i} className="s-group">{it.g}</div> :
+          <Link
+            key={it.id}
+            href={`/${it.id}`}
+            className={`s-item ${currentPage === it.id || (currentPage === '' && it.id === 'dashboard') ? 'on' : ''}`}
+            onClick={() => setPage(it.id)}
+          >
             {it.i}
             {it.l}
           </Link>

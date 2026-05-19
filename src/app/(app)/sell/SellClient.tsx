@@ -5,6 +5,7 @@ import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
+import { useRouter } from 'next/navigation';
 export function SellClient({ 
   initialStock, 
   deposits, 
@@ -17,6 +18,7 @@ export function SellClient({
   user: any 
 }) {
   const [stock, setStock] = useState(initialStock);
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [unit, setUnit] = useState<any>(null);
   const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '' });
@@ -160,6 +162,7 @@ export function SellClient({
       toast.success('Venta confirmada');
       setStep(1); setUnit(null); setPayments([]); setSp(''); setQ(''); setNotes('');
       setCust({ name: '', dni: '', phone: '', email: '' });
+      router.refresh();
     } catch (e: any) {
       toast.error(e.message || 'Error al procesar venta');
     } finally {

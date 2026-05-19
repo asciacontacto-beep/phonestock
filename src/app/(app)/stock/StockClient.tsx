@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
 import { Edit2, Trash2, X, Search, Printer, PenLine, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
 import Barcode from 'react-barcode';
 // import { ManualEntryModal } from './ManualEntryModal'; // To be migrated
 
@@ -14,6 +15,7 @@ export function StockClient({ initialStock, deposits }: { initialStock: any[], d
   const [printItem, setPrintItem] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const router = useRouter();
   const supabase = createClient();
 
   const rows = stock.filter(s =>
@@ -36,6 +38,7 @@ export function StockClient({ initialStock, deposits }: { initialStock: any[], d
       if (error) throw error;
       setStock(p => p.filter(s => s.id !== id));
       setDetailItem(null);
+      router.refresh();
     } catch (e: any) { alert(e.message); }
   };
 
@@ -54,6 +57,7 @@ export function StockClient({ initialStock, deposits }: { initialStock: any[], d
       const updatedItem = { ...editItem, ...updatedFields };
       setStock(p => p.map(s => s.id === editItem.id ? updatedItem : s));
       setEditItem(null);
+      router.refresh();
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
   };

@@ -335,14 +335,13 @@ export function StockClient() {
         </div>
       )}
   
-      {/* Modal: Cargar Equipo — usa el mismo formulario que Carga EAN */}
       <ManualEntryModal
         open={showManual}
         onClose={() => setShowManual(false)}
-        onSuccess={() => {
-          // Reload stock list after adding new items
-          supabase.from('stock').select('*').order('created_at', { ascending: false })
-            .then(({ data }) => { if (data) setStock(data); });
+        setStock={setStock}
+        showToast={(msg, type) => {
+          if (type === 'err') toast.error(msg);
+          else toast.success(msg);
         }}
       />
     </div>

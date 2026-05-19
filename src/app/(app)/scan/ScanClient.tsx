@@ -187,11 +187,7 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
       <ManualEntryModal 
         open={showManual} 
         onClose={() => setShowManual(false)} 
-        setStock={() => {}} 
-        showToast={(msg, type) => {
-          if (type === 'err') toast.error(msg);
-          else toast.success(msg);
-        }} 
+        onSuccess={() => toast.success('Equipo ingresado.')} 
       />
     </div>
   );

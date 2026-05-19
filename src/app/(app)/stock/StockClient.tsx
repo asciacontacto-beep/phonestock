@@ -338,10 +338,9 @@ export function StockClient() {
       <ManualEntryModal
         open={showManual}
         onClose={() => setShowManual(false)}
-        setStock={setStock}
-        showToast={(msg, type) => {
-          if (type === 'err') toast.error(msg);
-          else toast.success(msg);
+        onSuccess={() => {
+          supabase.from('stock').select('*').order('created_at', { ascending: false })
+            .then(({ data }) => { if (data) setStock(data); });
         }}
       />
     </div>

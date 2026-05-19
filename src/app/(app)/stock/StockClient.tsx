@@ -275,11 +275,11 @@ export function StockClient() {
             <div className="mbd">
               <ManualEntryForm
                 deposits={deposits}
-                onSave={async (data: any) => {
-                  const { data: inserted, error } = await supabase.from('stock').insert([data]).select();
+                onSave={async (items: any[]) => {
+                  const { data: inserted, error } = await supabase.from('stock').insert(items).select();
                   if (error) { toast.error(error.message); return; }
                   if (inserted) setStock(p => [...inserted, ...p]);
-                  toast.success('Equipo cargado');
+                  toast.success(items.length > 1 ? `${items.length} equipos cargados al stock` : 'Equipo cargado');
                   setShowManual(false);
                 }}
               />
@@ -302,6 +302,7 @@ function ManualEntryForm({ deposits, onSave }: { deposits: any[], onSave: (data:
     price: '',
     currency: 'USD',
     deposit: deposits?.[0]?.id ?? '',
+    qty: 1,
   });
   const [saving, setSaving] = useState(false);
 
@@ -316,18 +317,24 @@ function ManualEntryForm({ deposits, onSave }: { deposits: any[], onSave: (data:
   const handleSubmit = async () => {
     if (!f.model || !f.price) { toast.error('Completá modelo y precio'); return; }
     setSaving(true);
-    await onSave({
+    const qty = Math.max(1, parseInt(String(f.qty)) || 1);
+    const baseItem = {
       brand: f.brand,
       model: f.model,
       storage: f.storage,
       color: f.color,
-      imei: f.imei || null,
       condition: f.condition,
       price: parseFloat(f.price),
       currency: f.currency,
       deposit: f.deposit,
       status: 'available',
-    });
+    };
+    // If qty=1 keep IMEI; if qty>1 generate unique serial per unit
+    const items = Array.from({ length: qty }, (_, i) => ({
+      ...baseItem,
+      imei: qty === 1 ? (f.imei || null) : (f.imei ? `${f.imei}-${i + 1}` : null),
+    }));
+    await onSave(items);
     setSaving(false);
   };
 
@@ -362,7 +369,7 @@ function ManualEntryForm({ deposits, onSave }: { deposits: any[], onSave: (data:
         </div>
       </div>
       <div className="field">
-        <label className="lbl">IMEI (opcional)</label>
+        <label className="lbl">IMEI {f.qty > 1 ? '(base — se numerará automáticamente)' : '(opcional)'}</label>
         <input className="inp" value={f.imei} onChange={e => setF(p => ({ ...p, imei: e.target.value }))} placeholder="15 dígitos..." />
       </div>
       <div className="row">
@@ -392,6 +399,22 @@ function ManualEntryForm({ deposits, onSave }: { deposits: any[], onSave: (data:
             <select className="inp" value={String(f.deposit)} onChange={e => setF(p => ({ ...p, deposit: e.target.value }))}>
               {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
             </select>
+          </div>
+        )}
+      </div>
+      <div className="field">
+        <label className="lbl">Cantidad de unidades</label>
+        <input
+          className="inp"
+          type="number"
+          min={1}
+          max={100}
+          value={f.qty}
+          onChange={e => setF(p => ({ ...p, qty: Math.max(1, parseInt(e.target.value) || 1) }))}
+        />
+        {f.qty > 1 && (
+          <div style={{ fontSize: 12, color: 'var(--amber)', marginTop: 6 }}>
+            ⚡ Se van a agregar <strong>{f.qty} equipos</strong> idénticos al stock.
           </div>
         )}
       </div>

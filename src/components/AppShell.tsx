@@ -39,7 +39,7 @@ export function AppShell({ user, profile, children }: { user: any, profile: any,
       <Sidebar 
         user={mergedUser} 
         page={page} 
-        setPage={(p) => { router.push(`/${p}`); setSbOpen(false); }} 
+        setPage={(p) => setSbOpen(false)} 
         onLogout={handleLogout} 
         isOpen={sbOpen} 
         isSuperAdmin={isSuperAdmin} 

@@ -1,4 +1,5 @@
 import { LayoutGrid, Box, ScanLine, ShoppingCart, Wallet, LogOut, Smartphone, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
 
 interface SidebarProps {
   user: any;
@@ -50,10 +51,10 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
       <div className="s-nav">
         {nav.map((it: any, i) => it.g ? 
           <div key={i} className="s-group">{it.g}</div> : 
-          <button key={it.id} className={`s-item ${page === it.id || (page === '' && it.id === 'dashboard') ? 'on' : ''}`} onClick={() => setPage(it.id)}>
+          <Link key={it.id} href={`/${it.id}`} className={`s-item ${page === it.id || (page === '' && it.id === 'dashboard') ? 'on' : ''}`} onClick={() => setPage(it.id)}>
             {it.i}
             {it.l}
-          </button>
+          </Link>
         )}
       </div>
       <div className="s-foot">

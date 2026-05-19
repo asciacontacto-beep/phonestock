@@ -1,11 +1,11 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
-import { Edit2, Trash2, X, Search, Printer, PenLine, Package } from 'lucide-react';
+import { Edit2, Trash2, X, Search, Printer, PenLine, Package, Plus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import Barcode from 'react-barcode';
-// import { ManualEntryModal } from './ManualEntryModal'; // To be migrated
+import { toast } from 'sonner';
 
 export function StockClient() {
   const [stock, setStock] = useState<any[]>([]);
@@ -263,6 +263,141 @@ export function StockClient() {
           </div>
         </div>
       )}
+
+      {/* Modal: Cargar Equipo */}
+      {showManual && (
+        <div className="mo" onClick={() => setShowManual(false)}>
+          <div className="mb" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <div className="mh">
+              <div className="mh-title">Cargar Equipo</div>
+              <button className="btn-icon" onClick={() => setShowManual(false)}><X size={18} /></button>
+            </div>
+            <div className="mbd">
+              <ManualEntryForm
+                deposits={deposits}
+                onSave={async (data: any) => {
+                  const { data: inserted, error } = await supabase.from('stock').insert([data]).select();
+                  if (error) { toast.error(error.message); return; }
+                  if (inserted) setStock(p => [...inserted, ...p]);
+                  toast.success('Equipo cargado');
+                  setShowManual(false);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ManualEntryForm({ deposits, onSave }: { deposits: any[], onSave: (data: any) => void }) {
+  const [f, setF] = useState({
+    brand: 'Apple',
+    model: MODELS['Apple']?.[0] || '',
+    storage: '128GB',
+    color: COLORS['Apple']?.[0] || 'Negro',
+    imei: '',
+    condition: 'new' as 'new' | 'used',
+    price: '',
+    currency: 'USD',
+    deposit: deposits?.[0]?.id ?? '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleBrandChange = (brand: string) => {
+    setF(p => ({
+      ...p, brand,
+      model: MODELS[brand]?.[0] || '',
+      color: COLORS[brand]?.[0] || 'Negro',
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!f.model || !f.price) { toast.error('Completá modelo y precio'); return; }
+    setSaving(true);
+    await onSave({
+      brand: f.brand,
+      model: f.model,
+      storage: f.storage,
+      color: f.color,
+      imei: f.imei || null,
+      condition: f.condition,
+      price: parseFloat(f.price),
+      currency: f.currency,
+      deposit: f.deposit,
+      status: 'available',
+    });
+    setSaving(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="row">
+        <div className="col field">
+          <label className="lbl">Marca</label>
+          <select className="inp" value={f.brand} onChange={e => handleBrandChange(e.target.value)}>
+            {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+        <div className="col field">
+          <label className="lbl">Modelo</label>
+          <select className="inp" value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))}>
+            {(MODELS[f.brand] || []).map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="row">
+        <div className="col field">
+          <label className="lbl">Almacenamiento</label>
+          <select className="inp" value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))}>
+            {(MODEL_STORAGES?.[f.model] || STORAGES).map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="col field">
+          <label className="lbl">Color</label>
+          <select className="inp" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))}>
+            {(COLORS[f.brand] || ['Negro']).map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="field">
+        <label className="lbl">IMEI (opcional)</label>
+        <input className="inp" value={f.imei} onChange={e => setF(p => ({ ...p, imei: e.target.value }))} placeholder="15 dígitos..." />
+      </div>
+      <div className="row">
+        <div className="col field">
+          <label className="lbl">Precio de Costo</label>
+          <input className="inp" type="number" value={f.price} onChange={e => setF(p => ({ ...p, price: e.target.value }))} placeholder="0" />
+        </div>
+        <div className="col field">
+          <label className="lbl">Moneda</label>
+          <select className="inp" value={f.currency} onChange={e => setF(p => ({ ...p, currency: e.target.value }))}>
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+          </select>
+        </div>
+      </div>
+      <div className="row">
+        <div className="col field">
+          <label className="lbl">Condición</label>
+          <select className="inp" value={f.condition} onChange={e => setF(p => ({ ...p, condition: e.target.value as 'new' | 'used' }))}>
+            <option value="new">Sellado / Nuevo</option>
+            <option value="used">Usado</option>
+          </select>
+        </div>
+        {deposits.length > 0 && (
+          <div className="col field">
+            <label className="lbl">Depósito</label>
+            <select className="inp" value={String(f.deposit)} onChange={e => setF(p => ({ ...p, deposit: e.target.value }))}>
+              {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+      <button className="btn btn-dark btn-lg" style={{ width: '100%', marginTop: 8 }} onClick={handleSubmit} disabled={saving}>
+        {saving ? 'Guardando...' : <><Plus size={16} /> Agregar al Stock</>}
+      </button>
     </div>
   );
 }

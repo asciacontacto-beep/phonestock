@@ -1,10 +1,9 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
-import { Edit2, Trash2, X, Search, Printer, PenLine, Package } from 'lucide-react';
+import { Edit2, Trash2, X, Search, PenLine, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import Barcode from 'react-barcode';
 import { toast } from 'sonner';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
 
@@ -15,7 +14,6 @@ export function StockClient() {
   const [filter, setFilter] = useState({ brand: 'all', q: '', status: 'available', condition: 'all', deposit: 'all' });
   const [editItem, setEditItem] = useState<any>(null);
   const [detailItem, setDetailItem] = useState<any>(null);
-  const [printItem, setPrintItem] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const router = useRouter();
@@ -39,11 +37,6 @@ export function StockClient() {
     (filter.deposit === 'all' || String(s.deposit) === String(filter.deposit)) &&
     (!filter.q || `${s.brand} ${s.model} ${s.imei} ${s.color}`.toLowerCase().includes(filter.q.toLowerCase()))
   );
-
-  const handlePrint = (item: any) => {
-    setPrintItem(item);
-    setTimeout(() => { window.print(); setPrintItem(null); }, 100);
-  };
 
   const handleDelete = async (id: any) => {
     if (!confirm('¿Eliminar este equipo del stock?')) return;
@@ -165,11 +158,6 @@ export function StockClient() {
                     {s.condition === 'new' ? 'Sellado' : 'Usado'}
                   </span>
                   <div className="stock-card-actions">
-                    <button
-                      className="btn-icon"
-                      onClick={e => { e.stopPropagation(); handlePrint(s); }}
-                      title="Imprimir"
-                    ><Printer size={13} /></button>
                     <button
                       className="btn-icon"
                       onClick={e => { e.stopPropagation(); setEditItem(s); }}
@@ -319,18 +307,6 @@ export function StockClient() {
                 ><Edit2 size={15} /> Editar</button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Print area */}
-      {printItem && (
-        <div id="print-area">
-          <div style={{ textAlign: 'center', marginBottom: 10 }}>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Stackr</h1>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
-            <Barcode value={printItem.imei || "000000"} width={1.8} height={50} fontSize={14} displayValue={true} />
           </div>
         </div>
       )}

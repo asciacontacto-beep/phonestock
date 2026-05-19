@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
 import { Edit2, Trash2, X, Search, Printer, PenLine, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -7,8 +7,10 @@ import { useRouter } from 'next/navigation';
 import Barcode from 'react-barcode';
 // import { ManualEntryModal } from './ManualEntryModal'; // To be migrated
 
-export function StockClient({ initialStock, deposits }: { initialStock: any[], deposits: any[] }) {
-  const [stock, setStock] = useState<any[]>(initialStock);
+export function StockClient() {
+  const [stock, setStock] = useState<any[]>([]);
+  const [deposits, setDeposits] = useState<any[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [filter, setFilter] = useState({ brand: 'all', q: '', status: 'available', condition: 'all', deposit: 'all' });
   const [editItem, setEditItem] = useState<any>(null);
   const [detailItem, setDetailItem] = useState<any>(null);
@@ -17,6 +19,17 @@ export function StockClient({ initialStock, deposits }: { initialStock: any[], d
   const [showManual, setShowManual] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('stock').select('*').order('created_at', { ascending: false }),
+      supabase.from('deposits').select('*').order('name'),
+    ]).then(([{ data: stockData }, { data: depositsData }]) => {
+      setStock(stockData || []);
+      setDeposits(depositsData || []);
+      setDataLoaded(true);
+    });
+  }, []);
 
   const rows = stock.filter(s =>
     (filter.brand === 'all' || s.brand === filter.brand) &&

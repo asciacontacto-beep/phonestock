@@ -1,23 +1,16 @@
 "use client"
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Plus, Printer, Search, AlertTriangle, FileText, X } from 'lucide-react';
 import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
-
 import { useRouter } from 'next/navigation';
-export function SellClient({ 
-  initialStock, 
-  deposits, 
-  settings, 
-  user 
-}: { 
-  initialStock: any[], 
-  deposits: any[], 
-  settings: any, 
-  user: any 
-}) {
-  const [stock, setStock] = useState(initialStock);
+
+export function SellClient({ user }: { user: any }) {
+  const [stock, setStock] = useState<any[]>([]);
+  const [deposits, setDeposits] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [unit, setUnit] = useState<any>(null);
@@ -38,6 +31,19 @@ export function SellClient({
   const [searchingCust, setSearchingCust] = useState(false);
   const custTimer = useRef<any>(null);
   const supabase = createClient();
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('stock').select('*').eq('status', 'available').order('created_at', { ascending: false }),
+      supabase.from('deposits').select('*').order('name'),
+      supabase.from('settings').select('*').maybeSingle()
+    ]).then(([{ data: stockData }, { data: depositsData }, { data: settingsData }]) => {
+      setStock(stockData || []);
+      setDeposits(depositsData || []);
+      setSettings(settingsData);
+      setDataLoaded(true);
+    });
+  }, []);
 
   const shop = settings || { shop_name: 'Stackr', address: '', phone: '', instagram: '', warranty_text: '' };
 

@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server"
+import { getUser, getProfile } from "@/utils/supabase/server"
 import { AppShell } from "@/components/AppShell"
 import { redirect } from "next/navigation"
 
@@ -7,19 +7,13 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
 
   if (!user) {
     redirect('/login')
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const profile = await getProfile(user.id)
 
   return <AppShell user={user} profile={profile}>{children}</AppShell>
 }

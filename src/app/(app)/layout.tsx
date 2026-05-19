@@ -1,4 +1,4 @@
-import { getUser, getProfile } from "@/utils/supabase/server"
+import { getUser } from "@/utils/supabase/server"
 import { AppShell } from "@/components/AppShell"
 import { redirect } from "next/navigation"
 
@@ -13,7 +13,6 @@ export default async function AppLayout({
     redirect('/login')
   }
 
-  const profile = await getProfile(user.id)
-
-  return <AppShell user={user} profile={profile}>{children}</AppShell>
+  // Profile is fetched client-side in AppShell to avoid blocking every navigation
+  return <AppShell user={user}>{children}</AppShell>
 }

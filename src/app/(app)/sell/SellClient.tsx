@@ -6,11 +6,11 @@ import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-export function SellClient({ user }: { user: any }) {
+export function SellClient() {
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [unit, setUnit] = useState<any>(null);
@@ -33,15 +33,21 @@ export function SellClient({ user }: { user: any }) {
   const supabase = createClient();
 
   useEffect(() => {
+    // Fetch user session + all data in parallel — all client-side, no server wait
     Promise.all([
+      supabase.auth.getSession(),
       supabase.from('stock').select('*').eq('status', 'available').order('created_at', { ascending: false }),
       supabase.from('deposits').select('*').order('name'),
       supabase.from('settings').select('*').maybeSingle()
-    ]).then(([{ data: stockData }, { data: depositsData }, { data: settingsData }]) => {
+    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }]) => {
+      const u = session?.user
+      if (u) {
+        const isSuperAdmin = u.email === 'asciacontacto@gmail.com'
+        setUser({ id: u.id, email: u.email, name: isSuperAdmin ? 'Administrador' : u.email })
+      }
       setStock(stockData || []);
       setDeposits(depositsData || []);
       setSettings(settingsData);
-      setDataLoaded(true);
     });
   }, []);
 

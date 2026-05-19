@@ -1,8 +1,16 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient, getUser, getProfile } from "@/utils/supabase/server"
+import { redirect } from "next/navigation"
 import { DashboardClient } from "./DashboardClient"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  const user = await getUser()
+  if (!user) redirect("/login")
+  const isSuperAdmin = user.email === 'asciacontacto@gmail.com'
+  const profile = await getProfile(user.id)
+  if (!isSuperAdmin && profile?.role !== 'owner') {
+    redirect("/sell")
+  }
 
   const [
     { data: stockData },

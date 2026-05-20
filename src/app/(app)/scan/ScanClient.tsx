@@ -12,6 +12,8 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
   const [mode, setMode] = useState<'idle' | 'confirm'>('idle');
   const [det, setDet] = useState<any>(null);
   const [dep, setDep] = useState<any>(initialDeposits[0]?.id);
+  const [sup, setSup] = useState<any>(null);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [price, setPrice] = useState('');
   const [cur, setCur] = useState('USD');
   const [imei, setImei] = useState('');
@@ -23,6 +25,12 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
   const supabase = createClient();
 
   useEffect(() => {
+    supabase.from('suppliers').select('*').order('name').then(({ data }) => {
+      if (data && data.length > 0) {
+        setSuppliers(data);
+        setSup(data[0].id);
+      }
+    });
     ref.current?.focus();
     return () => {
       if (scannerRef.current && scannerRef.current.isScanning) {
@@ -96,6 +104,7 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
         price: parseFloat(price),
         currency: cur,
         deposit: dep,
+        supplier_id: sup,
         status: 'available'
       }]).select();
       if (error) throw error;
@@ -174,6 +183,14 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
                 {initialDeposits.map((d: any) => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
               </select>
             </div>
+            {suppliers.length > 0 && (
+              <div className="field" style={{ margin: 0 }}>
+                <label className="lbl">Proveedor</label>
+                <select className="inp" value={sup ? String(sup) : ''} onChange={e => setSup(e.target.value)}>
+                  {suppliers.map((s: any) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
+                </select>
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="btn btn-ghost" onClick={() => { setMode('idle'); setDet(null); }}>Cancelar</button>

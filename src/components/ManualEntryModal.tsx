@@ -26,6 +26,8 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const [cur, setCur] = useState('USD');
   const [dep, setDep] = useState<any>(null);
   const [deposits, setDeposits] = useState<any[]>([]);
+  const [sup, setSup] = useState<any>(null);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [variants, setVariants] = useState([emptyVariant()]);
   const [loading, setLoading] = useState(false);
   const priceRef = useRef<HTMLInputElement>(null);
@@ -38,6 +40,12 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
         if (data && data.length > 0) {
           setDeposits(data);
           setDep(data[0].id);
+        }
+      });
+      supabase.from('suppliers').select('*').order('name').then(({ data }) => {
+        if (data && data.length > 0) {
+          setSuppliers(data);
+          setSup(data[0].id);
         }
       });
     }
@@ -112,7 +120,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
             battery: v.condition === 'used' ? v.battery : null,
             imei: qty === 1 && v.imei ? v.imei : null,
             price: parseFloat(price), currency: cur,
-            deposit: dep, status: 'available', upc: upc || null
+            deposit: dep, supplier_id: sup, status: 'available', upc: upc || null
           });
         });
       });
@@ -135,7 +143,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const totalUnits = variants.reduce((a, v) => a + (Number(v.qty) || 0), 0);
   const colors = COLORS[model] || COLORS[brand] || ['Negro'];
   const storages = MODEL_STORAGES[model] || STORAGES;
-  const isStep1Valid = !!model && !!price && !!dep;
+  const isStep1Valid = !!model && !!price && !!dep && (suppliers.length === 0 || !!sup);
 
   const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 6, display: 'block' };
 
@@ -179,7 +187,12 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                 <div><label className="lbl">Precio</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
                 <div><label className="lbl">Moneda</label><select className="inp" value={cur} onChange={e => setCur(e.target.value)}><option value="USD">USD $</option><option value="ARS">ARS $</option></select></div>
               </div>
-              <div><label className="lbl">Depósito</label><select className="inp" value={dep !== null ? String(dep) : ''} onChange={e => setDep(e.target.value)}>{deposits.length === 0 && <option value="">Cargando…</option>}{deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}</select></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div><label className="lbl">Depósito</label><select className="inp" value={dep !== null ? String(dep) : ''} onChange={e => setDep(e.target.value)}>{deposits.length === 0 && <option value="">Cargando…</option>}{deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}</select></div>
+                {suppliers.length > 0 && (
+                  <div><label className="lbl">Proveedor</label><select className="inp" value={sup !== null ? String(sup) : ''} onChange={e => setSup(e.target.value)}>{suppliers.map(s => <option key={s.id} value={String(s.id)}>{s.name}</option>)}</select></div>
+                )}
+              </div>
             </div>
           )}
 

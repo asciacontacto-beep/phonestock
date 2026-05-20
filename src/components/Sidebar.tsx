@@ -29,6 +29,7 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
       { id: 'dashboard', l: 'Resumen', i: <LayoutGrid size={18} /> },
       { id: 'stock', l: 'Inventario', i: <Box size={18} /> },
       { id: 'deposits', l: 'Depósitos', i: <Warehouse size={18} /> },
+      { id: 'suppliers', l: 'Proveedores', i: <LayoutGrid size={18} /> },
       { id: 'scan', l: 'Carga EAN', i: <ScanLine size={18} /> },
       { id: 'customers', l: 'Clientes', i: <Users2 size={18} /> },
       { id: 'users', l: 'Usuarios', i: <UserIcon size={18} /> },

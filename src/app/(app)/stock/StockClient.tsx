@@ -16,6 +16,9 @@ export function StockClient() {
   const [detailItem, setDetailItem] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [bulkDeposit, setBulkDeposit] = useState<string>('');
+  const [bulkTransferring, setBulkTransferring] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -68,6 +71,26 @@ export function StockClient() {
       toast.success('Equipo actualizado');
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
+  };
+
+  const handleBulkTransfer = async () => {
+    if (!bulkDeposit || selectedItems.length === 0) return;
+    if (!confirm(`¿Transferir ${selectedItems.length} equipos al depósito seleccionado?`)) return;
+    
+    setBulkTransferring(true);
+    try {
+      const { error } = await supabase.from('stock').update({ deposit: bulkDeposit }).in('id', selectedItems);
+      if (error) throw error;
+      
+      setStock(p => p.map(s => selectedItems.includes(s.id) ? { ...s, deposit: parseInt(bulkDeposit) } : s));
+      setSelectedItems([]);
+      setBulkDeposit('');
+      toast.success(`${selectedItems.length} equipos transferidos`);
+    } catch (e: any) {
+      toast.error('Error: ' + e.message);
+    } finally {
+      setBulkTransferring(false);
+    }
   };
 
   const depositOf = (s: any) => deposits.find((d: any) => d.id === s.deposit);
@@ -151,10 +174,28 @@ export function StockClient() {
         <div className="stock-grid">
           {rows.map(s => {
             const dep = depositOf(s);
+            const isSelected = selectedItems.includes(s.id);
             return (
-              <div key={s.id} className="stock-card" onClick={() => setDetailItem(s)}>
-                <div className="stock-card-top">
-                  <span className={`badge ${s.condition === 'new' ? 'b-green' : 'b-neu'}`}>
+              <div 
+                key={s.id} 
+                className="stock-card" 
+                style={{ border: isSelected ? '2px solid var(--text)' : '1px solid var(--border)' }}
+                onClick={() => setDetailItem(s)}
+              >
+                <div className="stock-card-top" style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: -5, left: -5 }}>
+                    <input 
+                      type="checkbox" 
+                      style={{ width: 18, height: 18, cursor: 'pointer' }}
+                      checked={isSelected}
+                      onClick={e => e.stopPropagation()}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedItems([...selectedItems, s.id]);
+                        else setSelectedItems(selectedItems.filter(id => id !== s.id));
+                      }}
+                    />
+                  </div>
+                  <span className={`badge ${s.condition === 'new' ? 'b-green' : 'b-neu'}`} style={{ marginLeft: 24 }}>
                     {s.condition === 'new' ? 'Sellado' : 'Usado'}
                   </span>
                   <div className="stock-card-actions">
@@ -197,6 +238,26 @@ export function StockClient() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {selectedItems.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 100,
+          padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 900
+        }}>
+          <div style={{ fontWeight: 600 }}>{selectedItems.length} seleccionados</div>
+          <div style={{ width: 1, height: 20, background: 'var(--border-md)' }} />
+          <select className="inp" style={{ width: 'auto', border: 'none', background: 'transparent' }} value={bulkDeposit} onChange={e => setBulkDeposit(e.target.value)}>
+            <option value="">Elegir depósito destino...</option>
+            {deposits.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+          <button className="btn btn-dark btn-sm" disabled={!bulkDeposit || bulkTransferring} onClick={handleBulkTransfer}>
+            {bulkTransferring ? 'Moviendo...' : 'Transferir Masivamente'}
+          </button>
+          <button className="btn-icon" onClick={() => setSelectedItems([])}><X size={16} /></button>
         </div>
       )}
 

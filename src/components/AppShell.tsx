@@ -11,7 +11,7 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
   const router = useRouter()
   const pathname = usePathname()
 
-  const isSuperAdmin = user.email === 'asciacontacto@gmail.com' || user.email === 'clubverted@gmail.com'
+  const isSuperAdmin = user.email === 'asciacontacto@gmail.com'
 
   // Fetch profile client-side once — doesn't block navigation
   useEffect(() => {

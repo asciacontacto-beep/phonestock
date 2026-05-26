@@ -20,6 +20,7 @@ export function SellClient() {
   const [sc, setSc] = useState('USD');
   const [sp, setSp] = useState('');
   const [q, setQ] = useState('');
+  const [selectedDeposit, setSelectedDeposit] = useState<number | null>(null);
   const [sm, setSm] = useState<string | null>(null);
   const [ma, setMa] = useState('');
   const [showTI, setShowTI] = useState(false);
@@ -53,7 +54,9 @@ export function SellClient() {
 
   const shop = settings || { shop_name: 'Stackr', address: '', phone: '', instagram: '', warranty_text: '' };
 
-  const av = stock.filter((s: any) => s.status === 'available').filter((s: any) => !q || `${s.brand} ${s.model} ${s.color} ${s.storage}`.toLowerCase().includes(q.toLowerCase()));
+  const av = stock.filter((s: any) => s.status === 'available')
+    .filter((s: any) => selectedDeposit === null || s.deposit === selectedDeposit)
+    .filter((s: any) => !q || `${s.brand} ${s.model} ${s.color} ${s.storage}`.toLowerCase().includes(q.toLowerCase()));
   const price = parseFloat(sp) || 0;
   const paid = payments.reduce((a, p) => a + p.amount, 0);
   const rem = price - paid;
@@ -176,7 +179,7 @@ export function SellClient() {
       setCust({ name: '', dni: '', phone: '', email: '' });
       router.refresh();
     } catch (e: any) {
-      toast.error(e.message || 'Error al procesar venta');
+      toast.error(e.message || JSON.stringify(e) || 'Error al procesar venta');
     } finally {
       setLoading(false);
     }
@@ -201,6 +204,23 @@ export function SellClient() {
       {step === 1 && (
         <div className="card">
           <div className="lbl">1. Seleccionar Equipo en Stock</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto', paddingBottom: 4, whiteSpace: 'nowrap' }}>
+            <button 
+              className={`btn ${selectedDeposit === null ? 'btn-dark' : 'btn-outline'} btn-sm`}
+              onClick={() => setSelectedDeposit(null)}
+            >
+              Todos los depósitos
+            </button>
+            {deposits.map(d => (
+              <button 
+                key={d.id}
+                className={`btn ${selectedDeposit === d.id ? 'btn-dark' : 'btn-outline'} btn-sm`}
+                onClick={() => setSelectedDeposit(d.id)}
+              >
+                {d.name}
+              </button>
+            ))}
+          </div>
           <input className="inp" placeholder="Filtrar por modelo, IMEI, color..." value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 16 }} />
           {av.length > 0 && av.length <= 5 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '10px 14px', background: 'rgba(245,158,11,0.1)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)' }}>
@@ -300,7 +320,7 @@ export function SellClient() {
           <div className="lbl">Método de Cobro</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
             {PAY.map(m => {
-              const disabled = (sc === 'ARS' && m.id === 'usd_cash') || (sc === 'USD' && m.id === 'ars_cash');
+              const disabled = false; // Allow mixing currencies (ARS and USD)
               return <button key={m.id} disabled={disabled} className={`btn ${sm === m.id ? 'btn-dark' : 'btn-outline'} btn-sm`} onClick={() => { if (m.id === 'tradein') { setShowTI(true); setSm(null); } else { setSm(m.id); } }}>{m.label}</button>;
             })}
           </div>

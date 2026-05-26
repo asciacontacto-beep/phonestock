@@ -13,6 +13,11 @@ interface ManualEntryModalProps {
   onSuccess?: () => void;
 }
 
+const isOldPro = (m: string) => {
+  if (!m || typeof m !== 'string') return false;
+  return m.includes('Pro') && (m.includes('14') || m.includes('13') || m.includes('12') || m.includes('11') || m.includes('XS'));
+};
+
 function emptyVariant() {
   return { storage: '128GB', color: 'Negro', condition: 'new' as 'new' | 'used', battery: '100%', imei: '', qty: 1 };
 }
@@ -67,7 +72,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
         const finalColor = found.color && colors.includes(found.color) ? found.color : colors[0];
         const finalStorage = found.storage && storages.includes(found.storage) ? found.storage : storages[0];
         if (found.price) setPrice(found.price.toString());
-        setVariants(vs => vs.map((v: any) => ({ ...v, color: finalColor, storage: finalStorage })));
+        setVariants(vs => vs.map((v: any) => ({ ...v, color: finalColor, storage: finalStorage, condition: isOldPro(found.model) ? 'used' : 'new' })));
         toast.success(`✓ ${found.brand} ${found.model}`);
       }
     } catch (_) {}
@@ -80,7 +85,8 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
     setVariants(vs => vs.map((v: any) => ({
       ...v,
       color: (COLORS[m] || COLORS[b] || ['Negro'])[0],
-      storage: (MODEL_STORAGES[m] || STORAGES)[0]
+      storage: (MODEL_STORAGES[m] || STORAGES)[0],
+      condition: isOldPro(m) ? 'used' : 'new'
     })));
   };
 
@@ -89,7 +95,8 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
     setVariants(vs => vs.map((v: any) => ({
       ...v,
       color: (COLORS[m] || COLORS[brand] || ['Negro'])[0],
-      storage: (MODEL_STORAGES[m] || STORAGES)[0]
+      storage: (MODEL_STORAGES[m] || STORAGES)[0],
+      condition: isOldPro(m) ? 'used' : 'new'
     })));
   };
 
@@ -97,7 +104,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
     setVariants(vs => vs.map((v, idx) => idx === i ? { ...v, [key]: val } : v));
 
   const addVariant = () =>
-    setVariants(vs => [...vs, { ...emptyVariant(), color: COLORS[brand]?.[0] || 'Negro' }]);
+    setVariants(vs => [...vs, { ...emptyVariant(), color: COLORS[brand]?.[0] || 'Negro', condition: isOldPro(model) ? 'used' : 'new' }]);
 
   const removeVariant = (i: number) =>
     setVariants(vs => vs.filter((_, idx) => idx !== i));
@@ -209,7 +216,15 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                     <div><label className="lbl">Color</label><select className="inp" value={v.color} onChange={e => updV(i, 'color', e.target.value)}>{colors.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
                   </div>
                   <div style={{ marginBottom: 12 }}><label className="lbl">Condición</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}><button className={`btn btn-sm ${v.condition === 'new' ? 'btn-dark' : 'btn-outline'}`} onClick={() => updV(i, 'condition', 'new')}>Sellado</button><button className={`btn btn-sm ${v.condition === 'used' ? 'btn-dark' : 'btn-outline'}`} onClick={() => updV(i, 'condition', 'used')}>Usado</button></div></div>
-                  {v.condition === 'used' && (<div style={{ marginBottom: 12 }}><label className="lbl">Batería</label><select className="inp" value={v.battery} onChange={e => updV(i, 'battery', e.target.value)}>{BATTERY_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}</select></div>)}
+                  {v.condition === 'used' && (
+                    <div style={{ marginBottom: 12 }}>
+                      <label className="lbl">Batería</label>
+                      <datalist id="battery-options">
+                        {BATTERY_OPTIONS.map(b => <option key={b} value={b} />)}
+                      </datalist>
+                      <input className="inp" list="battery-options" placeholder="Ej: 87%" value={v.battery} onChange={e => updV(i, 'battery', e.target.value)} />
+                    </div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div><label className="lbl">Cantidad</label><input className="inp" type="text" inputMode="numeric" value={v.qty} onChange={e => { const val = e.target.value.replace(/\D/g, ''); updV(i, 'qty', val === '' ? '' : parseInt(val, 10)); }} /></div>
                     {Number(v.qty) === 1 && (<div><label className="lbl">IMEI (opcional)</label><input className="inp" type="text" inputMode="numeric" value={v.imei} placeholder="15 dígitos" onChange={e => updV(i, 'imei', e.target.value)} /></div>)}

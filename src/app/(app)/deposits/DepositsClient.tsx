@@ -99,6 +99,8 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginBottom: 32 }}>
         {deposits.map((d: any) => {
           const items = depStock(d.id);
+          const valUsd = items.filter((s: any) => s.currency === 'USD').reduce((a: any, b: any) => a + (b.price || 0), 0);
+          const valArs = items.filter((s: any) => s.currency === 'ARS').reduce((a: any, b: any) => a + (b.price || 0), 0);
           return (
             <div key={d.id} className="card" style={{ padding: 0, overflow: 'hidden', border: selectedDep === d.id ? `2px solid ${d.color}` : '1px solid var(--border)' }}>
               <div style={{ height: 4, background: d.color }} />
@@ -111,6 +113,13 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 15 }}>{d.name}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{items.length} equipos disponibles</div>
+                      {(valUsd > 0 || valArs > 0) && (
+                        <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4 }}>
+                          Capital: {valUsd > 0 ? `U$ ${valUsd.toLocaleString()}` : ''}
+                          {valUsd > 0 && valArs > 0 ? ' + ' : ''}
+                          {valArs > 0 ? `$ ${valArs.toLocaleString()}` : ''}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>

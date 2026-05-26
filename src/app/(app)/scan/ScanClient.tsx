@@ -7,6 +7,11 @@ import { ManualEntryModal } from '@/components/ManualEntryModal';
 import { Html5Qrcode } from 'html5-qrcode';
 import { toast } from 'sonner';
 
+const isOldPro = (m: string) => {
+  if (!m || typeof m !== 'string') return false;
+  return m.includes('Pro') && (m.includes('14') || m.includes('13') || m.includes('12') || m.includes('11') || m.includes('XS'));
+};
+
 export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
   const [code, setCode] = useState('');
   const [mode, setMode] = useState<'idle' | 'confirm'>('idle');
@@ -17,6 +22,8 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
   const [price, setPrice] = useState('');
   const [cur, setCur] = useState('USD');
   const [imei, setImei] = useState('');
+  const [cond, setCond] = useState('new');
+  const [battery, setBattery] = useState('100%');
   const [showManual, setShowManual] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
 
@@ -44,6 +51,7 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
     const found = EAN_DB[scannedCode.trim()];
     if (found) {
       setDet(found);
+      setCond(isOldPro(found.model) ? 'used' : 'new');
       setMode('confirm');
     } else {
       toast.error('EAN no reconocido — completá los datos manualmente');
@@ -99,7 +107,8 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
         model: det.model,
         storage: det.storage,
         color: det.color,
-        condition: 'new',
+        condition: cond,
+        battery: cond === 'used' ? battery : null,
         imei: imei || `S/N-${Date.now()}`,
         price: parseFloat(price),
         currency: cur,
@@ -110,7 +119,7 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
       if (error) throw error;
       if (inserted) {
         toast.success('✅ Equipo ingresado al stock');
-        setMode('idle'); setDet(null); setPrice(''); setImei('');
+        setMode('idle'); setDet(null); setPrice(''); setImei(''); setCond('new'); setBattery('100%');
         ref.current?.focus();
       }
     } catch (e: any) {
@@ -177,6 +186,22 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
               <label className="lbl">IMEI / Serie</label>
               <input className="inp" value={imei} onChange={e => setImei(e.target.value)} placeholder="Opcional" />
             </div>
+            <div className="field" style={{ margin: 0 }}>
+              <label className="lbl">Condición</label>
+              <select className="inp" value={cond} onChange={e => setCond(e.target.value)}>
+                <option value="new">Sellado</option>
+                <option value="used">Usado</option>
+              </select>
+            </div>
+            {cond === 'used' && (
+              <div className="field" style={{ margin: 0 }}>
+                <label className="lbl">Batería</label>
+                <datalist id="battery-scan-options">
+                  {['100%', '95%', '90%', '85%', '80%', '75%', '70%', 'Sin dato'].map(b => <option key={b} value={b} />)}
+                </datalist>
+                <input className="inp" list="battery-scan-options" placeholder="Ej: 87%" value={battery} onChange={e => setBattery(e.target.value)} />
+              </div>
+            )}
             <div className="field" style={{ margin: 0 }}>
               <label className="lbl">Depósito</label>
               <select className="inp" value={dep ? String(dep) : ''} onChange={e => setDep(e.target.value)}>

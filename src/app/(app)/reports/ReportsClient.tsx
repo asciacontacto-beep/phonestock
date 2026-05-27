@@ -222,7 +222,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
                   <YAxis dataKey="model" type="category" axisLine={false} tickLine={false} tick={{ fill: 'var(--text)', fontSize: 11, fontWeight: 500 }} width={130} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }}
-                    formatter={(val: any, name: string) => [`U$ ${Math.round(val).toLocaleString()}`, name === 'profit' ? 'Ganancia' : name]}
+                    formatter={(val: any, name: any) => [`U$ ${Math.round(val).toLocaleString()}`, name === 'profit' ? 'Ganancia' : name]}
                   />
                   <Bar dataKey="profit" name="Ganancia" radius={[0, 6, 6, 0]} barSize={22}>
                     {modelRanking.map((_, i) => (

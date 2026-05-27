@@ -39,8 +39,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
 
   // Cost in USD
   const totalCost = filteredSales.reduce((acc, s) => {
-    const cc = s.cost_currency || s.currency;
-    if (cc === 'USD') return acc + (s.cost_price || 0);
+    if (s.currency === 'USD') return acc + (s.cost_price || 0);
     return acc + ((s.cost_price || 0) / exchangeRate);
   }, 0);
 
@@ -61,8 +60,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
     const key = `${s.brand} ${s.model}`;
     if (!modelProfit[key]) modelProfit[key] = { model: key, revenue: 0, cost: 0, count: 0 };
     const rev = s.currency === 'USD' ? (s.price || 0) : ((s.price || 0) / exchangeRate);
-    const cc = s.cost_currency || s.currency;
-    const cost = cc === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate);
+    const cost = s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate);
     modelProfit[key].revenue += rev;
     modelProfit[key].cost += cost;
     modelProfit[key].count++;
@@ -78,8 +76,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
     const key = s.seller_id || s.seller_name || 'Desconocido';
     if (!sellerProfit[key]) sellerProfit[key] = { name: s.seller_name || 'Sin nombre', revenue: 0, cost: 0, count: 0 };
     const rev = s.currency === 'USD' ? (s.price || 0) : ((s.price || 0) / exchangeRate);
-    const cc = s.cost_currency || s.currency;
-    const cost = cc === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate);
+    const cost = s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate);
     sellerProfit[key].revenue += rev;
     sellerProfit[key].cost += cost;
     sellerProfit[key].count++;
@@ -124,10 +121,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
     });
 
     const rev = daySales.reduce((a, s) => a + (s.currency === 'USD' ? (s.price || 0) : ((s.price || 0) / exchangeRate)), 0);
-    const cost = daySales.reduce((a, s) => {
-      const cc = s.cost_currency || s.currency;
-      return a + (cc === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate));
-    }, 0);
+    const cost = daySales.reduce((a, s) => a + (s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate)), 0);
     const exp = dayExpenses.reduce((a, e) => a + (e.currency === 'USD' ? e.amount : e.amount / exchangeRate), 0);
 
     return {

@@ -146,8 +146,13 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
         storage: unit.storage,
         color: unit.color,
         imei: unit.imei,
-        cost_price: unit.cost_price || null,
-        cost_currency: unit.currency,
+        cost_price: (() => {
+          if (!unit.cost_price) return null;
+          const rate = parseFloat(exchangeRate) || 1;
+          if (unit.currency === 'USD' && sc === 'ARS') return unit.cost_price * rate;
+          if (unit.currency === 'ARS' && sc === 'USD') return unit.cost_price / rate;
+          return unit.cost_price;
+        })(),
         price,
         currency: sc,
         payments,

@@ -60,15 +60,15 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
             <div className="sl" style={{ marginBottom: 16 }}>Resumen General de Caja — {sales.length} ventas totales</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
               {[
-                { id: 'ars_cash', l: 'Efectivo ARS', p: '$' },
+                { id: 'ars_cash', l: 'Efectivo ARS', p: 'ARS' },
                 { id: 'usd_cash', l: 'Dólar Billete', p: 'U$' },
-                { id: 'ars_transf', l: 'Transf. ARS', p: '$' },
+                { id: 'ars_transf', l: 'Transf. ARS', p: 'ARS' },
                 { id: 'usd_transf', l: 'Transf. USD', p: 'U$' },
                 { id: 'usdt', l: 'USDT', p: 'U$' },
               ].map(it => totals[it.id] > 0 ? (
                 <div key={it.id} style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 16px' }}>
                   <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>{it.l}</div>
-                  <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 16 }}>{it.p} {totals[it.id].toLocaleString()}</div>
+                  <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 16 }}>{it.p} {totals[it.id].toLocaleString('es-AR')}</div>
                 </div>
               ) : null)}
             </div>
@@ -107,9 +107,9 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
                     <div className="sl" style={{ marginBottom: 16 }}>Desglose de Ingresos</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {[
-                        { id: 'ars_cash', l: 'Efectivo ARS', p: '$' },
+                        { id: 'ars_cash', l: 'Efectivo ARS', p: 'ARS' },
                         { id: 'usd_cash', l: 'Dólar Billete', p: 'U$' },
-                        { id: 'ars_transf', l: 'Transferencia ARS', p: '$' },
+                        { id: 'ars_transf', l: 'Transferencia ARS', p: 'ARS' },
                         { id: 'usd_transf', l: 'Transferencia USD', p: 'U$' },
                         { id: 'usdt', l: 'Cripto USDT', p: 'U$' }
                       ].map(it => {
@@ -118,7 +118,7 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
                         return (
                           <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--surface-2)', borderRadius: 8 }}>
                             <span style={{ color: 'var(--text-2)', fontSize: 13, fontWeight: 500 }}>{it.l}</span>
-                            <span style={{ fontFamily: 'JetBrains Mono', fontSize: 14, fontWeight: 700, color: '#fff' }}>{it.p} {amount.toLocaleString()}</span>
+                            <span style={{ fontFamily: 'JetBrains Mono', fontSize: 14, fontWeight: 700, color: '#fff' }}>{it.p} {amount.toLocaleString('es-AR')}</span>
                           </div>
                         );
                       })}
@@ -144,7 +144,7 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
               </div>
               
               <div className="field">
-                <label className="lbl">Total Efectivo Pesos ($)</label>
+                <label className="lbl">Total Efectivo Pesos (ARS)</label>
                 <input className="inp" type="number" placeholder="Ingrese monto..." value={declared.ars_cash} onChange={e => setDeclared({...declared, ars_cash: e.target.value})} />
               </div>
               <div className="field">
@@ -173,7 +173,7 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
                 <div className="sc" style={{ background: closureResult.diff.ars === 0 ? 'var(--green-bg)' : 'rgba(239, 68, 68, 0.1)' }}>
                   <div className="sl">Diferencia ARS</div>
                   <div className="sv" style={{ color: closureResult.diff.ars >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 20 }}>
-                    {closureResult.diff.ars >= 0 ? '+' : ''} $ {closureResult.diff.ars.toLocaleString()}
+                     {closureResult.diff.ars >= 0 ? '+' : ''} ARS {closureResult.diff.ars.toLocaleString('es-AR')}
                   </div>
                 </div>
                 <div className="sc" style={{ background: closureResult.diff.usd === 0 ? 'var(--green-bg)' : 'rgba(239, 68, 68, 0.1)' }}>
@@ -186,8 +186,8 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
 
               <div className="card" style={{ marginTop: 20 }}>
                 <div className="sl">Desglose Detallado</div>
-                <div className="receipt-row"><span>Esperado Pesos:</span><span>$ {closureResult.expected.ars_cash.toLocaleString()}</span></div>
-                <div className="receipt-row"><span>Declarado Pesos:</span><span>$ {closureResult.declared.ars_cash.toLocaleString()}</span></div>
+                <div className="receipt-row">                 <span>Esperado Pesos:</span><span>ARS {closureResult.expected.ars_cash.toLocaleString('es-AR')}</span></div>
+                <div className="receipt-row">                 <span>Declarado Pesos:</span><span>ARS {closureResult.declared.ars_cash.toLocaleString('es-AR')}</span></div>
                 <div className="divider" style={{ margin: '8px 0' }} />
                 <div className="receipt-row"><span>Esperado Dólares:</span><span>U$ {closureResult.expected.usd_cash.toLocaleString()}</span></div>
                 <div className="receipt-row"><span>Declarado Dólares:</span><span>U$ {closureResult.declared.usd_cash.toLocaleString()}</span></div>

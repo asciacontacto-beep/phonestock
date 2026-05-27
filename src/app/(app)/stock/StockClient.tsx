@@ -16,7 +16,8 @@ export function StockClient() {
   const [detailItem, setDetailItem] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showManual, setShowManual] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [selectedDeposit, setSelectedDeposit] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [bulkDeposit, setBulkDeposit] = useState<string>('');
   const [bulkTransferring, setBulkTransferring] = useState(false);
   const router = useRouter();
@@ -29,6 +30,7 @@ export function StockClient() {
     ]).then(([{ data: stockData }, { data: depositsData }]) => {
       setStock(stockData || []);
       setDeposits(depositsData || []);
+      if (depositsData && depositsData.length > 0) setSelectedDeposit(depositsData[0].id);
       setDataLoaded(true);
     });
   }, []);
@@ -82,7 +84,7 @@ export function StockClient() {
       const { error } = await supabase.from('stock').update({ deposit: bulkDeposit }).in('id', selectedItems);
       if (error) throw error;
       
-      setStock(p => p.map(s => selectedItems.includes(s.id) ? { ...s, deposit: parseInt(bulkDeposit) } : s));
+      setStock(p => p.map(s => selectedItems.includes(s.id) ? { ...s, deposit: bulkDeposit } : s));
       setSelectedItems([]);
       setBulkDeposit('');
       toast.success(`${selectedItems.length} equipos transferidos`);

@@ -20,7 +20,7 @@ export function SellClient() {
   const [sc, setSc] = useState('USD');
   const [sp, setSp] = useState('');
   const [q, setQ] = useState('');
-  const [selectedDeposit, setSelectedDeposit] = useState<number | null>(null);
+  const [selectedDeposit, setSelectedDeposit] = useState<string | null>(null);
   const [sm, setSm] = useState<string | null>(null);
   const [ma, setMa] = useState('');
   const [exchangeRate, setExchangeRate] = useState('1000');
@@ -49,7 +49,7 @@ export function SellClient() {
       }
       setStock(stockData || []);
       setDeposits(depositsData || []);
-      if (depositsData && depositsData.length > 0) setSelectedDeposit(depositsData[0].id);
+      if (depositsData && depositsData.length > 0) setSelectedDeposit(String(depositsData[0].id));
       setSettings(settingsData);
     });
 
@@ -67,7 +67,7 @@ export function SellClient() {
   const shop = settings || { shop_name: 'Stackr', address: '', phone: '', instagram: '', warranty_text: '' };
 
   const av = stock.filter((s: any) => s.status === 'available')
-    .filter((s: any) => selectedDeposit === null || s.deposit === selectedDeposit)
+    .filter((s: any) => selectedDeposit === null || String(s.deposit) === selectedDeposit)
     .filter((s: any) => !q || `${s.brand} ${s.model} ${s.color} ${s.storage}`.toLowerCase().includes(q.toLowerCase()));
   const price = parseFloat(sp) || 0;
   const paid = payments.reduce((a, p) => a + p.amount, 0);

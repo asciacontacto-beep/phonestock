@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-export function SellClient() {
+export function SellClient({ isOwner }: { isOwner?: boolean }) {
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
@@ -146,7 +146,7 @@ export function SellClient() {
         storage: unit.storage,
         color: unit.color,
         imei: unit.imei,
-        cost_price: unit.price,
+        cost_price: unit.cost_price || null,
         cost_currency: unit.currency,
         price,
         currency: sc,
@@ -329,9 +329,11 @@ export function SellClient() {
           <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 8, marginBottom: 20 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>{unit.brand} {unit.model}</div>
             <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{unit.storage} · {unit.color}</div>
-            <div style={{ fontSize: 11, marginTop: 6, color: 'var(--text-3)' }}>
-              Precio de costo: <span style={{ fontFamily: 'JetBrains Mono' }}>{unit.currency === 'USD' ? 'U$' : '$'} {unit.price?.toLocaleString()}</span>
-            </div>
+            {isOwner && unit.cost_price && (
+              <div style={{ fontSize: 11, marginTop: 6, color: 'var(--text-3)' }}>
+                Precio de costo: <span style={{ fontFamily: 'JetBrains Mono' }}>{unit.currency === 'USD' ? 'U$' : '$'} {unit.cost_price?.toLocaleString()}</span>
+              </div>
+            )}
           </div>
           <div className="row">
             <div className="col field"><label className="lbl">Precio de Venta</label><input className="inp" type="number" value={sp} onChange={e => setSp(e.target.value)} /></div>

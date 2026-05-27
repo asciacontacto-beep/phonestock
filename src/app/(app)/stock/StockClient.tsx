@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
 
-export function StockClient() {
+export function StockClient({ isOwner }: { isOwner?: boolean }) {
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -72,7 +72,9 @@ export function StockClient() {
       const updatedFields = {
         brand: editItem.brand, model: editItem.model,
         storage: editItem.storage, color: editItem.color,
-        price: parseFloat(editItem.price), currency: editItem.currency,
+        price: parseFloat(editItem.price), 
+        cost_price: editItem.cost_price ? parseFloat(editItem.cost_price) : null,
+        currency: editItem.currency,
         condition: editItem.condition, deposit: editItem.deposit
       };
       const { error } = await supabase.from('stock').update(updatedFields).eq('id', editItem.id);
@@ -233,7 +235,10 @@ export function StockClient() {
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div className="stock-card-price">
-                    {s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>V: {s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}</div>
+                    {isOwner && s.cost_price && (
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>C: {s.currency === 'USD' ? 'U$' : '$'} {s.cost_price.toLocaleString()}</div>
+                    )}
                   </div>
                   {dep && (
                     <div style={{
@@ -304,9 +309,15 @@ export function StockClient() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
-                  <label className="lbl">Precio</label>
+                  <label className="lbl">Precio Venta</label>
                   <input className="inp" type="text" inputMode="decimal" value={editItem.price || ''} onChange={e => setEditItem({...editItem, price: e.target.value.replace(/[^0-9.]/g, '')})} />
                 </div>
+                {isOwner && (
+                  <div>
+                    <label className="lbl">Precio Costo</label>
+                    <input className="inp" type="text" inputMode="decimal" value={editItem.cost_price || ''} onChange={e => setEditItem({...editItem, cost_price: e.target.value.replace(/[^0-9.]/g, '')})} />
+                  </div>
+                )}
                 <div>
                   <label className="lbl">Moneda</label>
                   <select className="inp" value={editItem.currency} onChange={e => setEditItem({...editItem, currency: e.target.value})}>
@@ -359,11 +370,19 @@ export function StockClient() {
               {/* ... detail modal contents ... */}
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <div className="sc" style={{ flex: 1, minWidth: 120 }}>
-                  <div className="sl">Precio</div>
+                  <div className="sl">Venta sugerida</div>
                   <div className="sv" style={{ fontSize: 22 }}>
                     {detailItem.currency === 'USD' ? 'U$' : '$'} {detailItem.price?.toLocaleString()}
                   </div>
                 </div>
+                {isOwner && (
+                  <div className="sc" style={{ flex: 1, minWidth: 120 }}>
+                    <div className="sl">Costo</div>
+                    <div className="sv" style={{ fontSize: 22, color: 'var(--text-2)' }}>
+                      {detailItem.currency === 'USD' ? 'U$' : '$'} {detailItem.cost_price?.toLocaleString() || '-'}
+                    </div>
+                  </div>
+                )}
                 <div className="sc" style={{ flex: 1, minWidth: 120 }}>
                   <div className="sl">Estado</div>
                   <div style={{ marginTop: 10 }}>

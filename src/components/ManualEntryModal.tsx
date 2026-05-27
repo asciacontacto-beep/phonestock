@@ -28,6 +28,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const [brand, setBrand] = useState('Apple');
   const [model, setModel] = useState('iPhone 15 Pro Max');
   const [price, setPrice] = useState('');
+  const [costPrice, setCostPrice] = useState('');
   const [cur, setCur] = useState('USD');
   const [dep, setDep] = useState<any>(null);
   const [deposits, setDeposits] = useState<any[]>([]);
@@ -71,7 +72,10 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
         const storages = MODEL_STORAGES[found.model] || STORAGES;
         const finalColor = found.color && colors.includes(found.color) ? found.color : colors[0];
         const finalStorage = found.storage && storages.includes(found.storage) ? found.storage : storages[0];
-        if (found.price) setPrice(found.price.toString());
+        if (found.price) {
+          setPrice(found.price.toString());
+          if (found.cost_price) setCostPrice(found.cost_price.toString());
+        }
         setVariants(vs => vs.map((v: any) => ({ ...v, color: finalColor, storage: finalStorage, condition: isOldPro(found.model) ? 'used' : 'new' })));
         toast.success(`✓ ${found.brand} ${found.model}`);
       }
@@ -110,7 +114,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
     setVariants(vs => vs.filter((_, idx) => idx !== i));
 
   const handleSubmit = async () => {
-    if (!model || !price || !dep) { toast.error('Completá todos los campos'); return; }
+    if (!model || !price || !costPrice || !dep) { toast.error('Completá todos los campos'); return; }
     setLoading(true);
     try {
       if (upc.length > 5) {
@@ -126,7 +130,9 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
             condition: v.condition,
             battery: v.condition === 'used' ? v.battery : null,
             imei: qty === 1 && v.imei ? v.imei : null,
-            price: parseFloat(price), currency: cur,
+            price: parseFloat(price), 
+            cost_price: parseFloat(costPrice),
+            currency: cur,
             deposit: dep, supplier_id: sup, status: 'available', upc: upc || null
           });
         });
@@ -136,7 +142,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
       if (inserted) {
         const total = variants.reduce((a, v) => a + (Number(v.qty) || 0), 0);
         toast.success(`${total} equipo${total !== 1 ? 's' : ''} ingresado${total !== 1 ? 's' : ''}`);
-        setVariants([emptyVariant()]); setPrice(''); setUpc('');
+        setVariants([emptyVariant()]); setPrice(''); setCostPrice(''); setUpc('');
         if (onSuccess) onSuccess();
         onClose();
       }
@@ -150,7 +156,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const totalUnits = variants.reduce((a, v) => a + (Number(v.qty) || 0), 0);
   const colors = COLORS[model] || COLORS[brand] || ['Negro'];
   const storages = MODEL_STORAGES[model] || STORAGES;
-  const isStep1Valid = !!model && !!price && !!dep && (suppliers.length === 0 || !!sup);
+  const isStep1Valid = !!model && !!price && !!costPrice && !!dep && (suppliers.length === 0 || !!sup);
 
   const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 6, display: 'block' };
 
@@ -190,8 +196,9 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
               </div>
               <div><label className="lbl">Marca</label><select className="inp" value={brand} onChange={e => handleBrand(e.target.value)}>{BRANDS.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
               <div><label className="lbl">Modelo</label><select className="inp" value={model} onChange={e => handleModel(e.target.value)}>{(MODELS[brand] || []).map(m => <option key={m} value={m}>{m}</option>)}</select></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div><label className="lbl">Precio</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div><label className="lbl">Precio Venta</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
+                <div><label className="lbl">Precio Costo</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
                 <div><label className="lbl">Moneda</label><select className="inp" value={cur} onChange={e => setCur(e.target.value)}><option value="USD">USD $</option><option value="ARS">ARS $</option></select></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

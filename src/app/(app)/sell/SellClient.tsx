@@ -147,6 +147,7 @@ export function SellClient() {
         color: unit.color,
         imei: unit.imei,
         cost_price: unit.price,
+        cost_currency: unit.currency,
         price,
         currency: sc,
         payments,

@@ -32,6 +32,8 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
       { id: 'suppliers', l: 'Proveedores', i: <LayoutGrid size={18} /> },
       { id: 'scan', l: 'Carga EAN', i: <ScanLine size={18} /> },
       { id: 'customers', l: 'Clientes', i: <Users2 size={18} /> },
+      { id: 'expenses', l: 'Gastos', i: <Wallet size={18} /> },
+      { id: 'reports', l: 'Rentabilidad', i: <LayoutGrid size={18} /> },
       { id: 'users', l: 'Usuarios', i: <UserIcon size={18} /> },
       { id: 'settings', l: 'Configuración', i: <Settings size={18} /> },
       { g: 'Operaciones' },

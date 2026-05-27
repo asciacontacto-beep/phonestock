@@ -9,14 +9,32 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
   const [closureResult, setClosureResult] = useState<any>(null);
 
   const sls = user.role === 'owner'
-    ? (realSellers.length > 0 ? realSellers : [{ ...user, name: user.name + ' (Admin)' }])
+    ? (() => {
+        const sellersMap = new Map<string, any>();
+        realSellers.forEach(s => sellersMap.set(s.id, s));
+        sales.forEach(v => {
+          const sid = v.seller_id || v.sellerId || 'unknown';
+          if (!sellersMap.has(sid)) {
+            sellersMap.set(sid, { 
+              id: sid, 
+              name: v.seller_name || 'Vendedor Desconocido', 
+              initials: (v.seller_name || 'U').substring(0, 2).toUpperCase(), 
+              color: '#666' 
+            });
+          }
+        });
+        if (!sellersMap.has(user.id)) {
+          sellersMap.set(user.id, { ...user, name: user.name + ' (Admin)' });
+        }
+        return Array.from(sellersMap.values());
+      })()
     : [user];
   
   const handleClose = () => {
-    const mySales = sales.filter(v => v.seller_id === user.id);
+    const mySales = sales.filter(v => (v.seller_id || v.sellerId || 'unknown') === user.id);
     const expected: Record<string, number> = {};
     PAY.forEach(p => { expected[p.id] = 0; });
-    mySales.forEach(v => v.payments.forEach((p: any) => { expected[p.id] += p.amount; }));
+    mySales.forEach(v => v.payments.forEach((p: any) => { expected[p.id] += (p.original_amount ?? p.amount); }));
 
     const result = {
       date: new Date().toLocaleString('es-AR'),
@@ -52,7 +70,7 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
         PAY.forEach(p => { totals[p.id] = 0; });
         sales.forEach(v => {
           if (v.payments && Array.isArray(v.payments)) {
-            v.payments.forEach((p: any) => { totals[p.id] = (totals[p.id] || 0) + p.amount; });
+            v.payments.forEach((p: any) => { totals[p.id] = (totals[p.id] || 0) + (p.original_amount ?? p.amount); });
           }
         });
         return (
@@ -78,12 +96,12 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
         {sls.map(s => {
-          const mySales = sales.filter(v => v.seller_id === s.id || v.sellerId === s.id);
+          const mySales = sales.filter(v => (v.seller_id || v.sellerId || 'unknown') === s.id);
           const t: Record<string, number> = {};
           PAY.forEach(p => { t[p.id] = 0; });
           mySales.forEach(v => {
             if (v.payments && Array.isArray(v.payments)) {
-              v.payments.forEach((p: any) => { t[p.id] = (t[p.id] || 0) + p.amount; });
+              v.payments.forEach((p: any) => { t[p.id] = (t[p.id] || 0) + (p.original_amount ?? p.amount); });
             }
           });
           return (

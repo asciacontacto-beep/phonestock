@@ -13,19 +13,16 @@ export default async function ReportsPage() {
   const [
     { data: salesData },
     { data: expensesData },
-    { data: depositsData }
+    { data: depositsData },
+    { data: settingsData }
   ] = await Promise.all([
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
     supabase.from('expenses').select('*').order('created_at', { ascending: false }),
-    supabase.from('deposits').select('*').order('name')
+    supabase.from('deposits').select('*').order('name'),
+    supabase.from('settings').select('*').maybeSingle()
   ])
 
-  let exchangeRate = 1200;
-  try {
-    const res = await fetch('https://dolarapi.com/v1/dolares/blue', { next: { revalidate: 3600 } });
-    const d = await res.json();
-    if (d && d.compra && d.venta) exchangeRate = (d.compra + d.venta) / 2;
-  } catch (_) {}
+  const exchangeRate = settingsData?.exchange_rate || 1200;
 
   return (
     <ReportsClient

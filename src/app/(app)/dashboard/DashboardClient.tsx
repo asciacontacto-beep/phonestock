@@ -1,9 +1,32 @@
 "use client"
 import { BRANDS } from '@/constants/data';
-import { TrendingUp, Download, ShoppingBag, Plus, Clock, Package, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Download, ShoppingBag, Plus, Clock, Package, AlertTriangle, Trash2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
-export function DashboardClient({ stock, sales, exchangeRate }: { stock: any[], sales: any[], exchangeRate: number }) {
+export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stock: any[], sales: any[], exchangeRate: number, userRole?: string }) {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const deleteSale = async (saleId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta venta?')) return;
+    try {
+      const sale = sales.find(s => s.id === saleId);
+      if (sale && sale.imei) {
+        // Attempt to restore stock status
+        await supabase.from('stock').update({ status: 'available' }).eq('imei', sale.imei);
+      }
+      
+      const { error } = await supabase.from('sales').delete().eq('id', saleId);
+      if (error) throw error;
+      toast.success('Venta eliminada');
+      router.refresh();
+    } catch (e: any) {
+      toast.error('Error al eliminar venta: ' + e.message);
+    }
+  };
   const av = stock.filter(s => s.status === 'available');
   const sv = av.filter(s => s.currency === 'USD').reduce((a, s) => a + s.price, 0);
 
@@ -235,6 +258,7 @@ export function DashboardClient({ stock, sales, exchangeRate }: { stock: any[], 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {[
             ...sales.slice(0, 8).map(s => ({
+              id: s.id,
               type: 'sale',
               label: `${s.seller_name || 'Alguien'} vendió un ${s.brand} ${s.model}`,
               sub: s.customer?.name ? `Cliente: ${s.customer.name}` : `${s.currency === 'USD' ? 'U$' : '$'} ${s.price?.toLocaleString()}`,
@@ -242,6 +266,7 @@ export function DashboardClient({ stock, sales, exchangeRate }: { stock: any[], 
               color: 'var(--green)'
             })),
             ...stock.slice(0, 5).map(s => ({
+              id: s.id,
               type: 'stock',
               label: `Stock cargado: ${s.brand} ${s.model}`,
               sub: `${s.storage} · ${s.color} · ${s.condition === 'new' ? 'Nuevo' : 'Usado'}`,
@@ -278,6 +303,11 @@ export function DashboardClient({ stock, sales, exchangeRate }: { stock: any[], 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-3)', fontSize: 11, flexShrink: 0 }}>
                     <Clock size={11} />
                     {timeStr}
+                    {event.type === 'sale' && (
+                      <button className="btn-icon" style={{ marginLeft: 8, color: 'var(--red)', opacity: 0.7 }} onClick={() => deleteSale(event.id)}>
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );

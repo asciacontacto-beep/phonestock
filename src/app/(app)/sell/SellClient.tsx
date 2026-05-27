@@ -53,15 +53,7 @@ export function SellClient() {
       setSettings(settingsData);
     });
 
-    fetch('https://dolarapi.com/v1/dolares/blue')
-      .then(r => r.json())
-      .then(d => {
-        if (d && d.compra && d.venta) {
-          const avg = (d.compra + d.venta) / 2;
-          setExchangeRate(avg.toString());
-        }
-      })
-      .catch(e => console.error('Error fetching dolar blue:', e));
+
   }, []);
 
   const shop = settings || { shop_name: 'Stackr', address: '', phone: '', instagram: '', warranty_text: '' };
@@ -410,7 +402,7 @@ export function SellClient() {
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             <button className="btn btn-ghost" onClick={() => setStep(2)}>Atrás</button>
-            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading || rem > 0.01 || (unit && price > Number(unit.price))} onClick={confirm}>
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading || rem > 0.01 || rem < -0.01} onClick={confirm}>
               {loading ? 'Procesando...' : 'Finalizar Operación'}
             </button>
           </div>

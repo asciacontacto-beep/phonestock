@@ -410,7 +410,7 @@ export function SellClient() {
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             <button className="btn btn-ghost" onClick={() => setStep(2)}>Atrás</button>
-            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading || rem > 0.01} onClick={confirm}>
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading || rem > 0.01 || (unit && price > Number(unit.price))} onClick={confirm}>
               {loading ? 'Procesando...' : 'Finalizar Operación'}
             </button>
           </div>

@@ -95,7 +95,7 @@ export function StockClient() {
     }
   };
 
-  const depositOf = (s: any) => deposits.find((d: any) => d.id === s.deposit);
+  const depositOf = (s: any) => deposits.find((d: any) => String(d.id) === String(s.deposit));
 
   return (
     <div className="page">

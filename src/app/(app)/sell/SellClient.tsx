@@ -23,6 +23,7 @@ export function SellClient() {
   const [selectedDeposit, setSelectedDeposit] = useState<number | null>(null);
   const [sm, setSm] = useState<string | null>(null);
   const [ma, setMa] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('1000');
   const [showTI, setShowTI] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -48,8 +49,19 @@ export function SellClient() {
       }
       setStock(stockData || []);
       setDeposits(depositsData || []);
+      if (depositsData && depositsData.length > 0) setSelectedDeposit(depositsData[0].id);
       setSettings(settingsData);
     });
+
+    fetch('https://dolarapi.com/v1/dolares/blue')
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.compra && d.venta) {
+          const avg = (d.compra + d.venta) / 2;
+          setExchangeRate(avg.toString());
+        }
+      })
+      .catch(e => console.error('Error fetching dolar blue:', e));
   }, []);
 
   const shop = settings || { shop_name: 'Stackr', address: '', phone: '', instagram: '', warranty_text: '' };
@@ -66,14 +78,38 @@ export function SellClient() {
     const amt = parseFloat(ma);
     if (amt <= 0) return;
     const m = PAY.find(p => p.id === sm);
-    setPayments(p => [...p, { id: sm, label: m?.label, amount: amt }]);
+    
+    let amountInSaleCur = amt;
+    const rate = parseFloat(exchangeRate) || 1;
+    if (m?.cur === 'ARS' && sc === 'USD') {
+      amountInSaleCur = amt / rate;
+    } else if (m?.cur === 'USD' && sc === 'ARS') {
+      amountInSaleCur = amt * rate;
+    }
+    
+    setPayments(p => [...p, { 
+      id: sm, 
+      label: m?.label, 
+      amount: amountInSaleCur, 
+      original_amount: amt,
+      currency: m?.cur,
+      exchange_rate: (m?.cur !== sc && m?.cur !== 'ANY') ? rate : null
+    }]);
     setMa('');
     setSm(null);
   };
 
   const handleTI = (data: any) => {
     const amt = parseFloat(data.value);
-    setPayments(p => [...p, { id: 'tradein', label: `TI: ${data.brand} ${data.model}`, amount: amt, device: data }]);
+    setPayments(p => [...p, { 
+      id: 'tradein', 
+      label: `TI: ${data.brand} ${data.model}`, 
+      amount: amt, 
+      original_amount: amt,
+      currency: data.valueCurrency || sc,
+      exchange_rate: null,
+      device: data 
+    }]);
     setShowTI(false);
   };
 
@@ -205,12 +241,6 @@ export function SellClient() {
         <div className="card">
           <div className="lbl">1. Seleccionar Equipo en Stock</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto', paddingBottom: 4, whiteSpace: 'nowrap' }}>
-            <button 
-              className={`btn ${selectedDeposit === null ? 'btn-dark' : 'btn-outline'} btn-sm`}
-              onClick={() => setSelectedDeposit(null)}
-            >
-              Todos los depósitos
-            </button>
             {deposits.map(d => (
               <button 
                 key={d.id}
@@ -325,18 +355,42 @@ export function SellClient() {
             })}
           </div>
           {sm && (
-            <div className="row" style={{ marginBottom: 16 }}>
-              <input className="inp col" type="number" value={ma} onChange={e => setMa(e.target.value)} placeholder="Monto..." autoFocus onKeyDown={e => e.key === 'Enter' && addP()} />
-              <button className="btn btn-dark" onClick={addP}><Plus size={16} /></button>
+            <div className="card" style={{ background: 'var(--surface-3)', border: '1px solid var(--border)', padding: 16, marginBottom: 16 }}>
+              {(() => {
+                const selectedPay = PAY.find(p => p.id === sm);
+                const needsExchange = selectedPay && selectedPay.cur !== 'ANY' && selectedPay.cur !== sc;
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {needsExchange && (
+                      <div className="field" style={{ margin: 0 }}>
+                        <label className="lbl">Cotización Dólar</label>
+                        <input className="inp" type="number" value={exchangeRate} onChange={e => setExchangeRate(e.target.value)} />
+                      </div>
+                    )}
+                    <div className="row">
+                      <div className="col field" style={{ margin: 0 }}>
+                        <label className="lbl">Monto a cobrar en {selectedPay?.cur}</label>
+                        <input className="inp" type="number" value={ma} onChange={e => setMa(e.target.value)} placeholder="0.00" autoFocus onKeyDown={e => e.key === 'Enter' && addP()} />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                        <button className="btn btn-dark" style={{ height: 42 }} onClick={addP}><Plus size={16} /> Agregar</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
           {payments.length > 0 && (
             <div className="card" style={{ background: 'var(--surface-2)', padding: 16, marginBottom: 16 }}>
               {payments.map((p, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ flex: 1 }}>{p.label}</span>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString()}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 600 }}>{p.label}</span>
+                    {p.exchange_rate && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.currency === 'USD' ? 'U$' : '$'} {p.original_amount.toLocaleString()} (Cot. {p.exchange_rate})</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                     <button className="btn-ghost" onClick={() => setPayments(ps => ps.filter((_, j) => j !== i))} style={{ padding: 0, color: 'var(--red)' }}>×</button>
                   </div>
                 </div>
@@ -344,7 +398,7 @@ export function SellClient() {
               <div className="divider" style={{ margin: '10px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
                 <span style={{ flex: 1 }}>Saldo</span>
-                <span style={{ color: rem <= 0 ? 'var(--green)' : 'var(--amber)' }}>{rem <= 0 ? 'Cubierto' : `${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString()} pendiente`}</span>
+                <span style={{ color: rem <= 0.01 ? 'var(--green)' : 'var(--amber)' }}>{rem <= 0.01 ? 'Cubierto' : `${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString(undefined, { maximumFractionDigits: 2 })} pendiente`}</span>
               </div>
             </div>
           )}
@@ -356,7 +410,7 @@ export function SellClient() {
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             <button className="btn btn-ghost" onClick={() => setStep(2)}>Atrás</button>
-            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading} onClick={confirm}>
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading || rem > 0.01} onClick={confirm}>
               {loading ? 'Procesando...' : 'Finalizar Operación'}
             </button>
           </div>
@@ -450,9 +504,12 @@ function Receipt({ sale, shop }: any) {
       <div style={{ margin: '15px 0', borderBottom: '1px dashed #ccc' }} />
       <div style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 11 }}>PAGOS</div>
       {sale.payments?.map((p: any, i: number) => (
-        <div key={i} className="receipt-row">
-          <span>{p.label}:</span>
-          <span>{sale.currency === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString()}</span>
+        <div key={i} className="receipt-row" style={{ alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span>{p.label}:</span>
+            {p.exchange_rate && <span style={{ fontSize: 10, color: '#666' }}>({p.currency === 'USD' ? 'U$' : '$'} {p.original_amount.toLocaleString()} a cot. {p.exchange_rate})</span>}
+          </div>
+          <span>{sale.currency === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
         </div>
       ))}
       <div style={{ marginTop: 20, padding: 12, background: '#f9f9f9', borderRadius: 4 }}>

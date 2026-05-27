@@ -24,7 +24,7 @@ export function DashboardClient({ stock, sales, exchangeRate }: { stock: any[], 
 
   const totals: Record<string, number> = {};
   sales.forEach(s => s.payments?.forEach((p: any) => {
-    totals[p.id] = (totals[p.id] || 0) + p.amount;
+    totals[p.id] = (totals[p.id] || 0) + (p.original_amount ?? p.amount);
   }));
 
   const totalARS =

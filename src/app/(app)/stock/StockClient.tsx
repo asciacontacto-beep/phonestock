@@ -24,15 +24,26 @@ export function StockClient() {
   const supabase = createClient();
 
   useEffect(() => {
-    Promise.all([
-      supabase.from('stock').select('*').order('created_at', { ascending: false }),
-      supabase.from('deposits').select('*').order('name'),
-    ]).then(([{ data: stockData }, { data: depositsData }]) => {
+    (async () => {
+      const [{ data: stockData }, { data: depositsData }] = await Promise.all([
+        supabase.from('stock').select('*').order('created_at', { ascending: false }),
+        supabase.from('deposits').select('*').order('name'),
+      ]);
       setStock(stockData || []);
       setDeposits(depositsData || []);
       if (depositsData && depositsData.length > 0) setSelectedDeposit(depositsData[0].id);
+      // Assign default deposit to items missing it
+      const missing = (stockData || []).filter((s: any) => s.deposit === null || s.deposit === undefined);
+      if (missing.length && depositsData && depositsData.length > 0) {
+        const defId = depositsData[0].id;
+        const ids = missing.map((s: any) => s.id);
+        await supabase.from('stock').update({ deposit: defId }).in('id', ids);
+        // Refresh stock data after update
+        const { data: refreshed } = await supabase.from('stock').select('*').order('created_at', { ascending: false });
+        setStock(refreshed || []);
+      }
       setDataLoaded(true);
-    });
+    })();
   }, []);
 
   const rows = stock.filter(s =>

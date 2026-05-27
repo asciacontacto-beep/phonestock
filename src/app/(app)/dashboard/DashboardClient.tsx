@@ -45,15 +45,15 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
     );
   }
 
+  const validSales = sales.filter(s => s.brand !== 'MOVIMIENTO');
   const totals: Record<string, number> = {};
-  sales.forEach(s => s.payments?.forEach((p: any) => {
+  validSales.forEach(s => s.payments?.forEach((p: any) => {
     totals[p.id] = (totals[p.id] || 0) + (p.original_amount ?? p.amount);
   }));
 
-
   const exportCSV = () => {
     const headers = ['Fecha', 'Vendedor', 'Marca', 'Modelo', 'Storage', 'Color', 'IMEI', 'Precio', 'Moneda', 'Cliente', 'DNI', 'Tel', 'Notas'];
-    const rows = sales.map(s => [
+    const rows = validSales.map(s => [
       s.created_at ? new Date(s.created_at).toLocaleString('es-AR') : '',
       s.seller_name || '',
       s.brand || '', s.model || '', s.storage || '', s.color || '', s.imei || '',
@@ -71,7 +71,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
 
   const brandRanking = BRANDS.map(b => ({
     name: b,
-    count: sales.filter(s => s.brand === b).length
+    count: validSales.filter(s => s.brand === b).length
   })).sort((a, b) => b.count - a.count).slice(0, 5);
 
   const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -82,12 +82,12 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
     const dayStr = d.toISOString().slice(0, 10);
     return {
       label: days[d.getDay()],
-      count: sales.filter(s => s.created_at?.slice(0, 10) === dayStr).length
+      count: validSales.filter(s => s.created_at?.slice(0, 10) === dayStr).length
     };
   });
 
   const sellerCounts: Record<string, { name: string; count: number }> = {};
-  sales.forEach(s => {
+  validSales.forEach(s => {
     if (!s.seller_id) return;
     if (!sellerCounts[s.seller_id]) {
       sellerCounts[s.seller_id] = { name: s.seller_name || 'Sin nombre', count: 0 };
@@ -126,7 +126,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
         </div>
         <div className="sc">
           <div className="sl">Ventas</div>
-          <div className="sv">{sales.length}</div>
+          <div className="sv">{validSales.length}</div>
         </div>
         <div className="sc">
           <div className="sl">Vendedor top</div>
@@ -244,7 +244,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
         <div className="sl" style={{ marginBottom: 20 }}>Actividad Reciente</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {[
-            ...sales.slice(0, 8).map(s => ({
+            ...validSales.slice(0, 8).map(s => ({
               id: s.id,
               type: 'sale',
               label: `${s.seller_name || 'Alguien'} vendió un ${s.brand} ${s.model}`,

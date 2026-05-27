@@ -1,10 +1,23 @@
 "use client"
 import { useState } from 'react';
 import { PAY } from '@/constants/data';
-import { Lock, AlertTriangle, CheckCircle2, Wallet } from 'lucide-react';
+import { Lock, AlertTriangle, CheckCircle2, Wallet, ArrowRightLeft, X } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export function CashiersClient({ sales, user, realSellers }: { sales: any[], user: any, realSellers: any[] }) {
   const [showClose, setShowClose] = useState(false);
+  const [showExchange, setShowExchange] = useState(false);
+  const [exLoading, setExLoading] = useState(false);
+  const [exForm, setExForm] = useState({
+    fromCur: 'ARS',
+    fromAmt: '',
+    toCur: 'USD',
+    toAmt: ''
+  });
+  const supabase = createClient();
+  const router = useRouter();
   const [declared, setDeclared] = useState<Record<string, string>>({ ars_cash: '', usd_cash: '' });
   const [closureResult, setClosureResult] = useState<any>(null);
 
@@ -51,6 +64,39 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
     setClosureResult(result);
   };
 
+  const handleExchange = async () => {
+    const { fromCur, fromAmt, toCur, toAmt } = exForm;
+    if (!fromAmt || !toAmt) { toast.error('Ingresá ambos montos'); return; }
+    if (fromCur === toCur) { toast.error('Las monedas deben ser distintas'); return; }
+
+    setExLoading(true);
+    try {
+      const saleData = {
+        seller_id: user.id,
+        seller_name: user.name,
+        brand: 'MOVIMIENTO',
+        model: 'CAMBIO DE DIVISA',
+        storage: '-', color: '-', imei: `EXC-${Date.now()}`,
+        cost_price: 0,
+        price: 0, currency: 'USD',
+        payments: [
+          { id: fromCur === 'ARS' ? 'ars_cash' : 'usd_cash', amount: -parseFloat(fromAmt), original_amount: -parseFloat(fromAmt), label: `Egreso ${fromCur}` },
+          { id: toCur === 'ARS' ? 'ars_cash' : 'usd_cash', amount: parseFloat(toAmt), original_amount: parseFloat(toAmt), label: `Ingreso ${toCur}` }
+        ]
+      };
+      const { error } = await supabase.from('sales').insert([saleData]);
+      if (error) throw error;
+      toast.success('Movimiento registrado');
+      setShowExchange(false);
+      setExForm({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '' });
+      router.refresh();
+    } catch (e: any) {
+      toast.error('Error al registrar movimiento');
+    } finally {
+      setExLoading(false);
+    }
+  };
+
   return (
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -58,11 +104,16 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
           <div className="st">{user.role === 'owner' ? 'Control de Cajas' : 'Mi Terminal de Caja'}</div>
           <div className="ss2">Resumen de operaciones y cierre de turno</div>
         </div>
-        {user.role === 'seller' && (
-          <button className="btn btn-dark" onClick={() => setShowClose(true)}>
-            <Lock size={18} /> Cerrar Turno / Caja
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-outline" onClick={() => setShowExchange(true)}>
+            <ArrowRightLeft size={18} /> Cambio de Divisa
           </button>
-        )}
+          {user.role === 'seller' && (
+            <button className="btn btn-dark" onClick={() => setShowClose(true)}>
+              <Lock size={18} /> Cerrar Turno
+            </button>
+          )}
+        </div>
       </div>
 
       {user.role === 'owner' && (() => {
@@ -225,6 +276,46 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
                   Finalizar Turno
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Change Currency Modal */}
+      {showExchange && (
+        <div className="mo" style={{ zIndex: 1100 }} onClick={() => setShowExchange(false)}>
+          <div className="mb" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="mh">
+              <div className="mh-title">Cambio de Divisa</div>
+              <button className="btn-icon" onClick={() => setShowExchange(false)}><X size={18} /></button>
+            </div>
+            <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ background: 'var(--surface-2)', padding: 12, borderRadius: 8 }}>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>Monto que ENTREGÁS (Sale de caja)</div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <select className="inp" style={{ flex: 1 }} value={exForm.fromCur} onChange={e => setExForm(p => ({ ...p, fromCur: e.target.value }))}>
+                    <option value="ARS">Pesos (ARS)</option>
+                    <option value="USD">Dólares (USD)</option>
+                  </select>
+                  <input className="inp" type="number" style={{ flex: 2 }} placeholder="0" value={exForm.fromAmt} onChange={e => setExForm(p => ({ ...p, fromAmt: e.target.value }))} />
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'center' }}><ArrowRightLeft size={20} style={{ color: 'var(--text-3)', transform: 'rotate(90deg)' }} /></div>
+              
+              <div style={{ background: 'var(--surface-2)', padding: 12, borderRadius: 8 }}>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>Monto que RECIBÍS (Entra a caja)</div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <select className="inp" style={{ flex: 1 }} value={exForm.toCur} onChange={e => setExForm(p => ({ ...p, toCur: e.target.value }))}>
+                    <option value="USD">Dólares (USD)</option>
+                    <option value="ARS">Pesos (ARS)</option>
+                  </select>
+                  <input className="inp" type="number" style={{ flex: 2 }} placeholder="0" value={exForm.toAmt} onChange={e => setExForm(p => ({ ...p, toAmt: e.target.value }))} />
+                </div>
+              </div>
+
+              <button className="btn btn-dark btn-lg" style={{ width: '100%', marginTop: 8 }} onClick={handleExchange} disabled={exLoading}>
+                {exLoading ? 'Registrando...' : 'Confirmar Cambio'}
+              </button>
             </div>
           </div>
         </div>

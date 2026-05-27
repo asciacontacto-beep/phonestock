@@ -21,6 +21,8 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
   const [loading, setLoading] = useState(false);
   const [filterDep, setFilterDep] = useState<string>('all');
   const [filterCat, setFilterCat] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [form, setForm] = useState({
     description: '',
     amount: '',
@@ -75,7 +77,18 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
 
   const filtered = expenses
     .filter(e => filterDep === 'all' || String(e.deposit_id) === filterDep)
-    .filter(e => filterCat === 'all' || e.category === filterCat);
+    .filter(e => filterCat === 'all' || e.category === filterCat)
+    .filter(e => {
+      if (!startDate && !endDate) return true;
+      const d = new Date(e.created_at);
+      if (startDate && d < new Date(startDate)) return false;
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (d > end) return false;
+      }
+      return true;
+    });
 
   const totalARS = filtered.filter(e => e.currency === 'ARS').reduce((a, e) => a + e.amount, 0);
   const totalUSD = filtered.filter(e => e.currency === 'USD').reduce((a, e) => a + e.amount, 0);
@@ -136,16 +149,30 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
       )}
 
       {/* Filters */}
-      <div className="filters-wrap no-print" style={{ marginBottom: 16 }}>
-        <select className="inp" style={{ width: 'auto', background: 'transparent', border: 'none' }} value={filterDep} onChange={e => setFilterDep(e.target.value)}>
+      <div className="filters-wrap no-print" style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)', padding: '4px 12px', borderRadius: 8 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Desde:</span>
+          <input type="date" className="inp" style={{ width: 'auto', background: 'transparent', border: 'none', padding: 0 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)', padding: '4px 12px', borderRadius: 8 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Hasta:</span>
+          <input type="date" className="inp" style={{ width: 'auto', background: 'transparent', border: 'none', padding: 0 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+        </div>
+        
+        <select className="inp" style={{ width: 'auto', background: 'var(--surface-2)', border: 'none' }} value={filterDep} onChange={e => setFilterDep(e.target.value)}>
           <option value="all">Todos los depósitos</option>
           {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
         </select>
-        <div style={{ width: 1, height: 20, background: 'var(--border-md)' }} />
-        <select className="inp" style={{ width: 'auto', background: 'transparent', border: 'none' }} value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+        <select className="inp" style={{ width: 'auto', background: 'var(--surface-2)', border: 'none' }} value={filterCat} onChange={e => setFilterCat(e.target.value)}>
           <option value="all">Todas las categorías</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        
+        {(startDate || endDate || filterDep !== 'all' || filterCat !== 'all') && (
+          <button className="btn-ghost" style={{ fontSize: 12, color: 'var(--text-3)' }} onClick={() => { setStartDate(''); setEndDate(''); setFilterDep('all'); setFilterCat('all'); }}>
+            Limpiar filtros
+          </button>
+        )}
       </div>
 
       {/* Expenses list */}

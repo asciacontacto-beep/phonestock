@@ -50,10 +50,6 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
     totals[p.id] = (totals[p.id] || 0) + (p.original_amount ?? p.amount);
   }));
 
-  const totalARS =
-    (totals['ars_cash'] || 0) +
-    (totals['ars_transf'] || 0) +
-    ((totals['usd_cash'] || 0) + (totals['usd_transf'] || 0) + (totals['usdt'] || 0)) * exchangeRate;
 
   const exportCSV = () => {
     const headers = ['Fecha', 'Vendedor', 'Marca', 'Modelo', 'Storage', 'Color', 'IMEI', 'Precio', 'Moneda', 'Cliente', 'DNI', 'Tel', 'Notas'];
@@ -218,16 +214,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
               <span style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{it.p} {(totals[it.id] || 0).toLocaleString()}</span>
             </div>
           ))}
-          {exchangeRate > 0 && (
-            <div style={{ marginTop: 16, padding: '12px 16px', background: 'var(--surface-2)', borderRadius: 8 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>
-                Total equivalente en ARS (TC: ${exchangeRate.toLocaleString()})
-              </div>
-              <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 800, fontSize: 20, color: 'var(--green)' }}>
-                $ {Math.round(totalARS).toLocaleString()}
-              </div>
-            </div>
-          )}
+
         </div>
 
         <div className="col card">

@@ -136,7 +136,7 @@ export function CashiersClient({ sales, user, realSellers }: { sales: any[], use
                         return (
                           <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--surface-2)', borderRadius: 8 }}>
                             <span style={{ color: 'var(--text-2)', fontSize: 13, fontWeight: 500 }}>{it.l}</span>
-                            <span style={{ fontFamily: 'JetBrains Mono', fontSize: 14, fontWeight: 700, color: '#fff' }}>{it.p} {amount.toLocaleString('es-AR')}</span>
+                            <span style={{ fontFamily: 'JetBrains Mono', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{it.p} {amount.toLocaleString('es-AR')}</span>
                           </div>
                         );
                       })}

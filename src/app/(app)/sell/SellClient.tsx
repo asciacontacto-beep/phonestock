@@ -168,14 +168,16 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
 
       const tiItems = payments.filter(pay => pay.id === 'tradein').map(pay => ({
         brand: pay.device.brand,
-        model: pay.device.model,
+        model: pay.device.notes ? `${pay.device.model} (${pay.device.notes})` : pay.device.model,
         storage: pay.device.storage,
         color: pay.device.color,
         imei: pay.device.imei || `TI-${Date.now()}`,
         condition: 'used',
+        battery: pay.device.battery || null,
         deposit: pay.device.deposit ?? (deposits[0]?.id ?? 1),
         status: 'available',
-        price: pay.amount,
+        price: parseFloat(pay.device.salePrice) || pay.amount,
+        cost_price: pay.amount,
         currency: pay.device.valueCurrency || sc
       }));
 
@@ -447,7 +449,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
 function TradeInForm({ currency, deposits, onConfirm }: any) {
   const [f, setF] = useState({
     brand: 'Apple', model: 'iPhone 12', storage: '128GB', color: 'Negro',
-    imei: '', condition: 'used', value: '', valueCurrency: currency,
+    imei: '', condition: 'used', battery: '', notes: '', salePrice: '', value: '', valueCurrency: currency,
     deposit: deposits?.[0]?.id ?? 1
   });
 
@@ -457,9 +459,14 @@ function TradeInForm({ currency, deposits, onConfirm }: any) {
         <div className="col field"><label className="lbl">Modelo</label><select className="inp" value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))}>{(MODELS[f.brand] || []).map(m => <option key={m} value={m}>{m}</option>)}</select></div></div>
       <div className="row"><div className="col field"><label className="lbl">GB</label><select className="inp" value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))}>{STORAGES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
         <div className="col field"><label className="lbl">Color</label><select className="inp" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))}>{(COLORS[f.brand] || ['Negro']).map(c => <option key={c} value={c}>{c}</option>)}</select></div></div>
-      <div className="field"><label className="lbl">IMEI</label><input className="inp" value={f.imei} onChange={e => setF(p => ({ ...p, imei: e.target.value }))} placeholder="15 dígitos..." /></div>
       <div className="row">
-        <div className="col field"><label className="lbl">Valor de toma</label><input className="inp" type="number" value={f.value} onChange={e => setF(p => ({ ...p, value: e.target.value }))} /></div>
+        <div className="col field"><label className="lbl">IMEI</label><input className="inp" value={f.imei} onChange={e => setF(p => ({ ...p, imei: e.target.value }))} placeholder="15 dígitos..." /></div>
+        <div className="col field"><label className="lbl">% Batería</label><input className="inp" type="number" placeholder="Ej: 85" value={f.battery} onChange={e => setF(p => ({ ...p, battery: e.target.value }))} /></div>
+      </div>
+      <div className="field"><label className="lbl">Detalles / Observaciones</label><input className="inp" value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} placeholder="Ej: Pantalla con rayas..." /></div>
+      <div className="row">
+        <div className="col field"><label className="lbl">Precio Venta Sugerido</label><input className="inp" type="number" value={f.salePrice} onChange={e => setF(p => ({ ...p, salePrice: e.target.value }))} placeholder="0" /></div>
+        <div className="col field"><label className="lbl">Costo (Valor toma)</label><input className="inp" type="number" value={f.value} onChange={e => setF(p => ({ ...p, value: e.target.value }))} placeholder="0" /></div>
         <div className="col field"><label className="lbl">Moneda</label><input className="inp" value={f.valueCurrency} disabled /></div>
       </div>
       {deposits?.length > 0 && (

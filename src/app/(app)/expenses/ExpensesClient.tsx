@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 const CATEGORIES = [
   'Operativo', 'Sueldos', 'Alquiler', 'Viáticos', 'Servicio Técnico',
-  'Logística', 'Impuestos', 'Publicidad', 'Varios'
+  'Logística', 'Impuestos', 'Publicidad', 'Proveedores', 'Varios'
 ];
 
 export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }: {
@@ -28,7 +28,8 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
     amount: '',
     currency: 'ARS',
     category: 'Operativo',
-    deposit_id: deposits[0]?.id?.toString() || ''
+    deposit_id: deposits[0]?.id?.toString() || '',
+    payment_method: 'ars_cash'
   });
   const supabase = createClient();
   const router = useRouter();
@@ -51,8 +52,26 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
       };
       const { data, error } = await supabase.from('expenses').insert([row]).select();
       if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const expId = data[0].id;
+        const saleData = {
+          seller_id: currentUser.id,
+          seller_name: currentUser.name,
+          brand: 'MOVIMIENTO',
+          model: `GASTO: ${form.category}`,
+          storage: '-', color: '-', imei: `EXP-${expId}`,
+          cost_price: 0,
+          price: 0, currency: form.currency,
+          payments: [
+            { id: form.payment_method, amount: -parseFloat(form.amount), original_amount: -parseFloat(form.amount), label: `Gasto: ${form.category}` }
+          ]
+        };
+        await supabase.from('sales').insert([saleData]);
+      }
+
       if (data) setExpenses(prev => [data[0], ...prev]);
-      setForm({ description: '', amount: '', currency: 'ARS', category: 'Operativo', deposit_id: deposits[0]?.id?.toString() || '' });
+      setForm({ description: '', amount: '', currency: 'ARS', category: 'Operativo', deposit_id: deposits[0]?.id?.toString() || '', payment_method: 'ars_cash' });
       setShowForm(false);
       toast.success('Gasto registrado');
       router.refresh();
@@ -64,12 +83,17 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este gasto?')) return;
+    if (!confirm('¿Eliminar este gasto y restaurar el saldo en caja?')) return;
     try {
       const { error } = await supabase.from('expenses').delete().eq('id', id);
       if (error) throw error;
+      
+      // Also delete the linked cash movement
+      await supabase.from('sales').delete().eq('imei', `EXP-${id}`);
+      
       setExpenses(prev => prev.filter(e => e.id !== id));
       toast.success('Gasto eliminado');
+      router.refresh();
     } catch (e: any) {
       toast.error('Error: ' + e.message);
     }
@@ -245,11 +269,31 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
                 </div>
                 <div className="field">
                   <label className="lbl">Moneda</label>
-                  <select className="inp" value={form.currency} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
+                  <select className="inp" value={form.currency} onChange={e => {
+                    const cur = e.target.value;
+                    setForm(p => ({ ...p, currency: cur, payment_method: cur === 'ARS' ? 'ars_cash' : 'usd_cash' }));
+                  }}>
                     <option value="ARS">Pesos (ARS)</option>
                     <option value="USD">Dólar (USD)</option>
                   </select>
                 </div>
+              </div>
+              <div className="field">
+                <label className="lbl">Método de Pago (Caja)</label>
+                <select className="inp" value={form.payment_method} onChange={e => setForm(p => ({ ...p, payment_method: e.target.value }))}>
+                  {form.currency === 'ARS' ? (
+                    <>
+                      <option value="ars_cash">Efectivo ARS</option>
+                      <option value="ars_transf">Transferencia ARS</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="usd_cash">Dólar Billete</option>
+                      <option value="usd_transf">Transferencia USD</option>
+                      <option value="usdt">USDT</option>
+                    </>
+                  )}
+                </select>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div className="field">

@@ -28,7 +28,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
     }
   };
   const av = stock.filter(s => s.status === 'available');
-  const sv = av.filter(s => s.currency === 'USD').reduce((a, s) => a + s.price, 0);
+  const sv = av.reduce((a, s) => a + (s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate)), 0);
 
   if (av.length === 0 && sales.length === 0) {
     return (
@@ -120,10 +120,12 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
           <div className="sl">En Stock</div>
           <div className="sv">{av.length}</div>
         </div>
-        <div className="sc">
-          <div className="sl">Capital USD</div>
-          <div className="sv">U$ {sv.toLocaleString()}</div>
-        </div>
+        {userRole === 'owner' && (
+          <div className="sc">
+            <div className="sl">Capital USD</div>
+            <div className="sv">U$ {Math.round(sv).toLocaleString()}</div>
+          </div>
+        )}
         <div className="sc">
           <div className="sl">Ventas</div>
           <div className="sv">{validSales.length}</div>

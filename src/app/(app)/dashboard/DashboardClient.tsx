@@ -120,10 +120,12 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
           <div className="sl">En Stock</div>
           <div className="sv">{av.length}</div>
         </div>
-        <div className="sc">
-          <div className="sl">Capital USD</div>
-          <div className="sv">U$ {Math.round(sv).toLocaleString()}</div>
-        </div>
+        {userRole !== 'seller' && (
+          <div className="sc">
+            <div className="sl">Capital USD</div>
+            <div className="sv">U$ {Math.round(sv).toLocaleString()}</div>
+          </div>
+        )}
         <div className="sc">
           <div className="sl">Ventas</div>
           <div className="sv">{validSales.length}</div>
@@ -239,19 +241,19 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
           ))}
         </div>
       </div>
-
-      <div className="card" style={{ marginTop: 24, padding: 24 }}>
-        <div className="sl" style={{ marginBottom: 20 }}>Actividad Reciente</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {[
-            ...validSales.slice(0, 8).map(s => ({
-              id: s.id,
-              type: 'sale',
-              label: `${s.seller_name || 'Alguien'} vendió un ${s.brand} ${s.model}`,
-              sub: s.customer?.name ? `Cliente: ${s.customer.name}` : `${s.currency === 'USD' ? 'U$' : '$'} ${s.price?.toLocaleString()}`,
-              time: s.created_at,
-              color: 'var(--green)'
-            })),
+      {userRole !== 'seller' && (
+        <div className="card" style={{ marginTop: 24, padding: 24 }}>
+          <div className="sl" style={{ marginBottom: 20 }}>Actividad Reciente</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {[
+              ...validSales.slice(0, 8).map(s => ({
+                id: s.id,
+                type: 'sale',
+                label: `${s.seller_name || 'Alguien'} vendió un ${s.brand} ${s.model}`,
+                sub: s.customer?.name ? `Cliente: ${s.customer.name}` : `${s.currency === 'USD' ? 'U$' : '$'} ${s.price?.toLocaleString()}`,
+                time: s.created_at,
+                color: 'var(--green)'
+              })),
             ...stock.slice(0, 5).map(s => ({
               id: s.id,
               type: 'stock',
@@ -301,9 +303,10 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
             })}
           {sales.length === 0 && stock.length === 0 && (
             <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>Sin actividad registrada aún</div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

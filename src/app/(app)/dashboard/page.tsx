@@ -8,9 +8,7 @@ export default async function DashboardPage() {
   if (!user) redirect("/login")
   const isSuperAdmin = user.email === 'asciacontacto@gmail.com'
   const profile = await getProfile(user.id)
-  if (!isSuperAdmin && profile?.role !== 'owner') {
-    redirect("/sell")
-  }
+  const userRole = isSuperAdmin ? 'owner' : (profile?.role || 'seller')
 
   const [
     { data: stockData },
@@ -27,6 +25,7 @@ export default async function DashboardPage() {
       stock={stockData || []} 
       sales={salesData || []} 
       exchangeRate={settingsData?.exchange_rate || 1200}
+      userRole={userRole}
     />
   )
 }

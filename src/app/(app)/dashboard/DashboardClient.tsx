@@ -120,12 +120,10 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
           <div className="sl">En Stock</div>
           <div className="sv">{av.length}</div>
         </div>
-        {userRole === 'owner' && (
-          <div className="sc">
-            <div className="sl">Capital USD</div>
-            <div className="sv">U$ {Math.round(sv).toLocaleString()}</div>
-          </div>
-        )}
+        <div className="sc">
+          <div className="sl">Capital USD</div>
+          <div className="sv">U$ {Math.round(sv).toLocaleString()}</div>
+        </div>
         <div className="sc">
           <div className="sl">Ventas</div>
           <div className="sv">{validSales.length}</div>

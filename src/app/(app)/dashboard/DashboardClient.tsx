@@ -28,7 +28,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
     }
   };
   const av = stock.filter(s => s.status === 'available');
-  const sv = av.reduce((a, s) => a + (s.currency === 'USD' ? (s.cost_price || s.price || 0) : ((s.cost_price || s.price || 0) / exchangeRate)), 0);
+  const sv = av.reduce((a, s) => a + (s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate)), 0);
 
   if (av.length === 0 && sales.length === 0) {
     return (

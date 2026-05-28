@@ -23,6 +23,7 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
   const [filterCat, setFilterCat] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [visibleCount, setVisibleCount] = useState(50);
   const [form, setForm] = useState({
     description: '',
     amount: '',
@@ -176,18 +177,18 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
       <div className="filters-wrap no-print" style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)', padding: '4px 12px', borderRadius: 8 }}>
           <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Desde:</span>
-          <input type="date" className="inp" style={{ width: 'auto', background: 'transparent', border: 'none', padding: 0 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <input type="date" className="inp" style={{ width: 'auto', background: 'transparent', border: 'none', padding: 0 }} value={startDate} onChange={e => { setStartDate(e.target.value); setVisibleCount(50); }} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)', padding: '4px 12px', borderRadius: 8 }}>
           <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Hasta:</span>
-          <input type="date" className="inp" style={{ width: 'auto', background: 'transparent', border: 'none', padding: 0 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+          <input type="date" className="inp" style={{ width: 'auto', background: 'transparent', border: 'none', padding: 0 }} value={endDate} onChange={e => { setEndDate(e.target.value); setVisibleCount(50); }} />
         </div>
         
-        <select className="inp" style={{ width: 'auto', background: 'var(--surface-2)', border: 'none' }} value={filterDep} onChange={e => setFilterDep(e.target.value)}>
+        <select className="inp" style={{ width: 'auto', background: 'var(--surface-2)', border: 'none' }} value={filterDep} onChange={e => { setFilterDep(e.target.value); setVisibleCount(50); }}>
           <option value="all">Todos los depósitos</option>
           {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
         </select>
-        <select className="inp" style={{ width: 'auto', background: 'var(--surface-2)', border: 'none' }} value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+        <select className="inp" style={{ width: 'auto', background: 'var(--surface-2)', border: 'none' }} value={filterCat} onChange={e => { setFilterCat(e.target.value); setVisibleCount(50); }}>
           <option value="all">Todas las categorías</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -220,7 +221,7 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
               </tr>
             </thead>
             <tbody>
-              {filtered.map(e => (
+              {filtered.slice(0, visibleCount).map(e => (
                 <tr key={e.id}>
                   <td>
                     <div style={{ fontWeight: 600 }}>{e.description}</div>
@@ -243,6 +244,13 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
               ))}
             </tbody>
           </table>
+          {visibleCount < filtered.length && (
+            <div style={{ textAlign: 'center', margin: '24px 0' }}>
+              <button className="btn btn-outline" onClick={() => setVisibleCount(v => v + 50)}>
+                Cargar más resultados ({filtered.length - visibleCount} restantes)
+              </button>
+            </div>
+          )}
         </div>
       )}
 

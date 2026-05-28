@@ -20,6 +20,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [bulkDeposit, setBulkDeposit] = useState<string>('');
   const [bulkTransferring, setBulkTransferring] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(50);
   const router = useRouter();
   const supabase = createClient();
 
@@ -162,7 +163,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           <button
             key={opt.v}
             className={`btn-pill ${filter.status === opt.v ? 'active' : ''}`}
-            onClick={() => setFilter({ ...filter, status: opt.v })}
+            onClick={() => { setFilter({ ...filter, status: opt.v }); setVisibleCount(50); }}
           >{opt.l}</button>
         ))}
         <div style={{ width: 1, height: 20, background: 'var(--border-md)', margin: '0 4px' }} />
@@ -174,7 +175,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           <button
             key={opt.v}
             className={`btn-pill ${filter.condition === opt.v ? 'active' : ''}`}
-            onClick={() => setFilter({ ...filter, condition: opt.v })}
+            onClick={() => { setFilter({ ...filter, condition: opt.v }); setVisibleCount(50); }}
           >{opt.l}</button>
         ))}
       </div>
@@ -186,9 +187,10 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           <div style={{ fontSize: 13 }}>Probá ajustando los filtros</div>
         </div>
       ) : (
-        <div className="stock-grid">
-          {rows.map(s => {
-            const dep = depositOf(s);
+        <>
+          <div className="stock-grid">
+            {rows.slice(0, visibleCount).map(s => {
+              const dep = depositOf(s);
             const isSelected = selectedItems.includes(s.id);
             return (
               <div 
@@ -257,6 +259,14 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
             );
           })}
         </div>
+        {visibleCount < rows.length && (
+          <div style={{ textAlign: 'center', marginTop: 32 }}>
+            <button className="btn btn-outline" onClick={() => setVisibleCount(v => v + 50)}>
+              Cargar más resultados ({rows.length - visibleCount} restantes)
+            </button>
+          </div>
+        )}
+        </>
       )}
 
       {selectedItems.length > 0 && (

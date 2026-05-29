@@ -1,7 +1,8 @@
 "use client"
 import { useState } from 'react';
+import { PAY } from '@/constants/data';
 import {
-  AlertTriangle, Wallet,
+  Lock, AlertTriangle, CheckCircle2, Wallet,
   ArrowRightLeft, X, Building2, ArrowRight, Plus
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -27,10 +28,13 @@ const PAY_LABELS: PayMethod[] = [
 ];
 
 export function CashiersClient({ sales, user, realSellers, deposits, transfers }: Props) {
+  const [showClose, setShowClose] = useState(false);
   const [showExchange, setShowExchange] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [exLoading, setExLoading] = useState(false);
   const [trLoading, setTrLoading] = useState(false);
+  const [declared, setDeclared] = useState<Record<string, string>>({ ars_cash: '', usd_cash: '' });
+  const [closureResult, setClosureResult] = useState<any>(null);
 
   const [exForm, setExForm] = useState({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '' });
   const [trForm, setTrForm] = useState({
@@ -120,6 +124,26 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
 
   // ─── handlers ────────────────────────────────────────────────────────────
 
+  const handleClose = () => {
+    const mySales = sales.filter(v => (v.seller_id || v.sellerId) === user.id);
+    const expected: Record<string, number> = {};
+    PAY.forEach(p => { expected[p.id] = 0; });
+    mySales.forEach(v => v.payments.forEach((p: any) => { expected[p.id] += (p.original_amount ?? p.amount); }));
+    const result = {
+      date: new Date().toLocaleString('es-AR'),
+      expected,
+      declared: {
+        ars_cash: parseFloat(declared.ars_cash) || 0,
+        usd_cash: parseFloat(declared.usd_cash) || 0
+      },
+      diff: {
+        ars: (parseFloat(declared.ars_cash) || 0) - expected.ars_cash,
+        usd: (parseFloat(declared.usd_cash) || 0) - expected.usd_cash,
+      }
+    };
+    setClosureResult(result);
+  };
+
   const handleExchange = async () => {
     const { fromCur, fromAmt, toCur, toAmt } = exForm;
     if (!fromAmt || !toAmt) { toast.error('Ingresá ambos montos'); return; }
@@ -193,16 +217,21 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
           <div className="st">{isOwner ? 'Control de Cajas' : 'Mi Caja'}</div>
           <div className="ss2">Saldo por depósito · Ventas y transferencias</div>
         </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            {isOwner && (
-              <button className="btn btn-outline" onClick={() => setShowTransfer(true)}>
-                <ArrowRightLeft size={18} /> Transferir entre cajas
-              </button>
-            )}
-            <button className="btn btn-outline" onClick={() => setShowExchange(true)}>
-              <ArrowRightLeft size={18} /> Cambio de Divisa
+        <div style={{ display: 'flex', gap: 12 }}>
+          {isOwner && (
+            <button className="btn btn-outline" onClick={() => setShowTransfer(true)}>
+              <ArrowRightLeft size={18} /> Transferir entre cajas
             </button>
-          </div>
+          )}
+          <button className="btn btn-outline" onClick={() => setShowExchange(true)}>
+            <ArrowRightLeft size={18} /> Cambio de Divisa
+          </button>
+          {user.role === 'seller' && (
+            <button className="btn btn-dark" onClick={() => setShowClose(true)}>
+              <Lock size={18} /> Cerrar Turno
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Owner: resumen general */}
@@ -385,6 +414,84 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
           </div>
         )}
       </div>
+
+      {/* ─── Modal: Cierre de turno ─────────────────────────────── */}
+      {showClose && !closureResult && (
+        <div className="mo">
+          <div className="mb" style={{ maxWidth: 450 }}>
+            <div className="mh">
+              <div className="mt">Cierre de Caja "Ciego"</div>
+              <button className="btn-ghost" onClick={() => setShowClose(false)}>×</button>
+            </div>
+            <div className="mbd">
+              <div className="badge b-amber" style={{ marginBottom: 20, display: 'flex', gap: 10, padding: 12 }}>
+                <AlertTriangle size={16} /> Declare el monto físico exacto en caja. El sistema verificará diferencias.
+              </div>
+              <div className="field">
+                <label className="lbl">Total Efectivo Pesos (ARS)</label>
+                <input className="inp" type="number" placeholder="Ingrese monto..." value={declared.ars_cash} onChange={e => setDeclared({ ...declared, ars_cash: e.target.value })} />
+              </div>
+              <div className="field">
+                <label className="lbl">Total Efectivo Dólares (U$)</label>
+                <input className="inp" type="number" placeholder="Ingrese monto..." value={declared.usd_cash} onChange={e => setDeclared({ ...declared, usd_cash: e.target.value })} />
+              </div>
+              <div className="divider" />
+              <button className="btn btn-dark btn-lg" style={{ width: '100%' }} onClick={handleClose}>
+                Confirmar y Ver Diferencias
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {closureResult && (
+        <div className="mo">
+          <div className="mb" style={{ maxWidth: 500 }}>
+            <div className="mh">
+              <div className="mt">Resultado del Cierre</div>
+              <button className="btn-ghost" onClick={() => { setClosureResult(null); setShowClose(false); }}>×</button>
+            </div>
+            <div className="mbd">
+              <div className="sg" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div className="sc" style={{ background: closureResult.diff.ars === 0 ? 'var(--green-bg)' : 'rgba(239, 68, 68, 0.1)' }}>
+                  <div className="sl">Diferencia ARS</div>
+                  <div className="sv" style={{ color: closureResult.diff.ars >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 20 }}>
+                    {closureResult.diff.ars >= 0 ? '+' : ''} ARS {closureResult.diff.ars.toLocaleString('es-AR')}
+                  </div>
+                </div>
+                <div className="sc" style={{ background: closureResult.diff.usd === 0 ? 'var(--green-bg)' : 'rgba(239, 68, 68, 0.1)' }}>
+                  <div className="sl">Diferencia USD</div>
+                  <div className="sv" style={{ color: closureResult.diff.usd >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 20 }}>
+                    {closureResult.diff.usd >= 0 ? '+' : ''} U$ {closureResult.diff.usd.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+              <div className="card" style={{ marginTop: 20 }}>
+                <div className="sl">Desglose Detallado</div>
+                <div className="receipt-row"><span>Esperado Pesos:</span><span>ARS {closureResult.expected.ars_cash.toLocaleString('es-AR')}</span></div>
+                <div className="receipt-row"><span>Declarado Pesos:</span><span>ARS {closureResult.declared.ars_cash.toLocaleString('es-AR')}</span></div>
+                <div className="divider" style={{ margin: '8px 0' }} />
+                <div className="receipt-row"><span>Esperado Dólares:</span><span>U$ {closureResult.expected.usd_cash.toLocaleString()}</span></div>
+                <div className="receipt-row"><span>Declarado Dólares:</span><span>U$ {closureResult.declared.usd_cash.toLocaleString()}</span></div>
+              </div>
+              <div style={{ marginTop: 24, textAlign: 'center' }}>
+                {Math.abs(closureResult.diff.ars) < 1 && Math.abs(closureResult.diff.usd) < 1 ? (
+                  <div style={{ color: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontWeight: 600 }}>
+                    <CheckCircle2 size={24} /> Caja Perfecta
+                  </div>
+                ) : (
+                  <div style={{ color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontWeight: 600 }}>
+                    <AlertTriangle size={24} /> Se detectaron diferencias
+                  </div>
+                )}
+                <button className="btn btn-dark" style={{ width: '100%', marginTop: 20 }} onClick={() => { setClosureResult(null); setShowClose(false); }}>
+                  Finalizar Turno
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── Modal: Cambio de Divisa ────────────────────────────── */}
       {showExchange && (

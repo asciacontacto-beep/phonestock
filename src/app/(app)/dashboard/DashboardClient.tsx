@@ -201,25 +201,6 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
 
       <div className="row">
         <div className="col card">
-          <div style={{ marginBottom: 16 }}>
-            <div className="sl">Arqueo de Caja</div>
-          </div>
-          {[
-            { id: 'ars_cash', l: 'Efectivo ARS', p: '$' },
-            { id: 'usd_cash', l: 'Dólar Billete', p: 'U$' },
-            { id: 'ars_transf', l: 'Transf. ARS', p: '$' },
-            { id: 'usd_transf', l: 'Transf. USD', p: 'U$' },
-            { id: 'usdt', l: 'USDT', p: 'U$' }
-          ].map(it => (
-            <div className="receipt-row" key={it.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
-              <span className="col" style={{ color: 'var(--text-2)' }}>{it.l}</span>
-              <span style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{it.p} {(totals[it.id] || 0).toLocaleString()}</span>
-            </div>
-          ))}
-
-        </div>
-
-        <div className="col card">
           <div className="sl" style={{ marginBottom: 16 }}>Ventas por Vendedor</div>
           {sellerList.length === 0 ? (
             <div style={{ color: 'var(--text-3)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>

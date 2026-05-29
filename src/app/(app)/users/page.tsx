@@ -30,5 +30,5 @@ export default async function UsersPage() {
     supabase.from('deposits').select('*').order('name'),
   ])
 
-  return <UsersClient initialUsers={usersData || []} deposits={depositsData || []} />
+  return <UsersClient initialUsers={usersData || []} deposits={depositsData || []} currentOrgId={orgId} />
 }

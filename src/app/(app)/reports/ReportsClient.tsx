@@ -22,9 +22,10 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
     return d;
   }, [period]);
 
-  const filteredSales = useMemo(() =>
-    cutoff ? sales.filter(s => new Date(s.created_at) >= cutoff) : sales
-  , [sales, cutoff]);
+  const filteredSales = useMemo(() => {
+    const valid = sales.filter(s => s.brand !== 'MOVIMIENTO');
+    return cutoff ? valid.filter(s => new Date(s.created_at) >= cutoff) : valid;
+  }, [sales, cutoff]);
 
   const filteredExpenses = useMemo(() =>
     cutoff ? expenses.filter(e => new Date(e.created_at) >= cutoff) : expenses

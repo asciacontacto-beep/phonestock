@@ -38,7 +38,7 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
       { id: 'settings', l: 'Configuración', i: <Settings size={18} /> },
       { g: 'Operaciones' },
       { id: 'sales', l: 'Ventas / Facturas', i: <ShoppingCart size={18} /> },
-      { id: 'cashiers', l: 'Cajas de Vendedores', i: <Wallet size={18} /> }
+      { id: 'cashiers', l: 'Cajas', i: <Wallet size={18} /> }
     ] :
     [
       { g: 'Mi Terminal' },

@@ -45,8 +45,7 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
       { id: 'dashboard', l: 'Resumen', i: <LayoutGrid size={18} /> },
       { id: 'sell', l: 'Nueva Operación', i: <ShoppingCart size={18} /> },
       { id: 'stock', l: 'Ver Stock', i: <Box size={18} /> },
-      { id: 'scan', l: 'Ingresar Equipo', i: <ScanLine size={18} /> },
-      { id: 'cashier_me', l: 'Mi Caja', i: <Wallet size={18} /> }
+      { id: 'scan', l: 'Ingresar Equipo', i: <ScanLine size={18} /> }
     ];
 
   return (

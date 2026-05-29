@@ -25,6 +25,13 @@ export function UsersClient({ initialUsers }: { initialUsers: any[] }) {
       setLoading(true);
       const initials = form.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
       
+      const { data: authData } = await supabase.auth.getUser();
+      let orgId = null;
+      if (authData?.user) {
+        const { data: currentProfile } = await supabase.from('profiles').select('org_id').eq('id', authData.user.id).single();
+        orgId = currentProfile?.org_id;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -33,7 +40,8 @@ export function UsersClient({ initialUsers }: { initialUsers: any[] }) {
             name: form.name,
             role: form.role,
             initials: initials,
-            color: form.color
+            color: form.color,
+            org_id: orgId
           }
         }
       });
@@ -48,6 +56,7 @@ export function UsersClient({ initialUsers }: { initialUsers: any[] }) {
           role: form.role,
           initials,
           color: form.color,
+          org_id: orgId,
         });
 
         if (profileError) {

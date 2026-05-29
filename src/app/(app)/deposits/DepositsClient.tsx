@@ -99,8 +99,8 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginBottom: 32 }}>
         {deposits.map((d: any) => {
           const items = depStock(d.id);
-          const valUsd = items.filter((s: any) => s.currency === 'USD').reduce((a: any, b: any) => a + (b.price || 0), 0);
-          const valArs = items.filter((s: any) => s.currency === 'ARS').reduce((a: any, b: any) => a + (b.price || 0), 0);
+          const valUsd = items.filter((s: any) => s.currency === 'USD' && s.cost_price).reduce((a: any, b: any) => a + (b.cost_price || 0), 0);
+          const valArs = items.filter((s: any) => s.currency === 'ARS' && s.cost_price).reduce((a: any, b: any) => a + (b.cost_price || 0), 0);
           return (
             <div key={d.id} className="card" style={{ padding: 0, overflow: 'hidden', border: selectedDep === d.id ? `2px solid ${d.color}` : '1px solid var(--border)' }}>
               <div style={{ height: 4, background: d.color }} />

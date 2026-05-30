@@ -381,6 +381,35 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
                   )}
                 </div>
               )}
+
+              {/* Historial de ventas */}
+              {depSales.filter((s: any) => s.brand !== 'MOVIMIENTO').length > 0 && (
+                <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Historial de Ventas
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {depSales.filter((s: any) => s.brand !== 'MOVIMIENTO').map((sale: any) => (
+                      <div key={sale.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 10 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{sale.brand} {sale.model}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                            Vendedor: {sale.seller_name || sale.sellerId} • IMEI/SN: {sale.imei || '-'}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontFamily: 'JetBrains Mono', fontSize: 13 }}>
+                          <div style={{ color: 'var(--text)' }}>
+                            {sale.currency === 'USD' ? 'U$' : 'ARS'} {sale.price.toLocaleString('es-AR')}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                            {sale.payments?.map((p: any) => PAY_LABELS.find(l => l.id === p.id)?.l || p.id).join(', ')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

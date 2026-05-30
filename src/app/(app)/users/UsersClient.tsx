@@ -4,7 +4,7 @@ import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Building2, Pencil,
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
-export function UsersClient({ initialUsers, deposits }: { initialUsers: any[]; deposits: any[] }) {
+export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialUsers: any[]; deposits: any[]; currentOrgId?: string | null }) {
   const [list, setList] = useState(initialUsers);
   const [showAdd, setShowAdd] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -13,7 +13,11 @@ export function UsersClient({ initialUsers, deposits }: { initialUsers: any[]; d
   const supabase = createClient();
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from('profiles').select('*').order('name');
+    let query = supabase.from('profiles').select('*').order('name');
+    if (currentOrgId) {
+      query = query.eq('org_id', currentOrgId);
+    }
+    const { data, error } = await query;
     if (!error && data) setList(data);
   };
 
@@ -113,16 +117,8 @@ export function UsersClient({ initialUsers, deposits }: { initialUsers: any[]; d
       const { error } = await supabase.from('profiles').delete().eq('id', id);
       if (error) throw error;
 
-      const { data: updated } = await supabase.from('profiles').select('*').order('name');
-      const newList = updated ?? [];
-      setList(newList);
-
-      const stillExists = newList.some((u: any) => u.id === id);
-      if (stillExists) {
-        toast.error('El usuario no se borró por permisos RLS.');
-      } else {
-        toast.success('Usuario eliminado');
-      }
+      await fetchUsers();
+      toast.success('Usuario eliminado (o recargado según permisos)');
     } catch (e: any) {
       toast.error(e.message);
     }

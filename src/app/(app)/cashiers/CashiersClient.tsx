@@ -223,9 +223,11 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
               <ArrowRightLeft size={18} /> Transferir entre cajas
             </button>
           )}
-          <button className="btn btn-outline" onClick={() => setShowExchange(true)}>
-            <ArrowRightLeft size={18} /> Cambio de Divisa
-          </button>
+          {isOwner && (
+            <button className="btn btn-outline" onClick={() => setShowExchange(true)}>
+              <ArrowRightLeft size={18} /> Cambio de Divisa
+            </button>
+          )}
           {user.role === 'seller' && (
             <button className="btn btn-dark" onClick={() => setShowClose(true)}>
               <Lock size={18} /> Cerrar Turno

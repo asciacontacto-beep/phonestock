@@ -318,7 +318,7 @@ input, select, textarea { outline: none; }
 /* ── Table ──────────────────────────────── */
 .tw {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-sm);
+  border-radius: var(--r-lg); overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: var(--shadow-sm);
 }
 .table { width: 100%; border-collapse: collapse; min-width: 540px; }
 .table th {
@@ -442,10 +442,17 @@ input, select, textarea { outline: none; }
 
   /* ── App shell ─── */
   .main {
-    padding-bottom: calc(66px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     overflow-x: hidden;
   }
-  .topbar { display: none !important; }
+  
+  .topbar {
+    padding: 12px 16px; /* Ajuste para mobile */
+  }
+  
+  .mobile-menu-btn {
+    display: inline-flex !important;
+  }
 
   /* ── Page ─── */
   .page {

@@ -130,9 +130,11 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
           <div className="sl">Ventas</div>
           <div className="sv">{validSales.length}</div>
         </div>
-        <div className="sc">
+        <div className="sc" style={{ minWidth: 0 }}>
           <div className="sl">Vendedor top</div>
-          <div className="sv" style={{ fontSize: 20 }}>{topSeller ? topSeller.name.split(' ')[0] : '—'}</div>
+          <div className="sv" title={topSeller ? topSeller.name : ''} style={{ fontSize: 20, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%' }}>
+            {topSeller ? topSeller.name : '—'}
+          </div>
           {topSeller && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>{topSeller.count} ventas</div>}
         </div>
       </div>

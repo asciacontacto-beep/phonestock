@@ -608,6 +608,26 @@ input, select, textarea { outline: none; }
   /* drag handle is now a real <div> in JSX — no ::before needed */
   .mh { border-radius: 0; padding: 14px 20px; }
   .mbd { padding: 16px 20px; }
+
+  /* ── Tables to Cards ─── */
+  .tw {
+    background: transparent; border: none; box-shadow: none; border-radius: 0;
+  }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table thead { display: none; }
+  .table tr {
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 10px 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow-xs);
+  }
+  .table td {
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border-md);
+  }
+  .table td:last-child { border-bottom: none; }
 }
 
 @media (max-width: 380px) {

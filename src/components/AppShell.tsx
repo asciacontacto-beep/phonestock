@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { BottomNav } from './BottomNav'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -64,6 +65,7 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
           {children}
         </div>
       </div>
+      <BottomNav page={page} user={mergedUser} onMenu={() => setSbOpen(true)} isSuperAdmin={isSuperAdmin} />
       {sbOpen && (
         <div className="sidebar-overlay" onClick={() => setSbOpen(false)} style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999, backdropFilter: 'blur(4px)'

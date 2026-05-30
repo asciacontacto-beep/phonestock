@@ -15,6 +15,7 @@ interface Props {
   realSellers: any[];
   deposits: any[];
   transfers: any[];
+  movements: any[];
 }
 
 type PayMethod = { id: string; l: string; p: string };
@@ -27,12 +28,14 @@ const PAY_LABELS: PayMethod[] = [
   { id: 'usdt',       l: 'Cripto USDT',        p: 'U$' },
 ];
 
-export function CashiersClient({ sales, user, realSellers, deposits, transfers }: Props) {
+export function CashiersClient({ sales, user, realSellers, deposits, transfers, movements }: Props) {
   const [showClose, setShowClose] = useState(false);
   const [showExchange, setShowExchange] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [exLoading, setExLoading] = useState(false);
   const [trLoading, setTrLoading] = useState(false);
+  const [showMovement, setShowMovement] = useState(false);
+  const [mvLoading, setMvLoading] = useState(false);
   const [declared, setDeclared] = useState<Record<string, string>>({ ars_cash: '', usd_cash: '' });
   const [closureResult, setClosureResult] = useState<any>(null);
 
@@ -45,6 +48,14 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
     payment_method:  'ars_cash',
     notes:           '',
   });
+  const [mvForm, setMvForm] = useState({
+    type: 'IN',
+    deposit_id: deposits[0]?.id?.toString() || '',
+    amount: '',
+    currency: 'ARS',
+    payment_method: 'ars_cash',
+    notes: ''
+  });
 
   const supabase = createClient();
   const router   = useRouter();
@@ -53,8 +64,8 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
 
   // ─── helpers ─────────────────────────────────────────────────────────────
 
-  /** Compute totals per payment method for a given array of sales + transfers */
-  const computeTotals = (saleList: any[], inTransfers: any[], outTransfers: any[]) => {
+  /** Compute totals per payment method for a given array of sales + transfers + movements */
+  const computeTotals = (saleList: any[], inTransfers: any[], outTransfers: any[], depMovements: any[]) => {
     const t: Record<string, number> = {};
     PAY_LABELS.forEach(p => { t[p.id] = 0; });
     saleList.forEach(v => {
@@ -71,6 +82,14 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
     // Subtract outgoing transfers
     outTransfers.forEach(tr => {
       t[tr.payment_method] = (t[tr.payment_method] || 0) - Number(tr.amount);
+    });
+    // Add manual cash movements
+    depMovements.forEach(m => {
+      if (m.movement_type === 'IN') {
+        t[m.payment_method] = (t[m.payment_method] || 0) + Number(m.amount);
+      } else if (m.movement_type === 'OUT') {
+        t[m.payment_method] = (t[m.payment_method] || 0) - Number(m.amount);
+      }
     });
     return t;
   };
@@ -107,10 +126,11 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
       // Transfers in/out of this deposit (compare as strings for UUID safety)
       const inTransfers  = transfers.filter(tr => String(tr.to_deposit_id)   === depId);
       const outTransfers = transfers.filter(tr => String(tr.from_deposit_id) === depId);
+      const depMovements = movements.filter(m => String(m.deposit_id) === depId);
 
-      const totals = computeTotals(depSales, inTransfers, outTransfers);
+      const totals = computeTotals(depSales, inTransfers, outTransfers, depMovements);
 
-      return { dep, depSellers, depSales, totals, inTransfers, outTransfers };
+      return { dep, depSellers, depSales, totals, inTransfers, outTransfers, depMovements };
     });
   };
 
@@ -207,6 +227,34 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
     }
   };
 
+  const handleMovement = async () => {
+    const { type, deposit_id, amount, currency, payment_method, notes } = mvForm;
+    if (!amount || parseFloat(amount) <= 0) { toast.error('Ingresá un monto válido'); return; }
+    if (!deposit_id) { toast.error('Seleccioná un depósito'); return; }
+    setMvLoading(true);
+    try {
+      const { error } = await supabase.from('cash_movements').insert([{
+        deposit_id,
+        movement_type:   type,
+        amount:          parseFloat(amount),
+        currency,
+        payment_method,
+        notes:           notes.trim() || null,
+        created_by:      user.id,
+        created_by_name: user.name,
+      }]);
+      if (error) throw error;
+      toast.success(type === 'IN' ? 'Ingreso registrado' : 'Egreso registrado');
+      setShowMovement(false);
+      setMvForm({ type: 'IN', deposit_id: deposits[0]?.id?.toString() || '', amount: '', currency: 'ARS', payment_method: 'ars_cash', notes: '' });
+      router.refresh();
+    } catch (e: any) {
+      toast.error('Error: ' + (e.message || JSON.stringify(e)));
+    } finally {
+      setMvLoading(false);
+    }
+  };
+
   // ─── render ───────────────────────────────────────────────────────────────
 
   return (
@@ -226,6 +274,11 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
           {isOwner && (
             <button className="btn btn-outline" onClick={() => setShowExchange(true)}>
               <ArrowRightLeft size={18} /> Cambio de Divisa
+            </button>
+          )}
+          {isOwner && (
+            <button className="btn btn-dark" onClick={() => setShowMovement(true)}>
+              <Plus size={18} /> Ingreso / Egreso
             </button>
           )}
           {user.role === 'seller' && (
@@ -373,6 +426,30 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
                             </div>
                             <div style={{ fontFamily: 'JetBrains Mono', fontSize: 13, fontWeight: 700, color: tr.dir === 'in' ? 'var(--green)' : 'var(--red)' }}>
                               {tr.dir === 'in' ? '+' : '-'}{payLabel?.p} {Number(tr.amount).toLocaleString('es-AR')}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Manual Movements */}
+                  {dep.depMovements?.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Ingresos y Egresos (Manual)
+                      </div>
+                      {dep.depMovements.map((m: any) => {
+                        const payLabel = PAY_LABELS.find(p => p.id === m.payment_method);
+                        return (
+                          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: 'var(--surface-2)', borderRadius: 8, marginBottom: 6 }}>
+                            <ArrowRight size={14} style={{ color: m.movement_type === 'IN' ? 'var(--green)' : 'var(--red)', transform: m.movement_type === 'OUT' ? 'rotate(180deg)' : 'none', flexShrink: 0 }} />
+                            <div style={{ flex: 1, fontSize: 12 }}>
+                              <span style={{ color: 'var(--text-3)' }}>{m.movement_type === 'IN' ? 'Ingreso a caja' : 'Retiro de caja'}</span>
+                              {m.notes && <span style={{ marginLeft: 6, color: 'var(--text-3)' }}>· {m.notes}</span>}
+                            </div>
+                            <div style={{ fontFamily: 'JetBrains Mono', fontSize: 13, fontWeight: 700, color: m.movement_type === 'IN' ? 'var(--green)' : 'var(--red)' }}>
+                              {m.movement_type === 'IN' ? '+' : '-'}{payLabel?.p} {Number(m.amount).toLocaleString('es-AR')}
                             </div>
                           </div>
                         );
@@ -602,6 +679,70 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers }
                 <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setShowTransfer(false)}>Cancelar</button>
                 <button className="btn btn-dark" style={{ flex: 1 }} onClick={handleTransfer} disabled={trLoading || trForm.from_deposit_id === trForm.to_deposit_id}>
                   {trLoading ? 'Registrando...' : <><Plus size={15} /> Registrar Transferencia</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal: Movimiento Manual (Ingreso / Egreso) ────────── */}
+      {showMovement && (
+        <div className="mo" style={{ zIndex: 1100 }} onClick={() => setShowMovement(false)}>
+          <div className="mb" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
+            <div className="mh">
+              <div>
+                <div className="mh-title">Ingreso / Egreso Manual</div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>Registrar entrada o salida de efectivo (Ej: Inicio de caja)</div>
+              </div>
+              <button className="btn-icon" onClick={() => setShowMovement(false)}><X size={18} /></button>
+            </div>
+            <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="field" style={{ margin: 0 }}>
+                  <label className="lbl">Tipo de Movimiento</label>
+                  <select className="inp" value={mvForm.type} onChange={e => setMvForm(p => ({ ...p, type: e.target.value }))}>
+                    <option value="IN">Ingreso (Entra a caja)</option>
+                    <option value="OUT">Egreso (Sale de caja)</option>
+                  </select>
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label className="lbl">Caja / Depósito</label>
+                  <select className="inp" value={mvForm.deposit_id} onChange={e => setMvForm(p => ({ ...p, deposit_id: e.target.value }))}>
+                    {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="field" style={{ margin: 0 }}>
+                  <label className="lbl">Monto</label>
+                  <input className="inp" type="number" placeholder="0.00" value={mvForm.amount} onChange={e => setMvForm(p => ({ ...p, amount: e.target.value }))} />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label className="lbl">Método / Moneda</label>
+                  <select className="inp" value={mvForm.payment_method} onChange={e => setMvForm(p => ({
+                    ...p, payment_method: e.target.value,
+                    currency: ['ars_cash','ars_transf'].includes(e.target.value) ? 'ARS' : 'USD'
+                  }))}>
+                    <option value="ars_cash">Efectivo ARS</option>
+                    <option value="usd_cash">Dólar Billete</option>
+                    <option value="ars_transf">Transferencia ARS</option>
+                    <option value="usd_transf">Transferencia USD</option>
+                    <option value="usdt">USDT</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="field" style={{ margin: 0 }}>
+                <label className="lbl">Notas / Motivo (opcional)</label>
+                <input className="inp" placeholder="Ej: Flujo de inicio de caja..." value={mvForm.notes} onChange={e => setMvForm(p => ({ ...p, notes: e.target.value }))} />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setShowMovement(false)}>Cancelar</button>
+                <button className="btn btn-dark" style={{ flex: 1 }} onClick={handleMovement} disabled={mvLoading}>
+                  {mvLoading ? 'Registrando...' : <><Plus size={15} /> Registrar {mvForm.type === 'IN' ? 'Ingreso' : 'Egreso'}</>}
                 </button>
               </div>
             </div>

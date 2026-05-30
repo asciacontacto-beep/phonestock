@@ -12,11 +12,13 @@ export default async function CashiersPage() {
     { data: realSellersData },
     { data: depositsData },
     { data: transfersData },
+    { data: movementsData },
   ] = await Promise.all([
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
     supabase.from('profiles').select('*').eq('role', 'seller'),
     supabase.from('deposits').select('*').order('name'),
     supabase.from('cash_transfers').select('*').order('created_at', { ascending: false }),
+    supabase.from('cash_movements').select('*').order('created_at', { ascending: false }),
   ])
 
   const isSuperAdmin = user?.email === 'asciacontacto@gmail.com'
@@ -38,6 +40,7 @@ export default async function CashiersPage() {
       realSellers={realSellersData || []}
       deposits={depositsData || []}
       transfers={transfersData || []}
+      movements={movementsData || []}
     />
   )
 }

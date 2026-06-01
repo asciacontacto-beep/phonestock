@@ -141,6 +141,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
       const saleData = {
         seller_id: user.id,
         seller_name: user.name,
+        deposit_id: unit.deposit,
         brand: unit.brand,
         model: unit.model,
         storage: unit.storage,

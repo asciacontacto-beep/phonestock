@@ -118,9 +118,10 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
       );
       const depSellerIds = new Set(depSellers.map((s: any) => s.id));
 
-      // Sales that belong to this deposit (via seller assignment)
+      // Sales that belong to this deposit: explicit deposit_id or via seller assignment
       const depSales = sales.filter(v =>
-        depSellerIds.has(v.seller_id || v.sellerId)
+        (v.deposit_id && String(v.deposit_id) === depId) ||
+        (!v.deposit_id && depSellerIds.has(v.seller_id || v.sellerId))
       );
 
       // Transfers in/out of this deposit (compare as strings for UUID safety)
@@ -197,6 +198,19 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
     const { from_deposit_id, to_deposit_id, amount, currency, payment_method, notes } = trForm;
     if (!amount || parseFloat(amount) <= 0) { toast.error('Ingresá un monto válido'); return; }
     if (from_deposit_id === to_deposit_id) { toast.error('El origen y destino deben ser distintos'); return; }
+
+    const transferAmount = parseFloat(amount);
+    
+    // Validate if enough balance
+    const fromDepData = depositData.find(d => String(d.dep.id) === from_deposit_id);
+    if (fromDepData) {
+      const availableBalance = fromDepData.totals[payment_method] || 0;
+      if (transferAmount > availableBalance) {
+        toast.error(`Saldo insuficiente en la caja origen. Disponible: ${availableBalance.toLocaleString()}`);
+        return;
+      }
+    }
+
     setTrLoading(true);
     try {
       const { error } = await supabase.from('cash_transfers').insert([{

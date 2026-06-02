@@ -289,9 +289,9 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
         </div>
       )}
 
-      {step === 4 && (
+      {step === 3 && (
         <div className="card" style={{ maxWidth: 600, margin: '0 auto' }}>
-          <div className="lbl">2. Datos del Cliente</div>
+          <div className="lbl">3. Datos del Cliente</div>
           <div className="field" style={{ position: 'relative' }}>
             <label className="lbl">Buscar cliente anterior (DNI o nombre)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -403,7 +403,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
         </div>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <div className="card" style={{ maxWidth: 600, margin: '0 auto' }}>
           <div className="lbl">4. Pago y Cierre</div>
           <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 8, marginBottom: 20 }}>

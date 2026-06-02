@@ -53,8 +53,8 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
   return (
     <div className={`sidebar no-print ${isOpen ? 'open' : ''}`}>
       <div className="s-brand">
-        <div className="s-mark">
-          <Smartphone size={18} strokeWidth={2.5} color="#000" />
+        <div className="s-mark" style={{ background: 'transparent', padding: 0 }}>
+          <img src="/logo.png" alt="Stackr Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <div>
           <div className="s-name">Stackr</div>

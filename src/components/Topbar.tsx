@@ -13,7 +13,7 @@ export function Topbar({ page, user, onMenu }: TopbarProps) {
     stock: 'Inventario Global',
     scan: 'Carga por Escáner',
     sales: 'Ventas y Facturas',
-    sell: 'Nueva Operación de Venta',
+    sell: 'Vender',
     cashiers: 'Control de Cajas',
     cashier_me: 'Mi Terminal de Caja',
     users: 'Gestión de Usuarios',

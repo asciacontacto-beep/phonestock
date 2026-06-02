@@ -23,7 +23,10 @@ export const MODELS: Record<string, string[]> = {
     'iPhone 13 Pro Max', 'iPhone 13 Pro', 'iPhone 13', 'iPhone 13 mini',
     'iPhone 12 Pro Max', 'iPhone 12 Pro', 'iPhone 12', 'iPhone 12 mini',
     'iPhone 11 Pro Max', 'iPhone 11 Pro', 'iPhone 11',
-    'iPhone SE (3ra Gen)', 'iPhone SE (2da Gen)', 'iPhone XS Max', 'iPhone XS', 'iPhone XR', 'iPhone X'
+    'iPhone SE (3ra Gen)', 'iPhone SE (2da Gen)', 'iPhone XS Max', 'iPhone XS', 'iPhone XR', 'iPhone X',
+    'MacBook Air M1', 'MacBook Air M2', 'MacBook Air M3',
+    'MacBook Pro M1', 'MacBook Pro M2', 'MacBook Pro M3',
+    'AirPods 2', 'AirPods 3', 'AirPods 4', 'AirPods Pro', 'AirPods Pro 2', 'AirPods Max'
   ],
   Samsung: [
     'Galaxy S25 Ultra', 'Galaxy S25+', 'Galaxy S25',

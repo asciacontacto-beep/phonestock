@@ -346,7 +346,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
                <select className="inp" id="acc_select" style={{ flex: 1 }}>
                  <option value="">-- Seleccionar Accesorio --</option>
                  {accessoriesList.filter(a => a.deposit_id === unit.deposit).map(a => (
-                   <option key={a.id} value={a.id}>{a.category} {a.compatible_model} {a.color} (Stock: {a.stock} - U$ {a.sale_price})</option>
+                   <option key={a.id} value={a.id}>{a.category} {a.compatible_model} {a.color} (Stock: {a.stock} - {a.currency === 'ARS' ? '$' : 'U$'} {a.sale_price})</option>
                  ))}
                </select>
                <input type="number" id="acc_qty" className="inp" defaultValue={1} min={1} style={{ width: 80 }} />
@@ -367,7 +367,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
                     if (existing) {
                        return p.map(x => x === existing ? { ...x, qty: x.qty + qty } : x);
                     }
-                    return [...p, { id, name: `${acc.category} ${acc.compatible_model || ''} ${acc.color || ''}`.trim(), qty, price: type === 'regalo' ? 0 : acc.sale_price, is_gift: type === 'regalo', cost_price: acc.cost_price }];
+                    return [...p, { id, name: `${acc.category} ${acc.compatible_model || ''} ${acc.color || ''}`.trim(), qty, price: type === 'regalo' ? 0 : acc.sale_price, is_gift: type === 'regalo', cost_price: acc.cost_price, currency: acc.currency || 'USD' }];
                  });
                }}><Plus size={16}/> Sumar</button>
             </div>
@@ -379,7 +379,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, fontSize: 13, background: 'var(--surface)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)' }}>
                      <div>
                        <span style={{ fontWeight: 600 }}>{sa.qty}x</span> {sa.name} 
-                       {sa.is_gift ? <span className="badge b-green" style={{ marginLeft: 8 }}>Regalo</span> : <span className="badge b-neu" style={{ marginLeft: 8 }}>Venta (U$ {sa.price})</span>}
+                       {sa.is_gift ? <span className="badge b-green" style={{ marginLeft: 8 }}>Regalo</span> : <span className="badge b-neu" style={{ marginLeft: 8 }}>Venta ({sa.currency === 'ARS' ? '$' : 'U$'} {sa.price})</span>}
                      </div>
                      <button className="btn-icon" onClick={() => setSelectedAccessories(p => p.filter((_, j) => j !== i))}><X size={14} color="var(--red)"/></button>
                   </div>

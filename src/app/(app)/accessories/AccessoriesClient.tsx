@@ -11,7 +11,7 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
   const [q, setQ] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form, setForm] = useState({ id: null, category: 'Funda', compatible_model: '', color: '', stock: 1, cost_price: 0, sale_price: 0, deposit_id: deposits[0]?.id || '' });
+  const [form, setForm] = useState({ id: null, category: 'Funda', compatible_model: '', color: '', stock: 1, cost_price: 0, sale_price: 0, deposit_id: deposits[0]?.id || '', currency: 'USD' });
   const [loading, setLoading] = useState(false);
 
   const CATEGORIES = ['Funda', 'Vidrio Templado', 'Cargador', 'Auricular Genérico', 'Cable', 'Otro'];
@@ -29,7 +29,8 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
         stock: Number(form.stock),
         cost_price: Number(form.cost_price) || 0,
         sale_price: Number(form.sale_price) || 0,
-        deposit_id: form.deposit_id
+        deposit_id: form.deposit_id,
+        currency: form.currency
       };
 
       if (form.id) {
@@ -64,12 +65,12 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
   };
 
   const openNew = () => {
-    setForm({ id: null, category: 'Funda', compatible_model: '', color: '', stock: 1, cost_price: 0, sale_price: 0, deposit_id: deposits[0]?.id || '' });
+    setForm({ id: null, category: 'Funda', compatible_model: '', color: '', stock: 1, cost_price: 0, sale_price: 0, deposit_id: deposits[0]?.id || '', currency: 'USD' });
     setIsModalOpen(true);
   };
 
   const openEdit = (a: any) => {
-    setForm({ ...a, compatible_model: a.compatible_model || '', color: a.color || '' });
+    setForm({ ...a, compatible_model: a.compatible_model || '', color: a.color || '', currency: a.currency || 'USD' });
     setIsModalOpen(true);
   };
 
@@ -136,8 +137,8 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
                   <span className={`badge ${a.stock > 0 ? 'b-green' : 'b-red'}`}>{a.stock} un.</span>
                 </td>
                 <td>{deposits.find((d:any) => d.id === a.deposit_id)?.name}</td>
-                <td>U$ {a.cost_price?.toLocaleString() || 0}</td>
-                <td style={{ fontWeight: 600 }}>U$ {a.sale_price?.toLocaleString() || 0}</td>
+                <td>{a.currency === 'USD' ? 'U$' : '$'} {a.cost_price?.toLocaleString() || 0}</td>
+                <td style={{ fontWeight: 600 }}>{a.currency === 'USD' ? 'U$' : '$'} {a.sale_price?.toLocaleString() || 0}</td>
                 {(user.role === 'owner' || user.role === 'admin') && (
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -189,15 +190,22 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
               </div>
               <div className="row">
                 <div className="col field">
+                  <label className="lbl">Moneda</label>
+                  <select className="inp" value={form.currency} onChange={e => setForm({...form, currency: e.target.value})}>
+                    <option value="USD">Dólar (U$)</option>
+                    <option value="ARS">Pesos ($)</option>
+                  </select>
+                </div>
+                <div className="col field">
                   <label className="lbl">Stock Inicial</label>
                   <input className="inp" type="number" min={0} value={form.stock} onChange={e => setForm({...form, stock: Number(e.target.value)})} required />
                 </div>
                 <div className="col field">
-                  <label className="lbl">Costo Unit. (U$)</label>
+                  <label className="lbl">Costo Unitario</label>
                   <input className="inp" type="number" step="0.01" value={form.cost_price} onChange={e => setForm({...form, cost_price: Number(e.target.value)})} />
                 </div>
                 <div className="col field">
-                  <label className="lbl">Precio Venta (U$)</label>
+                  <label className="lbl">Precio Venta</label>
                   <input className="inp" type="number" step="0.01" value={form.sale_price} onChange={e => setForm({...form, sale_price: Number(e.target.value)})} />
                 </div>
               </div>

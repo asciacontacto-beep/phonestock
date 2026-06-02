@@ -242,7 +242,13 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                     <div><label className="lbl">Almacenamiento</label><select className="inp" value={v.storage} onChange={e => updV(i, 'storage', e.target.value)}>{storages.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-                    <div><label className="lbl">Color</label><select className="inp" value={v.color} onChange={e => updV(i, 'color', e.target.value)}>{colors.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                    <div>
+                      <label className="lbl">Color</label>
+                      <input className="inp" list={`colors-list-${i}`} placeholder="Ej: Azul" value={v.color} onChange={e => updV(i, 'color', e.target.value)} />
+                      <datalist id={`colors-list-${i}`}>
+                        {colors.map(c => <option key={c} value={c} />)}
+                      </datalist>
+                    </div>
                   </div>
                   <div style={{ marginBottom: 12 }}><label className="lbl">Condición</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}><button className={`btn btn-sm ${v.condition === 'new' ? 'btn-dark' : 'btn-outline'}`} onClick={() => updV(i, 'condition', 'new')}>Sellado</button><button className={`btn btn-sm ${v.condition === 'used' ? 'btn-dark' : 'btn-outline'}`} onClick={() => updV(i, 'condition', 'used')}>Usado</button></div></div>
                   {v.condition === 'used' && (

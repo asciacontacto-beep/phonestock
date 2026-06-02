@@ -564,7 +564,14 @@ function TradeInForm({ currency, deposits, onConfirm }: any) {
         </div>
       </div>
       <div className="row"><div className="col field"><label className="lbl">GB</label><select className="inp" value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))}>{STORAGES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-        <div className="col field"><label className="lbl">Color</label><select className="inp" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))}>{(COLORS[f.brand] || ['Negro']).map(c => <option key={c} value={c}>{c}</option>)}</select></div></div>
+        <div className="col field">
+          <label className="lbl">Color</label>
+          <input className="inp" list="tradein-colors" placeholder="Ej: Azul" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} />
+          <datalist id="tradein-colors">
+            {(COLORS[f.brand] || ['Negro']).map(c => <option key={c} value={c} />)}
+          </datalist>
+        </div>
+      </div>
       <div className="row">
         <div className="col field"><label className="lbl">IMEI / N° Serie</label><input className="inp" value={f.imei} onChange={e => setF(p => ({ ...p, imei: e.target.value }))} placeholder="15 dígitos o alfanumérico..." /></div>
         <div className="col field"><label className="lbl">% Batería</label><input className="inp" type="number" placeholder="Ej: 85" value={f.battery} onChange={e => setF(p => ({ ...p, battery: e.target.value }))} /></div>

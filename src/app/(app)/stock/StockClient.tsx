@@ -311,9 +311,10 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 </div>
                 <div>
                   <label className="lbl">Color</label>
-                  <select className="inp" value={editItem.color} onChange={e => setEditItem({...editItem, color: e.target.value})}>
-                    {(COLORS[editItem.model] || COLORS[editItem.brand] || ['Negro']).map((c: string) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <input className="inp" list="edit-colors" placeholder="Ej: Azul" value={editItem.color} onChange={e => setEditItem({...editItem, color: e.target.value})} />
+                  <datalist id="edit-colors">
+                    {(COLORS[editItem.model] || COLORS[editItem.brand] || ['Negro']).map((c: string) => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
               </div>
 

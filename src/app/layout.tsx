@@ -10,9 +10,9 @@ export const metadata: Metadata = {
   title: "Stackr — Gestión de Stock",
   description: "Plataforma premium de gestión de inventario",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png"
+    icon: "/logo.jpg",
+    shortcut: "/logo.jpg",
+    apple: "/logo.jpg"
   }
 };
 

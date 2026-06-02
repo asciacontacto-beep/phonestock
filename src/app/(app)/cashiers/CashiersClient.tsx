@@ -342,11 +342,11 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
           const hasAnything = PAY_LABELS.some(it => totals[it.id] !== 0);
 
           return (
-            <div key={dep.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div key={dep.id} className="card" style={{ padding: 0, overflow: 'hidden', borderTop: dep.color ? `4px solid ${dep.color}` : undefined }}>
               {/* Deposit header */}
-              <div style={{ padding: '18px 24px', background: 'var(--surface-3)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={20} style={{ color: 'var(--text-2)' }} />
+              <div style={{ padding: '18px 24px', background: dep.color ? `linear-gradient(to right, ${dep.color}15, var(--surface-3))` : 'var(--surface-3)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: dep.color ? `${dep.color}20` : 'var(--surface-2)', border: dep.color ? `1px solid ${dep.color}40` : '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={20} style={{ color: dep.color || 'var(--text-2)' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 17 }}>{dep.name}</div>

@@ -9,7 +9,7 @@ export default async function AccessoriesPage() {
   const profile = await getProfile(user.id);
   if (!profile) redirect('/login');
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: accessories } = await supabase
     .from('accessories')

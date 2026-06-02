@@ -44,7 +44,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
       supabase.from('deposits').select('*').order('name'),
       supabase.from('settings').select('*').maybeSingle(),
       supabase.from('accessories').select('*').gt('stock', 0)
-    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }]) => {
+    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }]: any) => {
       const u = session?.user
       if (u) {
         const isSuperAdmin = u.email === 'asciacontacto@gmail.com'

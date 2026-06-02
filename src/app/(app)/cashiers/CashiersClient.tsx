@@ -473,68 +473,12 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                 </div>
               )}
 
-              {/* Historial de ventas */}
-              {depSales.filter((s: any) => s.brand !== 'MOVIMIENTO').length > 0 && (
-                <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Historial de Ventas
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {depSales.filter((s: any) => s.brand !== 'MOVIMIENTO').map((sale: any) => (
-                      <div key={sale.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 10 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: 13 }}>{sale.brand} {sale.model}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                            Vendedor: {sale.seller_name || sale.sellerId} • IMEI/SN: {sale.imei || '-'}
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontFamily: 'JetBrains Mono', fontSize: 13 }}>
-                          <div style={{ color: 'var(--text)' }}>
-                            {sale.currency === 'USD' ? 'U$' : 'ARS'} {sale.price.toLocaleString('es-AR')}
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                            {sale.payments?.map((p: any) => PAY_LABELS.find(l => l.id === p.id)?.l || p.id).join(', ')}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
           );
         })}
 
-        {/* Unassigned sales (owner only) */}
-        {isOwner && unassignedSales.length > 0 && (
-          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--amber)', opacity: 0.85 }}>
-            <div style={{ padding: '18px 24px', background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid var(--amber)', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <AlertTriangle size={18} style={{ color: 'var(--amber)' }} />
-              <div>
-                <div style={{ fontWeight: 700 }}>Ventas sin depósito asignado</div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Estos vendedores no tienen depósito asignado aún</div>
-              </div>
-            </div>
-            <div style={{ padding: '16px 24px' }}>
-              {(() => {
-                const ut: Record<string, number> = {};
-                PAY_LABELS.forEach(p => { ut[p.id] = 0; });
-                unassignedSales.forEach(v => {
-                  if (v.payments && Array.isArray(v.payments)) {
-                    v.payments.forEach((p: any) => { ut[p.id] = (ut[p.id] || 0) + (p.original_amount ?? p.amount); });
-                  }
-                });
-                return (
-                  <div style={{ display: 'flex', gap: 16, fontFamily: 'JetBrains Mono', fontSize: 14 }}>
-                    {PAY_LABELS.map(it => ut[it.id] !== 0 ? (
-                      <span key={it.id}>{it.p} {ut[it.id].toLocaleString('es-AR')}</span>
-                    ) : null)}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        )}
+
       </div>
 
       {/* ─── Modal: Cierre de turno ─────────────────────────────── */}

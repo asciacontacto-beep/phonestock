@@ -14,7 +14,7 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
   const [q, setQ] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form, setForm] = useState({ id: null, category: 'Funda', compatible_model: '', color: '', stock: 1, cost_price: 0, sale_price: 0, deposit_id: deposits[0]?.id || '', currency: 'USD' });
+  const [form, setForm] = useState<any>({ id: null, category: 'Funda', compatible_model: '', color: '', stock: '1', cost_price: '', sale_price: '', deposit_id: deposits[0]?.id || '', currency: 'USD' });
   const [loading, setLoading] = useState(false);
 
   const CATEGORIES = ['Funda', 'Vidrio Templado', 'Cargador', 'Auricular Genérico', 'Cable', 'Otro'];
@@ -68,7 +68,7 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
   };
 
   const openNew = () => {
-    setForm({ id: null, category: 'Funda', compatible_model: '', color: '', stock: 1, cost_price: 0, sale_price: 0, deposit_id: deposits[0]?.id || '', currency: 'USD' });
+    setForm({ id: null, category: 'Funda', compatible_model: '', color: '', stock: '1', cost_price: '', sale_price: '', deposit_id: deposits[0]?.id || '', currency: 'USD' });
     setIsModalOpen(true);
   };
 
@@ -204,15 +204,15 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
                 </div>
                 <div className="col field">
                   <label className="lbl">Stock Inicial</label>
-                  <input className="inp" type="number" min={0} value={form.stock} onChange={e => setForm({...form, stock: Number(e.target.value)})} required />
+                  <input className="inp" type="number" min={0} value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} required />
                 </div>
                 <div className="col field">
                   <label className="lbl">Costo Unitario</label>
-                  <input className="inp" type="number" step="0.01" value={form.cost_price} onChange={e => setForm({...form, cost_price: Number(e.target.value)})} />
+                  <input className="inp" type="number" step="0.01" value={form.cost_price} onChange={e => setForm({...form, cost_price: e.target.value})} />
                 </div>
                 <div className="col field">
                   <label className="lbl">Precio Venta</label>
-                  <input className="inp" type="number" step="0.01" value={form.sale_price} onChange={e => setForm({...form, sale_price: Number(e.target.value)})} />
+                  <input className="inp" type="number" step="0.01" value={form.sale_price} onChange={e => setForm({...form, sale_price: e.target.value})} />
                 </div>
               </div>
               <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>

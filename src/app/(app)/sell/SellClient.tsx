@@ -520,6 +520,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
 }
 
 function TradeInForm({ currency, deposits, onConfirm }: any) {
+  const [appleCategory, setAppleCategory] = useState('iPhone');
   const [f, setF] = useState({
     brand: 'Apple', model: 'iPhone 12', storage: '128GB', color: 'Negro',
     imei: '', condition: 'used', battery: '', notes: '', salePrice: '', value: '', valueCurrency: currency,
@@ -528,8 +529,40 @@ function TradeInForm({ currency, deposits, onConfirm }: any) {
 
   return (
     <>
-      <div className="row"><div className="col field"><label className="lbl">Marca</label><select className="inp" value={f.brand} onChange={e => setF(p => ({ ...p, brand: e.target.value, model: MODELS[e.target.value]?.[0] || '' }))}>{BRANDS.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
-        <div className="col field"><label className="lbl">Modelo</label><select className="inp" value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))}>{(MODELS[f.brand] || []).map(m => <option key={m} value={m}>{m}</option>)}</select></div></div>
+      <div className="row">
+        <div className="col field">
+          <label className="lbl">Marca</label>
+          <select className="inp" value={f.brand} onChange={e => {
+            const b = e.target.value;
+            let m = MODELS[b]?.[0] || '';
+            if (b === 'Apple') m = MODELS['Apple']?.find(x => x.startsWith(appleCategory)) || MODELS['Apple']?.[0] || '';
+            setF(p => ({ ...p, brand: b, model: m }));
+          }}>
+            {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+        {f.brand === 'Apple' && (
+          <div className="col field">
+            <label className="lbl">Línea</label>
+            <select className="inp" value={appleCategory} onChange={e => {
+              const cat = e.target.value;
+              setAppleCategory(cat);
+              const m = MODELS['Apple']?.find(x => x.startsWith(cat)) || '';
+              setF(p => ({ ...p, model: m }));
+            }}>
+              <option value="iPhone">iPhone</option>
+              <option value="MacBook">MacBook</option>
+              <option value="AirPods">AirPods</option>
+            </select>
+          </div>
+        )}
+        <div className="col field">
+          <label className="lbl">Modelo</label>
+          <select className="inp" value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))}>
+            {(f.brand === 'Apple' ? (MODELS['Apple'] || []).filter(m => m.startsWith(appleCategory)) : (MODELS[f.brand] || [])).map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+      </div>
       <div className="row"><div className="col field"><label className="lbl">GB</label><select className="inp" value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))}>{STORAGES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
         <div className="col field"><label className="lbl">Color</label><select className="inp" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))}>{(COLORS[f.brand] || ['Negro']).map(c => <option key={c} value={c}>{c}</option>)}</select></div></div>
       <div className="row">

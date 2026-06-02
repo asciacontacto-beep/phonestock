@@ -26,6 +26,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const [step, setStep] = useState(1);
   const [upc, setUpc] = useState('');
   const [brand, setBrand] = useState('Apple');
+  const [appleCategory, setAppleCategory] = useState('iPhone');
   const [model, setModel] = useState('iPhone 15 Pro Max');
   const [price, setPrice] = useState('');
   const [costPrice, setCostPrice] = useState('');
@@ -84,7 +85,10 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
 
   const handleBrand = (b: string) => {
     setBrand(b);
-    const m = MODELS[b]?.[0] || '';
+    let m = MODELS[b]?.[0] || '';
+    if (b === 'Apple') {
+      m = MODELS['Apple']?.find(x => x.startsWith(appleCategory)) || MODELS['Apple']?.[0] || '';
+    }
     setModel(m);
     setVariants(vs => vs.map((v: any) => ({
       ...v,
@@ -92,6 +96,12 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
       storage: (MODEL_STORAGES[m] || STORAGES)[0],
       condition: isOldPro(m) ? 'used' : 'new'
     })));
+  };
+
+  const handleAppleCategory = (cat: string) => {
+    setAppleCategory(cat);
+    const m = MODELS['Apple']?.find(x => x.startsWith(cat)) || '';
+    handleModel(m);
   };
 
   const handleModel = (m: string) => {
@@ -195,7 +205,19 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                 <input className="inp" style={{ textAlign: 'center', letterSpacing: 2, fontFamily: 'monospace', background: 'transparent', border: 'none', boxShadow: 'none', padding: '8px 0' }} placeholder="Hacé clic y escaneá…" value={upc} onChange={e => handleUPCSearch(e.target.value)} />
               </div>
               <div><label className="lbl">Marca</label><select className="inp" value={brand} onChange={e => handleBrand(e.target.value)}>{BRANDS.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
-              <div><label className="lbl">Modelo</label><select className="inp" value={model} onChange={e => handleModel(e.target.value)}>{(MODELS[brand] || []).map(m => <option key={m} value={m}>{m}</option>)}</select></div>
+              {brand === 'Apple' && (
+                <div>
+                  <label className="lbl">Línea de Producto</label>
+                  <select className="inp" value={appleCategory} onChange={e => handleAppleCategory(e.target.value)}>
+                    <option value="iPhone">iPhone</option>
+                    <option value="MacBook">MacBook</option>
+                    <option value="AirPods">AirPods</option>
+                  </select>
+                </div>
+              )}
+              <div><label className="lbl">Modelo</label><select className="inp" value={model} onChange={e => handleModel(e.target.value)}>
+                {(brand === 'Apple' ? (MODELS['Apple'] || []).filter(m => m.startsWith(appleCategory)) : (MODELS[brand] || [])).map(m => <option key={m} value={m}>{m}</option>)}
+              </select></div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div><label className="lbl">Precio Venta</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
                 <div><label className="lbl">Precio Costo</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>

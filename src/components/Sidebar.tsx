@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Box, ScanLine, ShoppingCart, Wallet, LogOut, Smartphone, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert, FileText } from 'lucide-react';
+import { LayoutGrid, Box, ScanLine, ShoppingCart, Wallet, LogOut, Smartphone, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert, FileText, Package, Headphones } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -27,7 +27,8 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
     [
       { g: 'Sistema' },
       { id: 'dashboard', l: 'Resumen', i: <LayoutGrid size={18} /> },
-      { id: 'stock', l: 'Inventario', i: <Box size={18} /> },
+      { id: 'stock', l: 'Inventario', i: <Package size={18} /> },
+      { id: 'accessories', l: 'Accesorios', i: <Headphones size={18} /> },
       { id: 'deposits', l: 'Depósitos', i: <Warehouse size={18} /> },
       { id: 'suppliers', l: 'Proveedores', i: <LayoutGrid size={18} /> },
       { id: 'scan', l: 'Carga EAN', i: <ScanLine size={18} /> },
@@ -52,12 +53,9 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
 
   return (
     <div className={`sidebar no-print ${isOpen ? 'open' : ''}`}>
-      <div className="s-brand">
-        <div className="s-mark" style={{ background: 'transparent', padding: 0 }}>
-          <img src="/logo.jpg" alt="Stackr Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-        </div>
-        <div>
-          <div className="s-name">Stackr</div>
+      <div className="s-brand" style={{ justifyContent: 'center', padding: '24px 16px' }}>
+        <div style={{ width: 64, height: 64, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          <img src="/logo.jpg" alt="Stackr Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(2.2)' }} />
         </div>
       </div>
       <div className="s-nav">

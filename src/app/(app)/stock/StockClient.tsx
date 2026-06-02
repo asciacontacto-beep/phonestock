@@ -124,7 +124,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         <Search size={16} color="var(--text-3)" style={{ flexShrink: 0 }} />
         <input
           className="inp"
-          placeholder="Buscar modelo, IMEI, color…"
+          placeholder="Buscar modelo, IMEI/Serie, color…"
           value={filter.q}
           onChange={e => setFilter({ ...filter, q: e.target.value })}
         />

@@ -14,6 +14,8 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [unit, setUnit] = useState<any>(null);
+  const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
+  const [selectedAccessories, setSelectedAccessories] = useState<any[]>([]);
   const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '' });
   const [notes, setNotes] = useState('');
   const [payments, setPayments] = useState<any[]>([]);
@@ -40,7 +42,8 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
       supabase.auth.getSession(),
       supabase.from('stock').select('*').eq('status', 'available').order('created_at', { ascending: false }),
       supabase.from('deposits').select('*').order('name'),
-      supabase.from('settings').select('*').maybeSingle()
+      supabase.from('settings').select('*').maybeSingle(),
+      supabase.from('accessories').select('*').gt('stock', 0)
     ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }]) => {
       const u = session?.user
       if (u) {
@@ -51,6 +54,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
       setDeposits(depositsData || []);
       if (depositsData && depositsData.length > 0) setSelectedDeposit(String(depositsData[0].id));
       setSettings(settingsData);
+      setAccessoriesList(accData || []);
     });
 
 
@@ -212,7 +216,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
       
       setLastSale(saleRow[0]);
       toast.success('Venta confirmada');
-      setStep(1); setUnit(null); setPayments([]); setSp(''); setQ(''); setNotes('');
+      setStep(1); setUnit(null); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
       setCust({ name: '', dni: '', phone: '', email: '' });
       router.refresh();
     } catch (e: any) {
@@ -227,7 +231,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
       <div className="sh" style={{ marginBottom: 20 }}>
         <h1 className="st">Nueva Venta</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {[1,2,3].map(n => (
+          {[1,2,3,4].map(n => (
             <div key={n} style={{
               width: n === step ? 20 : 8, height: 6,
               borderRadius: 4,
@@ -252,7 +256,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
               </button>
             ))}
           </div>
-          <input className="inp" placeholder="Filtrar por modelo, IMEI, color..." value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 16 }} />
+          <input className="inp" placeholder="Filtrar por modelo, IMEI / N° Serie, color..." value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 16 }} />
           {av.length > 0 && av.length <= 5 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '10px 14px', background: 'rgba(245,158,11,0.1)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)' }}>
               <AlertTriangle size={16} color="var(--amber)" />
@@ -272,7 +276,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
                     <td>
                       <div style={{ fontWeight: 600 }}>{s.brand} {s.model}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-2)' }}>{s.storage} · {s.color}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'JetBrains Mono', marginTop: 2 }}>{s.imei || 'Sin IMEI'}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'JetBrains Mono', marginTop: 2 }}>{s.imei || 'Sin IMEI/Serie'}</div>
                     </td>
                     <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}</td>
                     <td><span className="badge b-neu">{deposits.find(d => d.id === s.deposit)?.name ?? '—'}</span></td>
@@ -285,7 +289,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
         </div>
       )}
 
-      {step === 2 && (
+      {step === 4 && (
         <div className="card" style={{ maxWidth: 600, margin: '0 auto' }}>
           <div className="lbl">2. Datos del Cliente</div>
           <div className="field" style={{ position: 'relative' }}>
@@ -325,15 +329,83 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
           <div className="field"><label className="lbl">Email</label><input className="inp" value={cust.email} onChange={e => setCust(p => ({ ...p, email: e.target.value }))} /></div>
           <div className="divider" />
           <div style={{ display: 'flex', gap: 12 }}>
-            <button className="btn btn-ghost" onClick={() => setStep(1)}>Volver</button>
-            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!cust.name} onClick={() => setStep(3)}>Continuar al Pago</button>
+            <button className="btn btn-ghost" onClick={() => setStep(2)}>Volver</button>
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!cust.name} onClick={() => setStep(4)}>Continuar al Pago</button>
+          </div>
+        </div>
+      )}
+
+      
+      {step === 2 && (
+        <div className="card">
+          <div className="lbl">2. Accesorios Adicionales (Opcional)</div>
+          <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>Agregá fundas, vidrios, cargadores a esta venta. Podés marcarlos como de regalo (costo 0) o cobrarlos.</p>
+            
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+               <select className="inp" id="acc_select" style={{ flex: 1 }}>
+                 <option value="">-- Seleccionar Accesorio --</option>
+                 {accessoriesList.filter(a => a.deposit_id === unit.deposit).map(a => (
+                   <option key={a.id} value={a.id}>{a.category} {a.compatible_model} {a.color} (Stock: {a.stock} - U$ {a.sale_price})</option>
+                 ))}
+               </select>
+               <input type="number" id="acc_qty" className="inp" defaultValue={1} min={1} style={{ width: 80 }} />
+               <select className="inp" id="acc_type" style={{ width: 130 }}>
+                 <option value="venta">Vender</option>
+                 <option value="regalo">De Regalo</option>
+               </select>
+               <button className="btn btn-dark" onClick={() => {
+                 const id = (document.getElementById('acc_select') as HTMLSelectElement).value;
+                 const qty = parseInt((document.getElementById('acc_qty') as HTMLInputElement).value) || 1;
+                 const type = (document.getElementById('acc_type') as HTMLSelectElement).value;
+                 if (!id) return;
+                 const acc = accessoriesList.find(a => a.id === id);
+                 if (qty > acc.stock) return toast.error('No hay stock suficiente');
+                 
+                 setSelectedAccessories(p => {
+                    const existing = p.find(x => x.id === id && x.is_gift === (type === 'regalo'));
+                    if (existing) {
+                       return p.map(x => x === existing ? { ...x, qty: x.qty + qty } : x);
+                    }
+                    return [...p, { id, name: `${acc.category} ${acc.compatible_model || ''} ${acc.color || ''}`.trim(), qty, price: type === 'regalo' ? 0 : acc.sale_price, is_gift: type === 'regalo', cost_price: acc.cost_price }];
+                 });
+               }}><Plus size={16}/> Sumar</button>
+            </div>
+
+            {selectedAccessories.length > 0 && (
+              <div style={{ borderTop: '1px dashed var(--border-md)', paddingTop: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 8, textTransform: 'uppercase' }}>Accesorios agregados</div>
+                {selectedAccessories.map((sa, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, fontSize: 13, background: 'var(--surface)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)' }}>
+                     <div>
+                       <span style={{ fontWeight: 600 }}>{sa.qty}x</span> {sa.name} 
+                       {sa.is_gift ? <span className="badge b-green" style={{ marginLeft: 8 }}>Regalo</span> : <span className="badge b-neu" style={{ marginLeft: 8 }}>Venta (U$ {sa.price})</span>}
+                     </div>
+                     <button className="btn-icon" onClick={() => setSelectedAccessories(p => p.filter((_, j) => j !== i))}><X size={14} color="var(--red)"/></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button className="btn btn-ghost" onClick={() => setStep(1)}>Atrás</button>
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} onClick={() => {
+               // Update auto-calculated total price for Step 4
+               if (sp === '') {
+                 const accTotal = selectedAccessories.reduce((acc, curr) => acc + (curr.price * curr.qty), 0);
+                 const phoneTotal = unit.isAccessoryOnly ? 0 : (unit.price || 0); // Assuming stock might have price? Actually user inputs it in step 4 usually.
+                 // We just pre-fill the sp if it's accessories only, or leave it blank
+               }
+               setStep(3)
+            }}>Continuar al Cliente</button>
           </div>
         </div>
       )}
 
       {step === 3 && (
         <div className="card" style={{ maxWidth: 600, margin: '0 auto' }}>
-          <div className="lbl">3. Pago y Cierre</div>
+          <div className="lbl">4. Pago y Cierre</div>
           <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 8, marginBottom: 20 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>{unit.brand} {unit.model}</div>
             <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{unit.storage} · {unit.color}</div>
@@ -412,7 +484,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
             <textarea className="inp" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ej: Garantía 30 días..." rows={2} style={{ resize: 'none' }} />
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-            <button className="btn btn-ghost" onClick={() => setStep(2)}>Atrás</button>
+            <button className="btn btn-ghost" onClick={() => setStep(3)}>Atrás</button>
             <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading || rem > 0.01 || rem < -(price * 0.10)} onClick={confirm}>
               {loading ? 'Procesando...' : 'Finalizar Operación'}
             </button>
@@ -461,7 +533,7 @@ function TradeInForm({ currency, deposits, onConfirm }: any) {
       <div className="row"><div className="col field"><label className="lbl">GB</label><select className="inp" value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))}>{STORAGES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
         <div className="col field"><label className="lbl">Color</label><select className="inp" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))}>{(COLORS[f.brand] || ['Negro']).map(c => <option key={c} value={c}>{c}</option>)}</select></div></div>
       <div className="row">
-        <div className="col field"><label className="lbl">IMEI</label><input className="inp" value={f.imei} onChange={e => setF(p => ({ ...p, imei: e.target.value }))} placeholder="15 dígitos..." /></div>
+        <div className="col field"><label className="lbl">IMEI / N° Serie</label><input className="inp" value={f.imei} onChange={e => setF(p => ({ ...p, imei: e.target.value }))} placeholder="15 dígitos o alfanumérico..." /></div>
         <div className="col field"><label className="lbl">% Batería</label><input className="inp" type="number" placeholder="Ej: 85" value={f.battery} onChange={e => setF(p => ({ ...p, battery: e.target.value }))} /></div>
       </div>
       <div className="field"><label className="lbl">Detalles / Observaciones</label><input className="inp" value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} placeholder="Ej: Pantalla con rayas..." /></div>
@@ -507,7 +579,7 @@ function Receipt({ sale, shop }: any) {
       <div style={{ fontSize: 12, marginBottom: 10, lineHeight: 1.4 }}>
         <strong>{sale.brand} {sale.model}</strong><br />
         <span style={{ fontSize: 11 }}>{sale.storage} · {sale.color}</span><br />
-        <span style={{ fontSize: 10, opacity: 0.8 }}>IMEI: {sale.imei}</span>
+        <span style={{ fontSize: 10, opacity: 0.8 }}>IMEI/Serie: {sale.imei}</span>
       </div>
       <div style={{ margin: '15px 0', borderBottom: '1px dashed #ccc' }} />
       <div style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 11 }}>PAGOS</div>

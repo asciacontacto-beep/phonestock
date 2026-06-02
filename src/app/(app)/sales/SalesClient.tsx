@@ -161,9 +161,22 @@ export function SalesClient({ sales, deposits, realSellers, user }: Props) {
                       <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{dateStr}</td>
                       <td>
                         <div style={{ fontWeight: 600 }}>{sale.brand} {sale.model}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                          {sale.storage} · {sale.color} · <span style={{ fontFamily: 'JetBrains Mono' }}>{sale.imei || 'Sin IMEI'}</span>
-                        </div>
+                        {sale.imei && (
+                          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                            {sale.storage} · {sale.color} · <span style={{ fontFamily: 'JetBrains Mono' }}>{sale.imei}</span>
+                          </div>
+                        )}
+                        {sale.accessories && sale.accessories.length > 0 && (
+                          <div style={{ marginTop: 4 }}>
+                            {sale.accessories.map((acc: any, idx: number) => (
+                              <div key={idx} style={{ fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-3)' }} />
+                                {acc.qty}x {acc.name} 
+                                {acc.is_gift && <span style={{ fontSize: 9, background: 'var(--green-dim)', color: 'var(--green)', padding: '1px 4px', borderRadius: 4 }}>REGALO</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <div style={{ fontWeight: 500 }}>{sale.customer?.name || '-'}</div>

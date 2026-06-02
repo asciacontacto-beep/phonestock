@@ -162,7 +162,8 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
         currency: sc,
         payments,
         customer: cust,
-        notes: notes.trim() || null
+        notes: notes.trim() || null,
+        accessories: selectedAccessories
       };
 
       const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select();
@@ -170,6 +171,13 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
 
       const { error: uErr } = await supabase.from('stock').update({ status: 'sold' }).eq('id', unit.id);
       if (uErr) throw uErr;
+
+      if (selectedAccessories.length > 0) {
+        for (const acc of selectedAccessories) {
+          const { error: accErr } = await supabase.rpc('decrement_accessory_stock', { acc_id: acc.id, qty: acc.qty });
+          if (accErr) throw accErr;
+        }
+      }
 
       const tiItems = payments.filter(pay => pay.id === 'tradein').map(pay => ({
         brand: pay.device.brand,

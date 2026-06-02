@@ -81,8 +81,10 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
     (a.category + ' ' + (a.compatible_model||'') + ' ' + (a.color||'')).toLowerCase().includes(q.toLowerCase())
   );
 
-  const totalValue = filtered.reduce((acc, a) => acc + (a.sale_price * a.stock), 0);
-  const totalCost = filtered.reduce((acc, a) => acc + (a.cost_price * a.stock), 0);
+  const totalValueUSD = filtered.filter(a => a.currency === 'USD').reduce((acc, a) => acc + (a.sale_price * a.stock), 0);
+  const totalValueARS = filtered.filter(a => a.currency === 'ARS').reduce((acc, a) => acc + (a.sale_price * a.stock), 0);
+  const totalCostUSD = filtered.filter(a => a.currency === 'USD').reduce((acc, a) => acc + (a.cost_price * a.stock), 0);
+  const totalCostARS = filtered.filter(a => a.currency === 'ARS').reduce((acc, a) => acc + (a.cost_price * a.stock), 0);
 
   return (
     <div className="page">
@@ -99,11 +101,19 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
       <div className="sg">
         <div className="sc">
           <div className="sl">Valor Total Venta</div>
-          <div className="sv" style={{ color: 'var(--green)' }}>U$ {totalValue.toLocaleString()}</div>
+          <div className="sv" style={{ color: 'var(--green)' }}>
+            {totalValueUSD > 0 && <span style={{ marginRight: 8 }}>U$ {totalValueUSD.toLocaleString()}</span>}
+            {totalValueARS > 0 && <span>$ {totalValueARS.toLocaleString()}</span>}
+            {totalValueUSD === 0 && totalValueARS === 0 && <span>U$ 0</span>}
+          </div>
         </div>
         <div className="sc">
           <div className="sl">Costo Total</div>
-          <div className="sv">U$ {totalCost.toLocaleString()}</div>
+          <div className="sv">
+            {totalCostUSD > 0 && <span style={{ marginRight: 8 }}>U$ {totalCostUSD.toLocaleString()}</span>}
+            {totalCostARS > 0 && <span>$ {totalCostARS.toLocaleString()}</span>}
+            {totalCostUSD === 0 && totalCostARS === 0 && <span>U$ 0</span>}
+          </div>
         </div>
         <div className="sc">
           <div className="sl">Tipos Únicos</div>

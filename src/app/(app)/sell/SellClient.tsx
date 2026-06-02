@@ -353,7 +353,7 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                <select className="inp" id="acc_select" style={{ flex: 1 }}>
                  <option value="">-- Seleccionar Accesorio --</option>
-                 {accessoriesList.filter(a => a.deposit_id === unit.deposit).map(a => (
+                 {accessoriesList.filter(a => String(a.deposit_id) === String(unit.deposit)).map(a => (
                    <option key={a.id} value={a.id}>{a.category} {a.compatible_model} {a.color} (Stock: {a.stock} - {a.currency === 'ARS' ? '$' : 'U$'} {a.sale_price})</option>
                  ))}
                </select>

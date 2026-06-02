@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
+import { MODELS } from '@/constants/data';
+
+const ALL_MODELS = Object.values(MODELS).flat().sort();
 
 export default function AccessoriesClient({ initialAccessories, deposits, user }: any) {
   const supabase = createClient();
@@ -181,7 +184,10 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
               <div className="row">
                 <div className="col field">
                   <label className="lbl">Modelo Compatible (Opcional)</label>
-                  <input className="inp" placeholder="Ej: iPhone 15 Pro Max" value={form.compatible_model} onChange={e => setForm({...form, compatible_model: e.target.value})} />
+                  <input className="inp" list="acc-models" placeholder="Ej: iPhone 15 Pro Max" value={form.compatible_model} onChange={e => setForm({...form, compatible_model: e.target.value})} />
+                  <datalist id="acc-models">
+                    {ALL_MODELS.map(m => <option key={m} value={m} />)}
+                  </datalist>
                 </div>
                 <div className="col field">
                   <label className="lbl">Color (Opcional)</label>

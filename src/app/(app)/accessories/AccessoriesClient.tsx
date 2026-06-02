@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AccessoriesClient({ initialAccessories, deposits, user }: any) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [accessories, setAccessories] = useState<any[]>(initialAccessories);
   const [q, setQ] = useState('');
   

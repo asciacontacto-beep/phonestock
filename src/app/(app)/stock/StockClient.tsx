@@ -11,7 +11,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [filter, setFilter] = useState({ brand: 'all', q: '', status: 'available', condition: 'all', deposit: 'all' });
+  const [filter, setFilter] = useState({ brand: 'all', model: 'all', storage: 'all', sortPrice: 'none', q: '', status: 'available', condition: 'all', deposit: 'all' });
   const [editItem, setEditItem] = useState<any>(null);
   const [detailItem, setDetailItem] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -47,13 +47,21 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
     })();
   }, []);
 
-  const rows = stock.filter(s =>
+  let rows = stock.filter(s =>
     (filter.brand === 'all' || s.brand === filter.brand) &&
+    (filter.model === 'all' || s.model === filter.model) &&
+    (filter.storage === 'all' || s.storage === filter.storage) &&
     (filter.status === 'all' || s.status === filter.status) &&
     (filter.condition === 'all' || s.condition === filter.condition) &&
     (filter.deposit === 'all' || String(s.deposit) === String(filter.deposit)) &&
     (!filter.q || `${s.brand} ${s.model} ${s.imei} ${s.color}`.toLowerCase().includes(filter.q.toLowerCase()))
   );
+
+  if (filter.sortPrice === 'asc') {
+    rows.sort((a, b) => (a.price || 0) - (b.price || 0));
+  } else if (filter.sortPrice === 'desc') {
+    rows.sort((a, b) => (b.price || 0) - (a.price || 0));
+  }
 
   const handleDelete = async (id: any) => {
     if (!confirm('¿Eliminar este equipo del stock?')) return;
@@ -157,7 +165,6 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       <div className="filters-wrap no-print">
         {[
           { v: 'available', l: 'En Stock' },
-          { v: 'all',       l: 'Historial' },
           { v: 'sold',      l: 'Vendidos' },
         ].map(opt => (
           <button
@@ -178,6 +185,41 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
             onClick={() => { setFilter({ ...filter, condition: opt.v }); setVisibleCount(50); }}
           >{opt.l}</button>
         ))}
+        <div style={{ width: 1, height: 20, background: 'var(--border-md)', margin: '0 4px' }} />
+        
+        <select 
+          className="inp" 
+          style={{ width: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: 20 }} 
+          value={filter.model} 
+          onChange={e => { setFilter({ ...filter, model: e.target.value }); setVisibleCount(50); }}
+        >
+          <option value="all">Todos los modelos</option>
+          {(filter.brand !== 'all' 
+             ? (MODELS[filter.brand] || [])
+             : Object.values(MODELS).flat()
+          ).map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+
+        <select 
+          className="inp" 
+          style={{ width: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: 20 }} 
+          value={filter.storage} 
+          onChange={e => { setFilter({ ...filter, storage: e.target.value }); setVisibleCount(50); }}
+        >
+          <option value="all">Almacenamiento</option>
+          {STORAGES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        <select 
+          className="inp" 
+          style={{ width: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: 20 }} 
+          value={filter.sortPrice} 
+          onChange={e => { setFilter({ ...filter, sortPrice: e.target.value }); setVisibleCount(50); }}
+        >
+          <option value="none">Orden normal</option>
+          <option value="desc">Mayor precio</option>
+          <option value="asc">Menor precio</option>
+        </select>
       </div>
 
       {rows.length === 0 ? (
@@ -188,80 +230,73 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         </div>
       ) : (
         <>
-          <div className="tw">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th style={{ width: 40 }}></th>
-                  <th>Equipo</th>
-                  <th>Detalle</th>
-                  <th>Precio</th>
-                  <th>Ubicación</th>
-                  <th style={{ width: 80 }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.slice(0, visibleCount).map(s => {
-                  const dep = depositOf(s);
-                  const isSelected = selectedItems.includes(s.id);
-                  return (
-                    <tr 
-                      key={s.id} 
-                      onClick={() => setDetailItem(s)}
-                      style={{ cursor: 'pointer', background: isSelected ? 'var(--surface-2)' : undefined }}
-                    >
-                      <td onClick={e => e.stopPropagation()} style={{ paddingLeft: 16 }}>
-                        <input 
-                          type="checkbox" 
-                          style={{ width: 16, height: 16, cursor: 'pointer' }}
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) setSelectedItems([...selectedItems, s.id]);
-                            else setSelectedItems(selectedItems.filter(id => id !== s.id));
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{s.brand} {s.model}</div>
-                        <div style={{ marginTop: 4 }}>
-                          <span className={`badge ${s.condition === 'new' ? 'b-green' : 'b-neu'}`}>
-                            {s.condition === 'new' ? 'Sellado' : 'Usado'}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontSize: 13 }}>{s.storage} · {s.color}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'JetBrains Mono', marginTop: 2 }}>{s.imei || 'Sin IMEI/Serie'}</div>
-                      </td>
-                      <td>
-                        <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)' }}>
-                          V: {s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}
-                        </div>
-                        {isOwner && s.cost_price && (
-                          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: 'var(--text-3)' }}>
-                            C: {s.currency === 'USD' ? 'U$' : '$'} {s.cost_price.toLocaleString()}
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        {dep ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: dep.color || 'var(--text-3)' }} />
-                            {dep.name}
-                          </div>
-                        ) : <span className="badge b-neu">—</span>}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                          <button className="btn-icon" onClick={() => setEditItem(s)} title="Editar"><Edit2 size={15} /></button>
-                          <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => handleDelete(s.id)} title="Eliminar"><Trash2 size={15} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {rows.slice(0, visibleCount).map(s => {
+              const dep = depositOf(s);
+              const isSelected = selectedItems.includes(s.id);
+              return (
+                <div 
+                  key={s.id} 
+                  onClick={() => setDetailItem(s)}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', 
+                    background: isSelected ? 'var(--surface-2)' : 'var(--surface)', 
+                    borderRadius: 12, border: isSelected ? '2px solid var(--text)' : '1px solid var(--border)',
+                    cursor: 'pointer', boxShadow: 'var(--shadow-xs)',
+                    flexWrap: 'wrap'
+                  }}
+                >
+                  <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }}>
+                    <input 
+                      type="checkbox" 
+                      style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--text)' }}
+                      checked={isSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedItems([...selectedItems, s.id]);
+                        else setSelectedItems(selectedItems.filter(id => id !== s.id));
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {s.brand} {s.model}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      <span className={`badge ${s.condition === 'new' ? 'b-green' : 'b-neu'}`} style={{ fontSize: 10, padding: '2px 6px' }}>
+                        {s.condition === 'new' ? 'Sellado' : 'Usado'}
+                      </span>
+                      <span>{s.storage} · {s.color}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ flex: '1 1 120px', minWidth: 0 }}>
+                    <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>
+                      V: {s.currency === 'USD' ? 'U$' : '$'}{s.price?.toLocaleString()}
+                    </div>
+                    {isOwner && s.cost_price && (
+                      <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+                        C: {s.currency === 'USD' ? 'U$' : '$'}{s.cost_price.toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ flex: '0 1 120px', minWidth: 0 }}>
+                    {dep ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-2)' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: dep.color || 'var(--text-3)', flexShrink: 0 }} />
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dep.name}</span>
+                      </div>
+                    ) : <span className="badge b-neu">—</span>}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    <button className="btn-icon" style={{ width: 32, height: 32 }} onClick={() => setEditItem(s)} title="Editar"><Edit2 size={16} /></button>
+                    <button className="btn-icon" style={{ width: 32, height: 32, color: 'var(--red)' }} onClick={() => handleDelete(s.id)} title="Eliminar"><Trash2 size={16} /></button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         {visibleCount < rows.length && (
           <div style={{ textAlign: 'center', marginTop: 32 }}>

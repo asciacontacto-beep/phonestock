@@ -188,77 +188,81 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         </div>
       ) : (
         <>
-          <div className="stock-grid">
-            {rows.slice(0, visibleCount).map(s => {
-              const dep = depositOf(s);
-            const isSelected = selectedItems.includes(s.id);
-            return (
-              <div 
-                key={s.id} 
-                className="stock-card" 
-                style={{ border: isSelected ? '2px solid var(--text)' : '1px solid var(--border)' }}
-                onClick={() => setDetailItem(s)}
-              >
-                <div className="stock-card-top" style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: -5, left: -5 }}>
-                    <input 
-                      type="checkbox" 
-                      style={{ width: 18, height: 18, cursor: 'pointer' }}
-                      checked={isSelected}
-                      onClick={e => e.stopPropagation()}
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedItems([...selectedItems, s.id]);
-                        else setSelectedItems(selectedItems.filter(id => id !== s.id));
-                      }}
-                    />
-                  </div>
-                  <span className={`badge ${s.condition === 'new' ? 'b-green' : 'b-neu'}`} style={{ marginLeft: 24 }}>
-                    {s.condition === 'new' ? 'Sellado' : 'Usado'}
-                  </span>
-                  <div className="stock-card-actions">
-                    <button
-                      className="btn-icon"
-                      onClick={e => { e.stopPropagation(); setEditItem(s); }}
-                      title="Editar"
-                    ><Edit2 size={13} /></button>
-                    <button
-                      className="btn-icon"
-                      style={{ color: 'var(--red)' }}
-                      onClick={e => { e.stopPropagation(); handleDelete(s.id); }}
-                      title="Eliminar"
-                    ><Trash2 size={13} /></button>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="stock-card-name">{s.brand} {s.model}</div>
-                  <div className="stock-card-sub">{s.storage} · {s.color}</div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div className="stock-card-price">
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>V: {s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}</div>
-                    {isOwner && s.cost_price && (
-                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>C: {s.currency === 'USD' ? 'U$' : '$'} {s.cost_price.toLocaleString()}</div>
-                    )}
-                  </div>
-                  {dep && (
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
-                      fontSize: 11, color: 'var(--text-2)'
-                    }}>
-                      <div style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: dep.color || 'var(--text-3)', flexShrink: 0
-                      }} />
-                      {dep.name}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          <div className="tw">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}></th>
+                  <th>Equipo</th>
+                  <th>Detalle</th>
+                  <th>Precio</th>
+                  <th>Ubicación</th>
+                  <th style={{ width: 80 }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.slice(0, visibleCount).map(s => {
+                  const dep = depositOf(s);
+                  const isSelected = selectedItems.includes(s.id);
+                  return (
+                    <tr 
+                      key={s.id} 
+                      onClick={() => setDetailItem(s)}
+                      style={{ cursor: 'pointer', background: isSelected ? 'var(--surface-2)' : undefined }}
+                    >
+                      <td onClick={e => e.stopPropagation()} style={{ paddingLeft: 16 }}>
+                        <input 
+                          type="checkbox" 
+                          style={{ width: 16, height: 16, cursor: 'pointer' }}
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedItems([...selectedItems, s.id]);
+                            else setSelectedItems(selectedItems.filter(id => id !== s.id));
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{s.brand} {s.model}</div>
+                        <div style={{ marginTop: 4 }}>
+                          <span className={`badge ${s.condition === 'new' ? 'b-green' : 'b-neu'}`}>
+                            {s.condition === 'new' ? 'Sellado' : 'Usado'}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: 13 }}>{s.storage} · {s.color}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'JetBrains Mono', marginTop: 2 }}>{s.imei || 'Sin IMEI/Serie'}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)' }}>
+                          V: {s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}
+                        </div>
+                        {isOwner && s.cost_price && (
+                          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: 'var(--text-3)' }}>
+                            C: {s.currency === 'USD' ? 'U$' : '$'} {s.cost_price.toLocaleString()}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        {dep ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: dep.color || 'var(--text-3)' }} />
+                            {dep.name}
+                          </div>
+                        ) : <span className="badge b-neu">—</span>}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                          <button className="btn-icon" onClick={() => setEditItem(s)} title="Editar"><Edit2 size={15} /></button>
+                          <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => handleDelete(s.id)} title="Eliminar"><Trash2 size={15} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         {visibleCount < rows.length && (
           <div style={{ textAlign: 'center', marginTop: 32 }}>
             <button className="btn btn-outline" onClick={() => setVisibleCount(v => v + 50)}>

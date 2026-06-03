@@ -483,9 +483,9 @@ input, select, textarea { outline: none; }
   .sl { font-size: 11px; margin-bottom: 6px; }
   .sv { font-size: 18px; letter-spacing: -0.03em; }
 
-  /* ── Stock grid: 2 cols ─── */
+  /* ── Stock grid: 1 col (list view) ─── */
   .stock-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
   }
   .stock-card {

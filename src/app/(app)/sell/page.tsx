@@ -10,5 +10,5 @@ export default async function SellPage() {
   const profile = await getProfile(user.id)
   const isOwner = isSuperAdmin || profile?.role === 'owner'
 
-  return <SellClient isOwner={isOwner} />
+  return <SellClient isOwner={isOwner} assignedDeposits={profile?.deposit_ids || []} />
 }

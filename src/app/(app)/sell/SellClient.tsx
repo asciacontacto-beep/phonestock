@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-export function SellClient({ isOwner }: { isOwner?: boolean }) {
+export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boolean, assignedDeposits?: any[] }) {
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
@@ -50,9 +50,15 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
         const isSuperAdmin = u.email === 'asciacontacto@gmail.com'
         setUser({ id: u.id, email: u.email, name: isSuperAdmin ? 'Administrador' : u.email })
       }
+      
+      let finalDeposits = depositsData || [];
+      if (!isOwner) {
+        finalDeposits = finalDeposits.filter((d: any) => assignedDeposits.map(String).includes(String(d.id)));
+      }
+      
       setStock(stockData || []);
-      setDeposits(depositsData || []);
-      if (depositsData && depositsData.length > 0) setSelectedDeposit(String(depositsData[0].id));
+      setDeposits(finalDeposits);
+      if (finalDeposits.length > 0) setSelectedDeposit(String(finalDeposits[0].id));
       setSettings(settingsData);
       setAccessoriesList(accData || []);
     });
@@ -63,7 +69,10 @@ export function SellClient({ isOwner }: { isOwner?: boolean }) {
   const shop = settings || { shop_name: 'Stackr', address: '', phone: '', instagram: '', warranty_text: '' };
 
   const av = stock.filter((s: any) => s.status === 'available')
-    .filter((s: any) => selectedDeposit === null || String(s.deposit) === selectedDeposit)
+    .filter((s: any) => {
+      if (!isOwner && selectedDeposit === null) return false;
+      return selectedDeposit === null || String(s.deposit) === selectedDeposit;
+    })
     .filter((s: any) => !q || `${s.brand} ${s.model} ${s.color} ${s.storage}`.toLowerCase().includes(q.toLowerCase()));
   const price = parseFloat(sp) || 0;
   const paid = payments.reduce((a, p) => a + p.amount, 0);

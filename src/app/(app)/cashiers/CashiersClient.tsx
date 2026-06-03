@@ -38,6 +38,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
   const [mvLoading, setMvLoading] = useState(false);
   const [declared, setDeclared] = useState<Record<string, string>>({ ars_cash: '', usd_cash: '' });
   const [closureResult, setClosureResult] = useState<any>(null);
+  const [dateFilter, setDateFilter] = useState<'today' | 'month' | 'all'>('today');
 
   const [exForm, setExForm] = useState({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '' });
   const [trForm, setTrForm] = useState({
@@ -103,6 +104,25 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
     sellerDepositMap.set(s.id, s.deposit_ids || []);
   });
 
+  const filterByDate = (arr: any[]) => {
+    if (dateFilter === 'all') return arr;
+    return arr.filter(item => {
+      const d = new Date(item.created_at);
+      const now = new Date();
+      if (dateFilter === 'today') {
+        return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }
+      if (dateFilter === 'month') {
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }
+      return true;
+    });
+  };
+
+  const fSales = filterByDate(sales);
+  const fTransfers = filterByDate(transfers);
+  const fMovements = filterByDate(movements);
+
   /**
    * Build per-deposit data.
    * A sale "belongs" to a deposit if the seller is assigned to it.
@@ -119,15 +139,15 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
       const depSellerIds = new Set(depSellers.map((s: any) => s.id));
 
       // Sales that belong to this deposit: explicit deposit_id or via seller assignment
-      const depSales = sales.filter(v =>
+      const depSales = fSales.filter(v =>
         (v.deposit_id && String(v.deposit_id) === depId) ||
         (!v.deposit_id && depSellerIds.has(v.seller_id || v.sellerId))
       );
 
       // Transfers in/out of this deposit (compare as strings for UUID safety)
-      const inTransfers  = transfers.filter(tr => String(tr.to_deposit_id)   === depId);
-      const outTransfers = transfers.filter(tr => String(tr.from_deposit_id) === depId);
-      const depMovements = movements.filter(m => String(m.deposit_id) === depId);
+      const inTransfers  = fTransfers.filter(tr => String(tr.to_deposit_id)   === depId);
+      const outTransfers = fTransfers.filter(tr => String(tr.from_deposit_id) === depId);
+      const depMovements = fMovements.filter(m => String(m.deposit_id) === depId);
 
       const totals = computeTotals(depSales, inTransfers, outTransfers, depMovements);
 
@@ -139,14 +159,14 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
 
   // Unassigned sales (seller has no deposit or seller not in realSellers)
   const allAssignedSellerIds = new Set(realSellers.flatMap((s: any) => (s.deposit_ids?.length > 0) ? [s.id] : []));
-  const unassignedSales = sales.filter(v => !allAssignedSellerIds.has(v.seller_id || v.sellerId)
+  const unassignedSales = fSales.filter(v => !allAssignedSellerIds.has(v.seller_id || v.sellerId)
     && v.brand !== 'MOVIMIENTO'  // ignore internal movements
   );
 
   // ─── handlers ────────────────────────────────────────────────────────────
 
   const handleClose = () => {
-    const mySales = sales.filter(v => (v.seller_id || v.sellerId) === user.id);
+    const mySales = fSales.filter(v => (v.seller_id || v.sellerId) === user.id);
     const expected: Record<string, number> = {};
     PAY.forEach(p => { expected[p.id] = 0; });
     mySales.forEach(v => v.payments.forEach((p: any) => { expected[p.id] += (p.original_amount ?? p.amount); }));
@@ -274,12 +294,22 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
   return (
     <div className="page">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
+      <div className="sh" style={{ flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ minWidth: 200 }}>
           <div className="st">{isOwner ? 'Control de Cajas' : 'Mi Caja'}</div>
-          <div className="ss2">Saldo por depósito · Ventas y transferencias</div>
+          <div className="ss2" style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 4 }}>Saldo por depósito · Ventas y transferencias</div>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <select 
+            className="inp" 
+            style={{ width: 'auto', padding: '6px 12px' }}
+            value={dateFilter} 
+            onChange={e => setDateFilter(e.target.value as any)}
+          >
+            <option value="today">Hoy</option>
+            <option value="month">Este Mes</option>
+            <option value="all">Histórico</option>
+          </select>
           {isOwner && (
             <button className="btn btn-outline" onClick={() => setShowTransfer(true)}>
               <ArrowRightLeft size={18} /> Transferir entre cajas
@@ -307,16 +337,23 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
       {isOwner && (() => {
         const totals: Record<string, number> = {};
         PAY_LABELS.forEach(p => { totals[p.id] = 0; });
-        sales.forEach(v => {
+        fSales.forEach(v => {
           if (v.payments && Array.isArray(v.payments)) {
             v.payments.forEach((p: any) => { totals[p.id] = (totals[p.id] || 0) + (p.original_amount ?? p.amount); });
+          }
+        });
+        fMovements.forEach(m => {
+          if (m.movement_type === 'IN') {
+             totals[m.payment_method] = (totals[m.payment_method] || 0) + Number(m.amount);
+          } else if (m.movement_type === 'OUT') {
+             totals[m.payment_method] = (totals[m.payment_method] || 0) - Number(m.amount);
           }
         });
         const hasAny = PAY_LABELS.some(it => totals[it.id] !== 0);
         if (!hasAny) return null;
         return (
           <div className="card" style={{ marginBottom: 28, padding: 20 }}>
-            <div className="sl" style={{ marginBottom: 16 }}>Resumen General — {sales.filter(s => s.brand !== 'MOVIMIENTO').length} ventas</div>
+            <div className="sl" style={{ marginBottom: 16 }}>Resumen General — {fSales.filter(s => s.brand !== 'MOVIMIENTO').length} ventas</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
               {PAY_LABELS.map(it => totals[it.id] !== 0 ? (
                 <div key={it.id} style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 16px' }}>

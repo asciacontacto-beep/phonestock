@@ -419,8 +419,9 @@ input, select, textarea { outline: none; }
   .no-print { display: none !important; }
   body { background: #fff !important; color: #000 !important; }
   .app { height: auto !important; display: block !important; }
-  .mo { position:static !important; background:none !important; backdrop-filter:none !important; padding:0 !important; }
-  .mb { border:none !important; box-shadow:none !important; max-width:none !important; }
+  .mo { position:static !important; background:none !important; backdrop-filter:none !important; padding:0 !important; height:auto !important; }
+  .mb { border:none !important; box-shadow:none !important; max-width:none !important; max-height:none !important; height:auto !important; overflow:visible !important; }
+  .mbd { overflow:visible !important; height:auto !important; max-height:none !important; padding:0 !important; }
 }
 
 /* ═══════════════════════════════════════════

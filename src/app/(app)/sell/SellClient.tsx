@@ -333,6 +333,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
                 value={custSearch}
                 onChange={e => searchCustomer(e.target.value)}
                 onFocus={e => searchCustomer(e.target.value)}
+                autoComplete="off"
               />
               {searchingCust && <div style={{ position: 'absolute', right: 12, top: 10 }}><Loader2 className="spin" size={16} /></div>}
             </div>

@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react';
-import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, TrendingUp, Instagram, Edit2, Trash2 } from 'lucide-react';
+import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, TrendingUp, AtSign, Edit2, Trash2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -274,7 +274,7 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
                     { icon: <CreditCard size={14} />, label: 'DNI / CUIT', val: selected.dni },
                     { icon: <Phone size={14} />, label: 'Teléfono', val: selected.phone },
                     { icon: <Mail size={14} />, label: 'Email', val: selected.email },
-                    { icon: <Instagram size={14} />, label: 'Instagram', val: selected.instagram, isLink: true },
+                    { icon: <AtSign size={14} />, label: 'Instagram', val: selected.instagram, isLink: true },
                   ].map(r => (
                     <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                       <div style={{ color: 'var(--text-3)', width: 16 }}>{r.icon}</div>

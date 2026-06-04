@@ -434,8 +434,8 @@ input, select, textarea { outline: none; }
   }
   
   .receipt-view {
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 15px 5px !important;
+    margin: 0 auto !important;
     max-width: 100% !important;
     width: 100% !important;
     border: none !important;

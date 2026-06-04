@@ -415,17 +415,12 @@ input, select, textarea { outline: none; }
    PRINT
 ═══════════════════════════════ */
 @media print {
+  @page { margin: 0; }
   .no-print { display: none !important; }
-  body * { visibility: hidden; }
-  .receipt-view, .receipt-view * { visibility: visible; }
-  .receipt-view {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
+  body { background: #fff !important; color: #000 !important; }
+  .app { height: auto !important; display: block !important; }
+  .mo { position:static !important; background:none !important; backdrop-filter:none !important; padding:0 !important; }
+  .mb { border:none !important; box-shadow:none !important; max-width:none !important; }
 }
 
 /* ═══════════════════════════════════════════

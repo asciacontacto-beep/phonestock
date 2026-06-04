@@ -128,7 +128,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
   return (
     <div className="page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <div className="st">Historial de Ventas</div>
           <div className="ss2">Revisá todas las operaciones y facturas</div>
@@ -140,7 +140,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card no-print" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <div className="field" style={{ margin: 0, flex: 2, minWidth: 200 }}>
             <label className="lbl">Buscar</label>
@@ -187,7 +187,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
         </div>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="card no-print" style={{ padding: 0, overflow: 'hidden' }}>
         {filteredSales.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>
             <ShoppingCart size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />

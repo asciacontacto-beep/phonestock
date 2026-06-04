@@ -18,7 +18,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
   const [unit, setUnit] = useState<any>(null);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
   const [selectedAccessories, setSelectedAccessories] = useState<any[]>([]);
-  const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '' });
+  const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '', instagram: '' });
   const [notes, setNotes] = useState('');
   const [payments, setPayments] = useState<any[]>([]);
   const [sc, setSc] = useState('USD');
@@ -134,27 +134,26 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
   const searchCustomer = (val: string) => {
     setCustSearch(val);
     clearTimeout(custTimer.current);
-    if (val.length < 2) { setCustSuggestions([]); return; }
     custTimer.current = setTimeout(async () => {
       setSearchingCust(true);
-      const { data } = await supabase.from('sales')
-        .select('customer')
-        .or(`customer->>name.ilike.%${val}%,customer->>dni.ilike.%${val}%`)
-        .limit(5);
+      
+      let query = supabase.from('customers').select('*').order('updated_at', { ascending: false }).limit(5);
+      
+      if (val.trim().length > 0) {
+        query = query.or(`name.ilike.%${val}%,dni.ilike.%${val}%,instagram.ilike.%${val}%`);
+      }
+      
+      const { data } = await query;
+      
       if (data) {
-        const unique = new Map<string, any>();
-        data.forEach((row: any) => {
-          if (row.customer?.dni) unique.set(row.customer.dni, row.customer);
-          else if (row.customer?.name) unique.set(row.customer.name, row.customer);
-        });
-        setCustSuggestions(Array.from(unique.values()));
+        setCustSuggestions(data);
       }
       setSearchingCust(false);
     }, 350);
   };
 
   const applyCustSuggestion = (c: any) => {
-    setCust({ name: c.name || '', dni: c.dni || '', phone: c.phone || '', email: c.email || '' });
+    setCust({ name: c.name || '', dni: c.dni || '', phone: c.phone || '', email: c.email || '', instagram: c.instagram || '' });
     setCustSearch('');
     setCustSuggestions([]);
   };
@@ -229,6 +228,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
           name: cust.name,
           phone: cust.phone || null,
           email: cust.email || null,
+          instagram: cust.instagram || null,
           updated_at: new Date().toISOString()
         };
         if (cust.dni) custData.dni = cust.dni;
@@ -237,7 +237,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
         } else {
           const { data: existing } = await supabase.from('customers').select('id').eq('name', cust.name).maybeSingle();
           if (existing) {
-            await supabase.from('customers').update({ phone: custData.phone, email: custData.email, updated_at: custData.updated_at }).eq('id', existing.id);
+            await supabase.from('customers').update({ phone: custData.phone, email: custData.email, instagram: custData.instagram, updated_at: custData.updated_at }).eq('id', existing.id);
           } else {
             await supabase.from('customers').insert([custData]);
           }
@@ -324,28 +324,31 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
           <div className="lbl">3. Datos del Cliente</div>
           <div className="field" style={{ position: 'relative' }}>
             <label className="lbl">Buscar cliente anterior (DNI o nombre)</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Search size={16} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
-              <input
-                className="inp"
+            <div className="search-inp-wrapper" style={{ position: 'relative' }}>
+              <Search size={16} className="search-icon" style={{ position: 'absolute', left: 10, top: 12, color: 'var(--text-3)' }} />
+              <input 
+                className="inp" 
+                style={{ paddingLeft: 32 }}
+                placeholder="Buscar cliente guardado (Nombre, DNI o Instagram)..." 
                 value={custSearch}
                 onChange={e => searchCustomer(e.target.value)}
-                placeholder="Ej: 30123456 o Juan Perez..."
-                style={{ flex: 1 }}
+                onFocus={e => searchCustomer(e.target.value)}
               />
-              {searchingCust && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Buscando...</span>}
+              {searchingCust && <div style={{ position: 'absolute', right: 12, top: 10 }}><Loader2 className="spin" size={16} /></div>}
             </div>
+            
             {custSuggestions.length > 0 && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'var(--surface-3)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+              <div style={{ background: 'var(--surface-3)', border: '1px solid var(--border)', borderRadius: 8, marginTop: 4, overflow: 'hidden', position: 'absolute', zIndex: 50, width: '100%' }}>
                 {custSuggestions.map((c, i) => (
-                  <button key={i} onClick={() => applyCustSuggestion(c)}
-                    style={{ width: '100%', padding: '10px 14px', textAlign: 'left', background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  <div 
+                    key={i} 
+                    style={{ padding: '10px 14px', borderBottom: i === custSuggestions.length - 1 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
+                    className="hover-bg"
+                    onClick={() => applyCustSuggestion(c)}
                   >
                     <div style={{ fontWeight: 600 }}>{c.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>DNI: {c.dni || '—'} · Tel: {c.phone || '—'}</div>
-                  </button>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.dni ? `DNI: ${c.dni} ` : ''}{c.phone ? `· Tel: ${c.phone} ` : ''}{c.instagram ? `· @${c.instagram.replace('@','')}` : ''}</div>
+                  </div>
                 ))}
               </div>
             )}
@@ -356,7 +359,10 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
             <div className="col field"><label className="lbl">DNI / CUIT</label><input className="inp" value={cust.dni} onChange={e => setCust(p => ({ ...p, dni: e.target.value }))} /></div>
             <div className="col field"><label className="lbl">Teléfono</label><input className="inp" value={cust.phone} onChange={e => setCust(p => ({ ...p, phone: e.target.value }))} /></div>
           </div>
-          <div className="field"><label className="lbl">Email</label><input className="inp" value={cust.email} onChange={e => setCust(p => ({ ...p, email: e.target.value }))} /></div>
+          <div className="row">
+            <div className="col field"><label className="lbl">Email</label><input className="inp" value={cust.email} onChange={e => setCust(p => ({ ...p, email: e.target.value }))} /></div>
+            <div className="col field"><label className="lbl">Instagram</label><input className="inp" value={cust.instagram} onChange={e => setCust(p => ({ ...p, instagram: e.target.value }))} placeholder="@usuario" /></div>
+          </div>
           <div className="divider" />
           <div style={{ display: 'flex', gap: 12 }}>
             <button className="btn btn-ghost" onClick={() => setStep(2)}>Volver</button>

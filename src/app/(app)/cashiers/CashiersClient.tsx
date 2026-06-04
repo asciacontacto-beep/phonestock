@@ -40,7 +40,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
   const [closureResult, setClosureResult] = useState<any>(null);
   const [dateFilter, setDateFilter] = useState<'today' | 'month' | 'all'>('today');
 
-  const [exForm, setExForm] = useState({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '' });
+  const [exForm, setExForm] = useState({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '', deposit_id: '' });
   const [trForm, setTrForm] = useState({
     from_deposit_id: deposits[0]?.id?.toString() || '',
     to_deposit_id:   deposits[1]?.id?.toString() || deposits[0]?.id?.toString() || '',
@@ -186,9 +186,12 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
   };
 
   const handleExchange = async () => {
-    const { fromCur, fromAmt, toCur, toAmt } = exForm;
+    const { fromCur, fromAmt, toCur, toAmt, deposit_id } = exForm;
     if (!fromAmt || !toAmt) { toast.error('Ingresá ambos montos'); return; }
     if (fromCur === toCur) { toast.error('Las monedas deben ser distintas'); return; }
+    const actualDepositId = deposit_id || deposits[0]?.id?.toString();
+    if (!actualDepositId) { toast.error('No hay depósito asignado'); return; }
+
     setExLoading(true);
     try {
       const saleData = {
@@ -196,6 +199,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
         brand: 'MOVIMIENTO', model: 'CAMBIO DE DIVISA',
         storage: '-', color: '-', imei: `EXC-${Date.now()}`,
         cost_price: 0, price: 0, currency: 'USD',
+        deposit_id: parseInt(actualDepositId),
         payments: [
           { id: fromCur === 'ARS' ? 'ars_cash' : 'usd_cash', amount: -parseFloat(fromAmt), original_amount: -parseFloat(fromAmt), label: `Egreso ${fromCur}` },
           { id: toCur === 'ARS' ? 'ars_cash' : 'usd_cash', amount: parseFloat(toAmt), original_amount: parseFloat(toAmt), label: `Ingreso ${toCur}` }
@@ -205,7 +209,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
       if (error) throw error;
       toast.success('Movimiento registrado');
       setShowExchange(false);
-      setExForm({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '' });
+      setExForm({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '', deposit_id: actualDepositId });
       router.refresh();
     } catch {
       toast.error('Error al registrar movimiento');
@@ -605,6 +609,20 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
               <button className="btn-icon" onClick={() => setShowExchange(false)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {deposits.length > 0 && (
+                <div style={{ background: 'var(--surface-2)', padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Caja / Depósito</div>
+                  <select 
+                    className="inp" 
+                    value={exForm.deposit_id || deposits[0]?.id?.toString()} 
+                    onChange={e => setExForm(p => ({ ...p, deposit_id: e.target.value }))}
+                  >
+                    {deposits.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div style={{ background: 'var(--surface-2)', padding: 12, borderRadius: 8 }}>
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>Monto que ENTREGÁS (Sale de caja)</div>
                 <div style={{ display: 'flex', gap: 10 }}>

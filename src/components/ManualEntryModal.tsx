@@ -210,6 +210,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                   <label className="lbl">Línea de Producto</label>
                   <select className="inp" value={appleCategory} onChange={e => handleAppleCategory(e.target.value)}>
                     <option value="iPhone">iPhone</option>
+                    <option value="iPad">iPad</option>
                     <option value="MacBook">MacBook</option>
                     <option value="AirPods">AirPods</option>
                   </select>

@@ -1,8 +1,11 @@
 "use client"
 import { useState, useMemo } from 'react';
-import { Search, ShoppingCart, Plus, Building2, User as UserIcon, Printer, X } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Building2, User as UserIcon, Printer, X, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Receipt } from '@/components/Receipt';
+import { createClient } from '@/utils/supabase/client';
+import { toast } from 'sonner';
 
 interface Props {
   sales: any[];
@@ -18,6 +21,10 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
   const [sellerFilter, setSellerFilter] = useState('');
   const [currencyFilter, setCurrencyFilter] = useState('');
   const [selectedSale, setSelectedSale] = useState<any>(null);
+  const [voidLoading, setVoidLoading] = useState(false);
+
+  const router = useRouter();
+  const supabase = createClient();
 
   const isOwner = user.role === 'owner';
 
@@ -66,6 +73,57 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
     usd_transf: 'Transf USD',
     usdt: 'USDT',
     tradein: 'Canje'
+  };
+
+  const handleVoidSale = async () => {
+    if (!selectedSale) return;
+    if (!confirm('¿Estás seguro de anular esta venta? Esta acción revertirá el stock de equipos, eliminará equipos recibidos en canje y borrará la venta del historial.')) return;
+    
+    setVoidLoading(true);
+    try {
+      const s = selectedSale;
+
+      // 1. Revertir equipo principal al inventario
+      let stockQuery = supabase.from('stock').select('id').eq('status', 'sold').eq('brand', s.brand).eq('model', s.model);
+      if (s.imei) stockQuery = stockQuery.eq('imei', s.imei);
+      else stockQuery = stockQuery.eq('storage', s.storage).eq('color', s.color);
+
+      const { data: st } = await stockQuery.limit(1).maybeSingle();
+      if (st) {
+        await supabase.from('stock').update({ status: 'available' }).eq('id', st.id);
+      }
+
+      // 2. Revertir accesorios (devolver stock)
+      if (s.accessories && s.accessories.length > 0) {
+        for (const acc of s.accessories) {
+          const { data: aData } = await supabase.from('accessories').select('stock').eq('id', acc.id).single();
+          if (aData) {
+            await supabase.from('accessories').update({ stock: (aData.stock || 0) + acc.qty }).eq('id', acc.id);
+          }
+        }
+      }
+
+      // 3. Eliminar equipos de canje ingresados
+      if (s.payments) {
+        for (const p of s.payments) {
+          if (p.id === 'tradein' && p.device?.imei) {
+            await supabase.from('stock').delete().eq('imei', p.device.imei);
+          }
+        }
+      }
+
+      // 4. Eliminar la venta definitivamente
+      const { error: delErr } = await supabase.from('sales').delete().eq('id', s.id);
+      if (delErr) throw delErr;
+
+      toast.success('Venta anulada correctamente');
+      setSelectedSale(null);
+      router.refresh();
+    } catch (e: any) {
+      toast.error('Error al anular: ' + (e.message || ''));
+    } finally {
+      setVoidLoading(false);
+    }
   };
 
   return (
@@ -223,7 +281,17 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
             </div>
             <div className="mbd" style={{ padding: '20px' }}>
               <Receipt sale={selectedSale} shop={shop} />
-              <div className="no-print" style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+              
+              {isOwner && (
+                <div className="no-print" style={{ marginTop: 20, textAlign: 'center' }}>
+                  <button className="btn btn-ghost" style={{ color: 'var(--red)', fontSize: 13 }} onClick={handleVoidSale} disabled={voidLoading}>
+                    {voidLoading ? <Loader2 className="spin" size={16} style={{ marginRight: 6 }} /> : <Trash2 size={16} style={{ marginRight: 6 }} />}
+                    Anular Venta Permanentemente
+                  </button>
+                </div>
+              )}
+
+              <div className="no-print" style={{ marginTop: 16, display: 'flex', gap: 12 }}>
                 <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setSelectedSale(null)}>Cerrar</button>
                 <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => window.print()}>
                   <Printer size={18} style={{ marginRight: 8 }} /> Imprimir Comprobante

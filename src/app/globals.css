@@ -417,18 +417,29 @@ input, select, textarea { outline: none; }
 @media print {
   @page { margin: 0; }
   .no-print { display: none !important; }
-  body { background: #fff !important; color: #000 !important; }
+  body { background: #fff !important; color: #000 !important; margin: 0; padding: 0; }
   
-  .app, .main, .page { 
+  .app, .main, .page, .mo, .mb, .mbd { 
     height: auto !important; 
     max-height: none !important; 
     overflow: visible !important; 
     display: block !important; 
     position: static !important; 
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
   }
-  .mo { position:static !important; background:none !important; backdrop-filter:none !important; padding:0 !important; height:auto !important; }
-  .mb { border:none !important; box-shadow:none !important; max-width:none !important; max-height:none !important; height:auto !important; overflow:visible !important; }
-  .mbd { overflow:visible !important; height:auto !important; max-height:none !important; padding:0 !important; }
+  
+  .receipt-view {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+  }
 }
 
 /* ═══════════════════════════════════════════

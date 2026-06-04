@@ -1,5 +1,6 @@
 import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
 import { SellClient } from "./SellClient"
 
 export default async function SellPage() {
@@ -10,5 +11,9 @@ export default async function SellPage() {
   const profile = await getProfile(user.id)
   const isOwner = isSuperAdmin || profile?.role === 'owner'
 
-  return <SellClient isOwner={isOwner} assignedDeposits={profile?.deposit_ids || []} />
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <SellClient isOwner={isOwner} assignedDeposits={profile?.deposit_ids || []} />
+    </Suspense>
+  )
 }

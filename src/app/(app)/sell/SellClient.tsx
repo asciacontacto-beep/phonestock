@@ -3,8 +3,8 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Plus, Printer, Search, AlertTriangle, FileText, X, MapPin, PackageOpen, CreditCard, ChevronRight, Receipt as ReceiptIcon, User as UserIcon } from 'lucide-react';
 import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 import { Receipt } from '@/components/Receipt';
 
 export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boolean, assignedDeposits?: any[] }) {
@@ -13,6 +13,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
   const [settings, setSettings] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [unit, setUnit] = useState<any>(null);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
@@ -62,10 +63,21 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
       if (finalDeposits.length > 0) setSelectedDeposit(String(finalDeposits[0].id));
       setSettings(settingsData);
       setAccessoriesList(accData || []);
+
+      const preselectId = searchParams.get('item');
+      if (preselectId && stockData) {
+        const item = stockData.find((s: any) => s.id === preselectId);
+        if (item) {
+          setUnit(item);
+          setSp(item.price);
+          setSc(item.currency);
+          setStep(2);
+        }
+      }
     });
 
 
-  }, []);
+  }, [searchParams]);
 
   const shop = settings || { shop_name: 'Stackr', address: '', phone: '', instagram: '', warranty_text: '' };
 

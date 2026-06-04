@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
-import { Edit2, Trash2, X, Search, PenLine, Package } from 'lucide-react';
+import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -450,11 +450,18 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                {detailItem.status === 'available' && (
+                  <button
+                    className="btn btn-dark"
+                    style={{ flex: 1 }}
+                    onClick={() => router.push(`/sell?item=${detailItem.id}`)}
+                  ><ShoppingCart size={15} style={{ marginRight: 6 }} /> Vender</button>
+                )}
                 <button
                   className="btn btn-outline"
                   style={{ flex: 1 }}
                   onClick={() => { setDetailItem(null); setEditItem(detailItem); }}
-                ><Edit2 size={15} /> Editar</button>
+                ><Edit2 size={15} style={{ marginRight: 6 }} /> Editar</button>
               </div>
             </div>
           </div>

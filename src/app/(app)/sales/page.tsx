@@ -11,12 +11,14 @@ export default async function SalesPage() {
     { data: sales },
     { data: deposits },
     { data: realSellers },
-    { data: currentUserProfile }
+    { data: currentUserProfile },
+    { data: settings }
   ] = await Promise.all([
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
     supabase.from('deposits').select('*').order('name'),
     supabase.from('profiles').select('*').eq('role', 'seller'),
-    supabase.from('profiles').select('*').eq('id', session?.user?.id).single()
+    supabase.from('profiles').select('*').eq('id', session?.user?.id).single(),
+    supabase.from('settings').select('*').single()
   ])
 
   return (
@@ -24,7 +26,8 @@ export default async function SalesPage() {
       sales={sales || []} 
       deposits={deposits || []} 
       realSellers={realSellers || []} 
-      user={currentUserProfile || { id: session?.user?.id }} 
+      user={currentUserProfile || { id: session?.user?.id }}
+      shop={settings || {}}
     />
   )
 }

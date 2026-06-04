@@ -1,20 +1,23 @@
 "use client"
 import { useState, useMemo } from 'react';
-import { Search, ShoppingCart, Plus, Building2, User as UserIcon } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Building2, User as UserIcon, Printer, X } from 'lucide-react';
 import Link from 'next/link';
+import { Receipt } from '@/components/Receipt';
 
 interface Props {
   sales: any[];
   deposits: any[];
   realSellers: any[];
   user: any;
+  shop: any;
 }
 
-export function SalesClient({ sales, deposits, realSellers, user }: Props) {
+export function SalesClient({ sales, deposits, realSellers, user, shop }: Props) {
   const [q, setQ] = useState('');
   const [depFilter, setDepFilter] = useState('');
   const [sellerFilter, setSellerFilter] = useState('');
   const [currencyFilter, setCurrencyFilter] = useState('');
+  const [selectedSale, setSelectedSale] = useState<any>(null);
 
   const isOwner = user.role === 'owner';
 
@@ -157,7 +160,7 @@ export function SalesClient({ sales, deposits, realSellers, user }: Props) {
                   const dep = deposits.find(d => String(d.id) === depId);
 
                   return (
-                    <tr key={sale.id}>
+                    <tr key={sale.id} onClick={() => setSelectedSale(sale)} style={{ cursor: 'pointer' }} className="hover-row">
                       <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{dateStr}</td>
                       <td>
                         <div style={{ fontWeight: 600 }}>{sale.brand} {sale.model}</div>
@@ -209,6 +212,27 @@ export function SalesClient({ sales, deposits, realSellers, user }: Props) {
           </div>
         )}
       </div>
+
+      {/* Sale Detail Modal */}
+      {selectedSale && (
+        <div className="mo">
+          <div className="mb" style={{ maxWidth: 450 }}>
+            <div className="mh no-print">
+              <div className="mt">Detalle de Venta</div>
+              <button className="btn-ghost" onClick={() => setSelectedSale(null)}><X size={18} /></button>
+            </div>
+            <div className="mbd" style={{ padding: '20px' }}>
+              <Receipt sale={selectedSale} shop={shop} />
+              <div className="no-print" style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setSelectedSale(null)}>Cerrar</button>
+                <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => window.print()}>
+                  <Printer size={18} style={{ marginRight: 8 }} /> Imprimir Comprobante
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

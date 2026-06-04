@@ -19,7 +19,7 @@ const isOldPro = (m: string) => {
 };
 
 function emptyVariant() {
-  return { storage: '128GB', color: 'Negro', condition: 'new' as 'new' | 'used', battery: '100%', imei: '', qty: 1 };
+  return { storage: '128GB', color: 'Negro', condition: 'new' as 'new' | 'used', battery: '100%', imei: '', qty: 1, price: '', costPrice: '' };
 }
 
 export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalProps) {

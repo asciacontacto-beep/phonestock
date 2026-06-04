@@ -247,7 +247,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
       setLastSale(saleRow[0]);
       toast.success('Venta confirmada');
       setStep(1); setUnit(null); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
-      setCust({ name: '', dni: '', phone: '', email: '' });
+      setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
     } catch (e: any) {
       toast.error(e.message || JSON.stringify(e) || 'Error al procesar venta');

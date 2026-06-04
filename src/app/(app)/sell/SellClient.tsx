@@ -66,7 +66,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
 
       const preselectId = searchParams.get('item');
       if (preselectId && stockData) {
-        const item = stockData.find((s: any) => s.id === preselectId);
+        const item = stockData.find((s: any) => String(s.id) === preselectId);
         if (item) {
           setUnit(item);
           setSp(item.price);

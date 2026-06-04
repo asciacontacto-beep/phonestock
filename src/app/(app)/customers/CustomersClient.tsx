@@ -1,12 +1,21 @@
 "use client"
 import { useState } from 'react';
-import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, TrendingUp } from 'lucide-react';
+import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, TrendingUp, Instagram, Edit2, Trash2 } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export function CustomersClient({ initialCustomers, initialSales }: { initialCustomers: any[], initialSales: any[] }) {
   const [customers, setCustomers] = useState(initialCustomers);
   const [sales, setSales] = useState(initialSales);
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<any>({});
+  const [loading, setLoading] = useState(false);
+  
+  const supabase = createClient();
+  const router = useRouter();
 
   const filtered = customers.filter(c =>
     !q || `${c.name} ${c.dni} ${c.phone} ${c.email}`.toLowerCase().includes(q.toLowerCase())
@@ -27,6 +36,43 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
   const lastSale = (c: any) => {
     const sl = custSales(c);
     return sl.length > 0 ? sl[0] : null;
+  };
+
+  const handleUpdate = async () => {
+    if (!editData.name) { toast.error('El nombre es obligatorio'); return; }
+    try {
+      setLoading(true);
+      const { error } = await supabase.from('customers').update({
+        name: editData.name,
+        dni: editData.dni || null,
+        phone: editData.phone || null,
+        email: editData.email || null,
+        instagram: editData.instagram || null,
+      }).eq('id', selected.id);
+      
+      if (error) throw error;
+      
+      const updated = { ...selected, ...editData };
+      setCustomers(c => c.map(x => x.id === selected.id ? updated : x));
+      setSelected(updated);
+      setIsEditing(false);
+      toast.success('Cliente actualizado');
+      router.refresh();
+    } catch(e: any) { toast.error(e.message); } finally { setLoading(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('¿Eliminar este cliente permanentemente? Sus ventas seguirán existiendo pero no estarán asociadas a él.')) return;
+    try {
+      setLoading(true);
+      const { error } = await supabase.from('customers').delete().eq('id', selected.id);
+      if (error) throw error;
+      
+      setCustomers(c => c.filter(x => x.id !== selected.id));
+      setSelected(null);
+      toast.success('Cliente eliminado');
+      router.refresh();
+    } catch(e: any) { toast.error(e.message); } finally { setLoading(false); }
   };
 
   return (
@@ -161,9 +207,17 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
         <div className="mo" style={{ zIndex: 200 }} onClick={() => setSelected(null)}>
           <div className="mb" style={{ maxWidth: 520, marginLeft: 'auto', marginRight: 0, height: '100vh', borderRadius: '16px 0 0 16px', overflow: 'auto' }}
             onClick={e => e.stopPropagation()}>
-            <div className="mh" style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface-3)' }}>
-              <div className="mt">Perfil de Cliente</div>
-              <button className="btn-ghost" onClick={() => setSelected(null)}><X size={18} /></button>
+            <div className="mh" style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="mt" style={{ fontWeight: 600 }}>Perfil de Cliente</div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                {!isEditing && (
+                  <>
+                    <button className="btn-icon" onClick={() => { setEditData(selected); setIsEditing(true); }}><Edit2 size={16} /></button>
+                    <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={handleDelete}><Trash2 size={16} /></button>
+                  </>
+                )}
+                <button className="btn-ghost" onClick={() => { setSelected(null); setIsEditing(false); }} style={{ padding: '6px' }}><X size={18} /></button>
+              </div>
             </div>
             <div style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
@@ -183,20 +237,59 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
                 </div>
               </div>
 
-              <div className="card" style={{ marginBottom: 20, padding: 16, background: 'var(--surface-3)' }}>
-                <div className="sl" style={{ marginBottom: 12, fontSize: 12 }}>DATOS DE CONTACTO</div>
-                {[
-                  { icon: <CreditCard size={14} />, label: 'DNI / CUIT', val: selected.dni },
-                  { icon: <Phone size={14} />, label: 'Teléfono', val: selected.phone },
-                  { icon: <Mail size={14} />, label: 'Email', val: selected.email },
-                ].map(r => (
-                  <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                    <div style={{ color: 'var(--text-3)', width: 16 }}>{r.icon}</div>
-                    <span style={{ color: 'var(--text-3)', fontSize: 12, width: 70 }}>{r.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 500 }}>{r.val || '—'}</span>
+              {isEditing ? (
+                <div className="card" style={{ marginBottom: 20, padding: 16, background: 'var(--surface-3)' }}>
+                  <div className="sl" style={{ marginBottom: 16, fontSize: 12 }}>EDITAR DATOS</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div>
+                      <label className="lbl">Nombre</label>
+                      <input className="inp" value={editData.name || ''} onChange={e => setEditData({...editData, name: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="lbl">DNI / CUIT</label>
+                      <input className="inp" value={editData.dni || ''} onChange={e => setEditData({...editData, dni: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="lbl">Teléfono</label>
+                      <input className="inp" value={editData.phone || ''} onChange={e => setEditData({...editData, phone: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="lbl">Email</label>
+                      <input className="inp" value={editData.email || ''} onChange={e => setEditData({...editData, email: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="lbl">Instagram (sin @)</label>
+                      <input className="inp" placeholder="ej: juanperez" value={editData.instagram || ''} onChange={e => setEditData({...editData, instagram: e.target.value.replace('@', '')})} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                      <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setIsEditing(false)}>Cancelar</button>
+                      <button className="btn btn-dark" style={{ flex: 1 }} onClick={handleUpdate} disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</button>
+                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="card" style={{ marginBottom: 20, padding: 16, background: 'var(--surface-3)' }}>
+                  <div className="sl" style={{ marginBottom: 12, fontSize: 12 }}>DATOS DE CONTACTO</div>
+                  {[
+                    { icon: <CreditCard size={14} />, label: 'DNI / CUIT', val: selected.dni },
+                    { icon: <Phone size={14} />, label: 'Teléfono', val: selected.phone },
+                    { icon: <Mail size={14} />, label: 'Email', val: selected.email },
+                    { icon: <Instagram size={14} />, label: 'Instagram', val: selected.instagram, isLink: true },
+                  ].map(r => (
+                    <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <div style={{ color: 'var(--text-3)', width: 16 }}>{r.icon}</div>
+                      <span style={{ color: 'var(--text-3)', fontSize: 12, width: 70 }}>{r.label}</span>
+                      {r.isLink && r.val ? (
+                        <a href={`https://instagram.com/${r.val}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent)', textDecoration: 'none' }}>
+                          @{r.val}
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{r.val || '—'}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="sl" style={{ marginBottom: 12, fontSize: 12 }}>
                 <ShoppingBag size={13} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />

@@ -1,6 +1,6 @@
 "use client"
 import { useState, useMemo } from 'react';
-import { Search, ShoppingCart, Plus, Building2, User as UserIcon, Printer, X, Trash2, Loader2 } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Building2, User as UserIcon, Printer, X, Trash2, Loader2, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Receipt } from '@/components/Receipt';
@@ -22,6 +22,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
   const [currencyFilter, setCurrencyFilter] = useState('');
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [voidLoading, setVoidLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<any>({});
+  const [editLoading, setEditLoading] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
@@ -256,7 +259,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)' }}>
-                          {sale.currency === 'USD' ? 'U$' : 'ARS'} {sale.price.toLocaleString('es-AR')}
+                          {sale.currency === 'USD' ? 'U$' : 'ARS '} {sale.price.toLocaleString('es-AR')}
                         </div>
                         <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
                           {sale.payments?.map((p: any) => PAY_LABELS[p.id] || p.label || p.id).join(', ')}
@@ -276,27 +279,94 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
         <div className="mo">
           <div className="mb" style={{ maxWidth: 450 }}>
             <div className="mh no-print">
-              <div className="mt">Detalle de Venta</div>
-              <button className="btn-ghost" onClick={() => setSelectedSale(null)}><X size={18} /></button>
+              <div className="mt" style={{ fontWeight: 600 }}>{isEditing ? 'Editar Venta' : 'Detalle de Venta'}</div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                {!isEditing && isOwner && (
+                  <button className="btn-icon" onClick={() => { 
+                    setEditData({ 
+                      seller_id: selectedSale.seller_id, 
+                      notes: selectedSale.notes || '', 
+                      customer: selectedSale.customer || { name: '', dni: '', phone: '', email: '' } 
+                    }); 
+                    setIsEditing(true); 
+                  }}>
+                    <Edit2 size={16} />
+                  </button>
+                )}
+                <button className="btn-ghost" onClick={() => { setSelectedSale(null); setIsEditing(false); }} style={{ padding: '6px' }}><X size={18} /></button>
+              </div>
             </div>
             <div className="mbd" style={{ padding: '20px' }}>
-              <Receipt sale={selectedSale} shop={shop} />
-              
-              {isOwner && (
-                <div className="no-print" style={{ marginTop: 20, textAlign: 'center' }}>
-                  <button className="btn btn-ghost" style={{ color: 'var(--red)', fontSize: 13 }} onClick={handleVoidSale} disabled={voidLoading}>
-                    {voidLoading ? <Loader2 className="spin" size={16} style={{ marginRight: 6 }} /> : <Trash2 size={16} style={{ marginRight: 6 }} />}
-                    Anular Venta Permanentemente
-                  </button>
+              {isEditing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div>
+                    <label className="lbl">Vendedor</label>
+                    <select className="inp" value={editData.seller_id || ''} onChange={e => setEditData({...editData, seller_id: e.target.value})}>
+                      {realSellers.map(rs => <option key={rs.id} value={rs.id}>{rs.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="lbl">Nombre Cliente</label>
+                    <input className="inp" value={editData.customer?.name || ''} onChange={e => setEditData({...editData, customer: {...editData.customer, name: e.target.value}})} />
+                  </div>
+                  <div>
+                    <label className="lbl">DNI / CUIT Cliente</label>
+                    <input className="inp" value={editData.customer?.dni || ''} onChange={e => setEditData({...editData, customer: {...editData.customer, dni: e.target.value}})} />
+                  </div>
+                  <div>
+                    <label className="lbl">Teléfono Cliente</label>
+                    <input className="inp" value={editData.customer?.phone || ''} onChange={e => setEditData({...editData, customer: {...editData.customer, phone: e.target.value}})} />
+                  </div>
+                  <div>
+                    <label className="lbl">Notas / Garantía</label>
+                    <textarea className="inp" value={editData.notes || ''} onChange={e => setEditData({...editData, notes: e.target.value})} rows={3} style={{ resize: 'none' }} />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                    <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setIsEditing(false)}>Cancelar</button>
+                    <button className="btn btn-dark" style={{ flex: 1 }} disabled={editLoading} onClick={async () => {
+                      try {
+                        setEditLoading(true);
+                        const sellerName = realSellers.find(s => s.id === editData.seller_id)?.name || selectedSale.seller_name;
+                        const { error } = await supabase.from('sales').update({
+                          seller_id: editData.seller_id,
+                          seller_name: sellerName,
+                          customer: editData.customer,
+                          notes: editData.notes
+                        }).eq('id', selectedSale.id);
+                        if (error) throw error;
+                        
+                        toast.success('Venta actualizada');
+                        setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes });
+                        setIsEditing(false);
+                        router.refresh();
+                      } catch(e: any) { toast.error(e.message); } finally { setEditLoading(false); }
+                    }}>
+                      {editLoading ? 'Guardando...' : 'Guardar Cambios'}
+                    </button>
+                  </div>
                 </div>
-              )}
+              ) : (
+                <>
+                  <Receipt sale={selectedSale} shop={shop} />
+                  
+                  {isOwner && (
+                    <div className="no-print" style={{ marginTop: 20, textAlign: 'center' }}>
+                      <button className="btn btn-ghost" style={{ color: 'var(--red)', fontSize: 13 }} onClick={handleVoidSale} disabled={voidLoading}>
+                        {voidLoading ? <Loader2 className="spin" size={16} style={{ marginRight: 6 }} /> : <Trash2 size={16} style={{ marginRight: 6 }} />}
+                        Anular Venta Permanentemente
+                      </button>
+                    </div>
+                  )}
 
-              <div className="no-print" style={{ marginTop: 16, display: 'flex', gap: 12 }}>
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setSelectedSale(null)}>Cerrar</button>
-                <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => window.print()}>
-                  <Printer size={18} style={{ marginRight: 8 }} /> Imprimir Comprobante
-                </button>
-              </div>
+                  <div className="no-print" style={{ marginTop: 16, display: 'flex', gap: 12 }}>
+                    <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setSelectedSale(null)}>Cerrar</button>
+                    <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => window.print()}>
+                      <Printer size={18} style={{ marginRight: 8 }} /> Imprimir Comprobante
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

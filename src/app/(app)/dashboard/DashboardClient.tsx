@@ -233,7 +233,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
                 id: s.id,
                 type: 'sale',
                 label: `${s.seller_name || 'Alguien'} vendió un ${s.brand} ${s.model}`,
-                sub: s.customer?.name ? `Cliente: ${s.customer.name}` : `${s.currency === 'USD' ? 'U$' : '$'} ${s.price?.toLocaleString()}`,
+                sub: s.customer?.name ? `Cliente: ${s.customer.name}` : `${s.currency === 'USD' ? 'U$' : 'ARS'} ${s.price?.toLocaleString()}`,
                 time: s.created_at,
                 color: 'var(--green)'
               })),

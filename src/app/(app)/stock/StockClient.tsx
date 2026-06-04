@@ -84,7 +84,8 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         price: parseFloat(editItem.price), 
         cost_price: editItem.cost_price ? parseFloat(editItem.cost_price) : null,
         currency: editItem.currency,
-        condition: editItem.condition, deposit: editItem.deposit
+        condition: editItem.condition, deposit: editItem.deposit,
+        imei: editItem.imei || null
       };
       const { error } = await supabase.from('stock').update(updatedFields).eq('id', editItem.id);
       if (error) throw error;
@@ -267,6 +268,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                         {s.condition === 'new' ? 'Sellado' : 'Usado'}
                       </span>
                       <span>{s.storage} · {s.color}</span>
+                      {s.imei && <span style={{ fontFamily: 'JetBrains Mono', fontSize: 11 }}>· IMEI: {s.imei}</span>}
                     </div>
                   </div>
 
@@ -355,6 +357,11 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                     {(COLORS[editItem.model] || COLORS[editItem.brand] || ['Negro']).map((c: string) => <option key={c} value={c} />)}
                   </datalist>
                 </div>
+              </div>
+
+              <div>
+                <label className="lbl">IMEI / Serie (Opcional)</label>
+                <input className="inp" placeholder="Opcional" value={editItem.imei || ''} onChange={e => setEditItem({...editItem, imei: e.target.value})} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

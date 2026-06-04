@@ -345,7 +345,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
                     key={i} 
                     style={{ padding: '10px 14px', borderBottom: i === custSuggestions.length - 1 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
                     className="hover-bg"
-                    onClick={() => applyCustSuggestion(c)}
+                    onMouseDown={(e) => { e.preventDefault(); applyCustSuggestion(c); }}
                   >
                     <div style={{ fontWeight: 600 }}>{c.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.dni ? `DNI: ${c.dni} ` : ''}{c.phone ? `· Tel: ${c.phone} ` : ''}{c.instagram ? `· @${c.instagram.replace('@','')}` : ''}</div>

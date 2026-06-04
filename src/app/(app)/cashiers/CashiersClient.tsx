@@ -211,8 +211,8 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
       setShowExchange(false);
       setExForm({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '', deposit_id: actualDepositId });
       router.refresh();
-    } catch {
-      toast.error('Error al registrar movimiento');
+    } catch (e: any) {
+      toast.error('Error al registrar movimiento: ' + (e?.message || JSON.stringify(e)));
     } finally {
       setExLoading(false);
     }

@@ -27,10 +27,10 @@ export const MODELS: Record<string, string[]> = {
     'MacBook Air M5', 'MacBook Air M4', 'MacBook Air M3', 'MacBook Air M2', 'MacBook Air M1', 'MacBook Air (Intel)',
     'MacBook Pro M5', 'MacBook Pro M4', 'MacBook Pro M3', 'MacBook Pro M2', 'MacBook Pro M1', 'MacBook Pro (Intel)',
     'MacBook (12-inch)', 'MacBook Neo',
-    'iPad Pro M4', 'iPad Pro M2', 'iPad Pro M1', 'iPad Pro (Intel)',
-    'iPad Air M2', 'iPad Air M1', 'iPad Air (5ta Gen)', 'iPad Air (4ta Gen)',
-    'iPad (10ma Gen)', 'iPad (9na Gen)',
-    'iPad mini (A17 Pro)', 'iPad mini (6ta Gen)',
+    'iPad Pro 13" (M5)', 'iPad Pro 11" (M5)', 'iPad Pro 13" (M4)', 'iPad Pro 11" (M4)', 'iPad Pro 12.9" (6.ª gen)', 'iPad Pro 11" (4.ª gen)', 'iPad Pro 12.9" (5.ª gen)', 'iPad Pro 11" (3.ª gen)', 'iPad Pro 12.9" (4.ª gen)', 'iPad Pro 11" (2.ª gen)', 'iPad Pro 12.9" (3.ª gen)', 'iPad Pro 11" (1.ª gen)', 'iPad Pro 12.9" (2.ª gen)', 'iPad Pro 10.5"', 'iPad Pro 12.9" (1.ª gen)', 'iPad Pro 9.7"',
+    'iPad Air 13" (M4)', 'iPad Air 11" (M4)', 'iPad Air 13" (M3)', 'iPad Air 11" (M3)', 'iPad Air 13" (M2)', 'iPad Air 11" (M2)', 'iPad Air (5.ª gen - M1)', 'iPad Air (4.ª gen)', 'iPad Air (3.ª gen)', 'iPad Air 2', 'iPad Air (1.ª gen)',
+    'iPad mini (7.ª gen - A17 Pro)', 'iPad mini (6.ª gen)', 'iPad mini 5', 'iPad mini 4', 'iPad mini 3', 'iPad mini 2', 'iPad mini (1.ª gen)',
+    'iPad (11.ª gen)', 'iPad (10.ª gen)', 'iPad (9.ª gen)', 'iPad (8.ª gen)', 'iPad (7.ª gen)', 'iPad (6.ª gen)', 'iPad (5.ª gen)', 'iPad (4.ª gen)', 'iPad (3.ª gen)', 'iPad 2', 'iPad (1.ª gen)',
     'AirPods 2', 'AirPods 3', 'AirPods 4', 'AirPods Pro', 'AirPods Pro 2', 'AirPods Max'
   ],
   Samsung: [

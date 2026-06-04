@@ -209,7 +209,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
         imei: pay.device.imei || `TI-${Date.now()}`,
         condition: 'used',
         battery: pay.device.battery || null,
-        deposit: pay.device.deposit ?? (deposits[0]?.id ?? 1),
+        deposit: unit.deposit,
         status: 'available',
         price: parseFloat(pay.device.salePrice) || pay.amount,
         cost_price: pay.amount,
@@ -527,7 +527,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
           <div className="mb">
             <div className="mh"><div className="mh-title">Tomar equipo usado</div><button className="btn-icon" onClick={() => setShowTI(false)}><X size={18}/></button></div>
             <div className="mbd">
-              <TradeInForm currency={sc} deposits={deposits} onConfirm={handleTI} />
+              <TradeInForm currency={sc} onConfirm={handleTI} />
             </div>
           </div>
         </div>
@@ -549,12 +549,11 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
   );
 }
 
-function TradeInForm({ currency, deposits, onConfirm }: any) {
+function TradeInForm({ currency, onConfirm }: any) {
   const [appleCategory, setAppleCategory] = useState('iPhone');
   const [f, setF] = useState({
     brand: 'Apple', model: 'iPhone 12', storage: '128GB', color: 'Negro',
-    imei: '', condition: 'used', battery: '', notes: '', salePrice: '', value: '', valueCurrency: currency,
-    deposit: deposits?.[0]?.id ?? 1
+    imei: '', condition: 'used', battery: '', notes: '', salePrice: '', value: '', valueCurrency: currency
   });
 
   return (
@@ -612,14 +611,6 @@ function TradeInForm({ currency, deposits, onConfirm }: any) {
         <div className="col field"><label className="lbl">Costo (Valor toma)</label><input className="inp" type="number" value={f.value} onChange={e => setF(p => ({ ...p, value: e.target.value }))} placeholder="0" /></div>
         <div className="col field"><label className="lbl">Moneda</label><input className="inp" value={f.valueCurrency} disabled /></div>
       </div>
-      {deposits?.length > 0 && (
-        <div className="field">
-          <label className="lbl">Ingresar al depósito</label>
-          <select className="inp" value={String(f.deposit)} onChange={e => setF(p => ({ ...p, deposit: e.target.value }))}>
-            {deposits.map((d: any) => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
-          </select>
-        </div>
-      )}
       <button className="btn btn-dark btn-lg" style={{ width: '100%' }} onClick={() => onConfirm(f)}>Agregar a la venta</button>
     </>
   );

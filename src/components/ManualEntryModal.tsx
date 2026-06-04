@@ -140,8 +140,8 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
             condition: v.condition,
             battery: v.condition === 'used' ? v.battery : null,
             imei: qty === 1 && v.imei ? v.imei : null,
-            price: parseFloat(price), 
-            cost_price: parseFloat(costPrice),
+            price: v.price ? parseFloat(v.price) : parseFloat(price), 
+            cost_price: v.costPrice ? parseFloat(v.costPrice) : parseFloat(costPrice),
             currency: cur,
             deposit: dep, supplier_id: sup, status: 'available', upc: upc || null
           });
@@ -261,6 +261,16 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                       <input className="inp" list="battery-options" placeholder="Ej: 87%" value={v.battery} onChange={e => updV(i, 'battery', e.target.value)} />
                     </div>
                   )}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                    <div>
+                      <label className="lbl">Precio Venta (opcional)</label>
+                      <input className="inp" type="text" inputMode="decimal" placeholder={`Base: $${price || '0'}`} value={v.price || ''} onChange={e => updV(i, 'price', e.target.value.replace(/[^0-9.]/g, ''))} />
+                    </div>
+                    <div>
+                      <label className="lbl">Precio Costo (opcional)</label>
+                      <input className="inp" type="text" inputMode="decimal" placeholder={`Base: $${costPrice || '0'}`} value={v.costPrice || ''} onChange={e => updV(i, 'costPrice', e.target.value.replace(/[^0-9.]/g, ''))} />
+                    </div>
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div><label className="lbl">Cantidad</label><input className="inp" type="text" inputMode="numeric" value={v.qty} onChange={e => { const val = e.target.value.replace(/\D/g, ''); updV(i, 'qty', val === '' ? '' : parseInt(val, 10)); }} /></div>
                     {Number(v.qty) === 1 && (<div><label className="lbl">IMEI (opcional)</label><input className="inp" type="text" inputMode="numeric" value={v.imei} placeholder="15 dígitos" onChange={e => updV(i, 'imei', e.target.value)} /></div>)}

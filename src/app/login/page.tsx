@@ -162,15 +162,16 @@ export default function LoginPage() {
         .login-left { flex: 1; background: #f9fafb; display: flex; flex-direction: column; justify-content: center; padding: 80px; position: relative; overflow: hidden; border-right: 1px solid #e5e7eb; }
         .login-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; background: #ffffff; }
         .mobile-logo { display: none; }
-        .glass-panel { background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 24px; padding: 32px; backdrop-filter: blur(10px); }
-        .feature-item { display: flex; align-items: center; gap: 12px; color: rgba(0, 0, 0, 0.7); font-size: 14px; margin-bottom: 16px; font-weight: 500; }
+        .glass-panel { background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 24px; padding: 32px; backdrop-filter: blur(20px); box-shadow: 0 10px 40px rgba(0,0,0,0.03); }
+        .feature-item { display: flex; align-items: center; gap: 12px; color: rgba(0, 0, 0, 0.8); font-size: 14px; margin-bottom: 16px; font-weight: 500; }
         .feature-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 0, 0, 0.05); display: flex; align-items: center; justify-content: center; color: #000; }
         
         /* Floating background shapes animation */
         @keyframes float1 { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
         @keyframes float2 { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(20px) scale(0.95); } }
-        .shape1 { position: absolute; top: -10%; left: -10%; width: 60%; height: 60%; background: radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%); border-radius: 50%; animation: float1 10s ease-in-out infinite; }
-        .shape2 { position: absolute; bottom: -20%; right: -10%; width: 70%; height: 70%; background: radial-gradient(circle, rgba(0,0,0,0.02) 0%, transparent 70%); border-radius: 50%; animation: float2 12s ease-in-out infinite; }
+        .shape1 { position: absolute; top: -10%; left: -10%; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 60%); border-radius: 50%; animation: float1 15s ease-in-out infinite; filter: blur(60px); z-index: 0; pointer-events: none; }
+        .shape2 { position: absolute; bottom: -20%; right: -10%; width: 70vw; height: 70vw; background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 60%); border-radius: 50%; animation: float2 18s ease-in-out infinite; filter: blur(80px); z-index: 0; pointer-events: none; }
+        .shape3 { position: absolute; top: 30%; left: 30%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 60%); border-radius: 50%; animation: float1 20s ease-in-out infinite reverse; filter: blur(60px); z-index: 0; pointer-events: none; }
         
         .auth-inp { width: 100%; padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 15px; outline: none; transition: all 0.2s ease; background: #fff; color: #111; }
         .auth-inp:focus { border-color: #09090b; box-shadow: 0 0 0 4px rgba(9,9,11,0.05); }
@@ -187,6 +188,7 @@ export default function LoginPage() {
       <div className="login-left">
         <div className="shape1" />
         <div className="shape2" />
+        <div className="shape3" />
         
         <motion.div 
           initial={{ opacity: 0, x: -40 }} 

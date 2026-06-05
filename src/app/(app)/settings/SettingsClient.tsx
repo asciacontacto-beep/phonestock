@@ -34,13 +34,8 @@ export function SettingsClient({ initialSettings, profile }: { initialSettings: 
       }
 
       let error;
-      if (payload.id) {
-        const { error: err } = await supabase.from('settings').update(cleanForm).eq('id', payload.id);
-        error = err;
-      } else {
-        const { error: err } = await supabase.from('settings').insert([payload]);
-        error = err;
-      }
+      const { error: err } = await supabase.from('settings').upsert(payload, { onConflict: 'org_id' });
+      error = err;
 
       if (error) throw error;
       toast.success('Configuración guardada correctamente');

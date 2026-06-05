@@ -195,11 +195,11 @@ export default function LoginPage() {
           style={{ position: 'relative', zIndex: 1, maxWidth: 480, margin: '0 auto' }}
         >
           {/* Custom System Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 50 }}>
-            <div style={{ width: 80, height: 80, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 50 }}>
+            <div style={{ width: 120, height: 120, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <img src="/logo.png?v=2" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
-            <div style={{ color: '#111', fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em' }}>Stackr</div>
+            <div style={{ color: '#111', fontSize: 44, fontWeight: 800, letterSpacing: '-0.04em' }}>Stackr</div>
           </div>
           
           <h1 style={{ color: '#111', fontSize: 52, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 24 }}>
@@ -241,7 +241,7 @@ export default function LoginPage() {
         >
           {/* Logo on mobile only */}
           <div className="mobile-logo" style={{ marginBottom: 40 }}>
-            <div style={{ width: 64, height: 64, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto 20px' }}>
+            <div style={{ width: 96, height: 96, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto 20px' }}>
               <img src="/logo.png?v=2" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 6, textAlign: 'center', color: '#111' }}>

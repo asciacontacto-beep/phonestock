@@ -58,6 +58,25 @@ export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }
         </button>
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 24 }}>
+        <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase' }}>Ingresados</div>
+          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{repairs.filter(r => r.status === 'INGRESADO').length}</div>
+        </div>
+        <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600, textTransform: 'uppercase' }}>En Revisión</div>
+          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{repairs.filter(r => r.status === 'REVISION').length}</div>
+        </div>
+        <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 12, color: 'var(--purple)', fontWeight: 600, textTransform: 'uppercase' }}>Esp. Repuesto</div>
+          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{repairs.filter(r => r.status === 'REPUESTO').length}</div>
+        </div>
+        <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600, textTransform: 'uppercase' }}>Listos / Reparados</div>
+          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{repairs.filter(r => r.status === 'REPARADO').length}</div>
+        </div>
+      </div>
+
       <div className="search-bar no-print">
         <Search size={16} color="var(--text-3)" style={{ flexShrink: 0 }} />
         <input
@@ -131,11 +150,16 @@ export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }
 
 function NewRepairModal({ onClose, onSave, user }: any) {
   const [f, setF] = useState({
-    customer_name: '', customer_phone: '',
     device_brand: 'Apple', device_model: '', device_color: '', device_password: '',
     issue_description: '', visual_condition: '',
     budget: '', deposit_paid: '', deposit_id: ''
   });
+  const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '', instagram: '' });
+  const [custSearch, setCustSearch] = useState('');
+  const [custSuggestions, setCustSuggestions] = useState<any[]>([]);
+  const [searchingCust, setSearchingCust] = useState(false);
+  const [custTimer, setCustTimer] = useState<any>(null);
+
   const [deposits, setDeposits] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
@@ -149,15 +173,47 @@ function NewRepairModal({ onClose, onSave, user }: any) {
     });
   }, []);
 
+  const searchCustomer = async (val: string) => {
+    setCustSearch(val);
+    if (custTimer) clearTimeout(custTimer);
+    
+    setCustTimer(setTimeout(async () => {
+      setSearchingCust(true);
+      let query = supabase.from('customers').select('*').order('updated_at', { ascending: false }).limit(5);
+      if (val.trim().length > 0) query = query.or(`name.ilike.%${val}%,dni.ilike.%${val}%,instagram.ilike.%${val}%`);
+      const { data } = await query;
+      if (data) setCustSuggestions(data);
+      setSearchingCust(false);
+    }, 350));
+  };
+
+  const applyCustSuggestion = (c: any) => {
+    setCust({ name: c.name || '', dni: c.dni || '', phone: c.phone || '', email: c.email || '', instagram: c.instagram || '' });
+    setCustSearch('');
+    setCustSuggestions([]);
+  };
+
   const handleSave = async () => {
-    if (!f.customer_name || !f.device_model || !f.issue_description) return toast.error('Completá los campos obligatorios');
+    if (!cust.name || !f.device_model || !f.issue_description) return toast.error('Completá los campos obligatorios');
     setSaving(true);
     try {
+      // 1. Create or update customer
+      let customerId = null;
+      const { data: existingCust } = await supabase.from('customers').select('id').eq('name', cust.name).single();
+      if (existingCust) {
+        customerId = existingCust.id;
+        await supabase.from('customers').update({ phone: cust.phone, dni: cust.dni, instagram: cust.instagram, email: cust.email }).eq('id', customerId);
+      } else {
+        const { data: newCust, error: custErr } = await supabase.from('customers').insert([cust]).select().single();
+        if (custErr) throw custErr;
+        customerId = newCust.id;
+      }
+
       const deposit_paid = parseFloat(f.deposit_paid) || 0;
       const budget = parseFloat(f.budget) || null;
       
       const { data: repData, error } = await supabase.from('repairs').insert([{
-        customer_name: f.customer_name, customer_phone: f.customer_phone,
+        customer_id: customerId, customer_name: cust.name, customer_phone: cust.phone,
         device_brand: f.device_brand, device_model: f.device_model, device_color: f.device_color, device_password: f.device_password,
         issue_description: f.issue_description, visual_condition: f.visual_condition,
         budget, deposit_paid, deposit_id: deposit_paid > 0 ? parseInt(f.deposit_id) : null
@@ -173,7 +229,7 @@ function NewRepairModal({ onClose, onSave, user }: any) {
           storage: '-', color: '-', imei: `REP-${repData[0].id.split('-')[0]}`,
           cost_price: 0, price: deposit_paid, currency: 'ARS',
           payments: [{ id: 'ars_cash', amount: deposit_paid, original_amount: deposit_paid, label: 'Efectivo ARS (Seña)' }],
-          customer: { name: f.customer_name, phone: f.customer_phone }
+          customer: cust
         };
         await supabase.from('sales').insert([saleData]);
       }
@@ -194,11 +250,40 @@ function NewRepairModal({ onClose, onSave, user }: any) {
           <button className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="row">
-            <div className="col field"><label className="lbl">Cliente *</label><input className="inp" value={f.customer_name} onChange={e=>setF({...f, customer_name: e.target.value})} placeholder="Ej: Juan Perez" /></div>
-            <div className="col field"><label className="lbl">Teléfono</label><input className="inp" value={f.customer_phone} onChange={e=>setF({...f, customer_phone: e.target.value})} placeholder="Ej: 112345678" /></div>
+          
+          <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 12 }}>1. Datos del Cliente</div>
+            <div className="search-inp-wrapper" style={{ position: 'relative', marginBottom: 12 }}>
+              <Search size={16} className="search-icon" style={{ position: 'absolute', left: 10, top: 12, color: 'var(--text-3)' }} />
+              <input 
+                className="inp" style={{ paddingLeft: 32 }} placeholder="Buscar cliente guardado (Nombre, DNI o Instagram)..." 
+                value={custSearch} onChange={e => searchCustomer(e.target.value)} onFocus={e => searchCustomer(e.target.value)} autoComplete="off"
+              />
+            </div>
+            {custSuggestions.length > 0 && (
+              <div style={{ background: 'var(--surface-3)', border: '1px solid var(--border)', borderRadius: 8, marginTop: -8, marginBottom: 12, overflow: 'hidden', position: 'relative', zIndex: 50, width: '100%' }}>
+                {custSuggestions.map((c, i) => (
+                  <div key={i} style={{ padding: '10px 14px', borderBottom: i === custSuggestions.length - 1 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
+                    className="hover-bg" onMouseDown={(e) => { e.preventDefault(); applyCustSuggestion(c); }}>
+                    <div style={{ fontWeight: 600 }}>{c.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.dni ? `DNI: ${c.dni} ` : ''}{c.phone ? `· Tel: ${c.phone} ` : ''}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="row">
+              <div className="col field"><label className="lbl">Nombre y Apellido *</label><input className="inp" value={cust.name} onChange={e => setCust(p => ({ ...p, name: e.target.value }))} placeholder="Ej: Juan Perez" /></div>
+              <div className="col field"><label className="lbl">Teléfono</label><input className="inp" value={cust.phone} onChange={e => setCust(p => ({ ...p, phone: e.target.value }))} placeholder="Ej: 112345678" /></div>
+            </div>
+            <div className="row">
+              <div className="col field"><label className="lbl">DNI</label><input className="inp" value={cust.dni} onChange={e => setCust(p => ({ ...p, dni: e.target.value }))} /></div>
+              <div className="col field"><label className="lbl">Instagram (Opcional)</label><input className="inp" value={cust.instagram} onChange={e => setCust(p => ({ ...p, instagram: e.target.value }))} /></div>
+            </div>
           </div>
-          <div className="row">
+
+          <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 12 }}>2. Dispositivo y Falla</div>
+            <div className="row">
             <div className="col field"><label className="lbl">Marca</label><input className="inp" value={f.device_brand} onChange={e=>setF({...f, device_brand: e.target.value})} /></div>
             <div className="col field"><label className="lbl">Modelo *</label><input className="inp" value={f.device_model} onChange={e=>setF({...f, device_model: e.target.value})} placeholder="Ej: iPhone 11" /></div>
           </div>
@@ -208,8 +293,11 @@ function NewRepairModal({ onClose, onSave, user }: any) {
           </div>
           <div className="field"><label className="lbl">Falla Reportada *</label><textarea className="inp" style={{ minHeight: 60, padding: '10px 14px' }} value={f.issue_description} onChange={e=>setF({...f, issue_description: e.target.value})} placeholder="No prende, cambiar pantalla..." /></div>
           <div className="field"><label className="lbl">Estado Visual (Opcional)</label><input className="inp" value={f.visual_condition} onChange={e=>setF({...f, visual_condition: e.target.value})} placeholder="Rayado atrás, vidrio roto..." /></div>
+          </div>
           
-          <div style={{ background: 'var(--surface-2)', padding: 12, borderRadius: 8, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 12 }}>3. Presupuesto y Seña</div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <div className="col field"><label className="lbl">Presupuesto Estimado ($)</label><input className="inp" type="number" value={f.budget} onChange={e=>setF({...f, budget: e.target.value})} placeholder="0" /></div>
             <div className="col field"><label className="lbl">Seña Dejada ($)</label><input className="inp" type="number" value={f.deposit_paid} onChange={e=>setF({...f, deposit_paid: e.target.value})} placeholder="0" /></div>
             {parseFloat(f.deposit_paid) > 0 && deposits.length > 0 && (
@@ -219,6 +307,7 @@ function NewRepairModal({ onClose, onSave, user }: any) {
                 </select>
               </div>
             )}
+            </div>
           </div>
           
           <button className="btn btn-dark btn-lg" onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Registrar Ingreso'}</button>
@@ -231,19 +320,57 @@ function NewRepairModal({ onClose, onSave, user }: any) {
 function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }: any) {
   const [f, setF] = useState(repair);
   const [saving, setSaving] = useState(false);
+  const [deposits, setDeposits] = useState<any[]>([]);
+  const [collectDepositId, setCollectDepositId] = useState('');
   const supabase = createClient();
+
+  useEffect(() => {
+    supabase.from('deposits').select('id, name').then(({data}) => {
+      if(data) {
+        setDeposits(data);
+        if(data.length > 0) setCollectDepositId(String(data[0].id));
+      }
+    });
+  }, []);
 
   const handleUpdate = async () => {
     setSaving(true);
     try {
+      const budget = parseFloat(f.budget) || 0;
+      const deposit_paid = parseFloat(repair.deposit_paid) || 0;
+      const pending_balance = budget - deposit_paid;
+      const isDeliveringWithBalance = f.status === 'ENTREGADO' && repair.status !== 'ENTREGADO' && pending_balance > 0;
+
+      if (isDeliveringWithBalance && !collectDepositId) {
+        toast.error('Seleccioná la caja para cobrar el saldo');
+        setSaving(false);
+        return;
+      }
+
       const { error } = await supabase.from('repairs').update({
         status: f.status,
         assigned_technician: f.assigned_technician,
-        budget: f.budget,
+        budget: parseFloat(f.budget) || null,
+        cost: parseFloat(f.cost) || null,
         notes: f.notes,
         updated_at: new Date().toISOString()
       }).eq('id', f.id);
       if (error) throw error;
+
+      if (isDeliveringWithBalance) {
+        const saleData = {
+          seller_id: user.id, seller_name: user.name,
+          deposit_id: parseInt(collectDepositId),
+          brand: 'SERVICIO', model: 'COBRO REPARACIÓN',
+          storage: '-', color: '-', imei: `REP-${f.id.split('-')[0]}`,
+          cost_price: 0, price: pending_balance, currency: 'ARS',
+          payments: [{ id: 'ars_cash', amount: pending_balance, original_amount: pending_balance, label: 'Efectivo ARS (Cobro)' }],
+          customer: { name: repair.customer_name, phone: repair.customer_phone, id: repair.customer_id }
+        };
+        await supabase.from('sales').insert([saleData]);
+        toast.success(`Saldo de $${pending_balance} cobrado a caja.`);
+      }
+
       toast.success('Actualizado');
       onSave();
       onClose();
@@ -337,11 +464,32 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
 
           <div className="row">
             <div className="col field">
-              <label className="lbl">Presupuesto ($)</label>
+              <label className="lbl">Costo de Repuesto ($)</label>
+              <input className="inp" type="number" value={f.cost || ''} onChange={e=>setF({...f, cost: e.target.value})} />
+            </div>
+            <div className="col field">
+              <label className="lbl">Presupuesto Final ($)</label>
               <input className="inp" type="number" value={f.budget || ''} onChange={e=>setF({...f, budget: e.target.value})} />
               {repair.deposit_paid > 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Seña cobrada: ${repair.deposit_paid}</div>}
+              {f.budget && (parseFloat(f.budget) - parseFloat(repair.deposit_paid || 0) > 0) && (
+                <div style={{ fontSize: 12, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>
+                  Saldo Pendiente: ${parseFloat(f.budget) - parseFloat(repair.deposit_paid || 0)}
+                </div>
+              )}
             </div>
           </div>
+
+          {f.status === 'ENTREGADO' && repair.status !== 'ENTREGADO' && f.budget && (parseFloat(f.budget) - parseFloat(repair.deposit_paid || 0) > 0) && deposits.length > 0 && (
+            <div style={{ background: 'var(--surface-3)', padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Cobro de Saldo Pendiente</div>
+              <div className="field" style={{ marginBottom: 0 }}>
+                <label className="lbl">Ingresar $ {parseFloat(f.budget) - parseFloat(repair.deposit_paid || 0)} a la caja:</label>
+                <select className="inp" value={collectDepositId} onChange={e => setCollectDepositId(e.target.value)}>
+                  {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="field">
             <label className="lbl">Notas internas / Reparación realizada</label>

@@ -55,9 +55,9 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
 
   return (
     <div className={`sidebar no-print ${isOpen ? 'open' : ''}`}>
-      <div className="s-brand" style={{ justifyContent: 'center', padding: '24px 16px' }}>
-        <div style={{ width: 80, height: 80, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-          <img src="/logo.png?v=2" alt="Stackr Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      <div className="s-brand" style={{ justifyContent: 'center', padding: '16px' }}>
+        <div style={{ width: 120, height: 120, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto' }}>
+          <img src="/logo.png?v=2" alt="Stackr Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.5)' }} />
         </div>
       </div>
       <div className="s-nav">

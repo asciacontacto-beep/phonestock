@@ -85,7 +85,8 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         cost_price: editItem.cost_price ? parseFloat(editItem.cost_price) : null,
         currency: editItem.currency,
         condition: editItem.condition, deposit: editItem.deposit,
-        imei: editItem.imei || null
+        imei: editItem.imei || null,
+        battery: editItem.condition === 'used' ? (editItem.battery || null) : null
       };
       const { error } = await supabase.from('stock').update(updatedFields).eq('id', editItem.id);
       if (error) throw error;
@@ -265,7 +266,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                       <span className={`badge ${s.condition === 'new' ? 'b-green' : 'b-neu'}`} style={{ fontSize: 10, padding: '2px 6px' }}>
-                        {s.condition === 'new' ? 'Sellado' : 'Usado'}
+                        {s.condition === 'new' ? 'Sellado' : (s.battery ? `Usado (${s.battery}%)` : 'Usado')}
                       </span>
                       <span>{s.storage} · {s.color}</span>
                       {s.imei && <span style={{ fontFamily: 'JetBrains Mono', fontSize: 11 }}>· IMEI: {s.imei}</span>}
@@ -384,7 +385,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: editItem.condition === 'used' ? '1fr 1fr 1fr' : '1fr 1fr', gap: 10 }}>
                 <div>
                   <label className="lbl">Condición</label>
                   <select className="inp" value={editItem.condition} onChange={e => setEditItem({...editItem, condition: e.target.value})}>
@@ -392,6 +393,12 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                     <option value="used">Usado</option>
                   </select>
                 </div>
+                {editItem.condition === 'used' && (
+                  <div>
+                    <label className="lbl">Batería (%)</label>
+                    <input className="inp" type="number" placeholder="Ej: 85" value={editItem.battery || ''} onChange={e => setEditItem({...editItem, battery: e.target.value})} />
+                  </div>
+                )}
                 <div>
                   <label className="lbl">Depósito</label>
                   <select className="inp" value={String(editItem.deposit)} onChange={e => setEditItem({...editItem, deposit: e.target.value})}>
@@ -442,10 +449,15 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 )}
                 <div className="sc" style={{ flex: 1, minWidth: 120 }}>
                   <div className="sl">Estado</div>
-                  <div style={{ marginTop: 10 }}>
+                  <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <span className={`badge ${detailItem.status === 'available' ? 'b-green' : 'b-amber'}`}>
                       {detailItem.status === 'available' ? 'En Stock' : 'Vendido'}
                     </span>
+                    {detailItem.condition === 'new' ? (
+                      <span className="badge b-green">Sellado</span>
+                    ) : (
+                      <span className="badge b-neu">Usado {detailItem.battery ? `(${detailItem.battery}%)` : ''}</span>
+                    )}
                   </div>
                 </div>
               </div>

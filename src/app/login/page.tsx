@@ -154,41 +154,84 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-root">
-      <div className="login-card">
-        {/* Logo */}
-        <div style={{ marginBottom: 32 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              background: "var(--text)",
-              borderRadius: 10,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 20,
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            <Smartphone size={20} color="#fff" />
+    <div className="login-container">
+      <style>{`
+        .login-container { display: flex; min-height: 100vh; background: var(--surface); font-family: 'Inter', system-ui, sans-serif; }
+        .login-left { flex: 1; background: linear-gradient(135deg, #09090b 0%, #18181b 100%); display: flex; flex-direction: column; justify-content: center; padding: 80px; position: relative; overflow: hidden; }
+        .login-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; background: var(--bg); }
+        .mobile-logo { display: none; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 32px; backdrop-filter: blur(10px); }
+        .feature-item { display: flex; align-items: center; gap: 12px; color: rgba(255, 255, 255, 0.7); font-size: 14px; margin-bottom: 16px; font-weight: 500; }
+        .feature-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center; color: #fff; }
+        @media (max-width: 900px) {
+          .login-left { display: none; }
+          .mobile-logo { display: block; }
+          .login-right { padding: 20px; }
+        }
+      `}</style>
+
+      {/* Left Panel */}
+      <div className="login-left">
+        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '60%', height: '60%', background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '70%', height: '70%', background: 'radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 70%)', borderRadius: '50%' }} />
+        
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 480, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 60 }}>
+            <div style={{ width: 44, height: 44, background: '#fff', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(255,255,255,0.1)' }}>
+              <Smartphone size={22} color="#000" />
+            </div>
+            <div style={{ color: '#fff', fontSize: 26, fontWeight: 800, letterSpacing: '-0.04em' }}>Stackr</div>
           </div>
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: "-0.03em",
-              marginBottom: 4,
-            }}
-          >
-            {isLogin ? "Bienvenido" : "Crear cuenta"}
+          
+          <h1 style={{ color: '#fff', fontSize: 52, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 24 }}>
+            El sistema operativo para tu negocio.
           </h1>
-          <p style={{ color: "var(--text-2)", fontSize: 14 }}>
-            {isLogin
-              ? "Ingresá a tu panel de gestión."
-              : "Registrá tu negocio en Stackr."}
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18, lineHeight: 1.5, marginBottom: 48 }}>
+            Gestioná inventario, ventas, finanzas y reparaciones en una única plataforma ultra-rápida.
           </p>
+
+          <div className="glass-panel">
+            <div className="feature-item">
+              <div className="feature-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></div>
+              Control de Inventario Multi-Depósito
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></div>
+              Punto de Venta Dinámico
+            </div>
+            <div className="feature-item" style={{ marginBottom: 0 }}>
+              <div className="feature-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
+              Tablero de Servicio Técnico
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Right Panel (Form) */}
+      <div className="login-right">
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          {/* Logo on mobile only */}
+          <div className="mobile-logo" style={{ marginBottom: 40 }}>
+            <div style={{ width: 44, height: 44, background: 'var(--text)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, boxShadow: 'var(--shadow-sm)' }}>
+              <Smartphone size={22} color="var(--bg)" />
+            </div>
+            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 6 }}>
+              {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+            </h1>
+            <p style={{ color: "var(--text-3)", fontSize: 15 }}>
+              {isLogin ? "Ingresá a tu panel de control." : "Registrá tu tienda en segundos."}
+            </p>
+          </div>
+
+          <div style={{ background: 'var(--surface)', padding: 32, borderRadius: 24, boxShadow: 'var(--shadow-md)', border: '1px solid var(--border)' }}>
+            <h1 className="login-left" style={{ display: 'none' /* hidden logically, just to keep code neat if needed */}}></h1>
+            <div style={{ marginBottom: 24, display: 'none' /* We keep this hidden to replace the old header entirely but preserve structure */ }}></div>
+            
+            <div style={{ textAlign: 'center', marginBottom: 28 }} className="hide-on-mobile">
+              <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>{isLogin ? "¡Hola de nuevo!" : "Registrá tu tienda"}</h2>
+              <p style={{ color: 'var(--text-3)', fontSize: 14 }}>{isLogin ? "Ingresá tus credenciales para continuar" : "Completá tus datos para empezar"}</p>
+            </div>
+
 
         <form onSubmit={handleSubmit}>
           {!isLogin && (
@@ -310,39 +353,49 @@ export default function LoginPage() {
             className="btn btn-dark"
             style={{
               width: "100%",
-              padding: "12px 16px",
-              fontSize: 14,
-              marginTop: 4,
-              borderRadius: "var(--r)",
+              padding: "14px 16px",
+              fontSize: 15,
+              fontWeight: 600,
+              marginTop: 12,
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              transition: "transform 0.1s, box-shadow 0.1s"
             }}
             disabled={loading}
             type="submit"
           >
             {loading ? (
-              <Loader2 className="spin" size={16} />
+              <Loader2 className="spin" size={18} />
             ) : isLogin ? (
-              "Iniciar sesión"
+              "Ingresar"
             ) : (
-              "Crear cuenta"
+              "Crear mi cuenta"
             )}
           </button>
         </form>
 
-        <div style={{ marginTop: 20, textAlign: "center" }}>
+        <div style={{ marginTop: 24, textAlign: "center" }}>
           <button
             className="btn-ghost"
             onClick={() => {
               setIsLogin(!isLogin);
               setError("");
             }}
-            style={{ fontSize: 13, color: "var(--text-3)" }}
+            style={{ fontSize: 14, color: "var(--text-2)", fontWeight: 500 }}
           >
             {isLogin
-              ? "¿Nuevo? Crear cuenta gratis"
-              : "Ya tengo cuenta → Ingresar"}
+              ? "¿No tenés cuenta? Registrate gratis"
+              : "¿Ya tenés cuenta? Ingresá acá"}
           </button>
         </div>
       </div>
+      </div>
+      <style>{`
+        .hide-on-mobile { display: block; }
+        @media (max-width: 900px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }

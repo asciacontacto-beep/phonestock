@@ -390,6 +390,7 @@ export default function LoginPage() {
         </div>
       </div>
       </div>
+      </div>
       <style>{`
         .hide-on-mobile { display: block; }
         @media (max-width: 900px) {

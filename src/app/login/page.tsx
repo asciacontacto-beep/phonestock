@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { confirmUserEmail } from "@/app/actions";
+import { motion } from "framer-motion";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -154,92 +155,59 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-container">
+    <div className="login-wrapper">
       <style>{`
-        .login-container { display: flex; min-height: 100vh; background: var(--surface); font-family: 'Inter', system-ui, sans-serif; }
-        .login-left { flex: 1; background: linear-gradient(135deg, #09090b 0%, #18181b 100%); display: flex; flex-direction: column; justify-content: center; padding: 80px; position: relative; overflow: hidden; }
-        .login-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; background: var(--bg); }
-        .mobile-logo { display: none; }
-        .glass-panel { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 32px; backdrop-filter: blur(10px); }
-        .feature-item { display: flex; align-items: center; gap: 12px; color: rgba(255, 255, 255, 0.7); font-size: 14px; margin-bottom: 16px; font-weight: 500; }
-        .feature-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center; color: #fff; }
-        @media (max-width: 900px) {
-          .login-left { display: none; }
-          .mobile-logo { display: block; }
-          .login-right { padding: 20px; }
+        .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #fafafa; font-family: 'Inter', system-ui, sans-serif; position: relative; overflow: hidden; }
+        .bg-grid { position: absolute; inset: 0; background-image: radial-gradient(#d1d5db 1px, transparent 1px); background-size: 24px 24px; opacity: 0.6; z-index: 0; }
+        .bg-glow { position: absolute; top: 50%; left: 50%; width: 60vw; height: 60vw; transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 60%); z-index: 0; pointer-events: none; }
+        .login-content { position: relative; z-index: 1; width: 100%; max-width: 440px; padding: 24px; }
+        .logo-box { width: 88px; height: 88px; background: #09090b; border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1); }
+        .auth-card { background: #ffffff; padding: 48px 40px; border-radius: 28px; box-shadow: 0 12px 48px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); }
+        .auth-inp { width: 100%; padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 15px; outline: none; transition: all 0.2s ease; background: #fff; color: #111; }
+        .auth-inp:focus { border-color: #09090b; box-shadow: 0 0 0 4px rgba(9,9,11,0.05); }
+        .auth-lbl { display: block; font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 8px; }
+        @media (max-width: 480px) {
+          .auth-card { padding: 32px 24px; }
         }
       `}</style>
 
-      {/* Left Panel */}
-      <div className="login-left">
-        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '60%', height: '60%', background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '70%', height: '70%', background: 'radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 70%)', borderRadius: '50%' }} />
-        
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 480, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 60 }}>
-            <div style={{ width: 44, height: 44, background: '#fff', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(255,255,255,0.1)' }}>
-              <Smartphone size={22} color="#000" />
-            </div>
-            <div style={{ color: '#fff', fontSize: 26, fontWeight: 800, letterSpacing: '-0.04em' }}>Stackr</div>
+      <div className="bg-grid" />
+      <div className="bg-glow" />
+
+      <div className="login-content">
+        <motion.div 
+          initial={{ y: -30, opacity: 0, scale: 0.95 }} 
+          animate={{ y: 0, opacity: 1, scale: 1 }} 
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="logo-box">
+            <Smartphone size={44} color="#fff" strokeWidth={1.5} />
           </div>
-          
-          <h1 style={{ color: '#fff', fontSize: 52, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 24 }}>
-            El sistema operativo para tu negocio.
+          <h1 style={{ textAlign: 'center', fontSize: 36, fontWeight: 800, letterSpacing: '-0.04em', color: '#09090b', margin: '0 0 40px 0' }}>
+            Stackr
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18, lineHeight: 1.5, marginBottom: 48 }}>
-            Gestioná inventario, ventas, finanzas y reparaciones en una única plataforma ultra-rápida.
-          </p>
+        </motion.div>
 
-          <div className="glass-panel">
-            <div className="feature-item">
-              <div className="feature-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></div>
-              Control de Inventario Multi-Depósito
-            </div>
-            <div className="feature-item">
-              <div className="feature-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></div>
-              Punto de Venta Dinámico
-            </div>
-            <div className="feature-item" style={{ marginBottom: 0 }}>
-              <div className="feature-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
-              Tablero de Servicio Técnico
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Panel (Form) */}
-      <div className="login-right">
-        <div style={{ width: '100%', maxWidth: 400 }}>
-          {/* Logo on mobile only */}
-          <div className="mobile-logo" style={{ marginBottom: 40 }}>
-            <div style={{ width: 44, height: 44, background: 'var(--text)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, boxShadow: 'var(--shadow-sm)' }}>
-              <Smartphone size={22} color="var(--bg)" />
-            </div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 6 }}>
-              {isLogin ? "Iniciar sesión" : "Crear cuenta"}
-            </h1>
-            <p style={{ color: "var(--text-3)", fontSize: 15 }}>
-              {isLogin ? "Ingresá a tu panel de control." : "Registrá tu tienda en segundos."}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }} 
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="auth-card">
+            <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 8, textAlign: 'center', color: '#09090b' }}>
+              {isLogin ? "Iniciar sesión" : "Crear tu cuenta"}
+            </h2>
+            <p style={{ color: '#6b7280', fontSize: 15, textAlign: 'center', marginBottom: 36 }}>
+              {isLogin ? "Ingresá tus credenciales para continuar" : "Registrá tu negocio y empezá hoy"}
             </p>
-          </div>
-
-          <div style={{ background: 'var(--surface)', padding: 32, borderRadius: 24, boxShadow: 'var(--shadow-md)', border: '1px solid var(--border)' }}>
-            <h1 className="login-left" style={{ display: 'none' /* hidden logically, just to keep code neat if needed */}}></h1>
-            <div style={{ marginBottom: 24, display: 'none' /* We keep this hidden to replace the old header entirely but preserve structure */ }}></div>
-            
-            <div style={{ textAlign: 'center', marginBottom: 28 }} className="hide-on-mobile">
-              <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>{isLogin ? "¡Hola de nuevo!" : "Registrá tu tienda"}</h2>
-              <p style={{ color: 'var(--text-3)', fontSize: 14 }}>{isLogin ? "Ingresá tus credenciales para continuar" : "Completá tus datos para empezar"}</p>
-            </div>
-
 
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <>
-              <div className="field">
-                <label className="lbl">Nombre del negocio</label>
+              <div style={{ marginBottom: 20 }}>
+                <label className="auth-lbl">Nombre del negocio</label>
                 <input
-                  className="inp"
+                  className="auth-inp"
                   type="text"
                   placeholder="Ej. PhoneMax MDP"
                   value={orgName}
@@ -247,10 +215,10 @@ export default function LoginPage() {
                   required={!isLogin}
                 />
               </div>
-              <div className="field">
-                <label className="lbl">Tu nombre</label>
+              <div style={{ marginBottom: 20 }}>
+                <label className="auth-lbl">Tu nombre</label>
                 <input
-                  className="inp"
+                  className="auth-inp"
                   type="text"
                   placeholder="Ej. Juan Pérez"
                   value={name}
@@ -261,10 +229,10 @@ export default function LoginPage() {
             </>
           )}
 
-          <div className="field">
-            <label className="lbl">Email</label>
+          <div style={{ marginBottom: 20 }}>
+            <label className="auth-lbl">Email</label>
             <input
-              className="inp"
+              className="auth-inp"
               type="email"
               placeholder="nombre@empresa.com"
               value={email}
@@ -276,37 +244,19 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="field">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 6,
-              }}
-            >
-              <label className="lbl" style={{ margin: 0 }}>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <label className="auth-lbl" style={{ margin: 0 }}>
                 Contraseña
               </label>
               {isLogin && (
-                <button
-                  type="button"
-                  onClick={handleResetPassword}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--text-3)",
-                    fontSize: 12,
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
-                >
+                <button type="button" onClick={handleResetPassword} style={{ background: "none", border: "none", color: "#6b7280", fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
                   ¿Olvidaste tu contraseña?
                 </button>
               )}
             </div>
             <input
-              className="inp"
+              className="auth-inp"
               type="password"
               placeholder="Mínimo 6 caracteres"
               value={password}
@@ -318,10 +268,10 @@ export default function LoginPage() {
           </div>
 
           {!isLogin && (
-            <div className="field">
-              <label className="lbl">Confirmar contraseña</label>
+            <div style={{ marginBottom: 20 }}>
+              <label className="auth-lbl">Confirmar contraseña</label>
               <input
-                className="inp"
+                className="auth-inp"
                 type="password"
                 placeholder="Repetí tu contraseña"
                 value={confirmPassword}
@@ -356,16 +306,19 @@ export default function LoginPage() {
               padding: "14px 16px",
               fontSize: 15,
               fontWeight: 600,
-              marginTop: 12,
+              marginTop: 16,
               borderRadius: "12px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-              transition: "transform 0.1s, box-shadow 0.1s"
+              background: "#09090b",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+              transition: "opacity 0.2s"
             }}
             disabled={loading}
             type="submit"
           >
             {loading ? (
-              <Loader2 className="spin" size={18} />
+              <Loader2 className="spin" size={18} style={{ margin: '0 auto' }} />
             ) : isLogin ? (
               "Ingresar"
             ) : (
@@ -374,29 +327,23 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: 24, textAlign: "center" }}>
+        <div style={{ marginTop: 28, textAlign: "center" }}>
           <button
             className="btn-ghost"
             onClick={() => {
               setIsLogin(!isLogin);
               setError("");
             }}
-            style={{ fontSize: 14, color: "var(--text-2)", fontWeight: 500 }}
+            style={{ fontSize: 14, color: "#6b7280", fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
           >
             {isLogin
               ? "¿No tenés cuenta? Registrate gratis"
               : "¿Ya tenés cuenta? Ingresá acá"}
           </button>
         </div>
+          </div>
+        </motion.div>
       </div>
-      </div>
-      </div>
-      <style>{`
-        .hide-on-mobile { display: block; }
-        @media (max-width: 900px) {
-          .hide-on-mobile { display: none !important; }
-        }
-      `}</style>
     </div>
   );
 }

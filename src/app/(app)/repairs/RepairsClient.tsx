@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Wrench, CheckCircle, PackageSearch, PackageOpen, XCircle, Printer } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }) {
   const [repairs, setRepairs] = useState<any[]>([]);

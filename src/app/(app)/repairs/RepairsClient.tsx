@@ -50,22 +50,34 @@ export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }
   });
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <h2 className="card-title"><Wrench size={20} /> Servicio Técnico</h2>
-        <button className="btn btn-dark" onClick={() => setShowNew(true)}><Plus size={16} /> Nuevo Ingreso</button>
+    <div className="page">
+      <div className="sh">
+        <h1 className="st"><Wrench size={24} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} /> Servicio Técnico</h1>
+        <button className="btn btn-dark" onClick={() => setShowNew(true)}>
+          <Plus size={16} /> Nuevo Ingreso
+        </button>
       </div>
 
-      <div className="filters-wrap">
+      <div className="search-bar no-print">
+        <Search size={16} color="var(--text-3)" style={{ flexShrink: 0 }} />
+        <input
+          className="inp"
+          style={{ border: 'none', background: 'transparent' }}
+          placeholder="Buscar por cliente, equipo o # de orden..."
+          value={q}
+          onChange={e => setQ(e.target.value)}
+        />
+      </div>
+
+      <div className="filters-wrap no-print">
         <button className={`btn-pill ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>Todos</button>
+        <div style={{ width: 1, height: 20, background: 'var(--border-md)', margin: '0 4px' }} />
         {STATUSES.map(s => (
           <button key={s.id} className={`btn-pill ${filterStatus === s.id ? 'active' : ''}`} onClick={() => setFilterStatus(s.id)}>
             {s.label}
           </button>
         ))}
       </div>
-      
-      <input className="inp" style={{ marginBottom: 16 }} placeholder="Buscar por cliente, equipo o # de orden..." value={q} onChange={e => setQ(e.target.value)} />
 
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>Cargando reparaciones...</div>

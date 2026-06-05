@@ -157,23 +157,24 @@ export default function LoginPage() {
   return (
     <div className="login-container">
       <style>{`
-        .login-container { display: flex; min-height: 100vh; background: var(--surface); font-family: 'Inter', system-ui, sans-serif; }
-        .login-left { flex: 1; background: linear-gradient(135deg, #09090b 0%, #18181b 100%); display: flex; flex-direction: column; justify-content: center; padding: 80px; position: relative; overflow: hidden; }
-        .login-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; background: var(--bg); }
+        body { overflow: hidden; }
+        .login-container { display: flex; height: 100vh; width: 100vw; background: var(--surface); font-family: 'Inter', system-ui, sans-serif; overflow: hidden; }
+        .login-left { flex: 1; background: #ffffff; display: flex; flex-direction: column; justify-content: center; padding: 80px; position: relative; overflow: hidden; }
+        .login-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; background: #09090b; }
         .mobile-logo { display: none; }
-        .glass-panel { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 32px; backdrop-filter: blur(10px); }
-        .feature-item { display: flex; align-items: center; gap: 12px; color: rgba(255, 255, 255, 0.7); font-size: 14px; margin-bottom: 16px; font-weight: 500; }
-        .feature-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center; color: #fff; }
+        .glass-panel { background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 24px; padding: 32px; backdrop-filter: blur(10px); }
+        .feature-item { display: flex; align-items: center; gap: 12px; color: rgba(0, 0, 0, 0.7); font-size: 14px; margin-bottom: 16px; font-weight: 500; }
+        .feature-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 0, 0, 0.05); display: flex; align-items: center; justify-content: center; color: #000; }
         
         /* Floating background shapes animation */
         @keyframes float1 { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
         @keyframes float2 { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(20px) scale(0.95); } }
-        .shape1 { position: absolute; top: -10%; left: -10%; width: 60%; height: 60%; background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%); border-radius: 50%; animation: float1 10s ease-in-out infinite; }
-        .shape2 { position: absolute; bottom: -20%; right: -10%; width: 70%; height: 70%; background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%); border-radius: 50%; animation: float2 12s ease-in-out infinite; }
+        .shape1 { position: absolute; top: -10%; left: -10%; width: 60%; height: 60%; background: radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%); border-radius: 50%; animation: float1 10s ease-in-out infinite; }
+        .shape2 { position: absolute; bottom: -20%; right: -10%; width: 70%; height: 70%; background: radial-gradient(circle, rgba(0,0,0,0.02) 0%, transparent 70%); border-radius: 50%; animation: float2 12s ease-in-out infinite; }
         
-        .auth-inp { width: 100%; padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 15px; outline: none; transition: all 0.2s ease; background: #fff; color: #111; }
-        .auth-inp:focus { border-color: #09090b; box-shadow: 0 0 0 4px rgba(9,9,11,0.05); }
-        .auth-lbl { display: block; font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 8px; }
+        .auth-inp { width: 100%; padding: 14px 16px; border: 1px solid #27272a; border-radius: 12px; font-size: 15px; outline: none; transition: all 0.2s ease; background: #18181b; color: #fff; }
+        .auth-inp:focus { border-color: #52525b; box-shadow: 0 0 0 4px rgba(255,255,255,0.05); }
+        .auth-lbl { display: block; font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 8px; }
 
         @media (max-width: 900px) {
           .login-left { display: none; }
@@ -198,13 +199,13 @@ export default function LoginPage() {
             <div style={{ width: 80, height: 80, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <img src="/logo.jpg" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(2.2)' }} />
             </div>
-            <div style={{ color: '#fff', fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em' }}>Stackr</div>
+            <div style={{ color: '#111', fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em' }}>Stackr</div>
           </div>
           
-          <h1 style={{ color: '#fff', fontSize: 52, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 24 }}>
+          <h1 style={{ color: '#111', fontSize: 52, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 24 }}>
             El sistema operativo para tu negocio.
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18, lineHeight: 1.5, marginBottom: 48 }}>
+          <p style={{ color: 'rgba(0,0,0,0.6)', fontSize: 18, lineHeight: 1.5, marginBottom: 48 }}>
             Gestioná inventario, ventas, finanzas y reparaciones en una única plataforma ultra-rápida.
           </p>
 
@@ -243,16 +244,16 @@ export default function LoginPage() {
             <div style={{ width: 64, height: 64, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto 20px' }}>
               <img src="/logo.jpg" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(2.2)' }} />
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 6, textAlign: 'center' }}>
+            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 6, textAlign: 'center', color: '#fff' }}>
               {isLogin ? "Iniciar sesión" : "Crear cuenta"}
             </h1>
           </div>
 
-          <div style={{ background: 'var(--surface)', padding: 32, borderRadius: 24, boxShadow: 'var(--shadow-md)', border: '1px solid var(--border)' }}>
+          <div style={{ background: '#18181b', padding: 32, borderRadius: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.4)', border: '1px solid #27272a' }}>
             
             <div style={{ textAlign: 'center', marginBottom: 28 }} className="hide-on-mobile">
-              <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>{isLogin ? "¡Hola de nuevo!" : "Registrá tu tienda"}</h2>
-              <p style={{ color: 'var(--text-3)', fontSize: 14 }}>{isLogin ? "Ingresá tus credenciales para continuar" : "Completá tus datos para empezar"}</p>
+              <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6, color: '#fff' }}>{isLogin ? "¡Hola de nuevo!" : "Registrá tu tienda"}</h2>
+              <p style={{ color: '#a1a1aa', fontSize: 14 }}>{isLogin ? "Ingresá tus credenciales para continuar" : "Completá tus datos para empezar"}</p>
             </div>
 
         <form onSubmit={handleSubmit}>
@@ -304,7 +305,7 @@ export default function LoginPage() {
                 Contraseña
               </label>
               {isLogin && (
-                <button type="button" onClick={handleResetPassword} style={{ background: "none", border: "none", color: "#6b7280", fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={handleResetPassword} style={{ background: "none", border: "none", color: "#a1a1aa", fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
                   ¿Olvidaste tu contraseña?
                 </button>
               )}
@@ -354,7 +355,6 @@ export default function LoginPage() {
           )}
 
           <button
-            className="btn btn-dark"
             style={{
               width: "100%",
               padding: "14px 16px",
@@ -362,8 +362,8 @@ export default function LoginPage() {
               fontWeight: 600,
               marginTop: 16,
               borderRadius: "12px",
-              background: "var(--text)",
-              color: "var(--bg)",
+              background: "#ffffff",
+              color: "#000000",
               border: "none",
               cursor: "pointer",
               transition: "transform 0.1s"
@@ -388,7 +388,7 @@ export default function LoginPage() {
               setIsLogin(!isLogin);
               setError("");
             }}
-            style={{ fontSize: 14, color: "var(--text-3)", fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ fontSize: 14, color: "#a1a1aa", fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
           >
             {isLogin
               ? "¿No tenés cuenta? Registrate gratis"

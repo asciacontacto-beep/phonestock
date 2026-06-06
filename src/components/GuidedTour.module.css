@@ -1,0 +1,74 @@
+.tourOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.6);
+  z-index: 100;
+  pointer-events: none;
+}
+
+.tourSpotlight {
+  position: absolute;
+  background: transparent;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+  border-radius: 12px;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 101;
+  pointer-events: none;
+}
+
+.tourTooltip {
+  position: absolute;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 320px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  z-index: 102;
+  pointer-events: auto;
+  color: #111;
+  font-family: var(--font-inter), sans-serif;
+}
+
+.tourTitle {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+.tourText {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.tourFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tourStep {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+}
+
+.tourBtn {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tourBtn:hover {
+  background: #000;
+}

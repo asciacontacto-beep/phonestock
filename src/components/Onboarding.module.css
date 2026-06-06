@@ -1,0 +1,173 @@
+.root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #fdfdfc;
+  color: #111;
+  font-family: var(--font-inter), sans-serif;
+}
+
+.header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress {
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.stepContainer {
+  max-width: 600px;
+  width: 100%;
+}
+
+.question {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 32px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.inputGroup {
+  margin-bottom: 32px;
+}
+
+.input {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid #ddd;
+  background: transparent;
+  font-size: 28px;
+  padding: 12px 0;
+  color: #000;
+  font-weight: 600;
+  transition: border-color 0.3s;
+  outline: none;
+}
+.input::placeholder {
+  color: #ccc;
+  font-weight: 400;
+}
+.input:focus {
+  border-bottom-color: #111;
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.optionCard {
+  background: #fff;
+  border: 2px solid #eaeaea;
+  padding: 20px 24px;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.optionCard:hover {
+  border-color: #bbb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.optionCard.selected {
+  border-color: #111;
+  background: #fafafa;
+}
+
+.btnNext {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.btnNext:hover {
+  background: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.btnNext:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.backBtn {
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 16px;
+}
+.backBtn:hover {
+  color: #111;
+}
+
+.formField {
+  margin-bottom: 24px;
+}
+.formField label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+}
+.formField input {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.formField input:focus {
+  border-color: #111;
+}

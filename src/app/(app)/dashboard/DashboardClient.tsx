@@ -6,7 +6,6 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Suspense } from 'react';
-import GuidedTour from '@/components/GuidedTour';
 
 export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stock: any[], sales: any[], exchangeRate: number, userRole?: string }) {
   const router = useRouter();
@@ -97,9 +96,6 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
 
   return (
     <div className="page">
-      <Suspense fallback={null}>
-        <GuidedTour />
-      </Suspense>
       <div className="sh" style={{ marginBottom: 24 }}>
         <h1 className="st">Dashboard</h1>
         <button className="btn btn-outline btn-sm" onClick={exportCSV} style={{ gap: 6 }}>

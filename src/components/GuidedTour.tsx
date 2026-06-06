@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 import styles from "./GuidedTour.module.css";
 
 type TourStep = {
@@ -37,10 +38,11 @@ export default function GuidedTour() {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [isActive, setIsActive] = useState(false);
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     // Check if URL has ?tour=true
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("tour") === "true") {
+    if (searchParams.get("tour") === "true") {
       // Delay slightly so elements can render
       setTimeout(() => {
         setIsActive(true);
@@ -57,7 +59,7 @@ export default function GuidedTour() {
         }
       }, 500);
     }
-  }, []);
+  }, [searchParams]);
 
   const updateRect = (stepIndex: number) => {
     const target = document.getElementById(steps[stepIndex].targetId);

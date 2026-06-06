@@ -41,21 +41,25 @@ export default function GuidedTour() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check if URL has ?tour=true
-    if (searchParams.get("tour") === "true") {
+    const isTourRequested = searchParams.get("tour") === "true";
+    const hasCompletedTour = localStorage.getItem("stackr_tour_completed") === "true";
+
+    if (isTourRequested || !hasCompletedTour) {
       // Delay slightly so elements can render
       setTimeout(() => {
-        setIsActive(true);
         // Find first valid step
         let firstStep = 0;
         while (firstStep < steps.length && !document.getElementById(steps[firstStep].targetId)) {
           firstStep++;
         }
         if (firstStep < steps.length) {
+          setIsActive(true);
           setCurrentStep(firstStep);
           updateRect(firstStep);
         } else {
           setIsActive(false);
+          // Auto-complete if there's really nothing to tour
+          localStorage.setItem("stackr_tour_completed", "true");
         }
       }, 500);
     }
@@ -87,8 +91,11 @@ export default function GuidedTour() {
 
   const finishTour = () => {
     setIsActive(false);
-    // remove ?tour=true from url
-    window.history.replaceState({}, '', '/dashboard');
+    localStorage.setItem("stackr_tour_completed", "true");
+    // remove ?tour=true from url if present
+    if (searchParams.get("tour") === "true") {
+      window.history.replaceState({}, '', '/dashboard');
+    }
   };
 
   // Re-calculate on resize
@@ -146,9 +153,14 @@ export default function GuidedTour() {
           <p className={styles.tourText}>{step.text}</p>
           <div className={styles.tourFooter}>
             <span className={styles.tourStep}>{currentStep + 1} de {steps.length}</span>
-            <button className={styles.tourBtn} onClick={handleNext}>
-              {currentStep === steps.length - 1 ? "Entendido" : "Siguiente"}
-            </button>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <button onClick={finishTour} style={{ background: 'transparent', color: 'var(--text-3)', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>
+                Saltar
+              </button>
+              <button className={styles.tourBtn} onClick={handleNext}>
+                {currentStep === steps.length - 1 ? "Entendido" : "Siguiente"}
+              </button>
+            </div>
           </div>
         </motion.div>
       </AnimatePresence>

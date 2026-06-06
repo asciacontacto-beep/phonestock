@@ -114,7 +114,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
           </div>
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>¡Bienvenido a Stackr!</h2>
           <p style={{ color: 'var(--text-3)', maxWidth: 400, margin: '0 auto 24px' }}>Este es tu panel de control. Por ahora está vacío. Comienza cargando equipos al inventario para ver tus analíticas en tiempo real.</p>
-          <button className="btn btn-dark" onClick={() => router.push('/scan')}>
+          <button className="btn btn-dark" id="tour-first-item" onClick={() => router.push('/scan')}>
             <Package size={18} style={{ marginRight: 8 }} /> Cargar mi primer equipo
           </button>
         </div>

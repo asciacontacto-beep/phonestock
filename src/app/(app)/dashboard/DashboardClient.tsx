@@ -31,20 +31,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
   const av = stock.filter(s => s.status === 'available');
   const sv = av.reduce((a, s) => a + (s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate)), 0);
 
-  if (av.length === 0 && sales.length === 0) {
-    return (
-      <div className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center' }}>
-        <div style={{ background: 'var(--surface-3)', width: 80, height: 80, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-          <TrendingUp size={40} color="var(--text-3)" />
-        </div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12 }}>Bienvenido a Stackr</h1>
-        <p style={{ color: 'var(--text-3)', maxWidth: 400, marginBottom: 32 }}>Parece que aún no tienes actividad. Comienza cargando equipos al inventario para ver las analíticas en tiempo real.</p>
-        <button className="btn btn-dark btn-lg" onClick={() => window.location.href = '/scan'}>
-          <Package size={20} style={{ marginRight: 10 }} /> Cargar mi primer equipo
-        </button>
-      </div>
-    );
-  }
+  const isEmpty = av.length === 0 && sales.length === 0;
 
   const validSales = sales.filter(s => s.brand !== 'MOVIMIENTO');
   const totals: Record<string, number> = {};
@@ -116,6 +103,19 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
           <Download size={13} /> Exportar
         </button>
       </div>
+
+      {isEmpty && (
+        <div style={{ marginBottom: 24, padding: 32, background: 'var(--surface-2)', borderRadius: 16, textAlign: 'center', border: '1px solid var(--border)' }}>
+          <div style={{ background: 'var(--surface-3)', width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <TrendingUp size={32} color="var(--text-3)" />
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>¡Bienvenido a Stackr!</h2>
+          <p style={{ color: 'var(--text-3)', maxWidth: 400, margin: '0 auto 24px' }}>Este es tu panel de control. Por ahora está vacío. Comienza cargando equipos al inventario para ver tus analíticas en tiempo real.</p>
+          <button className="btn btn-dark" onClick={() => router.push('/scan')}>
+            <Package size={18} style={{ marginRight: 8 }} /> Cargar mi primer equipo
+          </button>
+        </div>
+      )}
 
       <div className="sg" id="tour-metrics">
         <div className="sc">

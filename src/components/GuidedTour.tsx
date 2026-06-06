@@ -44,7 +44,17 @@ export default function GuidedTour() {
       // Delay slightly so elements can render
       setTimeout(() => {
         setIsActive(true);
-        updateRect(0);
+        // Find first valid step
+        let firstStep = 0;
+        while (firstStep < steps.length && !document.getElementById(steps[firstStep].targetId)) {
+          firstStep++;
+        }
+        if (firstStep < steps.length) {
+          setCurrentStep(firstStep);
+          updateRect(firstStep);
+        } else {
+          setIsActive(false);
+        }
       }, 500);
     }
   }, []);
@@ -60,9 +70,14 @@ export default function GuidedTour() {
   };
 
   const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(s => s + 1);
-      updateRect(currentStep + 1);
+    let nextStep = currentStep + 1;
+    while (nextStep < steps.length && !document.getElementById(steps[nextStep].targetId)) {
+      nextStep++;
+    }
+
+    if (nextStep < steps.length) {
+      setCurrentStep(nextStep);
+      updateRect(nextStep);
     } else {
       finishTour();
     }

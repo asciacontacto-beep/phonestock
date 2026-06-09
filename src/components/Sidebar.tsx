@@ -60,7 +60,7 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
           <img src="/logo.png?v=2" alt="Stackr Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.5)' }} />
         </div>
       </div>
-      <div className="s-nav" id="tour-sidebar">
+      <div className="s-nav">
         {nav.map((it: any, i) => it.g ?
           <div key={i} className="s-group">{it.g}</div> :
           <Link

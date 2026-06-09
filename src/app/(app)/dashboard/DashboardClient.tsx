@@ -110,13 +110,13 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
           </div>
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>¡Bienvenido a Stackr!</h2>
           <p style={{ color: 'var(--text-3)', maxWidth: 400, margin: '0 auto 24px' }}>Este es tu panel de control. Por ahora está vacío. Comienza cargando equipos al inventario para ver tus analíticas en tiempo real.</p>
-          <button className="btn btn-dark" id="tour-first-item" onClick={() => router.push('/scan')}>
+          <button className="btn btn-dark" onClick={() => router.push('/scan')}>
             <Package size={18} style={{ marginRight: 8 }} /> Cargar mi primer equipo
           </button>
         </div>
       )}
 
-      <div className="sg" id="tour-metrics">
+      <div className="sg">
         <div className="sc">
           <div className="sl">En Stock</div>
           <div className="sv">{av.length}</div>
@@ -141,7 +141,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
       </div>
 
       {lowStock.length > 0 && (
-        <div id="tour-alerts" style={{ marginBottom: 24, padding: '14px 18px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12 }}>
+        <div style={{ marginBottom: 24, padding: '14px 18px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <AlertTriangle size={16} color="var(--amber)" />
             <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--amber)' }}>Stock Bajo — {lowStock.length} modelo{lowStock.length > 1 ? 's' : ''} con pocas unidades</span>
@@ -157,7 +157,7 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
       )}
 
       <div className="row" style={{ marginBottom: 24 }}>
-        <div className="col card" id="tour-chart" style={{ flex: 2, padding: 24 }}>
+        <div className="col card" style={{ flex: 2, padding: 24 }}>
           <div className="sl" style={{ marginBottom: 24 }}>Tendencia de Ventas (Últimos 7 días)</div>
           <div style={{ height: 200, width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">

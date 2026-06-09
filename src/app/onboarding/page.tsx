@@ -89,7 +89,7 @@ export default function OnboardingPage() {
           color: "#f59e0b",
         });
 
-        router.push("/dashboard?tour=true");
+        router.push("/dashboard");
       }
     } catch (err: any) {
       let msg = err.message || "Error al crear la cuenta.";

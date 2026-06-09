@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
+// Deshabilitamos next/font/google por problemas de red durante el build
+// Usaremos variables de entorno y fallback a fuentes del sistema
+const interVariable = "font-sans";
+const jetbrainsVariable = "font-mono";
 
 export const viewport: Viewport = {
   themeColor: "#0a0a0a",
@@ -53,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${inter.variable} ${jetbrains.variable} antialiased`}>
+      <body className={`${interVariable} ${jetbrainsVariable} antialiased`}>
         {children}
         <Toaster theme="dark" position="bottom-right" richColors />
       </body>

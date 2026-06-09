@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { confirmUserEmail } from "@/app/actions";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);

@@ -66,6 +66,7 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
           <Link
             key={it.id}
             href={`/${it.id}`}
+            prefetch={true}
             className={`s-item ${currentPage === it.id || (currentPage === '' && it.id === 'dashboard') ? 'on' : ''}`}
             onClick={() => setPage(it.id)}
           >

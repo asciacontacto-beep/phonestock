@@ -157,190 +157,238 @@ export default function LoginPage() {
   return (
     <div className="login-container">
       <style>{`
-        body { overflow: auto; background: #000; margin: 0; }
-        .login-container { min-height: 100vh; width: 100vw; font-family: 'Inter', system-ui, sans-serif; position: relative; display: flex; align-items: center; justify-content: center; }
-        
-        /* Animated Dark Mesh Background */
-        .mesh-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; background: #000; }
-        @keyframes float1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(5%, 5%) scale(1.1); } }
-        @keyframes float2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-5%, -5%) scale(0.9); } }
-        .blob1 { position: absolute; top: -10%; left: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%); border-radius: 50%; animation: float1 20s ease-in-out infinite; filter: blur(80px); }
-        .blob2 { position: absolute; bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%); border-radius: 50%; animation: float2 25s ease-in-out infinite; filter: blur(100px); }
-        .blob3 { position: absolute; top: 40%; left: 40%; width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(236,72,153,0.1) 0%, transparent 70%); border-radius: 50%; animation: float1 22s ease-in-out infinite reverse; filter: blur(80px); }
+        .login-container { display: flex; min-height: 100vh; background: var(--surface); font-family: 'Inter', system-ui, sans-serif; }
+        .login-left { flex: 1; background: linear-gradient(135deg, #09090b 0%, #18181b 100%); display: flex; flex-direction: column; justify-content: center; padding: 80px; position: relative; overflow: hidden; }
+        .login-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; background: var(--bg); }
+        .mobile-logo { display: none; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 32px; backdrop-filter: blur(10px); }
+        .feature-item { display: flex; align-items: center; gap: 12px; color: rgba(255, 255, 255, 0.7); font-size: 14px; margin-bottom: 16px; font-weight: 500; }
+        .feature-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
 
-        .auth-card { 
-          position: relative; z-index: 1; width: 100%; max-width: 440px; margin: 40px 20px;
-          background: rgba(25, 25, 25, 0.4); 
-          border: 1px solid rgba(255, 255, 255, 0.08); 
-          border-radius: 24px; padding: 48px 40px; 
-          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-          box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1); 
-        }
+        @keyframes float1 { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
+        @keyframes float2 { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(20px) scale(0.95); } }
+        .shape1 { position: absolute; top: -10%; left: -10%; width: 60%; height: 60%; background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%); border-radius: 50%; animation: float1 10s ease-in-out infinite; }
+        .shape2 { position: absolute; bottom: -20%; right: -10%; width: 70%; height: 70%; background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%); border-radius: 50%; animation: float2 12s ease-in-out infinite; }
 
-        .auth-inp { 
-          width: 100%; padding: 16px 20px; 
-          background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); 
-          border-radius: 14px; font-size: 15px; color: #fff; 
-          outline: none; transition: all 0.2s ease; 
-        }
-        .auth-inp::placeholder { color: rgba(255,255,255,0.3); }
-        .auth-inp:focus { border-color: rgba(255,255,255,0.3); box-shadow: 0 0 0 4px rgba(255,255,255,0.05); }
-        .auth-lbl { display: block; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 10px; letter-spacing: 0.3px; }
+        .auth-inp { width: 100%; padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 15px; outline: none; transition: all 0.2s ease; background: #fff; color: #111; box-sizing: border-box; }
+        .auth-inp::placeholder { color: #9ca3af; }
+        .auth-inp:focus { border-color: #09090b; box-shadow: 0 0 0 4px rgba(9,9,11,0.05); }
+        .auth-lbl { display: block; font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 8px; }
 
-        .submit-btn {
-          width: 100%; padding: 16px; font-size: 16px; font-weight: 700;
-          margin-top: 24px; border-radius: 14px; background: #ffffff; color: #000000;
-          border: none; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s;
-          box-shadow: 0 4px 14px rgba(255,255,255,0.15);
+        @media (max-width: 900px) {
+          .login-left { display: none; }
+          .mobile-logo { display: block; }
+          .login-right { padding: 20px; }
         }
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,255,255,0.25); }
-        .submit-btn:active { transform: translateY(1px); }
-        
-        .switch-btn { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.2s; padding: 10px; }
-        .switch-btn:hover { color: #fff; }
       `}</style>
 
-      <div className="mesh-bg">
-        <div className="blob1" />
-        <div className="blob2" />
-        <div className="blob3" />
+      {/* Left Panel */}
+      <div className="login-left">
+        <div className="shape1" />
+        <div className="shape2" />
+
+        <motion.div
+          initial={{ opacity: 0, x: -40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: 'relative', zIndex: 1, maxWidth: 480, margin: '0 auto' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 50 }}>
+            <div style={{ width: 80, height: 80, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <img src="/logo.jpg" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(2.2)' }} />
+            </div>
+            <div style={{ color: '#fff', fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em' }}>Stackr</div>
+          </div>
+
+          <h1 style={{ color: '#fff', fontSize: 52, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 24 }}>
+            El sistema operativo para tu negocio.
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18, lineHeight: 1.5, marginBottom: 48 }}>
+            Gestioná inventario, ventas, finanzas y reparaciones en una única plataforma ultra-rápida.
+          </p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="glass-panel"
+          >
+            <div className="feature-item">
+              <div className="feature-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              </div>
+              Control de Inventario Multi-Depósito
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              </div>
+              Punto de Venta Dinámico
+            </div>
+            <div className="feature-item" style={{ marginBottom: 0 }}>
+              <div className="feature-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              </div>
+              Tablero de Servicio Técnico
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
 
-      <motion.div 
-        className="auth-card"
-        initial={{ opacity: 0, y: 30, scale: 0.95 }} 
-        animate={{ opacity: 1, y: 0, scale: 1 }} 
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ width: 64, height: 64, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: '0 8px 16px rgba(0,0,0,0.2)' }}>
-            <Smartphone size={32} color="#fff" strokeWidth={1.5} />
-          </div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: '#fff' }}>
-            {isLogin ? "Bienvenido a Stackr" : "Comienza con Stackr"}
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>
-            {isLogin ? "Ingresa a tu terminal de gestión" : "Registra tu tienda en segundos"}
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          {!isLogin && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ overflow: 'hidden' }}>
-              <div style={{ marginBottom: 20 }}>
-                <label className="auth-lbl">Nombre del negocio</label>
-                <input
-                  className="auth-inp"
-                  type="text"
-                  placeholder="Ej. PhoneMax MDP"
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  required={!isLogin}
-                />
-              </div>
-              <div style={{ marginBottom: 20 }}>
-                <label className="auth-lbl">Tu nombre</label>
-                <input
-                  className="auth-inp"
-                  type="text"
-                  placeholder="Ej. Juan Pérez"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required={!isLogin}
-                />
-              </div>
-            </motion.div>
-          )}
-
-          <div style={{ marginBottom: 20 }}>
-            <label className="auth-lbl">Email</label>
-            <input
-              className="auth-inp"
-              type="email"
-              placeholder="nombre@empresa.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck="false"
-            />
-          </div>
-
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <label className="auth-lbl" style={{ margin: 0 }}>Contraseña</label>
-              {isLogin && (
-                <button type="button" onClick={handleResetPassword} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
-                  ¿Olvidaste tu clave?
-                </button>
-              )}
+      {/* Right Panel (Form) */}
+      <div className="login-right">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{ width: '100%', maxWidth: 400 }}
+        >
+          {/* Logo on mobile only */}
+          <div className="mobile-logo" style={{ marginBottom: 40 }}>
+            <div style={{ width: 64, height: 64, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto 20px' }}>
+              <img src="/logo.jpg" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(2.2)' }} />
             </div>
-            <input
-              className="auth-inp"
-              type="password"
-              placeholder="Mínimo 6 caracteres"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
+            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 6, textAlign: 'center' }}>
+              {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+            </h1>
           </div>
 
-          {!isLogin && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ overflow: 'hidden', marginBottom: 24 }}>
-              <label className="auth-lbl">Confirmar contraseña</label>
-              <input
-                className="auth-inp"
-                type="password"
-                placeholder="Repite tu contraseña"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required={!isLogin}
-                autoCapitalize="none"
-                autoCorrect="off"
-              />
-            </motion.div>
-          )}
+          <div style={{ background: 'var(--surface)', padding: 32, borderRadius: 24, boxShadow: 'var(--shadow-md)', border: '1px solid var(--border)' }}>
+            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+              <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>
+                {isLogin ? "¡Hola de nuevo!" : "Registrá tu tienda"}
+              </h2>
+              <p style={{ color: 'var(--text-3)', fontSize: 14 }}>
+                {isLogin ? "Ingresá tus credenciales para continuar" : "Completá tus datos para empezar"}
+              </p>
+            </div>
 
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}
+            <form onSubmit={handleSubmit}>
+              {!isLogin && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ overflow: 'hidden' }}>
+                  <div style={{ marginBottom: 20 }}>
+                    <label className="auth-lbl">Nombre del negocio</label>
+                    <input
+                      className="auth-inp"
+                      type="text"
+                      placeholder="Ej. PhoneMax MDP"
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      required={!isLogin}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 20 }}>
+                    <label className="auth-lbl">Tu nombre</label>
+                    <input
+                      className="auth-inp"
+                      type="text"
+                      placeholder="Ej. Juan Pérez"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required={!isLogin}
+                    />
+                  </div>
+                </motion.div>
+              )}
+
+              <div style={{ marginBottom: 20 }}>
+                <label className="auth-lbl">Email</label>
+                <input
+                  className="auth-inp"
+                  type="email"
+                  placeholder="nombre@empresa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
+                />
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <label className="auth-lbl" style={{ margin: 0 }}>Contraseña</label>
+                  {isLogin && (
+                    <button type="button" onClick={handleResetPassword} style={{ background: "none", border: "none", color: "#6b7280", fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  )}
+                </div>
+                <input
+                  className="auth-inp"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                />
+              </div>
+
+              {!isLogin && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ overflow: 'hidden', marginBottom: 24 }}>
+                  <label className="auth-lbl">Confirmar contraseña</label>
+                  <input
+                    className="auth-inp"
+                    type="password"
+                    placeholder="Repetí tu contraseña"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required={!isLogin}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                  />
+                </motion.div>
+              )}
+
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}
+                    style={{
+                      color: "var(--red)", fontSize: 13, marginBottom: 16, padding: "10px 14px",
+                      background: "var(--red-dim)", borderRadius: 8, lineHeight: 1.4,
+                    }}
+                  >
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <button
                 style={{
-                  color: "#fca5a5", fontSize: 14, marginBottom: 20, padding: "12px 16px",
-                  background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)",
-                  borderRadius: 12, lineHeight: 1.4, textAlign: 'center'
+                  width: "100%", padding: "14px 16px", fontSize: 15, fontWeight: 600,
+                  marginTop: 8, borderRadius: "12px", background: "var(--text)", color: "var(--bg)",
+                  border: "none", cursor: "pointer", transition: "transform 0.1s, opacity 0.2s",
                 }}
+                disabled={loading}
+                type="submit"
               >
-                {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                {loading ? (
+                  <Loader2 className="spin" size={18} style={{ margin: '0 auto' }} />
+                ) : isLogin ? (
+                  "Ingresar"
+                ) : (
+                  "Crear mi cuenta"
+                )}
+              </button>
+            </form>
 
-          <button className="submit-btn" disabled={loading} type="submit">
-            {loading ? (
-              <Loader2 className="spin" size={20} style={{ margin: '0 auto' }} />
-            ) : isLogin ? (
-              "Ingresar a Stackr"
-            ) : (
-              "Crear mi cuenta"
-            )}
-          </button>
-        </form>
-
-        <div style={{ marginTop: 32, textAlign: "center" }}>
-          <button
-            className="switch-btn"
-            onClick={() => { setIsLogin(!isLogin); setError(""); }}
-          >
-            {isLogin
-              ? "¿No tienes cuenta? Regístrate aquí"
-              : "¿Ya tienes cuenta? Inicia sesión"}
-          </button>
-        </div>
-      </motion.div>
+            <div style={{ marginTop: 28, textAlign: "center" }}>
+              <button
+                onClick={() => { setIsLogin(!isLogin); setError(""); }}
+                style={{ fontSize: 14, color: "var(--text-3)", fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                {isLogin
+                  ? "¿No tenés cuenta? Registrate gratis"
+                  : "¿Ya tenés cuenta? Ingresá acá"}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

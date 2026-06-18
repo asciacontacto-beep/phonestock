@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 
 export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stock: any[], sales: any[], exchangeRate: number, userRole?: string }) {
   const router = useRouter();
@@ -28,16 +28,12 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
       toast.error('Error al eliminar venta: ' + e.message);
     }
   };
-  const av = stock.filter(s => s.status === 'available');
-  const sv = av.reduce((a, s) => a + (s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate)), 0);
+  const av = useMemo(() => stock.filter(s => s.status === 'available'), [stock]);
+  const sv = useMemo(() => av.reduce((a, s) => a + (s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate)), 0), [av, exchangeRate]);
 
   const isEmpty = av.length === 0 && sales.length === 0;
 
-  const validSales = sales.filter(s => s.brand !== 'MOVIMIENTO');
-  const totals: Record<string, number> = {};
-  validSales.forEach(s => s.payments?.forEach((p: any) => {
-    totals[p.id] = (totals[p.id] || 0) + (p.original_amount ?? p.amount);
-  }));
+  const validSales = useMemo(() => sales.filter(s => s.brand !== 'MOVIMIENTO'), [sales]);
 
   const exportCSV = () => {
     const headers = ['Fecha', 'Vendedor', 'Marca', 'Modelo', 'Storage', 'Color', 'IMEI', 'Precio', 'Moneda', 'Cliente', 'DNI', 'Tel', 'Notas'];
@@ -57,42 +53,45 @@ export function DashboardClient({ stock, sales, exchangeRate, userRole }: { stoc
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const brandRanking = BRANDS.map(b => ({
+  const brandRanking = useMemo(() => BRANDS.map(b => ({
     name: b,
     count: validSales.filter(s => s.brand === b).length
-  })).sort((a, b) => b.count - a.count).slice(0, 5);
+  })).sort((a, b) => b.count - a.count).slice(0, 5), [validSales]);
 
   const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const today = new Date();
-  const weekTrend = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() - (6 - i));
-    const dayStr = d.toISOString().slice(0, 10);
-    return {
-      label: days[d.getDay()],
-      count: validSales.filter(s => s.created_at?.slice(0, 10) === dayStr).length
-    };
-  });
+  const weekTrend = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (6 - i));
+      const dayStr = d.toISOString().slice(0, 10);
+      return {
+        label: days[d.getDay()],
+        count: validSales.filter(s => s.created_at?.slice(0, 10) === dayStr).length
+      };
+    });
+  }, [validSales]);
 
-  const sellerCounts: Record<string, { name: string; count: number }> = {};
-  validSales.forEach(s => {
-    if (!s.seller_id) return;
-    if (!sellerCounts[s.seller_id]) {
-      sellerCounts[s.seller_id] = { name: s.seller_name || 'Sin nombre', count: 0 };
-    }
-    sellerCounts[s.seller_id].count++;
-  });
-  const topSeller = Object.values(sellerCounts).sort((a, b) => b.count - a.count)[0];
+  const { sellerCounts, topSeller, sellerList } = useMemo(() => {
+    const counts: Record<string, { name: string; count: number }> = {};
+    validSales.forEach(s => {
+      if (!s.seller_id) return;
+      if (!counts[s.seller_id]) counts[s.seller_id] = { name: s.seller_name || 'Sin nombre', count: 0 };
+      counts[s.seller_id].count++;
+    });
+    const list = Object.values(counts).sort((a, b) => b.count - a.count);
+    return { sellerCounts: counts, topSeller: list[0], sellerList: list };
+  }, [validSales]);
 
-  const modelCounts: Record<string, { brand: string; model: string; count: number }> = {};
-  av.forEach(s => {
-    const key = `${s.brand}|${s.model}`;
-    if (!modelCounts[key]) modelCounts[key] = { brand: s.brand, model: s.model, count: 0 };
-    modelCounts[key].count++;
-  });
-  const lowStock = Object.values(modelCounts).filter(m => m.count <= 2).sort((a, b) => a.count - b.count);
-
-  const sellerList = Object.values(sellerCounts).sort((a, b) => b.count - a.count);
+  const lowStock = useMemo(() => {
+    const modelCounts: Record<string, { brand: string; model: string; count: number }> = {};
+    av.forEach(s => {
+      const key = `${s.brand}|${s.model}`;
+      if (!modelCounts[key]) modelCounts[key] = { brand: s.brand, model: s.model, count: 0 };
+      modelCounts[key].count++;
+    });
+    return Object.values(modelCounts).filter(m => m.count <= 2).sort((a, b) => a.count - b.count);
+  }, [av]);
 
   return (
     <div className="page">

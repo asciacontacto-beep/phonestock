@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
 import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -33,35 +33,25 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       setStock(stockData || []);
       setDeposits(depositsData || []);
       if (depositsData && depositsData.length > 0) setSelectedDeposit(depositsData[0].id);
-      // Assign default deposit to items missing it
-      const missing = (stockData || []).filter((s: any) => s.deposit === null || s.deposit === undefined);
-      if (missing.length && depositsData && depositsData.length > 0) {
-        const defId = depositsData[0].id;
-        const ids = missing.map((s: any) => s.id);
-        await supabase.from('stock').update({ deposit: defId }).in('id', ids);
-        // Refresh stock data after update
-        const { data: refreshed } = await supabase.from('stock').select('*').order('created_at', { ascending: false });
-        setStock(refreshed || []);
-      }
       setDataLoaded(true);
     })();
   }, []);
 
-  let rows = stock.filter(s =>
-    (filter.brand === 'all' || s.brand === filter.brand) &&
-    (filter.model === 'all' || s.model === filter.model) &&
-    (filter.storage === 'all' || s.storage === filter.storage) &&
-    (filter.status === 'all' || s.status === filter.status) &&
-    (filter.condition === 'all' || s.condition === filter.condition) &&
-    (filter.deposit === 'all' || String(s.deposit) === String(filter.deposit)) &&
-    (!filter.q || `${s.brand} ${s.model} ${s.imei} ${s.color}`.toLowerCase().includes(filter.q.toLowerCase()))
-  );
-
-  if (filter.sortPrice === 'asc') {
-    rows.sort((a, b) => (a.price || 0) - (b.price || 0));
-  } else if (filter.sortPrice === 'desc') {
-    rows.sort((a, b) => (b.price || 0) - (a.price || 0));
-  }
+  const rows = useMemo(() => {
+    const ql = filter.q.toLowerCase();
+    let r = stock.filter(s =>
+      (filter.brand === 'all' || s.brand === filter.brand) &&
+      (filter.model === 'all' || s.model === filter.model) &&
+      (filter.storage === 'all' || s.storage === filter.storage) &&
+      (filter.status === 'all' || s.status === filter.status) &&
+      (filter.condition === 'all' || s.condition === filter.condition) &&
+      (filter.deposit === 'all' || String(s.deposit) === String(filter.deposit)) &&
+      (!ql || `${s.brand} ${s.model} ${s.imei} ${s.color}`.toLowerCase().includes(ql))
+    );
+    if (filter.sortPrice === 'asc') r = [...r].sort((a, b) => (a.price || 0) - (b.price || 0));
+    else if (filter.sortPrice === 'desc') r = [...r].sort((a, b) => (b.price || 0) - (a.price || 0));
+    return r;
+  }, [stock, filter]);
 
   const handleDelete = async (id: any) => {
     if (!confirm('¿Eliminar este equipo del stock?')) return;
@@ -95,7 +85,13 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       setEditItem(null);
       router.refresh();
       toast.success('Equipo actualizado');
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { 
+      if (e.message?.includes('stock_imei_key')) {
+        toast.error('Este IMEI / Serie ya se encuentra registrado en el sistema.');
+      } else {
+        toast.error(e.message || 'Error al guardar'); 
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -119,7 +115,8 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
     }
   };
 
-  const depositOf = (s: any) => deposits.find((d: any) => String(d.id) === String(s.deposit));
+  const depositMap = useMemo(() => Object.fromEntries(deposits.map(d => [String(d.id), d])), [deposits]);
+  const depositOf = (s: any) => depositMap[String(s.deposit)];
 
   return (
     <div className="page">
@@ -237,16 +234,19 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
               const dep = depositOf(s);
               const isSelected = selectedItems.includes(s.id);
               return (
-                <div 
-                  key={s.id} 
+                <div
+                  key={s.id}
                   onClick={() => setDetailItem(s)}
-                  style={{ 
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', 
-                    background: isSelected ? 'var(--surface-2)' : 'var(--surface)', 
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                    background: isSelected ? 'var(--surface-2)' : 'var(--surface)',
                     borderRadius: 12, border: isSelected ? '2px solid var(--text)' : '1px solid var(--border)',
                     cursor: 'pointer', boxShadow: 'var(--shadow-xs)',
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    transition: 'background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease',
                   }}
+                  onMouseEnter={e => { if (!isSelected) { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-2)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-sm)'; } }}
+                  onMouseLeave={e => { if (!isSelected) { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-xs)'; } }}
                 >
                   <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }}>
                     <input 

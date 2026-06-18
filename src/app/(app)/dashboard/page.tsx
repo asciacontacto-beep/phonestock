@@ -15,9 +15,9 @@ export default async function DashboardPage() {
     { data: salesData },
     { data: settingsData }
   ] = await Promise.all([
-    supabase.from('stock').select('*').order('created_at', { ascending: false }),
-    supabase.from('sales').select('*').order('created_at', { ascending: false }),
-    supabase.from('settings').select('*').maybeSingle()
+    supabase.from('stock').select('id,brand,model,storage,color,imei,price,cost_price,currency,status,condition,deposit,created_at').order('created_at', { ascending: false }),
+    supabase.from('sales').select('id,brand,model,storage,color,imei,price,currency,created_at,seller_id,seller_name,customer,payments,notes').order('created_at', { ascending: false }).limit(500),
+    supabase.from('settings').select('exchange_rate').maybeSingle()
   ])
 
   return (

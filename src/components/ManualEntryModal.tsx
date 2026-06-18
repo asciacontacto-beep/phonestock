@@ -157,7 +157,11 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
         onClose();
       }
     } catch (e: any) {
-      toast.error(e.message || 'Error al guardar');
+      if (e.message?.includes('stock_imei_key')) {
+        toast.error('Uno o más IMEI ingresados ya están registrados en el inventario.');
+      } else {
+        toast.error(e.message || 'Error al guardar');
+      }
     } finally { setLoading(false); }
   };
 

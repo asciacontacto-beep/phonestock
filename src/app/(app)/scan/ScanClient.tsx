@@ -123,7 +123,11 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
         ref.current?.focus();
       }
     } catch (e: any) {
-      toast.error(e.message || 'Error al guardar');
+      if (e.message?.includes('stock_imei_key')) {
+        toast.error('Este IMEI / Serie ya se encuentra registrado.');
+      } else {
+        toast.error(e.message || 'Error al guardar');
+      }
     }
   };
 

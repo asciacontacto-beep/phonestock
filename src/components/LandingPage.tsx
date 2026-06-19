@@ -152,14 +152,70 @@ export default function LandingPage() {
             <span><Check size={13} strokeWidth={3} /> Soporte por WhatsApp</span>
           </motion.div>
 
-          <motion.div
-            className={styles.heroMockup}
-            initial={{ opacity: 0, y: 56, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.9, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <img src="/dashboard-screenshot.png" alt="Panel de control Stackr" />
-          </motion.div>
+          <div className={styles.heroCards}>
+            {/* Card principal — stats */}
+            <motion.div
+              className={`${styles.heroCard} ${styles.heroCardMain}`}
+              initial={{ opacity: 0, y: 48, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <motion.div
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <div className={styles.heroCardChrome}>
+                  <span className={styles.heroCardDot} style={{ background: '#ff5f57' }} />
+                  <span className={styles.heroCardDot} style={{ background: '#febc2e' }} />
+                  <span className={styles.heroCardDot} style={{ background: '#28c840' }} />
+                  <span className={styles.heroCardUrl}>stackrarg.vercel.app/dashboard</span>
+                </div>
+                <img src="/hero-stats.png" alt="Dashboard Stackr" className={styles.heroCardImg} />
+              </motion.div>
+            </motion.div>
+
+            {/* Card secundaria — stock */}
+            <motion.div
+              className={`${styles.heroCard} ${styles.heroCardStock}`}
+              initial={{ opacity: 0, x: -32, y: 32 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.85, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <motion.div
+                animate={{ y: [0, -7, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
+              >
+                <div className={styles.heroCardChrome}>
+                  <span className={styles.heroCardDot} style={{ background: '#ff5f57' }} />
+                  <span className={styles.heroCardDot} style={{ background: '#febc2e' }} />
+                  <span className={styles.heroCardDot} style={{ background: '#28c840' }} />
+                  <span className={styles.heroCardUrl}>Inventario Global</span>
+                </div>
+                <img src="/hero-stock.png" alt="Inventario Stackr" className={styles.heroCardImg} />
+              </motion.div>
+            </motion.div>
+
+            {/* Card terciaria — chart */}
+            <motion.div
+              className={`${styles.heroCard} ${styles.heroCardChart}`}
+              initial={{ opacity: 0, x: 32, y: 32 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.85, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <motion.div
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }}
+              >
+                <div className={styles.heroCardChrome}>
+                  <span className={styles.heroCardDot} style={{ background: '#ff5f57' }} />
+                  <span className={styles.heroCardDot} style={{ background: '#febc2e' }} />
+                  <span className={styles.heroCardDot} style={{ background: '#28c840' }} />
+                  <span className={styles.heroCardUrl}>Tendencia del mes</span>
+                </div>
+                <img src="/hero-chart.png" alt="Tendencia Stackr" className={styles.heroCardImg} />
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

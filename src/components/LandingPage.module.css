@@ -296,21 +296,87 @@
 .heroTrust span { display: flex; align-items: center; gap: 5px; }
 .heroTrust svg  { color: #22c55e; }
 
-.heroMockup {
+/* ── Hero floating cards ── */
+.heroCards {
+  position: relative;
   width: 100%;
-  max-width: 1040px;
-  border-radius: 16px;
+  max-width: 960px;
+  height: 420px;
+  margin-top: 16px;
+}
+
+.heroCard {
+  position: absolute;
+  background: #fff;
+  border-radius: 14px;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(0,0,0,0.06),
-    0 20px 44px rgba(0,0,0,0.11),
-    0 6px 14px rgba(0,0,0,0.05);
-  background: #f5f5f3;
+    0 0 0 1px rgba(0,0,0,0.07),
+    0 8px 24px rgba(0,0,0,0.09),
+    0 32px 64px rgba(0,0,0,0.08);
 }
-.heroMockup img {
+
+.heroCardChrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #f5f5f5;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.heroCardDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.heroCardUrl {
+  font-size: 11px;
+  color: #aaa;
+  font-family: 'JetBrains Mono', monospace;
+  margin-left: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.heroCardImg {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* Card principal — stats (centro, más grande, z más alto) */
+.heroCardMain {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 700px;
+  z-index: 2;
+}
+
+/* Card stock — abajo a la izquierda, levemente rotada */
+.heroCardStock {
+  left: -24px;
+  bottom: 0;
+  width: 420px;
+  z-index: 3;
+  transform: rotate(-1.5deg);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.07),
+    0 12px 32px rgba(0,0,0,0.12),
+    0 40px 80px rgba(0,0,0,0.1);
+}
+
+/* Card chart — abajo a la derecha, levemente rotada al otro lado */
+.heroCardChart {
+  right: -24px;
+  bottom: 0;
+  width: 360px;
+  z-index: 1;
+  transform: rotate(1.5deg);
 }
 
 @media (max-width: 768px) {
@@ -319,6 +385,14 @@
   .heroSub { font-size: 15px; margin-bottom: 28px; }
   .heroPrimaryBtn, .heroSecondaryBtn { padding: 13px 22px; font-size: 15px; }
   .heroTrust { margin-bottom: 36px; font-size: 12px; gap: 8px; }
+
+  .heroCards {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .heroCard { position: static; width: 100% !important; transform: none !important; }
 }
 
 /* ── MARQUEE ───────────────────────────────────── */

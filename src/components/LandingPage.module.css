@@ -1082,6 +1082,22 @@
 .finalCtaTrust span { display: flex; align-items: center; gap: 5px; }
 .finalCtaTrust svg  { color: #22c55e; }
 
+.finalCtaWa {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 24px;
+  border-radius: 50px;
+  background: #25D366;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.12s;
+  box-shadow: 0 4px 20px rgba(37,211,102,0.35);
+}
+.finalCtaWa:hover { background: #1ebe5d; transform: translateY(-1px); }
+
 @media (max-width: 768px) {
   .finalCta { padding: 80px 20px; }
   .finalCtaBtn { padding: 15px 26px; font-size: 15px; }

@@ -24,11 +24,13 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
   const router = useRouter();
   const supabase = createClient();
 
+  const STOCK_FIELDS = 'id,brand,model,storage,condition,status,deposit,color,imei,currency,price,cost_price,battery,created_at';
+
   useEffect(() => {
     (async () => {
       const [{ data: stockData }, { data: depositsData }] = await Promise.all([
-        supabase.from('stock').select('*').order('created_at', { ascending: false }),
-        supabase.from('deposits').select('*').order('name'),
+        supabase.from('stock').select(STOCK_FIELDS).order('created_at', { ascending: false }),
+        supabase.from('deposits').select('id,name,color').order('name'),
       ]);
       setStock(stockData || []);
       setDeposits(depositsData || []);
@@ -221,7 +223,21 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         </select>
       </div>
 
-      {rows.length === 0 ? (
+      {!dataLoaded ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="skeleton-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px' }}>
+              <div className="skeleton skeleton-line" style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginBottom: 0 }} />
+              <div style={{ flex: '1 1 200px' }}>
+                <div className="skeleton skeleton-line" style={{ width: '60%', height: 14, marginBottom: 6 }} />
+                <div className="skeleton skeleton-line" style={{ width: '40%', height: 11, marginBottom: 0 }} />
+              </div>
+              <div className="skeleton skeleton-line" style={{ flex: '0 0 100px', height: 14, marginBottom: 0 }} />
+              <div className="skeleton skeleton-line" style={{ flex: '0 0 80px', height: 14, marginBottom: 0 }} />
+            </div>
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
           <Package size={36} style={{ marginBottom: 14, opacity: 0.3 }} />
           <div style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Sin resultados</div>
@@ -484,7 +500,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         open={showManual}
         onClose={() => setShowManual(false)}
         onSuccess={() => {
-          supabase.from('stock').select('*').order('created_at', { ascending: false })
+          supabase.from('stock').select(STOCK_FIELDS).order('created_at', { ascending: false })
             .then(({ data }) => { if (data) setStock(data); });
         }}
       />

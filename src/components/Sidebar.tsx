@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Box, ScanLine, ShoppingCart, Wallet, LogOut, Smartphone, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert, FileText, Package, Headphones, Wrench } from 'lucide-react';
+import { LayoutDashboard, Box, ScanLine, ShoppingCart, Wallet, LogOut, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert, FileText, Package, Headphones, Wrench, Truck, BarChart3, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -21,36 +21,39 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
   const nav = isSuperAdmin ?
     [
       { g: 'Stackr Admin' },
-      { id: 'superadmin', l: 'Negocios', i: <ShieldAlert size={18} /> },
+      { id: 'superadmin', l: 'Negocios', i: <ShieldAlert size={17} /> },
     ] :
     user.role === 'owner' ?
     [
-      { g: 'Sistema' },
-      { id: 'dashboard', l: 'Resumen', i: <LayoutGrid size={18} /> },
-      { id: 'stock', l: 'Inventario', i: <Package size={18} /> },
-      { id: 'accessories', l: 'Accesorios', i: <Headphones size={18} /> },
-      { id: 'deposits', l: 'Depósitos', i: <Warehouse size={18} /> },
-      { id: 'suppliers', l: 'Proveedores', i: <LayoutGrid size={18} /> },
-      { id: 'scan', l: 'Carga EAN', i: <ScanLine size={18} /> },
-      { id: 'customers', l: 'Clientes', i: <Users2 size={18} /> },
-      { id: 'expenses', l: 'Gastos', i: <Wallet size={18} /> },
-      { id: 'reports', l: 'Rentabilidad', i: <LayoutGrid size={18} /> },
-      { id: 'users', l: 'Usuarios', i: <UserIcon size={18} /> },
-      { id: 'settings', l: 'Configuración', i: <Settings size={18} /> },
+      { g: 'General' },
+      { id: 'dashboard',   l: 'Resumen',        i: <LayoutDashboard size={17} /> },
+      { id: 'reports',     l: 'Rentabilidad',    i: <BarChart3 size={17} /> },
+      { g: 'Inventario' },
+      { id: 'stock',       l: 'Inventario',      i: <Package size={17} /> },
+      { id: 'accessories', l: 'Accesorios',      i: <Headphones size={17} /> },
+      { id: 'deposits',    l: 'Depósitos',        i: <Warehouse size={17} /> },
+      { id: 'scan',        l: 'Carga EAN',        i: <ScanLine size={17} /> },
       { g: 'Operaciones' },
-      { id: 'sell', l: 'Nueva Operación', i: <ShoppingCart size={18} /> },
-      { id: 'sales', l: 'Historial Ventas', i: <FileText size={18} /> },
-      { id: 'cashiers', l: 'Cajas', i: <Wallet size={18} /> },
-      { id: 'repairs', l: 'Servicio Técnico', i: <Wrench size={18} /> }
+      { id: 'sell',        l: 'Nueva Operación',  i: <ShoppingCart size={17} /> },
+      { id: 'sales',       l: 'Historial Ventas', i: <FileText size={17} /> },
+      { id: 'repairs',     l: 'Servicio Técnico', i: <Wrench size={17} /> },
+      { id: 'cashiers',    l: 'Cajas',            i: <CreditCard size={17} /> },
+      { id: 'expenses',    l: 'Gastos',           i: <Wallet size={17} /> },
+      { g: 'Contactos' },
+      { id: 'customers',   l: 'Clientes',         i: <Users2 size={17} /> },
+      { id: 'suppliers',   l: 'Proveedores',      i: <Truck size={17} /> },
+      { g: 'Configuración' },
+      { id: 'users',       l: 'Usuarios',         i: <UserIcon size={17} /> },
+      { id: 'settings',    l: 'Configuración',    i: <Settings size={17} /> },
     ] :
     [
       { g: 'Mi Terminal' },
-      { id: 'dashboard', l: 'Resumen', i: <LayoutGrid size={18} /> },
-      { id: 'sell', l: 'Nueva Operación', i: <ShoppingCart size={18} /> },
-      { id: 'stock', l: 'Ver Stock', i: <Box size={18} /> },
-      { id: 'scan', l: 'Ingresar Equipo', i: <ScanLine size={18} /> },
-      { id: 'cashier_me', l: 'Mi Caja', i: <Wallet size={18} /> },
-      { id: 'repairs', l: 'Servicio Técnico', i: <Wrench size={18} /> }
+      { id: 'dashboard',  l: 'Resumen',          i: <LayoutDashboard size={17} /> },
+      { id: 'sell',       l: 'Nueva Operación',  i: <ShoppingCart size={17} /> },
+      { id: 'stock',      l: 'Ver Stock',        i: <Box size={17} /> },
+      { id: 'scan',       l: 'Ingresar Equipo',  i: <ScanLine size={17} /> },
+      { id: 'cashier_me', l: 'Mi Caja',          i: <CreditCard size={17} /> },
+      { id: 'repairs',    l: 'Servicio Técnico', i: <Wrench size={17} /> },
     ];
 
   return (

@@ -2,7 +2,9 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, ChevronDown, Check, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, Check, X, MessageCircle } from "lucide-react";
+
+const WA_LINK = "https://wa.me/5492262559559?text=Hola%2C%20quiero%20contratar%20Stackr%20%F0%9F%93%B1%20%C2%BFC%C3%B3mo%20procedo%3F";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./LandingPage.module.css";
@@ -352,8 +354,12 @@ export default function LandingPage() {
               <div className={styles.pricingBadge}>Licencia de por vida</div>
               <div className={styles.pricingPrice}>$400 <span>USD</span></div>
               <p className={styles.pricingNote}>Un solo pago · Sin mensualidades · Para siempre</p>
-              <Link href="/onboarding" className={styles.pricingCta}>Obtener Stackr ahora <ArrowRight size={18} /></Link>
-              <p className={styles.pricingTrialNote}>Empezá con 48hs gratis — sin tarjeta de crédito</p>
+              <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.pricingCta}>
+                <MessageCircle size={18} /> Comprar por WhatsApp
+              </a>
+              <p className={styles.pricingTrialNote}>
+                o <Link href="/onboarding" style={{ color: 'inherit', textDecoration: 'underline' }}>probá 48hs gratis</Link> — sin tarjeta de crédito
+              </p>
             </div>
             <div className={styles.pricingFeatures}>
               {["Sucursales ilimitadas","Usuarios ilimitados","Stock, Ventas, Reparaciones y Caja","Reportes de rentabilidad","Gestión en ARS y USD","Notificaciones por WhatsApp","Actualizaciones de por vida","Soporte prioritario incluido"].map(f => (
@@ -400,6 +406,9 @@ export default function LandingPage() {
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.16 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
             <Link href="/onboarding" className={styles.finalCtaBtn}>Comenzar prueba gratis de 48hs <ArrowRight size={20} /></Link>
+            <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.finalCtaWa}>
+              <MessageCircle size={16} /> Comprar ahora por WhatsApp
+            </a>
             <div className={styles.finalCtaTrust}>
               <span><Check size={13} strokeWidth={3} /> $400 USD una sola vez</span>
               <span className={styles.dot} />

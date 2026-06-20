@@ -33,6 +33,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const [cur, setCur] = useState('USD');
   const [dep, setDep] = useState<any>(null);
   const [deposits, setDeposits] = useState<any[]>([]);
+  const [depositsLoaded, setDepositsLoaded] = useState(false);
   const [sup, setSup] = useState<any>(null);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [variants, setVariants] = useState([emptyVariant()]);
@@ -43,11 +44,11 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   useEffect(() => {
     if (open) {
       setStep(1);
+      setDepositsLoaded(false);
       supabase.from('deposits').select('*').order('name').then(({ data }) => {
-        if (data && data.length > 0) {
-          setDeposits(data);
-          setDep(data[0].id);
-        }
+        setDeposits(data || []);
+        if (data && data.length > 0) setDep(data[0].id);
+        setDepositsLoaded(true);
       });
       supabase.from('suppliers').select('*').order('name').then(({ data }) => {
         if (data && data.length > 0) {
@@ -229,7 +230,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                 <div><label className="lbl">Moneda</label><select className="inp" value={cur} onChange={e => setCur(e.target.value)}><option value="USD">USD $</option><option value="ARS">ARS $</option></select></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div><label className="lbl">Depósito</label><select className="inp" value={dep !== null ? String(dep) : ''} onChange={e => setDep(e.target.value)}>{deposits.length === 0 && <option value="">Cargando…</option>}{deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}</select></div>
+                <div><label className="lbl">Depósito</label><select className="inp" value={dep !== null ? String(dep) : ''} onChange={e => setDep(e.target.value)}>{!depositsLoaded && <option value="">Cargando…</option>}{depositsLoaded && deposits.length === 0 && <option value="">Sin depósitos — creá uno primero</option>}{deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}</select></div>
                 {suppliers.length > 0 && (
                   <div><label className="lbl">Proveedor</label><select className="inp" value={sup !== null ? String(sup) : ''} onChange={e => setSup(e.target.value)}>{suppliers.map(s => <option key={s.id} value={String(s.id)}>{s.name}</option>)}</select></div>
                 )}

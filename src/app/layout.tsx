@@ -109,7 +109,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${interVariable} ${jetbrainsVariable} antialiased`}>
+      <body className={`${interVariable} ${jetbrainsVariable} antialiased`} suppressHydrationWarning>
         {children}
         <Toaster theme="dark" position="bottom-right" richColors />
       </body>

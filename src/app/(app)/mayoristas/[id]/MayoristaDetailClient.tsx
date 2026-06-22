@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 
-type Item = { id: string; stock_id: string | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean }
+type Item = { id: string; stock_id: number | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean }
 type Order = { id: string; status: string; currency: string; notes: string | null; created_at: string; items: Item[]; total: number; paid: number; balance: number }
 type Payment = { id: string; order_id: string; amount: number; currency: string; method: string; notes: string | null; created_at: string }
-type StockItem = { id: string; brand: string; model: string; storage: string; color: string; status: string; price: number; currency: string }
+type StockItem = { id: number; brand: string; model: string; storage: string; color: string; status: string; price: number; currency: string }
 type Wholesaler = { id: string; name: string; phone: string | null; email: string | null; notes: string | null; created_at: string }
 
 const STATUS_LABEL: Record<string, string> = { draft: 'Borrador', confirmed: 'Confirmado', delivered: 'Entregado', cancelled: 'Cancelado' }
@@ -272,7 +272,7 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
 }) {
   const [currency, setCurrency] = useState<'USD' | 'ARS'>('USD')
   const [notes, setNotes] = useState('')
-  const [lines, setLines] = useState<{ stock_id: string | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean }[]>([
+  const [lines, setLines] = useState<{ stock_id: number | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean }[]>([
     { stock_id: null, brand: '', model: '', storage: '', color: '', qty: 1, unit_price: 0, is_backorder: false }
   ])
   const [stockQ, setStockQ] = useState<string[]>([''])

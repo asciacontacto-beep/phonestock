@@ -10,7 +10,7 @@ type Item = { id: string; stock_id: number | null; brand: string; model: string;
 type Order = { id: string; status: string; currency: string; notes: string | null; created_at: string; items: Item[]; total: number; paid: number; balance: number }
 type Payment = { id: string; order_id: string; amount: number; currency: string; method: string; notes: string | null; created_at: string }
 type StockItem = { id: number; brand: string; model: string; storage: string; color: string; status: string; price: number; currency: string }
-type Wholesaler = { id: string; name: string; phone: string | null; email: string | null; notes: string | null; created_at: string }
+type Wholesaler = { id: string; org_id: string; name: string; phone: string | null; email: string | null; notes: string | null; created_at: string }
 
 const STATUS_LABEL: Record<string, string> = { draft: 'Borrador', confirmed: 'Confirmado', delivered: 'Entregado', cancelled: 'Cancelado' }
 const STATUS_CLASS: Record<string, string> = { draft: 'b-neu', confirmed: 'b-blue', delivered: 'b-green', cancelled: 'b-red' }
@@ -250,6 +250,7 @@ export function MayoristaDetailClient({
         <PaymentModal
           order={showPayment}
           wholesalerId={wholesaler.id}
+          orgId={wholesaler.org_id}
           onClose={() => setShowPayment(null)}
           onPaid={(payment, updatedOrder) => {
             setPayments(prev => [payment, ...prev])
@@ -304,7 +305,7 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
     setLoading(true)
     try {
       const { data: orderData, error: oErr } = await supabase.from('wholesale_orders').insert([{
-        wholesaler_id: wholesaler.id, status: 'confirmed', currency, notes: notes || null
+        wholesaler_id: wholesaler.id, org_id: wholesaler.org_id, status: 'confirmed', currency, notes: notes || null
       }]).select()
       if (oErr) throw oErr
       const order = orderData![0]
@@ -446,9 +447,10 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
   )
 }
 
-function PaymentModal({ order, wholesalerId, onClose, onPaid }: {
+function PaymentModal({ order, wholesalerId, orgId, onClose, onPaid }: {
   order: Order
   wholesalerId: string
+  orgId: string
   onClose: () => void
   onPaid: (payment: Payment, updatedOrder: Order) => void
 }) {
@@ -464,7 +466,7 @@ function PaymentModal({ order, wholesalerId, onClose, onPaid }: {
     setLoading(true)
     try {
       const { data, error } = await supabase.from('wholesale_payments').insert([{
-        order_id: order.id, wholesaler_id: wholesalerId,
+        order_id: order.id, wholesaler_id: wholesalerId, org_id: orgId,
         amount: amt, currency: order.currency, method, notes: notes || null
       }]).select()
       if (error) throw error

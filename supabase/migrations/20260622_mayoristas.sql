@@ -37,7 +37,7 @@ create policy "org members see their orders"
 create table if not exists wholesale_order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null references wholesale_orders(id) on delete cascade,
-  stock_id uuid references stock(id) on delete set null,
+  stock_id bigint references stock(id) on delete set null,
   brand text not null,
   model text not null,
   storage text,

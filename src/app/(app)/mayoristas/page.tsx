@@ -2,6 +2,8 @@ import { createClient, getUser } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { MayoristasClient } from "./MayoristasClient"
 
+export const dynamic = 'force-dynamic'
+
 export default async function MayoristasPage() {
   const user = await getUser()
   if (!user) redirect("/login")

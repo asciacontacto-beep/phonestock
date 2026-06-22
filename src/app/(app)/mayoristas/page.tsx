@@ -22,21 +22,29 @@ export default async function MayoristasPage() {
     supabase.from('wholesalers').select('*').order('name'),
     supabase.from('wholesale_orders').select('id, wholesaler_id, status, currency'),
     supabase.from('wholesale_order_items').select('order_id, qty, unit_price'),
-    supabase.from('wholesale_payments').select('wholesaler_id, amount'),
+    supabase.from('wholesale_payments').select('wholesaler_id, amount, currency'),
   ])
 
-  // Compute balances per wholesaler
-  const orderTotalMap: Record<string, number> = {}
+  // Compute balances per wholesaler, grouped by currency
+  const orderTotalMap: Record<string, { USD: number; ARS: number }> = {}
   for (const order of orders || []) {
     if (order.status === 'cancelled') continue
     const orderItems = (items || []).filter(i => i.order_id === order.id)
     const total = orderItems.reduce((s, i) => s + i.qty * i.unit_price, 0)
-    orderTotalMap[order.wholesaler_id] = (orderTotalMap[order.wholesaler_id] || 0) + total
+    if (!orderTotalMap[order.wholesaler_id]) {
+      orderTotalMap[order.wholesaler_id] = { USD: 0, ARS: 0 }
+    }
+    const cur = order.currency as 'USD' | 'ARS'
+    orderTotalMap[order.wholesaler_id][cur] += total
   }
 
-  const paymentMap: Record<string, number> = {}
+  const paymentMap: Record<string, { USD: number; ARS: number }> = {}
   for (const p of payments || []) {
-    paymentMap[p.wholesaler_id] = (paymentMap[p.wholesaler_id] || 0) + p.amount
+    if (!paymentMap[p.wholesaler_id]) {
+      paymentMap[p.wholesaler_id] = { USD: 0, ARS: 0 }
+    }
+    const cur = (p.currency ?? 'ARS') as 'USD' | 'ARS'
+    paymentMap[p.wholesaler_id][cur] += p.amount
   }
 
   const orderCountMap: Record<string, number> = {}
@@ -46,13 +54,21 @@ export default async function MayoristasPage() {
     }
   }
 
-  const wholesalersWithBalance = (wholesalers || []).map(w => ({
-    ...w,
-    total_ordered: orderTotalMap[w.id] || 0,
-    total_paid: paymentMap[w.id] || 0,
-    balance_owed: (orderTotalMap[w.id] || 0) - (paymentMap[w.id] || 0),
-    order_count: orderCountMap[w.id] || 0,
-  }))
+  const wholesalersWithBalance = (wholesalers || []).map(w => {
+    const ordered = orderTotalMap[w.id] ?? { USD: 0, ARS: 0 }
+    const paid = paymentMap[w.id] ?? { USD: 0, ARS: 0 }
+    const balances = {
+      USD: ordered.USD - paid.USD,
+      ARS: ordered.ARS - paid.ARS,
+    }
+    return {
+      ...w,
+      total_ordered: ordered.USD + ordered.ARS,
+      total_paid: paid.USD + paid.ARS,
+      balances,
+      order_count: orderCountMap[w.id] || 0,
+    }
+  })
 
   return <MayoristasClient initialWholesalers={wholesalersWithBalance} orgId={orgId} />
 }

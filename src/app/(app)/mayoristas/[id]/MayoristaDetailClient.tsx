@@ -90,8 +90,8 @@ export function MayoristaDetailClient({
           <div>
             <h1 className="st">{wholesaler.name}</h1>
             <div style={{ display: 'flex', gap: 14, marginTop: 4, fontSize: 13, color: 'var(--text-3)' }}>
-              {wholesaler.phone && <span><Phone size={12} style={{ marginRight: 4 }} />{wholesaler.phone}</span>}
-              {wholesaler.email && <span><Mail size={12} style={{ marginRight: 4 }} />{wholesaler.email}</span>}
+              {wholesaler.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={12} />{wholesaler.phone}</span>}
+              {wholesaler.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={12} />{wholesaler.email}</span>}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>

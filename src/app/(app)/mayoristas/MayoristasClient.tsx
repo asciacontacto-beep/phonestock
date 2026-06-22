@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { Plus, Search, X, Phone, Mail } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -18,6 +19,7 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
 
   const filtered = wholesalers.filter(w =>
     !q || `${w.name} ${w.phone ?? ''} ${w.email ?? ''}`.toLowerCase().includes(q.toLowerCase())
@@ -44,6 +46,7 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
       setShowNew(false)
       setForm({ name: '', phone: '', email: '', notes: '' })
       toast.success('Revendedor creado')
+      router.refresh()
     } catch (e: any) {
       toast.error(e.message)
     } finally {

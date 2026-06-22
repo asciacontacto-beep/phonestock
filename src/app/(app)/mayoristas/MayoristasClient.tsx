@@ -9,7 +9,9 @@ import Link from 'next/link'
 type Wholesaler = {
   id: string; name: string; phone: string | null; email: string | null
   notes: string | null; created_at: string
-  total_ordered: number; total_paid: number; balance_owed: number; order_count: number
+  total_ordered: number; total_paid: number
+  balances: { USD: number; ARS: number }
+  order_count: number
 }
 
 export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesalers: Wholesaler[]; orgId: string }) {
@@ -25,7 +27,8 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
     !q || `${w.name} ${w.phone ?? ''} ${w.email ?? ''}`.toLowerCase().includes(q.toLowerCase())
   )
 
-  const totalACobrar = wholesalers.reduce((s, w) => s + w.balance_owed, 0)
+  const totalUSD = wholesalers.reduce((s, w) => s + w.balances.USD, 0)
+  const totalARS = wholesalers.reduce((s, w) => s + w.balances.ARS, 0)
   const totalCobrado = wholesalers.reduce((s, w) => s + w.total_paid, 0)
   const pedidosActivos = wholesalers.reduce((s, w) => s + w.order_count, 0)
 
@@ -41,17 +44,41 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
         org_id: orgId,
       }]).select()
       if (error) throw error
-      const newW = { ...data![0], total_ordered: 0, total_paid: 0, balance_owed: 0, order_count: 0 }
+      const newW = { ...data![0], total_ordered: 0, total_paid: 0, balances: { USD: 0, ARS: 0 }, order_count: 0 }
       setWholesalers(prev => [newW, ...prev])
       setShowNew(false)
       setForm({ name: '', phone: '', email: '', notes: '' })
       toast.success('Revendedor creado')
       router.refresh()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Error al crear revendedor')
     } finally {
       setLoading(false)
     }
+  }
+
+  const renderBalance = (b: { USD: number; ARS: number }) => {
+    const parts: string[] = []
+    if (b.USD > 0) parts.push(`-U$${b.USD.toLocaleString()}`)
+    if (b.ARS > 0) parts.push(`-$${b.ARS.toLocaleString()}`)
+    if (parts.length === 0) return <span style={{ color: 'var(--green)' }}>Al día ✓</span>
+    return <span style={{ color: 'var(--red)' }}>{parts.join(' / ')}</span>
+  }
+
+  const renderTotalACobrar = () => {
+    if (totalUSD === 0 && totalARS === 0) {
+      return <div className="sv" style={{ color: 'var(--green)' }}>$0</div>
+    }
+    const lines: string[] = []
+    if (totalUSD > 0) lines.push(`U$${totalUSD.toLocaleString()}`)
+    if (totalARS > 0) lines.push(`$${totalARS.toLocaleString()}`)
+    return (
+      <div style={{ color: 'var(--red)' }}>
+        {lines.map((l, i) => (
+          <div key={i} className="sv" style={{ color: 'var(--red)' }}>{l}</div>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -70,9 +97,7 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
       <div className="sg" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 24 }}>
         <div className="sc">
           <div className="sl">Total a cobrar</div>
-          <div className="sv" style={{ color: totalACobrar > 0 ? 'var(--red)' : 'var(--green)' }}>
-            ${totalACobrar.toLocaleString()}
-          </div>
+          {renderTotalACobrar()}
         </div>
         <div className="sc">
           <div className="sl">Total cobrado</div>
@@ -120,8 +145,8 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, fontFamily: 'JetBrains Mono', color: w.balance_owed > 0 ? 'var(--red)' : 'var(--green)' }}>
-                    {w.balance_owed > 0 ? `-$${w.balance_owed.toLocaleString()}` : 'Al día'}
+                  <div style={{ fontWeight: 700, fontSize: 15, fontFamily: 'JetBrains Mono' }}>
+                    {renderBalance(w.balances)}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
                     {w.order_count} pedido{w.order_count !== 1 ? 's' : ''}

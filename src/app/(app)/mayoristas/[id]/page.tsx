@@ -44,7 +44,14 @@ export default async function MayoristaDetailPage({ params }: { params: Promise<
 
   const totalOwed = ordersWithBalance
     .filter(o => o.status !== 'cancelled')
-    .reduce((s, o) => s + o.balance, 0)
+    .reduce(
+      (acc, o) => {
+        const cur = (o.currency ?? 'ARS') as 'USD' | 'ARS'
+        acc[cur] += o.balance
+        return acc
+      },
+      { USD: 0, ARS: 0 }
+    )
 
   return (
     <MayoristaDetailClient

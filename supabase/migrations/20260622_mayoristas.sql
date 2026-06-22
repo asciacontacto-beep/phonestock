@@ -100,3 +100,8 @@ create policy "org members see their payments"
 create trigger wholesale_payments_fill_org_id
   before insert on wholesale_payments
   for each row execute function public.fill_mayoristas_org_id();
+
+-- ===========================================================
+-- Run separately after initial migration (Fix 4 — backorder tracking):
+-- alter table wholesale_order_items add column if not exists received boolean not null default false;
+-- ===========================================================

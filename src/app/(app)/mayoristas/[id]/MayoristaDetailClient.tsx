@@ -1,12 +1,12 @@
 "use client"
 import { useState } from 'react'
-import { ArrowLeft, Plus, CreditCard, Phone, Mail, X } from 'lucide-react'
+import { ArrowLeft, Plus, CreditCard, Phone, Mail, X, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 
-type Item = { id: string; stock_id: number | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean }
+type Item = { id: string; stock_id: number | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean; received?: boolean }
 type Order = { id: string; status: string; currency: string; notes: string | null; created_at: string; items: Item[]; total: number; paid: number; balance: number }
 type Payment = { id: string; order_id: string; amount: number; currency: string; method: string; notes: string | null; created_at: string }
 type StockItem = { id: number; brand: string; model: string; storage: string; color: string; status: string; price: number; currency: string }
@@ -17,20 +17,23 @@ const STATUS_CLASS: Record<string, string> = { draft: 'b-neu', confirmed: 'b-blu
 const METHOD_LABEL: Record<string, string> = { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta' }
 
 export function MayoristaDetailClient({
-  wholesaler, initialOrders, initialPayments, availableStock, totalOwed
+  wholesaler: initialWholesaler, initialOrders, initialPayments, availableStock, totalOwed
 }: {
   wholesaler: Wholesaler
   initialOrders: Order[]
   initialPayments: Payment[]
   availableStock: StockItem[]
-  totalOwed: number
+  totalOwed: { USD: number; ARS: number }
 }) {
+  const [wholesaler, setWholesaler] = useState(initialWholesaler)
   const [orders, setOrders] = useState(initialOrders)
   const [payments, setPayments] = useState(initialPayments)
   const [tab, setTab] = useState<'orders' | 'payments' | 'account'>('orders')
   const [showNewOrder, setShowNewOrder] = useState(false)
   const [showPayment, setShowPayment] = useState<Order | null>(null)
+  const [showEdit, setShowEdit] = useState(false)
   const [delivering, setDelivering] = useState<string | null>(null)
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const supabase = createClient()
   const router = useRouter()
 
@@ -73,12 +76,77 @@ export function MayoristaDetailClient({
     }
   }
 
+  const handleCancel = async (order: Order) => {
+    if (!confirm('¿Cancelar este pedido?')) return
+    try {
+      const { error } = await supabase.from('wholesale_orders').update({ status: 'cancelled' }).eq('id', order.id)
+      if (error) throw error
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o))
+      toast.success('Pedido cancelado')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error al cancelar pedido')
+    }
+  }
+
+  const handleMarkReceived = async (order: Order, item: Item) => {
+    try {
+      const { error } = await supabase.from('wholesale_order_items').update({ received: true }).eq('id', item.id)
+      if (error) {
+        // Column might not exist yet
+        if (error.message?.toLowerCase().includes('column') || error.code === '42703') {
+          toast.error('Ejecutá la migración SQL para habilitar esta función')
+        } else {
+          throw error
+        }
+        return
+      }
+      setOrders(prev => prev.map(o =>
+        o.id === order.id
+          ? { ...o, items: o.items.map(i => i.id === item.id ? { ...i, received: true } : i) }
+          : o
+      ))
+      toast.success('Encargue marcado como recibido')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error al actualizar encargue')
+    }
+  }
+
+  const toggleExpand = (orderId: string) => {
+    setExpandedOrders(prev => {
+      const next = new Set(prev)
+      if (next.has(orderId)) next.delete(orderId)
+      else next.add(orderId)
+      return next
+    })
+  }
+
   const accountEntries = [
     ...orders.filter(o => o.status !== 'cancelled').map(o => ({ type: 'order' as const, date: o.created_at, data: o })),
     ...payments.map(p => ({ type: 'payment' as const, date: p.created_at, data: p })),
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-  let runningBalance = 0
+  let runningUSD = 0
+  let runningARS = 0
+
+  const renderTotalOwed = () => {
+    const parts = [
+      totalOwed.USD > 0 && `-U$${totalOwed.USD.toLocaleString()}`,
+      totalOwed.ARS > 0 && `-$${totalOwed.ARS.toLocaleString()}`,
+    ].filter(Boolean) as string[]
+
+    if (parts.length === 0) {
+      return (
+        <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 20, color: 'var(--green)' }}>
+          Al día ✓
+        </div>
+      )
+    }
+    return (
+      <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 20, color: 'var(--red)' }}>
+        {parts.join(' / ')}
+      </div>
+    )
+  }
 
   return (
     <div className="page">
@@ -88,7 +156,17 @@ export function MayoristaDetailClient({
         </Link>
         <div className="sh" style={{ marginBottom: 0 }}>
           <div>
-            <h1 className="st">{wholesaler.name}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 className="st" style={{ marginBottom: 0 }}>{wholesaler.name}</h1>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowEdit(true)}
+                title="Editar revendedor"
+                style={{ padding: '4px 8px' }}
+              >
+                <Pencil size={14} />
+              </button>
+            </div>
             <div style={{ display: 'flex', gap: 14, marginTop: 4, fontSize: 13, color: 'var(--text-3)' }}>
               {wholesaler.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={12} />{wholesaler.phone}</span>}
               {wholesaler.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={12} />{wholesaler.email}</span>}
@@ -96,9 +174,7 @@ export function MayoristaDetailClient({
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Saldo pendiente</div>
-            <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'JetBrains Mono', color: totalOwed > 0 ? 'var(--red)' : 'var(--green)' }}>
-              {totalOwed > 0 ? `-$${totalOwed.toLocaleString()}` : 'Al día ✓'}
-            </div>
+            {renderTotalOwed()}
           </div>
         </div>
       </div>
@@ -133,32 +209,88 @@ export function MayoristaDetailClient({
               {orders.length === 0 && (
                 <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-3)', padding: '40px 0' }}>Sin pedidos aún</td></tr>
               )}
-              {orders.map(o => (
-                <tr key={o.id}>
-                  <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(o.created_at).toLocaleDateString('es-AR')}</td>
-                  <td style={{ fontSize: 13 }}>{o.items.length} ítem{o.items.length !== 1 ? 's' : ''}</td>
-                  <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>{o.currency === 'USD' ? 'U$' : '$'}{o.total.toLocaleString()}</td>
-                  <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: 'var(--green)' }}>{o.currency === 'USD' ? 'U$' : '$'}{o.paid.toLocaleString()}</td>
-                  <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: o.balance > 0 ? 'var(--red)' : 'var(--green)' }}>
-                    {o.balance > 0 ? `-${o.currency === 'USD' ? 'U$' : '$'}${o.balance.toLocaleString()}` : '✓'}
-                  </td>
-                  <td><span className={`badge ${STATUS_CLASS[o.status]}`}>{STATUS_LABEL[o.status]}</span></td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {o.balance > 0 && o.status !== 'cancelled' && (
-                        <button className="btn btn-outline btn-sm" onClick={() => setShowPayment(o)}>
-                          <CreditCard size={13} /> Cobrar
-                        </button>
-                      )}
-                      {o.status !== 'delivered' && o.status !== 'cancelled' && (
-                        <button className="btn btn-dark btn-sm" disabled={delivering === o.id} onClick={() => handleDeliver(o)}>
-                          {delivering === o.id ? 'Procesando...' : 'Entregar'}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {orders.map(o => {
+                const backorderItems = o.items.filter(i => i.is_backorder)
+                const isExpanded = expandedOrders.has(o.id)
+                return (
+                  <>
+                    <tr key={o.id}>
+                      <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(o.created_at).toLocaleDateString('es-AR')}</td>
+                      <td style={{ fontSize: 13 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          {o.items.length} ítem{o.items.length !== 1 ? 's' : ''}
+                          {backorderItems.length > 0 && (
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: 11, padding: '2px 6px' }}
+                              onClick={() => toggleExpand(o.id)}
+                            >
+                              {isExpanded ? '▲' : '▼'} Encargues
+                            </button>
+                          )}
+                        </span>
+                      </td>
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>{o.currency === 'USD' ? 'U$' : '$'}{o.total.toLocaleString()}</td>
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: 'var(--green)' }}>{o.currency === 'USD' ? 'U$' : '$'}{o.paid.toLocaleString()}</td>
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: o.balance > 0 ? 'var(--red)' : 'var(--green)' }}>
+                        {o.balance > 0 ? `-${o.currency === 'USD' ? 'U$' : '$'}${o.balance.toLocaleString()}` : '✓'}
+                      </td>
+                      <td><span className={`badge ${STATUS_CLASS[o.status]}`}>{STATUS_LABEL[o.status]}</span></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {o.balance > 0 && o.status !== 'cancelled' && (
+                            <button className="btn btn-outline btn-sm" onClick={() => setShowPayment(o)}>
+                              <CreditCard size={13} /> Cobrar
+                            </button>
+                          )}
+                          {o.status !== 'delivered' && o.status !== 'cancelled' && (
+                            <button className="btn btn-dark btn-sm" disabled={delivering === o.id} onClick={() => handleDeliver(o)}>
+                              {delivering === o.id ? 'Procesando...' : 'Entregar'}
+                            </button>
+                          )}
+                          {(o.status === 'draft' || o.status === 'confirmed') && (
+                            <button
+                              className="btn btn-outline btn-sm"
+                              style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+                              onClick={() => handleCancel(o)}
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && backorderItems.length > 0 && (
+                      <tr key={`${o.id}-backorders`}>
+                        <td colSpan={7} style={{ background: 'var(--surface-2)', padding: '10px 16px' }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, fontWeight: 600 }}>Encargues de este pedido:</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {backorderItems.map(item => (
+                              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: item.received ? 0.5 : 1 }}>
+                                <span style={{ fontSize: 13 }}>{item.brand} {item.model} × {item.qty}</span>
+                                {item.received ? (
+                                  <span className="badge b-green" style={{ fontSize: 11 }}>Encargue recibido</span>
+                                ) : (
+                                  <span className="badge" style={{ fontSize: 11, background: 'var(--orange, #f97316)', color: '#fff' }}>Encargue pendiente</span>
+                                )}
+                                {!item.received && (
+                                  <button
+                                    className="btn btn-outline btn-sm"
+                                    style={{ fontSize: 11, padding: '2px 8px' }}
+                                    onClick={() => handleMarkReceived(o, item)}
+                                  >
+                                    Marcar recibido
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -191,38 +323,46 @@ export function MayoristaDetailClient({
         <div className="tw">
           <table className="table">
             <thead>
-              <tr><th>Fecha</th><th>Concepto</th><th>Debe</th><th>Haber</th><th>Saldo</th></tr>
+              <tr><th>Fecha</th><th>Concepto</th><th>Debe</th><th>Haber</th><th>Saldo USD</th><th>Saldo ARS</th></tr>
             </thead>
             <tbody>
               {accountEntries.length === 0 && (
-                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-3)', padding: '40px 0' }}>Sin movimientos</td></tr>
+                <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-3)', padding: '40px 0' }}>Sin movimientos</td></tr>
               )}
               {accountEntries.map((entry) => {
                 if (entry.type === 'order') {
                   const o = entry.data as Order
-                  runningBalance += o.total
+                  if (o.currency === 'USD') runningUSD += o.total
+                  else runningARS += o.total
                   return (
                     <tr key={`o-${o.id}`}>
                       <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(o.created_at).toLocaleDateString('es-AR')}</td>
                       <td>Pedido — {o.items.length} item{o.items.length !== 1 ? 's' : ''} <span className={`badge ${STATUS_CLASS[o.status]}`} style={{ marginLeft: 6 }}>{STATUS_LABEL[o.status]}</span></td>
                       <td style={{ fontFamily: 'JetBrains Mono', color: 'var(--red)' }}>{o.currency === 'USD' ? 'U$' : '$'}{o.total.toLocaleString()}</td>
                       <td>—</td>
-                      <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: runningBalance > 0 ? 'var(--red)' : 'var(--green)' }}>
-                        {runningBalance > 0 ? `-$${runningBalance.toLocaleString()}` : '✓'}
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: runningUSD > 0 ? 'var(--red)' : 'var(--green)' }}>
+                        {runningUSD > 0 ? `-U$${runningUSD.toLocaleString()}` : runningUSD === 0 ? '—' : `U$${Math.abs(runningUSD).toLocaleString()}`}
+                      </td>
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: runningARS > 0 ? 'var(--red)' : 'var(--green)' }}>
+                        {runningARS > 0 ? `-$${runningARS.toLocaleString()}` : runningARS === 0 ? '—' : `$${Math.abs(runningARS).toLocaleString()}`}
                       </td>
                     </tr>
                   )
                 } else {
                   const p = entry.data as Payment
-                  runningBalance -= p.amount
+                  if (p.currency === 'USD') runningUSD -= p.amount
+                  else runningARS -= p.amount
                   return (
                     <tr key={`p-${p.id}`}>
                       <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(p.created_at).toLocaleDateString('es-AR')}</td>
                       <td>Pago — {METHOD_LABEL[p.method]}{p.notes ? ` (${p.notes})` : ''}</td>
                       <td>—</td>
                       <td style={{ fontFamily: 'JetBrains Mono', color: 'var(--green)' }}>+{p.currency === 'USD' ? 'U$' : '$'}{p.amount.toLocaleString()}</td>
-                      <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: runningBalance > 0 ? 'var(--red)' : 'var(--green)' }}>
-                        {runningBalance > 0 ? `-$${runningBalance.toLocaleString()}` : '✓'}
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: runningUSD > 0 ? 'var(--red)' : 'var(--green)' }}>
+                        {runningUSD > 0 ? `-U$${runningUSD.toLocaleString()}` : runningUSD === 0 ? '—' : `U$${Math.abs(runningUSD).toLocaleString()}`}
+                      </td>
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: runningARS > 0 ? 'var(--red)' : 'var(--green)' }}>
+                        {runningARS > 0 ? `-$${runningARS.toLocaleString()}` : runningARS === 0 ? '—' : `$${Math.abs(runningARS).toLocaleString()}`}
                       </td>
                     </tr>
                   )
@@ -257,6 +397,19 @@ export function MayoristaDetailClient({
             setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o))
             setShowPayment(null)
             toast.success('Pago registrado')
+            router.refresh()
+          }}
+        />
+      )}
+
+      {showEdit && (
+        <EditWholesalerModal
+          wholesaler={wholesaler}
+          onClose={() => setShowEdit(false)}
+          onSaved={(updated) => {
+            setWholesaler(updated)
+            setShowEdit(false)
+            toast.success('Revendedor actualizado')
             router.refresh()
           }}
         />
@@ -463,6 +616,11 @@ function PaymentModal({ order, wholesalerId, orgId, onClose, onPaid }: {
   const handlePay = async () => {
     const amt = parseFloat(amount)
     if (!amt || amt <= 0) { toast.error('Ingresá un monto válido'); return }
+    // Fix 3: payment cap validation
+    if (amt > order.balance) {
+      toast.error(`El monto supera el saldo pendiente (${order.currency === 'USD' ? 'U$' : '$'}${order.balance.toLocaleString()})`)
+      return
+    }
     setLoading(true)
     try {
       const { data, error } = await supabase.from('wholesale_payments').insert([{
@@ -523,6 +681,83 @@ function PaymentModal({ order, wholesalerId, orgId, onClose, onPaid }: {
             <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancelar</button>
             <button className="btn btn-dark" style={{ flex: 1 }} onClick={handlePay} disabled={loading}>
               {loading ? 'Registrando...' : 'Registrar pago'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EditWholesalerModal({ wholesaler, onClose, onSaved }: {
+  wholesaler: Wholesaler
+  onClose: () => void
+  onSaved: (updated: Wholesaler) => void
+}) {
+  const [form, setForm] = useState({
+    name: wholesaler.name,
+    phone: wholesaler.phone ?? '',
+    email: wholesaler.email ?? '',
+    notes: wholesaler.notes ?? '',
+  })
+  const [loading, setLoading] = useState(false)
+  const supabase = createClient()
+
+  const handleSave = async () => {
+    if (!form.name.trim()) { toast.error('El nombre es obligatorio'); return }
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('wholesalers').update({
+        name: form.name.trim(),
+        phone: form.phone || null,
+        email: form.email || null,
+        notes: form.notes || null,
+      }).eq('id', wholesaler.id)
+      if (error) throw error
+      onSaved({
+        ...wholesaler,
+        name: form.name.trim(),
+        phone: form.phone || null,
+        email: form.email || null,
+        notes: form.notes || null,
+      })
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error al guardar')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="mo" onClick={onClose}>
+      <div className="mb" onClick={e => e.stopPropagation()}>
+        <div className="mh">
+          <div className="mh-title">Editar revendedor</div>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <label className="lbl">Nombre *</label>
+            <input className="inp" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ej: Celulares Rivadavia" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label className="lbl">Teléfono</label>
+              <input className="inp" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="11 2345-6789" />
+            </div>
+            <div>
+              <label className="lbl">Email</label>
+              <input className="inp" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="mail@ejemplo.com" />
+            </div>
+          </div>
+          <div>
+            <label className="lbl">Notas</label>
+            <textarea className="inp" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Observaciones..." />
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancelar</button>
+            <button className="btn btn-dark" style={{ flex: 1 }} onClick={handleSave} disabled={loading}>
+              {loading ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { createClient, getUser, getProfile } from "@/utils/supabase/server"
+import { createClient, getUser } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { MayoristasClient } from "./MayoristasClient"
 

@@ -1,8 +1,7 @@
 "use client"
 import { useState } from 'react'
-import { Plus, Search, Users, TrendingUp, DollarSign, Package, X, Phone, Mail } from 'lucide-react'
+import { Plus, Search, Users, X, Phone, Mail } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -19,10 +18,9 @@ export function MayoristasClient({ initialWholesalers }: { initialWholesalers: W
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
-  const router = useRouter()
 
   const filtered = wholesalers.filter(w =>
-    !q || `${w.name} ${w.phone} ${w.email}`.toLowerCase().includes(q.toLowerCase())
+    !q || `${w.name} ${w.phone ?? ''} ${w.email ?? ''}`.toLowerCase().includes(q.toLowerCase())
   )
 
   const totalACobrar = wholesalers.reduce((s, w) => s + w.balance_owed, 0)

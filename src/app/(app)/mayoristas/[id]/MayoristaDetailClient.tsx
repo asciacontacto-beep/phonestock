@@ -33,12 +33,20 @@ export function MayoristaDetailClient({
   const [showPayment, setShowPayment] = useState<Order | null>(null)
   const [showEdit, setShowEdit] = useState(false)
   const [delivering, setDelivering] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string; detail?: string; danger?: boolean; onConfirm: () => void } | null>(null)
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const supabase = createClient()
   const router = useRouter()
 
-  const handleDeliver = async (order: Order) => {
-    if (!confirm('¿Marcar pedido como entregado? Esto actualizará el stock y registrará la venta.')) return
+  const handleDeliver = (order: Order) => {
+    setConfirmDialog({
+      message: '¿Marcar como entregado?',
+      detail: 'Se actualizará el stock y se registrará la venta.',
+      onConfirm: () => doDeliver(order),
+    })
+  }
+
+  const doDeliver = async (order: Order) => {
     setDelivering(order.id)
     try {
       const { error: oErr } = await supabase.from('wholesale_orders').update({ status: 'delivered' }).eq('id', order.id)
@@ -76,8 +84,15 @@ export function MayoristaDetailClient({
     }
   }
 
-  const handleCancel = async (order: Order) => {
-    if (!confirm('¿Cancelar este pedido?')) return
+  const handleCancel = (order: Order) => {
+    setConfirmDialog({
+      message: '¿Cancelar este pedido?',
+      danger: true,
+      onConfirm: () => doCancel(order),
+    })
+  }
+
+  const doCancel = async (order: Order) => {
     try {
       const { error } = await supabase.from('wholesale_orders').update({ status: 'cancelled' }).eq('id', order.id)
       if (error) throw error
@@ -88,9 +103,16 @@ export function MayoristaDetailClient({
     }
   }
 
-  const handleDelete = async () => {
-    if (!confirm(`¿Eliminar a "${wholesaler.name}"? Se borrarán todos sus pedidos y pagos.`)) return
-    if (!confirm('Confirmá de nuevo: esto no se puede deshacer.')) return
+  const handleDelete = () => {
+    setConfirmDialog({
+      message: `¿Eliminar a "${wholesaler.name}"?`,
+      detail: 'Se borrarán todos sus pedidos y pagos. Esta acción no se puede deshacer.',
+      danger: true,
+      onConfirm: doDelete,
+    })
+  }
+
+  const doDelete = async () => {
     try {
       const { error } = await supabase.from('wholesalers').delete().eq('id', wholesaler.id)
       if (error) throw error
@@ -434,6 +456,34 @@ export function MayoristaDetailClient({
             router.refresh()
           }}
         />
+      )}
+
+      {confirmDialog && (
+        <div className="mo" onClick={() => setConfirmDialog(null)}>
+          <div className="mb" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="mh">
+              <div className="mh-title">{confirmDialog.message}</div>
+              <button className="btn-icon" onClick={() => setConfirmDialog(null)}><X size={18} /></button>
+            </div>
+            {confirmDialog.detail && (
+              <div style={{ padding: '12px 20px 0', fontSize: 13, color: 'var(--text-3)' }}>
+                {confirmDialog.detail}
+              </div>
+            )}
+            <div className="mbd" style={{ display: 'flex', gap: 10, paddingTop: 16 }}>
+              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setConfirmDialog(null)}>
+                Cancelar
+              </button>
+              <button
+                className="btn btn-dark"
+                style={{ flex: 1, ...(confirmDialog.danger ? { background: 'var(--red)', borderColor: 'var(--red)' } : {}) }}
+                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null) }}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

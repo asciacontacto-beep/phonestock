@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react'
-import { ArrowLeft, Plus, CreditCard, Phone, Mail, X, Pencil } from 'lucide-react'
+import { ArrowLeft, Plus, CreditCard, Phone, Mail, X, Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -88,6 +88,19 @@ export function MayoristaDetailClient({
     }
   }
 
+  const handleDelete = async () => {
+    if (!confirm(`¿Eliminar a "${wholesaler.name}"? Se borrarán todos sus pedidos y pagos.`)) return
+    if (!confirm('Confirmá de nuevo: esto no se puede deshacer.')) return
+    try {
+      const { error } = await supabase.from('wholesalers').delete().eq('id', wholesaler.id)
+      if (error) throw error
+      toast.success('Revendedor eliminado')
+      router.push('/mayoristas')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error al eliminar')
+    }
+  }
+
   const handleMarkReceived = async (order: Order, item: Item) => {
     try {
       const { error } = await supabase.from('wholesale_order_items').update({ received: true }).eq('id', item.id)
@@ -165,6 +178,14 @@ export function MayoristaDetailClient({
                 style={{ padding: '4px 8px' }}
               >
                 <Pencil size={14} />
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={handleDelete}
+                title="Eliminar revendedor"
+                style={{ padding: '4px 8px', color: 'var(--red)' }}
+              >
+                <Trash2 size={14} />
               </button>
             </div>
             <div style={{ display: 'flex', gap: 14, marginTop: 4, fontSize: 13, color: 'var(--text-3)' }}>

@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react'
-import { Plus, Search, Users, X, Phone, Mail } from 'lucide-react'
+import { Plus, Search, X, Phone, Mail } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -90,7 +90,6 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
       {/* List */}
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-          <Users size={36} style={{ marginBottom: 14, opacity: 0.3 }} />
           <div style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Sin revendedores</div>
           <div style={{ fontSize: 13 }}>Creá el primero con el botón de arriba</div>
         </div>

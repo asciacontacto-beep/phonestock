@@ -47,15 +47,20 @@ export function MayoristaDetailClient({
         if (sErr) throw sErr
       }
 
-      for (const item of order.items.filter(i => !i.is_backorder && i.stock_id)) {
-        await supabase.from('sales').insert([{
-          brand: item.brand, model: item.model, storage: item.storage, color: item.color,
-          imei: null, price: item.unit_price * item.qty, cost_price: null,
+      const saleItems = order.items
+        .filter(i => !i.is_backorder && i.stock_id)
+        .map(i => ({
+          brand: i.brand, model: i.model, storage: i.storage, color: i.color,
+          imei: null, price: i.unit_price * i.qty, cost_price: null,
           currency: order.currency, seller_id: null, seller_name: 'Mayorista',
           customer: { name: wholesaler.name, phone: wholesaler.phone },
-          payments: [{ id: 'wholesale', amount: item.unit_price * item.qty, label: 'Mayorista' }],
+          payments: [{ id: 'wholesale', amount: i.unit_price * i.qty, label: 'Mayorista' }],
           notes: `Pedido mayorista #${order.id.slice(0, 8)}`
-        }])
+        }))
+
+      if (saleItems.length > 0) {
+        const { error: salErr } = await supabase.from('sales').insert(saleItems)
+        if (salErr) throw salErr
       }
 
       setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'delivered' } : o))
@@ -140,15 +145,15 @@ export function MayoristaDetailClient({
                   <td><span className={`badge ${STATUS_CLASS[o.status]}`}>{STATUS_LABEL[o.status]}</span></td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
+                      {o.balance > 0 && o.status !== 'cancelled' && (
+                        <button className="btn btn-outline btn-sm" onClick={() => setShowPayment(o)}>
+                          <CreditCard size={13} /> Cobrar
+                        </button>
+                      )}
                       {o.status !== 'delivered' && o.status !== 'cancelled' && (
-                        <>
-                          <button className="btn btn-outline btn-sm" onClick={() => setShowPayment(o)}>
-                            <CreditCard size={13} /> Cobrar
-                          </button>
-                          <button className="btn btn-dark btn-sm" disabled={delivering === o.id} onClick={() => handleDeliver(o)}>
-                            {delivering === o.id ? 'Procesando...' : 'Entregar'}
-                          </button>
-                        </>
+                        <button className="btn btn-dark btn-sm" disabled={delivering === o.id} onClick={() => handleDeliver(o)}>
+                          {delivering === o.id ? 'Procesando...' : 'Entregar'}
+                        </button>
                       )}
                     </div>
                   </td>

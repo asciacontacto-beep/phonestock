@@ -11,7 +11,7 @@ type Wholesaler = {
   total_ordered: number; total_paid: number; balance_owed: number; order_count: number
 }
 
-export function MayoristasClient({ initialWholesalers }: { initialWholesalers: Wholesaler[] }) {
+export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesalers: Wholesaler[]; orgId: string }) {
   const [wholesalers, setWholesalers] = useState(initialWholesalers)
   const [q, setQ] = useState('')
   const [showNew, setShowNew] = useState(false)
@@ -36,6 +36,7 @@ export function MayoristasClient({ initialWholesalers }: { initialWholesalers: W
         phone: form.phone || null,
         email: form.email || null,
         notes: form.notes || null,
+        org_id: orgId,
       }]).select()
       if (error) throw error
       const newW = { ...data![0], total_ordered: 0, total_paid: 0, balance_owed: 0, order_count: 0 }

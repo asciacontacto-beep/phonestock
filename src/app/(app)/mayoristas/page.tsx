@@ -8,6 +8,9 @@ export default async function MayoristasPage() {
 
   const supabase = await createClient()
 
+  const { data: profile } = await supabase.from('profiles').select('org_id').eq('id', user.id).single()
+  const orgId = profile?.org_id ?? ''
+
   const [
     { data: wholesalers },
     { data: orders },
@@ -49,5 +52,5 @@ export default async function MayoristasPage() {
     order_count: orderCountMap[w.id] || 0,
   }))
 
-  return <MayoristasClient initialWholesalers={wholesalersWithBalance} />
+  return <MayoristasClient initialWholesalers={wholesalersWithBalance} orgId={orgId} />
 }

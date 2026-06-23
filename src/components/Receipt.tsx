@@ -19,11 +19,31 @@ export function Receipt({ sale, shop }: any) {
       {sale.customer?.dni && <div className="receipt-row"><span>DNI:</span><span>{sale.customer?.dni}</span></div>}
       <div style={{ margin: '15px 0', borderBottom: '1px dashed #ccc' }} />
       <div style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 11 }}>PRODUCTO</div>
-      <div style={{ fontSize: 12, marginBottom: 10, lineHeight: 1.4 }}>
-        <strong>{sale.brand} {sale.model}</strong><br />
-        <span style={{ fontSize: 11 }}>{sale.storage} · {sale.color}</span><br />
-        <span style={{ fontSize: 10, opacity: 0.8 }}>IMEI/Serie: {sale.imei}</span>
-      </div>
+      {sale.brand === 'ACCESORIOS' ? (
+        <div style={{ fontSize: 12, marginBottom: 10, lineHeight: 1.5 }}>
+          {(sale.accessories || []).map((a: any, i: number) => (
+            <div key={i}>
+              <strong>{a.qty}x {a.name}</strong>
+              {a.is_gift
+                ? <span style={{ fontSize: 10 }}> (regalo)</span>
+                : <span style={{ fontSize: 10, opacity: 0.8 }}> — {sale.currency === 'USD' ? 'U$' : '$'} {((a.price || 0) * (a.qty || 1)).toLocaleString()}</span>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontSize: 12, marginBottom: 10, lineHeight: 1.4 }}>
+          <strong>{sale.brand} {sale.model}</strong><br />
+          <span style={{ fontSize: 11 }}>{sale.storage} · {sale.color}</span><br />
+          <span style={{ fontSize: 10, opacity: 0.8 }}>IMEI/Serie: {sale.imei}</span>
+          {(sale.accessories || []).length > 0 && (
+            <div style={{ marginTop: 6, fontSize: 11 }}>
+              {sale.accessories.map((a: any, i: number) => (
+                <div key={i}>+ {a.qty}x {a.name}{a.is_gift ? ' (regalo)' : ''}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <div style={{ margin: '15px 0', borderBottom: '1px dashed #ccc' }} />
       <div style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 11 }}>PAGOS</div>
       {sale.payments?.map((p: any, i: number) => (

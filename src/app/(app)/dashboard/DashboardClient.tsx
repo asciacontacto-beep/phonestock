@@ -1,6 +1,7 @@
 "use client"
 import { useState, useMemo } from 'react';
 import { BRANDS } from '@/constants/data';
+import { categoryBreakdown } from '@/utils/sales';
 import { TrendingUp, Download, ShoppingBag, Plus, Clock, Package, AlertTriangle, Trash2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { createClient } from '@/utils/supabase/client';
@@ -32,9 +33,9 @@ function fmtARS(n: number): string {
 }
 
 export function DashboardClient({
-  stock, sales, exchangeRate, userRole,
+  stock, sales, exchangeRate, userRole, repairs = [],
 }: {
-  stock: any[]; sales: any[]; exchangeRate: number; userRole?: string;
+  stock: any[]; sales: any[]; exchangeRate: number; userRole?: string; repairs?: any[];
 }) {
   const router   = useRouter();
   const supabase = createClient();
@@ -142,6 +143,11 @@ export function DashboardClient({
     });
     return Object.values(mc).filter(m => m.count <= 2).sort((a, b) => a.count - b.count);
   }, [av]);
+
+  const catBreakdown = useMemo(
+    () => categoryBreakdown(sales, repairs, exchangeRate),
+    [sales, repairs, exchangeRate]
+  );
 
   const isEmpty = av.length === 0 && allSales.length === 0;
 
@@ -270,6 +276,24 @@ export function DashboardClient({
             <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{topSeller.count} ventas</div>
           )}
         </div>
+      </div>
+
+      <div className="sg" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginTop: 16 }}>
+        {([
+          { label: 'Ganancia Equipos', s: catBreakdown.device },
+          { label: 'Ganancia Accesorios', s: catBreakdown.accessory },
+          { label: 'Ganancia Servicio', s: catBreakdown.service },
+        ] as const).map((c, i) => (
+          <div className="sc" key={i}>
+            <div className="sl">{c.label}</div>
+            <div className="sv" style={{ color: c.s.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
+              U$ {Math.round(c.s.profit).toLocaleString()}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+              Margen {c.s.margin.toFixed(0)}%
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Low stock alert */}

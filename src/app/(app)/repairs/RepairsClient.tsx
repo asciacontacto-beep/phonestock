@@ -53,7 +53,7 @@ export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }
   return (
     <div className="page">
       <div className="sh">
-        <h1 className="st"><Wrench size={24} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} /> Servicio Técnico</h1>
+        <h1 className="st">Servicio Técnico</h1>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {activeTab === 'repairs' && (
             <button className="btn btn-dark" onClick={() => setShowNew(true)}>
@@ -87,7 +87,7 @@ export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }
             marginBottom: -1
           }}
         >
-          <Wrench size={15} /> Reparaciones
+          Reparaciones
         </button>
         <button
           onClick={() => setActiveTab('parts')}
@@ -106,7 +106,7 @@ export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }
             marginBottom: -1
           }}
         >
-          <Package size={15} /> Repuestos
+          Repuestos
         </button>
       </div>
 

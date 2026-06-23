@@ -530,10 +530,12 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
           </div>
           <div className="row">
             <div className="col field"><label className="lbl">Precio de Venta</label><input className="inp" type="number" value={sp} onChange={e => setSp(e.target.value)} /></div>
-            <div className="col field"><label className="lbl">Moneda Venta</label><select className="inp" value={sc} onChange={e => { setSc(e.target.value); setPayments([]); }}>
-              <option value="USD">Dólar (USD)</option>
-              <option value="ARS">Pesos (ARS)</option>
-            </select></div>
+            {!accessoryOnly && (
+              <div className="col field"><label className="lbl">Moneda Venta</label><select className="inp" value={sc} onChange={e => { setSc(e.target.value); setPayments([]); }}>
+                <option value="USD">Dólar (USD)</option>
+                <option value="ARS">Pesos (ARS)</option>
+              </select></div>
+            )}
           </div>
           <div className="lbl">Método de Cobro</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>

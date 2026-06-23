@@ -14,12 +14,14 @@ export default async function ReportsPage() {
     { data: salesData },
     { data: expensesData },
     { data: depositsData },
-    { data: settingsData }
+    { data: settingsData },
+    { data: repairsData }
   ] = await Promise.all([
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
     supabase.from('expenses').select('*').order('created_at', { ascending: false }),
     supabase.from('deposits').select('*').order('name'),
-    supabase.from('settings').select('*').maybeSingle()
+    supabase.from('settings').select('*').maybeSingle(),
+    supabase.from('repairs').select('id, cost, created_at, updated_at')
   ])
 
   const exchangeRate = settingsData?.exchange_rate || 1200;
@@ -30,6 +32,7 @@ export default async function ReportsPage() {
       expenses={expensesData || []}
       deposits={depositsData || []}
       exchangeRate={exchangeRate}
+      repairs={repairsData || []}
     />
   )
 }

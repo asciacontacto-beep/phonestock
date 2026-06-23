@@ -2,14 +2,16 @@
 import { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Users, Smartphone, Warehouse, Calendar } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area, Legend } from 'recharts';
+import { categoryBreakdown } from '@/utils/sales';
 
 type Period = '7d' | '30d' | '90d' | 'all';
 
-export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
+export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs = [] }: {
   sales: any[];
   expenses: any[];
   deposits: any[];
   exchangeRate: number;
+  repairs?: any[];
 }) {
   const [period, setPeriod] = useState<Period>('30d');
 
@@ -30,6 +32,15 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
   const filteredExpenses = useMemo(() =>
     cutoff ? expenses.filter(e => new Date(e.created_at) >= cutoff) : expenses
   , [expenses, cutoff]);
+
+  const filteredRepairs = useMemo(() =>
+    cutoff ? repairs.filter(r => new Date(r.updated_at || r.created_at) >= cutoff) : repairs
+  , [repairs, cutoff]);
+
+  const breakdown = useMemo(
+    () => categoryBreakdown(filteredSales, filteredRepairs, exchangeRate),
+    [filteredSales, filteredRepairs, exchangeRate]
+  );
 
   // --- KPI Calculations ---
   // Revenue in USD (normalize ARS to USD)
@@ -174,6 +185,25 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate }: {
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Facturación − Costo − Gastos</div>
         </div>
+      </div>
+
+      {/* Category breakdown cards */}
+      <div className="sg" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 24 }}>
+        {([
+          { key: 'device', label: 'Equipos', s: breakdown.device },
+          { key: 'accessory', label: 'Accesorios', s: breakdown.accessory },
+          { key: 'service', label: 'Servicio Técnico', s: breakdown.service },
+        ] as const).map(c => (
+          <div className="sc" key={c.key}>
+            <div className="sl">{c.label}</div>
+            <div className="sv" style={{ color: c.s.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
+              U$ {Math.round(c.s.profit).toLocaleString()}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+              Fact. U$ {Math.round(c.s.revenue).toLocaleString()} · Margen {c.s.margin.toFixed(0)}%
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Revenue vs Profit Trend */}

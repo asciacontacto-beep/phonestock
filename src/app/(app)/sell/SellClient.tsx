@@ -16,6 +16,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [unit, setUnit] = useState<any>(null);
+  const [accessoryOnly, setAccessoryOnly] = useState(false);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
   const [selectedAccessories, setSelectedAccessories] = useState<any[]>([]);
   const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '', instagram: '' });
@@ -158,7 +159,52 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
     setCustSuggestions([]);
   };
 
+  const confirmAccessoryOnly = async () => {
+    if (selectedAccessories.length === 0) { toast.error('Agregá al menos un accesorio'); return; }
+    if (!price || !payments.length) { toast.error('Datos incompletos'); return; }
+    if (rem > 0.01) { toast.error('El pago debe ser completo'); return; }
+    try {
+      setLoading(true);
+      const totalCost = selectedAccessories.reduce((acc, a) => acc + (a.cost_price || 0) * a.qty, 0);
+      const resumen = selectedAccessories.map(a => `${a.qty}x ${a.name}`).join(' · ');
+      const saleData = {
+        seller_id: user.id,
+        seller_name: user.name,
+        deposit_id: selectedDeposit ? parseInt(String(selectedDeposit)) : null,
+        brand: 'ACCESORIOS',
+        model: resumen.slice(0, 120),
+        storage: '-', color: '-',
+        imei: `ACC-${Date.now()}`,
+        cost_price: totalCost,
+        price,
+        currency: 'ARS',
+        payments,
+        customer: cust.name ? cust : { name: 'Consumidor Final' },
+        notes: notes.trim() || null,
+        accessories: selectedAccessories,
+      };
+      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select();
+      if (sErr) throw sErr;
+
+      for (const acc of selectedAccessories) {
+        const { error: accErr } = await supabase.rpc('decrement_accessory_stock', { acc_id: acc.id, qty: acc.qty });
+        if (accErr) throw accErr;
+      }
+
+      setLastSale(saleRow[0]);
+      toast.success('Venta de accesorios confirmada');
+      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
+      setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
+      router.refresh();
+    } catch (e: any) {
+      toast.error(e.message || 'Error al procesar venta');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const confirm = async () => {
+    if (accessoryOnly) { await confirmAccessoryOnly(); return; }
     if (!unit || !price || !payments.length || !cust.name) { toast.error('Datos incompletos'); return; }
     
     try {
@@ -246,7 +292,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
       
       setLastSale(saleRow[0]);
       toast.success('Venta confirmada');
-      setStep(1); setUnit(null); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
+      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
     } catch (e: any) {
@@ -287,6 +333,20 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
             ))}
           </div>
           <input className="inp" placeholder="Filtrar por modelo, IMEI / N° Serie, color..." value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 16 }} />
+          <button
+            className="btn btn-outline"
+            style={{ width: '100%', marginBottom: 16, justifyContent: 'center' }}
+            onClick={() => {
+              if (!selectedDeposit) { toast.error('Elegí un depósito primero'); return; }
+              setAccessoryOnly(true);
+              setUnit(null);
+              setSc('ARS');
+              setSp('');
+              setStep(2);
+            }}
+          >
+            <PackageOpen size={16} /> Vender accesorios sueltos
+          </button>
           {av.length > 0 && av.length <= 5 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '10px 14px', background: 'rgba(245,158,11,0.1)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)' }}>
               <AlertTriangle size={16} color="var(--amber)" />
@@ -367,7 +427,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
           <div className="divider" />
           <div style={{ display: 'flex', gap: 12 }}>
             <button className="btn btn-ghost" onClick={() => setStep(2)}>Volver</button>
-            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!cust.name} onClick={() => setStep(4)}>Continuar al Pago</button>
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!accessoryOnly && !cust.name} onClick={() => setStep(4)}>Continuar al Pago</button>
           </div>
         </div>
       )}
@@ -382,7 +442,12 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                <select className="inp" id="acc_select" style={{ flex: 1 }}>
                  <option value="">-- Seleccionar Accesorio --</option>
-                 {accessoriesList.filter(a => String(a.deposit_id) === String(unit.deposit)).map(a => (
+                 {accessoriesList.filter(a => {
+                    const dep = accessoryOnly ? selectedDeposit : unit?.deposit;
+                    if (String(a.deposit_id) !== String(dep)) return false;
+                    if (accessoryOnly && (a.currency || 'ARS') !== 'ARS') return false;
+                    return true;
+                  }).map(a => (
                    <option key={a.id} value={a.id}>{a.category} {a.compatible_model} {a.color} (Stock: {a.stock} - {a.currency === 'ARS' ? '$' : 'U$'} {a.sale_price})</option>
                  ))}
                </select>
@@ -428,13 +493,13 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
           <div style={{ display: 'flex', gap: 12 }}>
             <button className="btn btn-ghost" onClick={() => setStep(1)}>Atrás</button>
             <button className="btn btn-dark btn-lg" style={{ flex: 1 }} onClick={() => {
-               // Update auto-calculated total price for Step 4
-               if (sp === '') {
-                 const accTotal = selectedAccessories.reduce((acc, curr) => acc + (curr.price * curr.qty), 0);
-                 const phoneTotal = unit.isAccessoryOnly ? 0 : (unit.price || 0); // Assuming stock might have price? Actually user inputs it in step 4 usually.
-                 // We just pre-fill the sp if it's accessories only, or leave it blank
+               if (accessoryOnly) {
+                 if (selectedAccessories.length === 0) { toast.error('Agregá al menos un accesorio'); return; }
+                 const total = selectedAccessories.reduce((acc, c) => acc + (c.is_gift ? 0 : c.price * c.qty), 0);
+                 setSp(String(total));
+                 setSc('ARS');
                }
-               setStep(3)
+               setStep(3);
             }}>Continuar al Cliente</button>
           </div>
         </div>
@@ -444,12 +509,23 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
         <div className="card" style={{ maxWidth: 600, margin: '0 auto' }}>
           <div className="lbl">4. Pago y Cierre</div>
           <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 8, marginBottom: 20 }}>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>{unit.brand} {unit.model}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{unit.storage} · {unit.color}</div>
-            {isOwner && unit.cost_price && (
-              <div style={{ fontSize: 11, marginTop: 6, color: 'var(--text-3)' }}>
-                Precio de costo: <span style={{ fontFamily: 'JetBrains Mono' }}>{unit.currency === 'USD' ? 'U$' : '$'} {unit.cost_price?.toLocaleString()}</span>
-              </div>
+            {accessoryOnly ? (
+              <>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>Venta de accesorios</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+                  {selectedAccessories.map(a => `${a.qty}x ${a.name}`).join(' · ')}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{unit.brand} {unit.model}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{unit.storage} · {unit.color}</div>
+                {isOwner && unit.cost_price && (
+                  <div style={{ fontSize: 11, marginTop: 6, color: 'var(--text-3)' }}>
+                    Precio de costo: <span style={{ fontFamily: 'JetBrains Mono' }}>{unit.currency === 'USD' ? 'U$' : '$'} {unit.cost_price?.toLocaleString()}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
           <div className="row">

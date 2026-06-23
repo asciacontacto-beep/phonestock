@@ -122,6 +122,7 @@ export function SuperAdminClient() {
             <thead>
               <tr>
                 <th>Negocio</th>
+                <th>Email owner</th>
                 <th>Usuario(s)</th>
                 <th>Registrado</th>
                 <th>Trial vence</th>
@@ -138,6 +139,9 @@ export function SuperAdminClient() {
                     <td>
                       <div style={{ fontWeight: 700 }}>{org.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'JetBrains Mono' }}>{org.id.substring(0, 8)}...</div>
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'JetBrains Mono' }}>
+                      {org.owner_email || <span style={{ color: 'var(--text-3)' }}>—</span>}
                     </td>
                     <td>
                       <span className="badge b-neu" style={{ display: 'flex', alignItems: 'center', gap: 4, width: 'fit-content' }}>

@@ -176,8 +176,8 @@ export default function LandingPage() {
         <p className={styles.marqueeLabel}>Usado por locales de celulares en toda Argentina</p>
         <div className={styles.marqueeWrapper}>
           <div className={styles.marqueeTrack}>
-            {["iFix","TecnoStore","CellularCenter","ApplePoint","MobiShop","GlobalCel","FixIt","PhoneMaster",
-              "iFix","TecnoStore","CellularCenter","ApplePoint","MobiShop","GlobalCel","FixIt","PhoneMaster"].map((n, i) => (
+            {["La tiendita", "GoldenApple Tandil", "Hola Apple Tandil", "La tiendita", "GoldenApple Tandil", "Hola Apple Tandil",
+              "La tiendita", "GoldenApple Tandil", "Hola Apple Tandil", "La tiendita", "GoldenApple Tandil", "Hola Apple Tandil"].map((n, i) => (
               <span key={i} className={styles.marqueeItem}>{n}</span>
             ))}
           </div>

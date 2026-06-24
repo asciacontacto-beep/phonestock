@@ -39,11 +39,14 @@ export async function POST(req: NextRequest) {
   if (!callerProfile || !['owner', 'admin'].includes(callerProfile.role)) {
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
   }
-  if (!targetProfile || targetProfile.org_id !== callerProfile.org_id) {
-    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
-  }
-  if (targetProfile.role === 'owner' && callerProfile.role !== 'owner') {
-    return NextResponse.json({ error: 'No podés borrar al owner' }, { status: 403 });
+  // If target has a profile, verify same org and not owner
+  if (targetProfile) {
+    if (targetProfile.org_id !== callerProfile.org_id) {
+      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
+    }
+    if (targetProfile.role === 'owner' && callerProfile.role !== 'owner') {
+      return NextResponse.json({ error: 'No podés borrar al owner' }, { status: 403 });
+    }
   }
 
   const { error } = await admin.auth.admin.deleteUser(userId);

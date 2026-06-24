@@ -7,7 +7,10 @@ import { toast } from 'sonner';
 import { MODELS } from '@/constants/data';
 import { SellAccessoriesModal } from './SellAccessoriesModal';
 
-const ALL_MODELS = Object.values(MODELS).flat().sort();
+const ALL_MODELS = [
+  ...Object.values(MODELS).flat().filter(m => m.toLowerCase().startsWith('iphone')).sort(),
+  ...Object.values(MODELS).flat().filter(m => !m.toLowerCase().startsWith('iphone')).sort(),
+];
 
 export default function AccessoriesClient({ initialAccessories, deposits, user }: any) {
   const supabase = createClient();

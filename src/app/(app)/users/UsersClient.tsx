@@ -114,8 +114,13 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
   const removeUser = async (id: any) => {
     if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
     try {
-      const { error } = await supabase.rpc('delete_org_user', { target_user_id: id });
-      if (error) throw error;
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Error al eliminar');
 
       await fetchUsers();
       toast.success('Usuario eliminado (o recargado según permisos)');

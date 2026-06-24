@@ -123,7 +123,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
       if (!res.ok) throw new Error(json.error || 'Error al eliminar');
 
       await fetchUsers();
-      toast.success('Usuario eliminado (o recargado según permisos)');
+      toast.success('Usuario eliminado');
     } catch (e: any) {
       toast.error(e.message);
     }

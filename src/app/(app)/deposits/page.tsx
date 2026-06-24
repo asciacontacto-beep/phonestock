@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server"
 import { DepositsClient } from "./DepositsClient"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DepositsPage() {
   const supabase = await createClient()
 

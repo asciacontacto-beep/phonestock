@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server"
 import { UsersClient } from "./UsersClient"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function UsersPage() {
   const supabase = await createClient()
   

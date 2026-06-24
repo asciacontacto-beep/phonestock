@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign } from 'lucide-react';
+import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 import { MODELS } from '@/constants/data';
+import { SellAccessoriesModal } from './SellAccessoriesModal';
 
 const ALL_MODELS = Object.values(MODELS).flat().sort();
 
@@ -12,7 +13,8 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
   const supabase = createClient();
   const [accessories, setAccessories] = useState<any[]>(initialAccessories);
   const [q, setQ] = useState('');
-  
+  const [isSellOpen, setIsSellOpen] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState<any>({ id: null, category: 'Funda', compatible_model: '', color: '', stock: '1', cost_price: '', sale_price: '', deposit_id: deposits[0]?.id || '', currency: 'USD' });
   const [loading, setLoading] = useState(false);
@@ -93,9 +95,12 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
           <h1 className="st">Accesorios</h1>
           <p className="helper-text">Gestioná el stock de fundas, vidrios y otros productos por cantidad.</p>
         </div>
-        {(user.role === 'owner' || user.role === 'admin') && (
-          <button className="btn btn-dark" onClick={openNew}><Plus size={16} /> Nuevo Accesorio</button>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-outline" onClick={() => setIsSellOpen(true)}><ShoppingCart size={16} /> Vender</button>
+          {(user.role === 'owner' || user.role === 'admin') && (
+            <button className="btn btn-dark" onClick={openNew}><Plus size={16} /> Nuevo Accesorio</button>
+          )}
+        </div>
       </div>
 
       <div className="sg">
@@ -232,6 +237,20 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
             </form>
           </div>
         </div>
+      )}
+
+      {isSellOpen && (
+        <SellAccessoriesModal
+          accessories={accessories}
+          onClose={() => setIsSellOpen(false)}
+          onSold={(updates) => {
+            setAccessories(p => p.map(a => {
+              const upd = updates.find(u => u.id === a.id);
+              return upd ? { ...a, stock: upd.newStock } : a;
+            }));
+            setIsSellOpen(false);
+          }}
+        />
       )}
     </div>
   );

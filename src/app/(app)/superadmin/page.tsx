@@ -2,6 +2,8 @@ import { createClient, getUser } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { SuperAdminClient } from "./SuperAdminClient"
 
+export const dynamic = 'force-dynamic'
+
 export default async function SuperAdminPage() {
   const supabase = await createClient()
   const user = await getUser()

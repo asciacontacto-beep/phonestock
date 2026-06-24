@@ -443,10 +443,10 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
                <select className="inp" id="acc_select" style={{ flex: 1 }}>
                  <option value="">-- Seleccionar Accesorio --</option>
                  {accessoriesList.filter(a => {
-                    const dep = accessoryOnly ? selectedDeposit : unit?.deposit;
-                    if (String(a.deposit_id) !== String(dep)) return false;
-                    if (accessoryOnly && (a.currency || 'ARS') !== 'ARS') return false;
-                    return true;
+                    if (accessoryOnly) {
+                      return (a.currency || 'ARS') === 'ARS';
+                    }
+                    return String(a.deposit_id) === String(unit?.deposit);
                   }).map(a => (
                    <option key={a.id} value={a.id}>{a.category} {a.compatible_model} {a.color} (Stock: {a.stock} - {a.currency === 'ARS' ? '$' : 'U$'} {a.sale_price})</option>
                  ))}

@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server"
 import { ScanClient } from "./ScanClient"
 
+export const dynamic = 'force-dynamic'
+
 export default async function ScanPage() {
   const supabase = await createClient()
 

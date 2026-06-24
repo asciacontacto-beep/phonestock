@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { SellClient } from "./SellClient"
 
+export const dynamic = 'force-dynamic'
+
 export default async function SellPage() {
   const user = await getUser()
   if (!user) redirect("/login")

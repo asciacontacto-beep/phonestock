@@ -2,6 +2,8 @@ import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { RepairsClient } from "./RepairsClient"
 
+export const dynamic = 'force-dynamic'
+
 export default async function RepairsPage() {
   const user = await getUser()
   if (!user) redirect("/login")

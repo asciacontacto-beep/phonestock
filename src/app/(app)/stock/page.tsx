@@ -2,6 +2,8 @@ import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { StockClient } from "./StockClient"
 
+export const dynamic = 'force-dynamic'
+
 export default async function StockPage() {
   const user = await getUser()
   if (!user) redirect("/login")

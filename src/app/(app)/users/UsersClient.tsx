@@ -114,7 +114,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
   const removeUser = async (id: any) => {
     if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
     try {
-      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      const { error } = await supabase.rpc('delete_org_user', { target_user_id: id });
       if (error) throw error;
 
       await fetchUsers();

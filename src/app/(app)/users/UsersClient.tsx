@@ -120,7 +120,8 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
         body: JSON.stringify({ userId: id }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Error al eliminar');
+      console.log('delete-user response:', res.status, json);
+      if (!res.ok) throw new Error(`[${res.status}] ${json.error || 'Error al eliminar'}`);
 
       await fetchUsers();
       toast.success('Usuario eliminado');

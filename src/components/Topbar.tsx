@@ -112,15 +112,9 @@ export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
 
   return (
     <div className="topbar no-print">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <button className="btn-icon mobile-menu-btn" onClick={onMenu} style={{ display: 'none' }}>
-          <Menu size={22} />
-        </button>
-        <div>
-          <div className="tb-title">Stackr</div>
-          <div className="tb-sub">Bienvenido, {user.name}</div>
-        </div>
-      </div>
+      <button className="btn-icon mobile-menu-btn" onClick={onMenu} style={{ display: 'none' }}>
+        <Menu size={22} />
+      </button>
 
       <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
 

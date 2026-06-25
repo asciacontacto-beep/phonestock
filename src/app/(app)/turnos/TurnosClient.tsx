@@ -929,7 +929,7 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase }: a
       const saleData = {
         seller_id: user.id,
         seller_name: user.name,
-        deposit_id: parseInt(depositId),
+        deposit_id: depositId,
         brand: appt.phone_brand,
         model: appt.phone_model,
         storage: appt.phone_storage,
@@ -959,7 +959,7 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase }: a
           imei: `TI-APT-${appt.id.split('-')[0]}-${Date.now()}`,
           condition: 'used',
           status: 'available',
-          deposit: parseInt(depositId),
+          deposit: depositId,
           price: appt.trade_in_price || 0,
           cost_price: appt.trade_in_price || 0,
           currency: appt.trade_in_currency || 'ARS',
@@ -971,7 +971,6 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase }: a
       const { error: aErr } = await supabase.from('appointments').update({
         status: 'confirmed',
         sale_id: saleRow[0].id,
-        deposit_id: parseInt(depositId),
         seller_id: user.id,
       }).eq('id', appt.id);
       if (aErr) throw aErr;

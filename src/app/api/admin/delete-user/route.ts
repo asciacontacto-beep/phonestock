@@ -49,8 +49,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Nullify FK references to auth.users before deletion to avoid constraint errors
+  await Promise.all([
+    admin.from('appointments').update({ seller_id: null }).eq('seller_id', userId),
+    admin.from('profiles').delete().eq('id', userId),
+  ]);
+
   const { error } = await admin.auth.admin.deleteUser(userId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[delete-user]', error);
+    return NextResponse.json({ error: 'No se pudo eliminar el usuario' }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

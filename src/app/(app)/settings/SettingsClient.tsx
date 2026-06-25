@@ -23,9 +23,9 @@ export function SettingsClient({ profile }: { profile: any }) {
   useEffect(() => {
     const load = async () => {
       setFetching(true);
-      const { data, error } = await supabase.from('settings').select('*').maybeSingle();
-      if (data) {
-        const { id, org_id, ...rest } = data;
+      const { data, error } = await supabase.from('settings').select('*').order('created_at', { ascending: false }).limit(1);
+      if (data && data.length > 0) {
+        const { id, org_id, ...rest } = data[0];
         setRowId(id ?? null);
         setForm({ ...DEFAULTS, ...rest });
       } else if (error) {

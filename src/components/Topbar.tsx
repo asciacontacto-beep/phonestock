@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, ShoppingBag, X } from 'lucide-react';
+import { Menu, Bell, ShoppingBag, X, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -10,6 +10,15 @@ interface TopbarProps {
 }
 
 const NOTIFICATIONS = [
+  {
+    id: 'turnos-launch',
+    icon: <CalendarDays size={16} />,
+    color: '#7c3aed',
+    title: '¡Nueva sección: Turnos!',
+    body: 'Agendá turnos con clientes, asigná el equipo a vender y confirmá la venta directamente desde el turno.',
+    href: '/turnos',
+    cta: 'Ir a Turnos',
+  },
   {
     id: 'mayoristas-launch',
     icon: <ShoppingBag size={16} />,
@@ -36,6 +45,7 @@ export function Topbar({ page, user, onMenu }: TopbarProps) {
     users: 'Gestión de Usuarios',
     settings: 'Configuración',
     mayoristas: 'Mayoristas',
+    turnos: 'Turnos',
     suppliers: 'Proveedores',
     customers: 'Clientes',
     repairs: 'Reparaciones',

@@ -75,22 +75,27 @@ export function DashboardClient({
   }, [allSales, range]);
 
   /* ── Revenue & Profit ──────────────────────────────── */
-  const { revenueARS, profitARS } = useMemo(() => {
+  const { revenueUSD, profitUSD } = useMemo(() => {
     const rev = filteredSales.reduce((acc, s) => {
       const p = s.price || 0;
-      return acc + (s.currency === 'USD' ? p * exchangeRate : p);
+      return acc + (s.currency === 'USD' ? p : p / (exchangeRate || 1));
     }, 0);
     const prof = filteredSales.reduce((acc, s) => {
-      const item   = stock.find(st => st.imei && st.imei === s.imei);
-      const cost   = item?.cost_price || 0;
-      const costARS = item?.currency === 'USD' ? cost * exchangeRate : cost;
-      const priceARS = s.currency === 'USD' ? (s.price || 0) * exchangeRate : (s.price || 0);
-      return acc + (priceARS - costARS);
+      let costUSD = 0;
+      if (s.cost_price != null) {
+        costUSD = s.currency === 'USD' ? s.cost_price : s.cost_price / (exchangeRate || 1);
+      } else {
+        const item   = stock.find(st => st.imei && st.imei === s.imei);
+        const cost   = item?.cost_price || 0;
+        costUSD = item?.currency === 'USD' ? cost : cost / (exchangeRate || 1);
+      }
+      const priceUSD = s.currency === 'USD' ? (s.price || 0) : (s.price || 0) / (exchangeRate || 1);
+      return acc + (priceUSD - costUSD);
     }, 0);
-    return { revenueARS: rev, profitARS: prof };
+    return { revenueUSD: rev, profitUSD: prof };
   }, [filteredSales, stock, exchangeRate]);
 
-  const marginPct = revenueARS > 0 ? Math.round((profitARS / revenueARS) * 100) : 0;
+  const marginPct = revenueUSD > 0 ? Math.round((profitUSD / revenueUSD) * 100) : 0;
 
   /* ── Brand ranking ─────────────────────────────────── */
   const brandRanking = useMemo(
@@ -244,7 +249,7 @@ export function DashboardClient({
         {userRole !== 'seller' && (
           <div className="sc">
             <div className="sl">Facturación</div>
-            <div className="sv">{fmtARS(revenueARS)}</div>
+            <div className="sv">U$ {Math.round(revenueUSD).toLocaleString('es-AR')}</div>
             <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{RANGE_LABELS[range].toLowerCase()}</div>
           </div>
         )}
@@ -253,10 +258,10 @@ export function DashboardClient({
         {userRole !== 'seller' && (
           <div className="sc">
             <div className="sl">Ganancia</div>
-            <div className="sv" style={{ color: profitARS >= 0 ? 'var(--green)' : 'var(--red)' }}>
-              {fmtARS(profitARS)}
+            <div className="sv" style={{ color: profitUSD >= 0 ? 'var(--green)' : 'var(--red)' }}>
+              U$ {Math.round(profitUSD).toLocaleString('es-AR')}
             </div>
-            <div style={{ fontSize: 11, color: profitARS >= 0 ? 'var(--green)' : 'var(--red)', marginTop: 4, opacity: 0.8 }}>
+            <div style={{ fontSize: 11, color: profitUSD >= 0 ? 'var(--green)' : 'var(--red)', marginTop: 4, opacity: 0.8 }}>
               {marginPct}% margen
             </div>
           </div>

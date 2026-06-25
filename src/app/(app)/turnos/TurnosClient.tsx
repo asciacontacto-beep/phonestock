@@ -88,14 +88,14 @@ export function TurnosClient({ isOwner, user }: { isOwner: boolean; user: any })
 
   const handleCancel = async (id: string) => {
     const { error } = await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error('No se pudo cancelar el turno');
     toast.success('Turno cancelado');
     setAppointments(p => p.map(a => a.id === id ? { ...a, status: 'cancelled' as const } : a));
   };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('appointments').delete().eq('id', id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error('No se pudo eliminar el turno');
     toast.success('Turno eliminado');
     setAppointments(p => p.filter(a => a.id !== id));
   };
@@ -730,7 +730,8 @@ function AppointmentModal({ appt, stockPhones, onClose, onSave, supabase }: any)
       toast.success(isEdit ? 'Turno actualizado' : 'Turno creado');
       onSave();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error('No se pudo guardar el turno. Intentá de nuevo.');
+      console.error(e);
     } finally { setSaving(false); }
   };
 
@@ -978,7 +979,8 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase }: a
       toast.success('¡Venta confirmada!');
       onSave();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error('No se pudo confirmar la venta. Intentá de nuevo.');
+      console.error(e);
     } finally { setSaving(false); }
   };
 

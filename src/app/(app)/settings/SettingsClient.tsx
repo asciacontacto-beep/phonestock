@@ -44,7 +44,8 @@ export function SettingsClient({ profile }: { profile: any }) {
       const payload: any = { org_id: profile.org_id, ...form };
 
       if (rowId) {
-        const { error } = await supabase.from('settings').update(payload).eq('id', rowId);
+        const { org_id: _ignored, ...updatePayload } = payload;
+        const { error } = await supabase.from('settings').update(updatePayload).eq('id', rowId);
         if (error) throw error;
       } else {
         const { data, error } = await supabase.from('settings').insert(payload).select('id').single();

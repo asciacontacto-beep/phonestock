@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const callerId = session.user.id;
+  const callerEmail = session.user.email;
+  const isSuperAdmin = callerEmail === 'asciacontacto@gmail.com';
 
   // Use service role to bypass RLS for all checks + deletion
   const admin = createClient(
@@ -31,20 +33,24 @@ export async function POST(req: NextRequest) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  const [{ data: callerProfile }, { data: targetProfile }] = await Promise.all([
-    admin.from('profiles').select('role, org_id').eq('id', callerId).single(),
-    admin.from('profiles').select('role, org_id').eq('id', userId).single(),
-  ]);
+  if (!isSuperAdmin) {
+    const [{ data: callerProfile }, { data: targetProfile }] = await Promise.all([
+      admin.from('profiles').select('role, org_id').eq('id', callerId).single(),
+      admin.from('profiles').select('role, org_id').eq('id', userId).single(),
+    ]);
 
-  if (!callerProfile || !['owner', 'admin'].includes(callerProfile.role)) {
-    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
-  }
-  // If target has a profile, verify same org and not owner
-  if (targetProfile) {
-    if (targetProfile.org_id !== callerProfile.org_id) {
+    if (!callerProfile || !['owner', 'admin'].includes(callerProfile.role)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
-    if (targetProfile.role === 'owner' && callerProfile.role !== 'owner') {
+    // Owners can delete any user in their org (or with null org_id)
+    // Admins must verify same org
+    if (callerProfile.role !== 'owner' && targetProfile) {
+      if (targetProfile.org_id !== callerProfile.org_id) {
+        return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
+      }
+    }
+    // Nobody can delete another owner unless they're also owner
+    if (targetProfile?.role === 'owner' && callerProfile.role !== 'owner') {
       return NextResponse.json({ error: 'No podés borrar al owner' }, { status: 403 });
     }
   }

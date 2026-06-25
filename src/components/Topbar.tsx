@@ -117,7 +117,7 @@ export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
           <Menu size={22} />
         </button>
         <div>
-          <div className="tb-title">{TITLES[page] || 'Stackr'}</div>
+          <div className="tb-title">Stackr</div>
           <div className="tb-sub">Bienvenido, {user.name}</div>
         </div>
       </div>

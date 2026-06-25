@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Save, Building2, MapPin, Camera, Phone, FileText, Loader2, DollarSign } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export function SettingsClient({ initialSettings, profile }: { initialSettings: any, profile: any }) {
   const [form, setForm] = useState(initialSettings || {
@@ -15,6 +16,7 @@ export function SettingsClient({ initialSettings, profile }: { initialSettings: 
   });
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
 
   const save = async () => {
     try {
@@ -39,6 +41,7 @@ export function SettingsClient({ initialSettings, profile }: { initialSettings: 
 
       if (error) throw error;
       toast.success('Configuración guardada correctamente');
+      router.refresh();
     } catch (e: any) {
       toast.error(e.message);
     } finally {

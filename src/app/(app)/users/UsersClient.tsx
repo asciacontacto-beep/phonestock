@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Building2, Pencil, X, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialUsers: any[]; deposits: any[]; currentOrgId?: string | null }) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [list, setList] = useState(initialUsers);
   const [showAdd, setShowAdd] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -112,7 +114,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
   };
 
   const removeUser = async (id: any) => {
-    if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+    if (!await confirm('¿Estás seguro de eliminar este usuario?')) return;
     try {
       const res = await fetch('/api/admin/delete-user', {
         method: 'POST',
@@ -256,6 +258,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
         </div>
       )}
 
+      {ConfirmDialog}
       {/* Add user modal */}
       {showAdd && (
         <div className="mo">

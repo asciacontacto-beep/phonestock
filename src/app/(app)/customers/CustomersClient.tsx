@@ -4,8 +4,10 @@ import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, Tr
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export function CustomersClient({ initialCustomers, initialSales }: { initialCustomers: any[], initialSales: any[] }) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [customers, setCustomers] = useState(initialCustomers);
   const [sales, setSales] = useState(initialSales);
   const [q, setQ] = useState('');
@@ -62,7 +64,7 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
   };
 
   const handleDelete = async () => {
-    if (!confirm('¿Eliminar este cliente permanentemente? Sus ventas seguirán existiendo pero no estarán asociadas a él.')) return;
+    if (!await confirm('¿Eliminar este cliente permanentemente? Sus ventas seguirán existiendo pero no estarán asociadas a él.')) return;
     try {
       setLoading(true);
       const { error } = await supabase.from('customers').delete().eq('id', selected.id);
@@ -203,6 +205,7 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
         )}
       </div>
 
+      {ConfirmDialog}
       {selected && (
         <div className="mo" style={{ zIndex: 200 }} onClick={() => setSelected(null)}>
           <div className="mb" style={{ maxWidth: 520, marginLeft: 'auto', marginRight: 0, height: '100vh', borderRadius: '16px 0 0 16px', overflow: 'auto' }}

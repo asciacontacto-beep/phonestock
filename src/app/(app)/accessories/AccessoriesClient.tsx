@@ -6,6 +6,7 @@ import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign, Sh
 import { toast } from 'sonner';
 import { MODELS } from '@/constants/data';
 import { SellAccessoriesModal } from './SellAccessoriesModal';
+import { useConfirm } from '@/hooks/useConfirm';
 
 const ALL_MODELS = [
   ...Object.values(MODELS).flat().filter(m => m.toLowerCase().startsWith('iphone')).sort(),
@@ -13,6 +14,7 @@ const ALL_MODELS = [
 ];
 
 export default function AccessoriesClient({ initialAccessories, deposits, user }: any) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const supabase = createClient();
   const [accessories, setAccessories] = useState<any[]>(initialAccessories);
   const [q, setQ] = useState('');
@@ -61,7 +63,7 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Seguro que querés eliminar este accesorio?')) return;
+    if (!await confirm('¿Seguro que querés eliminar este accesorio?')) return;
     try {
       const { error } = await supabase.from('accessories').delete().eq('id', id);
       if (error) throw error;
@@ -242,6 +244,7 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
         </div>
       )}
 
+      {ConfirmDialog}
       {isSellOpen && (
         <SellAccessoriesModal
           accessories={accessories}

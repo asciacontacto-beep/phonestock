@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Receipt } from '@/components/Receipt';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface Props {
   sales: any[];
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function SalesClient({ sales, deposits, realSellers, user, shop }: Props) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [q, setQ] = useState('');
   const [depFilter, setDepFilter] = useState('');
   const [sellerFilter, setSellerFilter] = useState('');
@@ -80,7 +82,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
   const handleVoidSale = async () => {
     if (!selectedSale) return;
-    if (!confirm('¿Estás seguro de anular esta venta? Esta acción revertirá el stock de equipos, eliminará equipos recibidos en canje y borrará la venta del historial.')) return;
+    if (!await confirm('¿Estás seguro de anular esta venta? Esta acción revertirá el stock de equipos, eliminará equipos recibidos en canje y borrará la venta del historial.')) return;
     
     setVoidLoading(true);
     try {
@@ -284,6 +286,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
         )}
       </div>
 
+      {ConfirmDialog}
       {/* Sale Detail Modal */}
       {selectedSale && (
         <div className="mo">

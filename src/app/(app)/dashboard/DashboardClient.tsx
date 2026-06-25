@@ -7,6 +7,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 type Range = 'today' | 'week' | 'month' | 'all';
 
@@ -39,10 +40,11 @@ export function DashboardClient({
 }) {
   const router   = useRouter();
   const supabase = createClient();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [range, setRange] = useState<Range>('month');
 
   const deleteSale = async (saleId: string) => {
-    if (!confirm('¿Eliminar esta venta?')) return;
+    if (!await confirm('¿Eliminar esta venta?')) return;
     try {
       const sale = sales.find(s => s.id === saleId);
       if (sale?.imei) {
@@ -499,6 +501,7 @@ export function DashboardClient({
           </div>
         </div>
       )}
+      {ConfirmDialog}
     </div>
   );
 }

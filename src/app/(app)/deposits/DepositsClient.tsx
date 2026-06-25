@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react';
 import { Warehouse, Plus, Trash2, Edit2, ArrowLeftRight, Loader2, Check, X, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 const DEPOSIT_COLORS = ['#d4d4d8', '#10b981', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 export function DepositsClient({ initialStock, initialDeposits }: { initialStock: any[], initialDeposits: any[] }) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [stock, setStock] = useState(initialStock);
   const [deposits, setDeposits] = useState(initialDeposits);
   const [saving, setSaving] = useState(false);
@@ -54,7 +56,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
       toast.error(`Este depósito tiene ${count} equipos. Transferilos antes de eliminarlo.`);
       return;
     }
-    if (!confirm('¿Eliminar este depósito?')) return;
+    if (!await confirm('¿Eliminar este depósito?')) return;
     const { error } = await supabase.from('deposits').delete().eq('id', id);
     if (error) {
       toast.error('Error: ' + error.message);
@@ -263,6 +265,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
         </div>
       )}
 
+      {ConfirmDialog}
       {transferModal && (
         <div className="mo">
           <div className="mb" style={{ maxWidth: 440 }}>

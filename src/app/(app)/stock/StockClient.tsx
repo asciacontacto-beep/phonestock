@@ -6,8 +6,10 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export function StockClient({ isOwner }: { isOwner?: boolean }) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -56,7 +58,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
   }, [stock, filter]);
 
   const handleDelete = async (id: any) => {
-    if (!confirm('¿Eliminar este equipo del stock?')) return;
+    if (!await confirm('¿Eliminar este equipo del stock?')) return;
     try {
       const { error } = await supabase.from('stock').delete().eq('id', id);
       if (error) throw error;
@@ -99,7 +101,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
 
   const handleBulkTransfer = async () => {
     if (!bulkDeposit || selectedItems.length === 0) return;
-    if (!confirm(`¿Transferir ${selectedItems.length} equipos al depósito seleccionado?`)) return;
+    if (!await confirm(`¿Transferir ${selectedItems.length} equipos al depósito seleccionado?`)) return;
     
     setBulkTransferring(true);
     try {
@@ -496,6 +498,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         </div>
       )}
   
+      {ConfirmDialog}
       <ManualEntryModal
         open={showManual}
         onClose={() => setShowManual(false)}

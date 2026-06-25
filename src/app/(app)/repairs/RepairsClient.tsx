@@ -4,6 +4,7 @@ import { Plus, Search, Edit2, Trash2, X, Wrench, CheckCircle, PackageSearch, Pac
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }) {
   const [repairs, setRepairs] = useState<any[]>([]);
@@ -615,6 +616,7 @@ function NewRepairModal({ onClose, onSave, user }: any) {
 // ─── RepairDetailModal ────────────────────────────────────────────────────────
 
 function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }: any) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [f, setF] = useState(repair);
   const [saving, setSaving] = useState(false);
   const [deposits, setDeposits] = useState<any[]>([]);
@@ -768,7 +770,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
   };
 
   const handleDelete = async () => {
-    if(!confirm('¿Eliminar orden?')) return;
+    if(!await confirm('¿Eliminar orden?')) return;
     try {
       await supabase.from('repairs').delete().eq('id', f.id);
       toast.success('Eliminada');
@@ -984,6 +986,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
           </div>
         </div>
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

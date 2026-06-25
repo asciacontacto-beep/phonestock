@@ -3,8 +3,10 @@ import { useState, useEffect } from 'react';
 import { CheckCircle, Trash2, Building2, Users, Clock, RefreshCw, ShieldAlert } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export function SuperAdminClient() {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [orgs, setOrgs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export function SuperAdminClient() {
   useEffect(() => { load(); }, []);
 
   const activate = async (orgId: string) => {
-    if (!confirm('¿Activar este negocio? El trial quedará activo indefinidamente.')) return;
+    if (!await confirm('¿Activar este negocio? El trial quedará activo indefinidamente.')) return;
     setActionId(orgId);
     await supabase.rpc('activate_organization', { org_id: orgId });
     await load();
@@ -29,7 +31,7 @@ export function SuperAdminClient() {
   };
 
   const deleteOrg = async (orgId: string, orgName: string) => {
-    if (!confirm(`¿Borrar "${orgName}" y TODOS sus datos? Esta acción es irreversible.`)) return;
+    if (!await confirm(`¿Borrar "${orgName}" y TODOS sus datos? Esta acción es irreversible.`)) return;
     setActionId(orgId);
     await supabase.rpc('delete_organization', { org_id: orgId });
     await load();
@@ -207,6 +209,7 @@ export function SuperAdminClient() {
         Los negocios en trial que venzan son eliminados automáticamente por pg_cron cada hora.
         Activar un negocio cancela el vencimiento y lo deja activo indefinidamente.
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

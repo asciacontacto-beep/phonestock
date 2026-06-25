@@ -1,7 +1,7 @@
 -- Tabla de repuestos
 CREATE TABLE IF NOT EXISTS public.spare_parts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  org_id UUID NOT NULL DEFAULT public.current_user_org_id() REFERENCES public.organizations(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   category TEXT,
   cost_price NUMERIC NOT NULL DEFAULT 0,
@@ -18,7 +18,7 @@ GRANT ALL ON public.spare_parts TO authenticated;
 -- Tabla de repuestos usados por reparación
 CREATE TABLE IF NOT EXISTS public.repair_parts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  org_id UUID NOT NULL DEFAULT public.current_user_org_id() REFERENCES public.organizations(id) ON DELETE CASCADE,
   repair_id UUID NOT NULL REFERENCES public.repairs(id) ON DELETE CASCADE,
   spare_part_id UUID NOT NULL REFERENCES public.spare_parts(id),
   spare_part_name TEXT NOT NULL,

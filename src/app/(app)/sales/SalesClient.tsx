@@ -235,12 +235,22 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                             {sale.accessories.map((acc: any, idx: number) => (
                               <div key={idx} style={{ fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-3)' }} />
-                                {acc.qty}x {acc.name} 
+                                {acc.qty}x {acc.name}
                                 {acc.is_gift && <span style={{ fontSize: 9, background: 'var(--green-dim)', color: 'var(--green)', padding: '1px 4px', borderRadius: 4 }}>REGALO</span>}
                               </div>
                             ))}
                           </div>
                         )}
+                        {(() => {
+                          const ti = sale.payments?.find((p: any) => p.id === 'tradein' && p.device);
+                          if (!ti) return null;
+                          return (
+                            <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <span style={{ fontSize: 9, background: 'rgba(147,51,234,0.12)', color: 'var(--purple)', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>CANJE</span>
+                              {ti.device.brand} {ti.device.model}{ti.device.storage ? ` ${ti.device.storage}` : ''}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td>
                         <div style={{ fontWeight: 500 }}>{sale.customer?.name || '-'}</div>

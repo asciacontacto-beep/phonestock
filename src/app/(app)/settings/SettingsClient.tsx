@@ -22,8 +22,13 @@ export function SettingsClient({ profile }: { profile: any }) {
 
   useEffect(() => {
     const load = async () => {
+      if (!profile?.org_id) { setFetching(false); return; }
       setFetching(true);
-      const { data, error } = await supabase.from('settings').select('*').order('id', { ascending: true }).limit(1);
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('org_id', profile.org_id)
+        .limit(1);
       if (data && data.length > 0) {
         const { id, org_id, ...rest } = data[0];
         setRowId(id ?? null);
@@ -34,7 +39,7 @@ export function SettingsClient({ profile }: { profile: any }) {
       setFetching(false);
     };
     load();
-  }, []);
+  }, [profile?.org_id]);
 
   const save = async () => {
     try {

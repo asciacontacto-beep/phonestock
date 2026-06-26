@@ -125,7 +125,7 @@ export default function LandingPage() {
             transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
           >
             Stock, ventas, reparaciones y caja — todo en un panel. Diseñado para tiendas de celulares en Argentina.{" "}
-            <strong>Pago único de $400 USD, sin mensualidades jamás.</strong>
+            <strong>Pago único de <s style={{ opacity: 0.45 }}>$400</s> $260 USD — precio de lanzamiento.</strong>
           </motion.p>
 
           <motion.div
@@ -333,11 +333,11 @@ export default function LandingPage() {
               <div className={`${styles.compareColLabel} ${styles.compareColStackr}`}><span>✦</span> Stackr</div>
             </div>
             {[
-              { label: "Costo inicial",   comp: "$0",                       stackr: "$400 USD",            bold: false },
+              { label: "Costo inicial",   comp: "$0",                       stackr: "$260 USD",            bold: false },
               { label: "Costo año 1",     comp: "$600 USD (≈ $50/mes)",     stackr: "$0",                  bold: false },
               { label: "Costo año 2",     comp: "$600 USD más",             stackr: "$0",                  bold: false },
               { label: "Costo año 3",     comp: "$600 USD más",             stackr: "$0",                  bold: false },
-              { label: "Total 3 años",    comp: "$1,800 USD",               stackr: "$400 USD",            bold: true  },
+              { label: "Total 3 años",    comp: "$1,800 USD",               stackr: "$260 USD",            bold: true  },
               { label: "Actualizaciones", comp: "Según plan",               stackr: "Gratis para siempre", bold: false },
               { label: "Soporte",         comp: "Plan premium = más costo", stackr: "Incluido siempre",    bold: false },
             ].map(({ label, comp, stackr, bold }, i) => (
@@ -351,8 +351,10 @@ export default function LandingPage() {
 
           <motion.div className={styles.pricingCard} initial={{ opacity: 0, y: 32, scale: 0.97 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", bounce: 0.2 }}>
             <div className={styles.pricingLeft}>
-              <div className={styles.pricingBadge}>Licencia de por vida</div>
-              <div className={styles.pricingPrice}>$400 <span>USD</span></div>
+              <div className={styles.pricingBadge}>🔥 Precio de lanzamiento</div>
+              <div className={styles.pricingPrice}>
+                <s style={{ fontSize: '0.55em', opacity: 0.4, marginRight: 6, fontWeight: 500 }}>$400</s>$260 <span>USD</span>
+              </div>
               <p className={styles.pricingNote}>Un solo pago · Sin mensualidades · Para siempre</p>
               <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.pricingCta}>
                 <MessageCircle size={18} /> Comprar por WhatsApp
@@ -410,7 +412,7 @@ export default function LandingPage() {
               <MessageCircle size={16} /> Comprar ahora por WhatsApp
             </a>
             <div className={styles.finalCtaTrust}>
-              <span><Check size={13} strokeWidth={3} /> $400 USD una sola vez</span>
+              <span><Check size={13} strokeWidth={3} /> $260 USD una sola vez</span>
               <span className={styles.dot} />
               <span><Check size={13} strokeWidth={3} /> Sin mensualidades jamás</span>
               <span className={styles.dot} />

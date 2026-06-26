@@ -124,8 +124,7 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
           >
-            Stock, ventas, reparaciones y caja — todo en un panel. Diseñado para tiendas de celulares en Argentina.{" "}
-            <strong>Pago único de <s style={{ opacity: 0.45 }}>$400</s> $260 USD — precio de lanzamiento.</strong>
+            Stock, ventas, reparaciones y caja — todo en un panel. Diseñado para tiendas de celulares en Argentina.
           </motion.p>
 
           <motion.div
@@ -142,31 +141,35 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div
+            className={styles.heroPriceBadge}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.30 }}
+          >
+            🔥 Precio de lanzamiento — <s style={{ opacity: 0.45, fontWeight: 400 }}>$400</s> <strong>$260 USD</strong> · pago único, sin mensualidades
+          </motion.div>
+
+          <motion.div
             className={styles.heroTrust}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.36 }}
           >
-            <span><Check size={13} strokeWidth={3} /> Sin tarjeta de crédito</span>
+            <span>🏪 5 locales activos en Argentina</span>
             <span className={styles.dot} />
-            <span><Check size={13} strokeWidth={3} /> Listo en 5 minutos</span>
+            <span><Check size={13} strokeWidth={3} /> Sin tarjeta de crédito</span>
             <span className={styles.dot} />
             <span><Check size={13} strokeWidth={3} /> Soporte por WhatsApp</span>
           </motion.div>
 
           <motion.div
-            className={styles.heroMockup}
-            initial={{ opacity: 0, y: 48, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className={styles.heroScreenWrap}
+            initial={{ opacity: 0, y: 56 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className={styles.heroMockupChrome}>
-              <span className={styles.heroMockupDot} style={{ background: '#ff5f57' }} />
-              <span className={styles.heroMockupDot} style={{ background: '#febc2e' }} />
-              <span className={styles.heroMockupDot} style={{ background: '#28c840' }} />
-              <span className={styles.heroMockupUrl}>stackrarg.vercel.app/dashboard</span>
-            </div>
-            <img src="/hero-dashboard.png" alt="Panel de control Stackr" className={styles.heroMockupImg} />
+            <img src="/hero-dashboard.png" alt="Panel de control Stackr" className={styles.heroScreen} />
+            <div className={styles.heroScreenFade} />
           </motion.div>
         </div>
       </section>
@@ -269,20 +272,68 @@ export default function LandingPage() {
       </section>
 
       {/* ── CÓMO FUNCIONA ──────────────────────────── */}
-      <section className={styles.steps}>
-        <div className={styles.sectionInner}>
-          <motion.p className={styles.sectionLabel} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>Onboarding</motion.p>
-          <motion.h2 className={styles.sectionH2} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>Tu local digitalizado en 5 minutos</motion.h2>
-          <div className={styles.stepsRow}>
-            {[
-              { n: "01", title: "Creá tu cuenta",    desc: "Registrate en menos de un minuto. Configurá tu tienda y empleados con sus permisos." },
-              { n: "02", title: "Cargá tu stock",    desc: "Escaneá códigos EAN o ingresá equipos manualmente. Generá e imprimí etiquetas." },
-              { n: "03", title: "Empezá a vender",   desc: "Registrá ventas y reparaciones. Las métricas se calculan solas, en tiempo real." },
-            ].map(({ n, title, desc }, i) => (
-              <motion.div key={n} className={styles.stepCard} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                <span className={styles.stepN}>{n}</span>
-                <h3 className={styles.stepTitle}>{title}</h3>
-                <p className={styles.stepDesc}>{desc}</p>
+      <section className={styles.how}>
+        <div className={styles.howInner}>
+          <motion.div className={styles.howHead} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <p className={styles.howLabel}>Cómo funciona</p>
+            <h2 className={styles.howH2}>De cero a tu primera venta<br />en menos de 10 minutos</h2>
+            <p className={styles.howSub}>Seguí estos pasos en orden — cada uno desbloquea el siguiente.</p>
+          </motion.div>
+
+          <div className={styles.howTimeline}>
+            {([
+              {
+                n: "01",
+                time: "30 segundos",
+                title: "Registrá tu negocio",
+                desc: "Nombre del local, email y contraseña. Sin tarjeta ni datos de pago. Tu cuenta queda activa al instante con 48hs de prueba completa.",
+                tip: null,
+              },
+              {
+                n: "02",
+                time: "1 minuto",
+                title: "Creá tu primer depósito",
+                desc: "Un depósito es tu local físico o punto de venta. Todo el stock vive dentro de un depósito — sin esto, no podés cargar equipos.",
+                tip: "Si tenés más de una sucursal, creás un depósito por local. Cada uno tiene su propio stock y caja.",
+              },
+              {
+                n: "03",
+                time: "2 a 5 minutos",
+                title: "Cargá tu inventario",
+                desc: "Escaneás el código de barras del equipo o escribís marca, modelo y precio. El sistema guarda el costo, el precio de venta, el IMEI y la condición.",
+                tip: null,
+              },
+              {
+                n: "04",
+                time: "30 segundos",
+                title: "Hacé tu primera venta",
+                desc: "Seleccionás el equipo, el cliente y el método de pago. El ticket con la garantía se genera solo — listo para imprimir o enviar por WhatsApp.",
+                tip: null,
+              },
+            ] as { n: string; time: string; title: string; desc: string; tip: string | null }[]).map(({ n, time, title, desc, tip }, i, arr) => (
+              <motion.div
+                key={n}
+                className={styles.howStep}
+                initial={{ opacity: 0, x: -16 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <div className={styles.howLeft}>
+                  <div className={styles.howCircle}>{n}</div>
+                  {i < arr.length - 1 && <div className={styles.howLine} />}
+                </div>
+                <div className={styles.howContent}>
+                  <span className={styles.howTime}>{time}</span>
+                  <h3 className={styles.howTitle}>{title}</h3>
+                  <p className={styles.howDesc}>{desc}</p>
+                  {tip && (
+                    <div className={styles.howTip}>
+                      <span className={styles.howTipIcon}>→</span>
+                      {tip}
+                    </div>
+                  )}
+                </div>
               </motion.div>
             ))}
           </div>

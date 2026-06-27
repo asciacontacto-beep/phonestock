@@ -170,58 +170,42 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           { v: 'available', l: 'En Stock' },
           { v: 'sold',      l: 'Vendidos' },
         ].map(opt => (
-          <button
-            key={opt.v}
-            className={`btn-pill ${filter.status === opt.v ? 'active' : ''}`}
-            onClick={() => { setFilter({ ...filter, status: opt.v }); setVisibleCount(50); }}
+          <button key={opt.v} className={`btn-pill ${filter.status === opt.v ? 'active' : ''}`}
+            onClick={() => { setFilter({ ...filter, status: filter.status === opt.v ? 'all' : opt.v }); setVisibleCount(50); }}
           >{opt.l}</button>
         ))}
-        <div style={{ width: 1, height: 20, background: 'var(--border-md)', margin: '0 4px' }} />
-        {[
-          { v: 'all',  l: 'Todos' },
-          { v: 'new',  l: 'Nuevos' },
-          { v: 'used', l: 'Usados' },
-        ].map(opt => (
-          <button
-            key={opt.v}
-            className={`btn-pill ${filter.condition === opt.v ? 'active' : ''}`}
-            onClick={() => { setFilter({ ...filter, condition: opt.v }); setVisibleCount(50); }}
-          >{opt.l}</button>
-        ))}
-        <div style={{ width: 1, height: 20, background: 'var(--border-md)', margin: '0 4px' }} />
-        
-        <select 
-          className="inp" 
-          style={{ width: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: 20 }} 
-          value={filter.model} 
+
+        <select className={`sel-pill ${filter.condition !== 'all' ? 'active' : ''}`} style={{ maxWidth: 110 }} value={filter.condition}
+          onChange={e => { setFilter({ ...filter, condition: e.target.value }); setVisibleCount(50); }}
+        >
+          <option value="all">Condición</option>
+          <option value="new">Nuevos</option>
+          <option value="used">Usados</option>
+        </select>
+
+        <select className={`sel-pill ${filter.model !== 'all' ? 'active' : ''}`} style={{ maxWidth: 130 }} value={filter.model}
           onChange={e => { setFilter({ ...filter, model: e.target.value }); setVisibleCount(50); }}
         >
-          <option value="all">Todos los modelos</option>
-          {(filter.brand !== 'all' 
-             ? (MODELS[filter.brand] || [])
-             : Object.values(MODELS).flat()
+          <option value="all">Modelo</option>
+          {(filter.brand !== 'all'
+            ? (MODELS[filter.brand] || [])
+            : Object.values(MODELS).flat()
           ).map(m => <option key={m} value={m}>{m}</option>)}
         </select>
 
-        <select 
-          className="inp" 
-          style={{ width: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: 20 }} 
-          value={filter.storage} 
+        <select className={`sel-pill ${filter.storage !== 'all' ? 'active' : ''}`} style={{ maxWidth: 130 }} value={filter.storage}
           onChange={e => { setFilter({ ...filter, storage: e.target.value }); setVisibleCount(50); }}
         >
-          <option value="all">Almacenamiento</option>
+          <option value="all">Almacen.</option>
           {STORAGES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
-        <select 
-          className="inp" 
-          style={{ width: 'auto', padding: '6px 12px', minHeight: 36, borderRadius: 20 }} 
-          value={filter.sortPrice} 
+        <select className={`sel-pill ${filter.sortPrice !== 'none' ? 'active' : ''}`} style={{ maxWidth: 110 }} value={filter.sortPrice}
           onChange={e => { setFilter({ ...filter, sortPrice: e.target.value }); setVisibleCount(50); }}
         >
-          <option value="none">Orden normal</option>
-          <option value="desc">Mayor precio</option>
-          <option value="asc">Menor precio</option>
+          <option value="none">Precio</option>
+          <option value="desc">Mayor ↓</option>
+          <option value="asc">Menor ↑</option>
         </select>
       </div>
 
@@ -247,73 +231,86 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {rows.slice(0, visibleCount).map(s => {
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            {rows.slice(0, visibleCount).map((s, idx) => {
               const dep = depositOf(s);
               const isSelected = selectedItems.includes(s.id);
+              const batteryLabel = s.battery ? (String(s.battery).includes('%') ? s.battery : `${s.battery}%`) : null;
               return (
                 <div
                   key={s.id}
                   onClick={() => setDetailItem(s)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                    background: isSelected ? 'var(--surface-2)' : 'var(--surface)',
-                    borderRadius: 12, border: isSelected ? '2px solid var(--text)' : '1px solid var(--border)',
-                    cursor: 'pointer', boxShadow: 'var(--shadow-xs)',
-                    flexWrap: 'wrap',
-                    transition: 'background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease',
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                    background: isSelected ? 'var(--surface-2)' : 'transparent',
+                    borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                    cursor: 'pointer', transition: 'background 0.1s',
                   }}
-                  onMouseEnter={e => { if (!isSelected) { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-2)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-sm)'; } }}
-                  onMouseLeave={e => { if (!isSelected) { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-xs)'; } }}
+                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-2)'; }}
+                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                 >
+                  {/* Custom checkbox */}
                   <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }}>
-                    <input 
-                      type="checkbox" 
-                      style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--text)' }}
-                      checked={isSelected}
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedItems([...selectedItems, s.id]);
-                        else setSelectedItems(selectedItems.filter(id => id !== s.id));
+                    <div
+                      onClick={() => {
+                        if (isSelected) setSelectedItems(selectedItems.filter(id => id !== s.id));
+                        else setSelectedItems([...selectedItems, s.id]);
                       }}
-                    />
-                  </div>
-
-                  <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {s.brand} {s.model}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                      <span className={`badge ${s.condition === 'new' ? 'b-green' : 'b-neu'}`} style={{ fontSize: 10, padding: '2px 6px' }}>
-                        {s.condition === 'new' ? 'Sellado' : (s.battery ? `Usado (${s.battery}%)` : 'Usado')}
-                      </span>
-                      <span>{s.storage} · {s.color}</span>
-                      {s.imei && <span style={{ fontFamily: 'JetBrains Mono', fontSize: 11 }}>· IMEI: {s.imei}</span>}
+                      style={{
+                        width: 18, height: 18, borderRadius: 5, cursor: 'pointer', flexShrink: 0,
+                        border: isSelected ? 'none' : '1.5px solid var(--border-md)',
+                        background: isSelected ? 'var(--text)' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.12s',
+                      }}
+                    >
+                      {isSelected && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </div>
                   </div>
 
-                  <div style={{ flex: '1 1 120px', minWidth: 0 }}>
-                    <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>
-                      V: {s.currency === 'USD' ? 'U$' : '$'}{s.price?.toLocaleString()}
+                  {/* Condition dot */}
+                  <div style={{
+                    width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                    background: s.condition === 'new' ? 'var(--green)' : 'var(--text-3)',
+                  }} />
+
+                  {/* Main info */}
+                  <div style={{ flex: '1 1 160px', minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {s.model}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, display: 'flex', gap: 5, flexWrap: 'nowrap', overflow: 'hidden' }}>
+                      <span>{s.storage}</span>
+                      {s.color && <><span>·</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.color}</span></>}
+                      {batteryLabel && s.condition === 'used' && <><span>·</span><span>{batteryLabel}</span></>}
+                      {s.imei && <><span>·</span><span style={{ fontFamily: 'monospace', flexShrink: 0 }}>···{s.imei.slice(-6)}</span></>}
+                    </div>
+                  </div>
+
+                  {/* Price */}
+                  <div style={{ flex: '0 0 auto', textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>
+                      {s.currency === 'USD' ? 'U$' : '$'}{s.price?.toLocaleString()}
                     </div>
                     {isOwner && s.cost_price && (
-                      <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-                        C: {s.currency === 'USD' ? 'U$' : '$'}{s.cost_price.toLocaleString()}
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
+                        costo {s.currency === 'USD' ? 'U$' : '$'}{s.cost_price.toLocaleString()}
                       </div>
                     )}
                   </div>
 
-                  <div style={{ flex: '0 1 120px', minWidth: 0 }}>
-                    {dep ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-2)' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: dep.color || 'var(--text-3)', flexShrink: 0 }} />
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dep.name}</span>
-                      </div>
-                    ) : <span className="badge b-neu">—</span>}
+                  {/* Deposit */}
+                  <div style={{ flex: '0 0 90px', display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                    {dep ? <>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: dep.color || 'var(--text-3)', flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dep.name}</span>
+                    </> : <span style={{ fontSize: 12, color: 'var(--text-3)' }}>—</span>}
                   </div>
 
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                    <button className="btn-icon" style={{ width: 32, height: 32 }} onClick={() => setEditItem(s)} title="Editar"><Edit2 size={16} /></button>
-                    <button className="btn-icon" style={{ width: 32, height: 32, color: 'var(--red)' }} onClick={() => handleDelete(s.id)} title="Eliminar"><Trash2 size={16} /></button>
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 2, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    <button className="btn-icon" style={{ width: 28, height: 28 }} onClick={() => setEditItem(s)}><Edit2 size={13} /></button>
+                    <button className="btn-icon" style={{ width: 28, height: 28, color: 'var(--red)' }} onClick={() => handleDelete(s.id)}><Trash2 size={13} /></button>
                   </div>
                 </div>
               );
@@ -448,50 +445,44 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
               </div>
               <button className="btn-icon" onClick={() => setDetailItem(null)}><X size={18} /></button>
             </div>
-            <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* ... detail modal contents ... */}
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <div className="sc" style={{ flex: 1, minWidth: 120 }}>
-                  <div className="sl">Venta sugerida</div>
-                  <div className="sv" style={{ fontSize: 22 }}>
-                    {detailItem.currency === 'USD' ? 'U$' : '$'} {detailItem.price?.toLocaleString()}
-                  </div>
+            <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* Price block */}
+              <div>
+                <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1 }}>
+                  {detailItem.currency === 'USD' ? 'U$' : '$'}{detailItem.price?.toLocaleString()}
                 </div>
-                {isOwner && (
-                  <div className="sc" style={{ flex: 1, minWidth: 120 }}>
-                    <div className="sl">Costo</div>
-                    <div className="sv" style={{ fontSize: 22, color: 'var(--text-2)' }}>
-                      {detailItem.currency === 'USD' ? 'U$' : '$'} {detailItem.cost_price?.toLocaleString() || '-'}
-                    </div>
+                {isOwner && detailItem.cost_price && (
+                  <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 6 }}>
+                    costo {detailItem.currency === 'USD' ? 'U$' : '$'}{detailItem.cost_price?.toLocaleString()}
                   </div>
                 )}
-                <div className="sc" style={{ flex: 1, minWidth: 120 }}>
-                  <div className="sl">Estado</div>
-                  <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <span className={`badge ${detailItem.status === 'available' ? 'b-green' : 'b-amber'}`}>
-                      {detailItem.status === 'available' ? 'En Stock' : 'Vendido'}
-                    </span>
-                    {detailItem.condition === 'new' ? (
-                      <span className="badge b-green">Sellado</span>
-                    ) : (
-                      <span className="badge b-neu">Usado {detailItem.battery ? `(${detailItem.battery}%)` : ''}</span>
-                    )}
-                  </div>
-                </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                {detailItem.status === 'available' && (
-                  <button
-                    className="btn btn-dark"
-                    style={{ flex: 1 }}
-                    onClick={() => router.push(`/sell?item=${detailItem.id}`)}
-                  ><ShoppingCart size={15} style={{ marginRight: 6 }} /> Vender</button>
+
+              {/* Status + IMEI */}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {detailItem.status !== 'available' && (
+                  <span className="badge b-amber">Vendido</span>
                 )}
-                <button
-                  className="btn btn-outline"
-                  style={{ flex: 1 }}
-                  onClick={() => { setDetailItem(null); setEditItem(detailItem); }}
-                ><Edit2 size={15} style={{ marginRight: 6 }} /> Editar</button>
+                <span className={`badge ${detailItem.condition === 'new' ? 'b-green' : 'b-neu'}`}>
+                  {detailItem.condition === 'new' ? 'Sellado' : `Usado${detailItem.battery ? ' · ' + (String(detailItem.battery).includes('%') ? detailItem.battery : detailItem.battery + '%') : ''}`}
+                </span>
+                {detailItem.imei && (
+                  <span style={{ fontSize: 12, color: 'var(--text-3)', fontFamily: 'monospace' }}>···{detailItem.imei.slice(-6)}</span>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                {detailItem.status === 'available' && (
+                  <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => router.push(`/sell?item=${detailItem.id}`)}>
+                    <ShoppingCart size={15} /> Vender
+                  </button>
+                )}
+                <button className="btn btn-outline" style={{ flex: detailItem.status === 'available' ? 0 : 1, minWidth: 100 }}
+                  onClick={() => { setDetailItem(null); setEditItem(detailItem); }}>
+                  <Edit2 size={15} /> Editar
+                </button>
               </div>
             </div>
           </div>

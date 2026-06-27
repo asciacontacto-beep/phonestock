@@ -37,6 +37,12 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
   const [custSuggestions, setCustSuggestions] = useState<any[]>([]);
   const [searchingCust, setSearchingCust] = useState(false);
   const custTimer = useRef<any>(null);
+  const [accSearch, setAccSearch] = useState('');
+  const [accSearchOpen, setAccSearchOpen] = useState(false);
+  const [selectedAccId, setSelectedAccId] = useState('');
+  const [accQty, setAccQty] = useState(1);
+  const [accType, setAccType] = useState<'venta' | 'regalo'>('venta');
+  const accSearchRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -439,39 +445,95 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
           <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>Agregá fundas, vidrios, cargadores a esta venta. Podés marcarlos como de regalo (costo 0) o cobrarlos.</p>
             
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-               <select className="inp" id="acc_select" style={{ flex: 1 }}>
-                 <option value="">-- Seleccionar Accesorio --</option>
-                 {accessoriesList.filter(a => {
-                    if (accessoryOnly) {
-                      return (a.currency || 'ARS') === 'ARS';
-                    }
-                    return String(a.deposit_id) === String(unit?.deposit);
-                  }).map(a => (
-                   <option key={a.id} value={a.id}>{a.category} {a.compatible_model} {a.color} (Stock: {a.stock} - {a.currency === 'ARS' ? '$' : 'U$'} {a.sale_price})</option>
-                 ))}
-               </select>
-               <input type="number" id="acc_qty" className="inp" defaultValue={1} min={1} style={{ width: 80 }} />
-               <select className="inp" id="acc_type" style={{ width: 130 }}>
-                 <option value="venta">Vender</option>
-                 <option value="regalo">De Regalo</option>
-               </select>
-               <button className="btn btn-dark" onClick={() => {
-                 const id = (document.getElementById('acc_select') as HTMLSelectElement).value;
-                 const qty = parseInt((document.getElementById('acc_qty') as HTMLInputElement).value) || 1;
-                 const type = (document.getElementById('acc_type') as HTMLSelectElement).value;
-                 if (!id) return;
-                 const acc = accessoriesList.find(a => a.id === id);
-                 if (qty > acc.stock) return toast.error('No hay stock suficiente');
-                 
-                 setSelectedAccessories(p => {
-                    const existing = p.find(x => x.id === id && x.is_gift === (type === 'regalo'));
-                    if (existing) {
-                       return p.map(x => x === existing ? { ...x, qty: x.qty + qty } : x);
-                    }
-                    return [...p, { id, name: `${acc.category} ${acc.compatible_model || ''} ${acc.color || ''}`.trim(), qty, price: type === 'regalo' ? 0 : acc.sale_price, is_gift: type === 'regalo', cost_price: acc.cost_price, currency: acc.currency || 'USD' }];
-                 });
-               }}><Plus size={16}/> Sumar</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div ref={accSearchRef} style={{ flex: 1, position: 'relative' }}>
+                  <input
+                    className="inp"
+                    placeholder="Buscar accesorio..."
+                    value={accSearch}
+                    onChange={e => { setAccSearch(e.target.value); setSelectedAccId(''); setAccSearchOpen(true); }}
+                    onFocus={() => setAccSearchOpen(true)}
+                    onBlur={() => setTimeout(() => setAccSearchOpen(false), 150)}
+                    style={{ width: '100%' }}
+                  />
+                  {accSearchOpen && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                      background: 'var(--surface)', border: '1px solid var(--border)',
+                      borderRadius: 'var(--r)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                      maxHeight: 260, overflowY: 'auto', marginTop: 4
+                    }}>
+                      {accessoriesList
+                        .filter(a => {
+                          const baseFilter = accessoryOnly
+                            ? (a.currency || 'ARS') === 'ARS'
+                            : String(a.deposit_id) === String(unit?.deposit);
+                          if (!accSearch.trim()) return baseFilter;
+                          const q = accSearch.toLowerCase();
+                          return baseFilter && `${a.category} ${a.compatible_model || ''} ${a.color || ''}`.toLowerCase().includes(q);
+                        })
+                        .map(a => {
+                          const label = `${a.category}${a.compatible_model ? ' ' + a.compatible_model : ''}${a.color ? ' ' + a.color : ''}`;
+                          return (
+                            <div
+                              key={a.id}
+                              onMouseDown={() => {
+                                setSelectedAccId(a.id);
+                                setAccSearch(label);
+                                setAccSearchOpen(false);
+                              }}
+                              style={{
+                                padding: '9px 14px', cursor: 'pointer', fontSize: 13,
+                                borderBottom: '1px solid var(--border)',
+                                background: selectedAccId === a.id ? 'var(--surface-2)' : undefined,
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = selectedAccId === a.id ? 'var(--surface-2)' : '')}
+                            >
+                              <span style={{ fontWeight: 500 }}>{label}</span>
+                              <span style={{ color: 'var(--text-3)', fontSize: 12, whiteSpace: 'nowrap', marginLeft: 12 }}>
+                                Stock: {a.stock} · {a.currency === 'ARS' ? '$' : 'U$'} {a.sale_price}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      {accessoriesList.filter(a => {
+                        const base = accessoryOnly ? (a.currency || 'ARS') === 'ARS' : String(a.deposit_id) === String(unit?.deposit);
+                        if (!accSearch.trim()) return base;
+                        return base && `${a.category} ${a.compatible_model || ''} ${a.color || ''}`.toLowerCase().includes(accSearch.toLowerCase());
+                      }).length === 0 && (
+                        <div style={{ padding: '12px 14px', fontSize: 13, color: 'var(--text-3)' }}>Sin resultados</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  className="inp"
+                  value={accQty}
+                  min={1}
+                  onChange={e => setAccQty(parseInt(e.target.value) || 1)}
+                  style={{ width: 70 }}
+                />
+                <select className="inp" value={accType} onChange={e => setAccType(e.target.value as 'venta' | 'regalo')} style={{ width: 130 }}>
+                  <option value="venta">Vender</option>
+                  <option value="regalo">De Regalo</option>
+                </select>
+                <button className="btn btn-dark" onClick={() => {
+                  if (!selectedAccId) return;
+                  const acc = accessoriesList.find(a => a.id === selectedAccId);
+                  if (!acc) return;
+                  if (accQty > acc.stock) return toast.error('No hay stock suficiente');
+                  setSelectedAccessories(p => {
+                    const existing = p.find(x => x.id === selectedAccId && x.is_gift === (accType === 'regalo'));
+                    if (existing) return p.map(x => x === existing ? { ...x, qty: x.qty + accQty } : x);
+                    return [...p, { id: selectedAccId, name: `${acc.category} ${acc.compatible_model || ''} ${acc.color || ''}`.trim(), qty: accQty, price: accType === 'regalo' ? 0 : acc.sale_price, is_gift: accType === 'regalo', cost_price: acc.cost_price, currency: acc.currency || 'USD' }];
+                  });
+                  setAccSearch(''); setSelectedAccId(''); setAccQty(1);
+                }}><Plus size={16}/> Sumar</button>
+              </div>
             </div>
 
             {selectedAccessories.length > 0 && (

@@ -12,6 +12,15 @@ interface TopbarProps {
 
 const NOTIFICATIONS = [
   {
+    id: 'mejoras-jun27',
+    icon: <TrendingUp size={16} />,
+    color: '#059669',
+    title: '¡Inventario mejorado!',
+    body: 'Nuevo diseño de lista más limpio, buscador de accesorios por texto, Apple Watch con medidas y colores, y login renovado.',
+    href: '/stock',
+    cta: 'Ver inventario',
+  },
+  {
     id: 'turnos-launch',
     icon: <CalendarDays size={16} />,
     color: '#7c3aed',

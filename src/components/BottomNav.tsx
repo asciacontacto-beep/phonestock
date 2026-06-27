@@ -1,4 +1,4 @@
-import { LayoutGrid, Box, ShoppingCart, Wallet, Menu, ScanLine, ShieldAlert, CalendarDays } from 'lucide-react';
+import { LayoutGrid, Box, ShoppingCart, Wallet, Menu, ScanLine, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
 interface BottomNavProps {
@@ -20,7 +20,7 @@ export function BottomNav({ page, user, onMenu, isSuperAdmin }: BottomNavProps) 
     ? [
         { id: 'dashboard', l: 'Resumen', i: <LayoutGrid size={20} /> },
         { id: 'stock',     l: 'Stock',   i: <Box size={20} /> },
-        { id: 'turnos',    l: 'Turnos',  i: <CalendarDays size={20} /> },
+        { id: 'sell',      l: 'Ventas',  i: <ShoppingCart size={20} /> },
         { id: 'cashiers',  l: 'Cajas',   i: <Wallet size={20} /> },
         { id: 'menu',      l: 'Menú',    i: <Menu size={20} />, action: onMenu }
       ]

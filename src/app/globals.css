@@ -226,6 +226,20 @@ input, select, textarea { outline: none; }
 }
 .btn-pill:hover { border-color: var(--border-lg); color: var(--text); }
 .btn-pill.active { background: var(--text); color: #fff; border-color: var(--text); box-shadow: var(--shadow-sm); }
+.sel-pill {
+  display: inline-flex; align-items: center;
+  padding: 6px 28px 6px 13px; border-radius: 20px;
+  border: 1px solid var(--border-md); background: var(--surface);
+  color: var(--text-2); font-size: 13px; font-weight: 500;
+  transition: all 0.12s; white-space: nowrap; cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  height: auto; width: auto;
+}
+.sel-pill:hover { border-color: var(--border-lg); color: var(--text); }
+.sel-pill.active { background-color: var(--text); color: #fff; border-color: var(--text); }
 
 /* ── Form ───────────────────────────────── */
 .field { margin-bottom: 18px; }
@@ -239,6 +253,14 @@ input, select, textarea { outline: none; }
   color: var(--text); font-size: 14px;
   box-shadow: var(--shadow-xs);
   transition: all 0.15s;
+  appearance: none; -webkit-appearance: none;
+}
+select.inp {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
 }
 .inp:focus {
   border-color: var(--text); outline: none;

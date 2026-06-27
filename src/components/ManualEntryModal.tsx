@@ -218,13 +218,14 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                     <option value="iPad">iPad</option>
                     <option value="MacBook">MacBook</option>
                     <option value="AirPods">AirPods</option>
+                    <option value="Apple Watch">Apple Watch</option>
                   </select>
                 </div>
               )}
               <div><label className="lbl">Modelo</label><select className="inp" value={model} onChange={e => handleModel(e.target.value)}>
                 {(brand === 'Apple' ? (MODELS['Apple'] || []).filter(m => m.startsWith(appleCategory)) : (MODELS[brand] || [])).map(m => <option key={m} value={m}>{m}</option>)}
               </select></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px', gap: 12 }}>
                 <div><label className="lbl">Precio Venta</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
                 <div><label className="lbl">Precio Costo</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
                 <div><label className="lbl">Moneda</label><select className="inp" value={cur} onChange={e => setCur(e.target.value)}><option value="USD">USD $</option><option value="ARS">ARS $</option></select></div>
@@ -246,6 +247,25 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                     <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Variante {i + 1}</span>
                     {variants.length > 1 && (<button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removeVariant(i)}><Trash2 size={14} /></button>)}
                   </div>
+                  {model.startsWith('Apple Watch') ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+                      <div style={{ background: 'var(--surface)', border: '1px solid var(--border-md)', borderRadius: 'var(--r-sm)', padding: '12px 14px' }}>
+                        <label className="lbl" style={{ marginBottom: 8 }}>Medida</label>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {storages.map(s => (
+                            <button key={s} className={`btn btn-sm ${v.storage === s ? 'btn-dark' : 'btn-outline'}`} onClick={() => updV(i, 'storage', s)} style={{ minWidth: 72 }}>{s}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="lbl">Color</label>
+                        <input className="inp" list={`colors-list-${i}`} placeholder="Ej: Aluminio Medianoche" value={v.color} onChange={e => updV(i, 'color', e.target.value)} />
+                        <datalist id={`colors-list-${i}`}>
+                          {colors.map(c => <option key={c} value={c} />)}
+                        </datalist>
+                      </div>
+                    </div>
+                  ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                     <div><label className="lbl">Almacenamiento</label><select className="inp" value={v.storage} onChange={e => updV(i, 'storage', e.target.value)}>{storages.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
                     <div>
@@ -256,6 +276,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                       </datalist>
                     </div>
                   </div>
+                  )}
                   <div style={{ marginBottom: 12 }}><label className="lbl">Condición</label><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}><button className={`btn btn-sm ${v.condition === 'new' ? 'btn-dark' : 'btn-outline'}`} onClick={() => updV(i, 'condition', 'new')}>Sellado</button><button className={`btn btn-sm ${v.condition === 'used' ? 'btn-dark' : 'btn-outline'}`} onClick={() => updV(i, 'condition', 'used')}>Usado</button></div></div>
                   {v.condition === 'used' && (
                     <div style={{ marginBottom: 12 }}>

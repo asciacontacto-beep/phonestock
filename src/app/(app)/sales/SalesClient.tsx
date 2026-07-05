@@ -295,17 +295,25 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
               <div className="mt" style={{ fontWeight: 600 }}>{isEditing ? 'Editar Venta' : 'Detalle de Venta'}</div>
               <div style={{ display: 'flex', gap: 10 }}>
                 {!isEditing && isOwner && (
-                  <button className="btn-icon" onClick={() => { 
-                    setEditData({
-                      seller_id: selectedSale.seller_id,
-                      notes: selectedSale.notes || '',
-                      customer: selectedSale.customer || { name: '', dni: '', phone: '', email: '' },
-                      price: selectedSale.price,
-                      currency: selectedSale.currency
-                    });
-                    setIsEditing(true); 
-                  }}>
-                    <Edit2 size={16} />
+                  <button
+                    className="btn btn-outline btn-sm"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    onClick={() => {
+                      setEditData({
+                        seller_id: selectedSale.seller_id,
+                        notes: selectedSale.notes || '',
+                        customer: selectedSale.customer || { name: '', dni: '', phone: '', email: '' },
+                        currency: selectedSale.currency,
+                        payments: (selectedSale.payments || []).map((p: any) => ({
+                          ...p,
+                          original_amount: p.original_amount ?? p.amount,
+                          currency: p.currency || selectedSale.currency
+                        }))
+                      });
+                      setIsEditing(true);
+                    }}
+                  >
+                    <Edit2 size={18} /> Editar
                   </button>
                 )}
                 <button className="btn-ghost" onClick={() => { setSelectedSale(null); setIsEditing(false); }} style={{ padding: '6px' }}><X size={18} /></button>
@@ -336,21 +344,80 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                     <label className="lbl">Notas / Garantía</label>
                     <textarea className="inp" value={editData.notes || ''} onChange={e => setEditData({...editData, notes: e.target.value})} rows={3} style={{ resize: 'none' }} />
                   </div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <div style={{ flex: 1 }}>
-                      <label className="lbl">Precio Real Vendido</label>
-                      <input className="inp" type="number" value={editData.price ?? ''} onChange={e => setEditData({...editData, price: parseFloat(e.target.value) || 0})} />
-                    </div>
-                    <div style={{ width: 110 }}>
-                      <label className="lbl">Moneda</label>
-                      <select className="inp" value={editData.currency || 'ARS'} onChange={e => setEditData({...editData, currency: e.target.value})}>
-                        <option value="ARS">ARS</option>
-                        <option value="USD">USD</option>
-                      </select>
+                  <div>
+                    <label className="lbl">Moneda de la Venta</label>
+                    <select className="inp" value={editData.currency || 'ARS'} onChange={e => setEditData({...editData, currency: e.target.value})}>
+                      <option value="ARS">ARS</option>
+                      <option value="USD">USD</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="lbl">Pagos (podés corregir lo realmente cobrado)</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {(editData.payments || []).map((p: any, i: number) => {
+                        const needsRate = p.currency !== editData.currency;
+                        return (
+                          <div key={i} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{p.label || p.id}</div>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <div style={{ flex: 1 }}>
+                                <label className="lbl" style={{ fontSize: 10 }}>Monto cobrado</label>
+                                <input
+                                  className="inp"
+                                  type="number"
+                                  value={p.original_amount ?? ''}
+                                  onChange={e => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setEditData((prev: any) => ({
+                                      ...prev,
+                                      payments: prev.payments.map((x: any, xi: number) => xi === i ? { ...x, original_amount: val } : x)
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div style={{ width: 100 }}>
+                                <label className="lbl" style={{ fontSize: 10 }}>Moneda</label>
+                                <select
+                                  className="inp"
+                                  value={p.currency || 'ARS'}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    setEditData((prev: any) => ({
+                                      ...prev,
+                                      payments: prev.payments.map((x: any, xi: number) => xi === i ? { ...x, currency: val } : x)
+                                    }));
+                                  }}
+                                >
+                                  <option value="ARS">ARS</option>
+                                  <option value="USD">USD</option>
+                                </select>
+                              </div>
+                            </div>
+                            {needsRate && (
+                              <div>
+                                <label className="lbl" style={{ fontSize: 10 }}>Cotización usada</label>
+                                <input
+                                  className="inp"
+                                  type="number"
+                                  value={p.exchange_rate ?? ''}
+                                  onChange={e => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setEditData((prev: any) => ({
+                                      ...prev,
+                                      payments: prev.payments.map((x: any, xi: number) => xi === i ? { ...x, exchange_rate: val } : x)
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                   <p style={{ fontSize: 12, color: 'var(--text-3)', margin: 0 }}>
-                    Corregí esto si el vendedor cobró un monto distinto al cargado — impacta directamente en la rentabilidad de esta venta.
+                    Corregí el monto/moneda de cada pago si el vendedor cobró distinto a lo cargado — impacta directamente en la rentabilidad de esta venta.
                   </p>
 
                   <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
@@ -359,18 +426,34 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                       try {
                         setEditLoading(true);
                         const sellerName = realSellers.find(s => s.id === editData.seller_id)?.name || selectedSale.seller_name;
+
+                        const saleCurrency = editData.currency;
+                        const finalPayments = (editData.payments || []).map((p: any) => {
+                          const origAmt = p.original_amount || 0;
+                          let amount = origAmt;
+                          let exchange_rate = null;
+                          if (p.currency !== saleCurrency) {
+                            const rate = parseFloat(p.exchange_rate) || 1;
+                            amount = p.currency === 'USD' ? origAmt * rate : origAmt / rate;
+                            exchange_rate = rate;
+                          }
+                          return { ...p, original_amount: origAmt, amount, exchange_rate };
+                        });
+                        const newPrice = finalPayments.reduce((a: number, p: any) => a + p.amount, 0);
+
                         const { error } = await supabase.from('sales').update({
                           seller_id: editData.seller_id,
                           seller_name: sellerName,
                           customer: editData.customer,
                           notes: editData.notes,
-                          price: editData.price,
-                          currency: editData.currency
+                          price: newPrice,
+                          currency: saleCurrency,
+                          payments: finalPayments
                         }).eq('id', selectedSale.id);
                         if (error) throw error;
 
                         toast.success('Venta actualizada');
-                        setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes, price: editData.price, currency: editData.currency });
+                        setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes, price: newPrice, currency: saleCurrency, payments: finalPayments });
                         setIsEditing(false);
                         router.refresh();
                       } catch(e: any) { toast.error(e.message); } finally { setEditLoading(false); }

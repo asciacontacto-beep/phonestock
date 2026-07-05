@@ -26,7 +26,7 @@ export function Receipt({ sale, shop }: any) {
               <strong>{a.qty}x {a.name}</strong>
               {a.is_gift
                 ? <span style={{ fontSize: 10 }}> (regalo)</span>
-                : <span style={{ fontSize: 10, opacity: 0.8 }}> — {sale.currency === 'USD' ? 'U$' : '$'} {((a.price || 0) * (a.qty || 1)).toLocaleString()}</span>}
+                : <span style={{ fontSize: 10, opacity: 0.8 }}> — {sale.currency === 'USD' ? 'U$' : '$'} {((a.price || 0) * (a.qty || 1)).toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>}
             </div>
           ))}
         </div>
@@ -50,19 +50,19 @@ export function Receipt({ sale, shop }: any) {
         <div key={i} className="receipt-row" style={{ alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span>{p.label || p.id}:</span>
-            {p.exchange_rate && <span style={{ fontSize: 10, color: '#666' }}>({p.currency === 'USD' ? 'U$' : 'ARS'} {p.original_amount.toLocaleString()} a cot. {p.exchange_rate})</span>}
+            {p.exchange_rate && <span style={{ fontSize: 10, color: '#666' }}>({p.currency === 'USD' ? 'U$' : 'ARS'} {p.original_amount.toLocaleString('es-AR', { maximumFractionDigits: 2 })} a cot. {p.exchange_rate})</span>}
           </div>
-          <span>{sale.currency === 'USD' ? 'U$' : 'ARS'} {p.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+          <span>{sale.currency === 'USD' ? 'U$' : 'ARS'} {p.amount.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
         </div>
       ))}
       <div style={{ marginTop: 20, padding: 12, background: '#f9f9f9', borderRadius: 4 }}>
         <div className="receipt-row" style={{ fontWeight: 'bold', fontSize: 14 }}>
           <span>TOTAL:</span>
-          <span>{sale.currency === 'USD' ? 'U$' : 'ARS'} {sale.price?.toLocaleString()}</span>
+          <span>{sale.currency === 'USD' ? 'U$' : 'ARS'} {sale.price?.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
         </div>
         <div className="receipt-row" style={{ fontSize: 12, marginTop: 4 }}>
           <span>ABONADO:</span>
-          <span>{sale.currency === 'USD' ? 'U$' : 'ARS'} {paid.toLocaleString()}</span>
+          <span>{sale.currency === 'USD' ? 'U$' : 'ARS'} {paid.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
         </div>
       </div>
       

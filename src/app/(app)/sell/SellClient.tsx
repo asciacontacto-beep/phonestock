@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
 
-export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boolean, assignedDeposits?: any[] }) {
+export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null }) {
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
@@ -57,7 +57,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
       const u = session?.user
       if (u) {
         const isSuperAdmin = u.email === 'asciacontacto@gmail.com'
-        setUser({ id: u.id, email: u.email, name: isSuperAdmin ? 'Administrador' : u.email })
+        setUser({ id: u.id, email: u.email, name: isSuperAdmin ? 'Administrador' : (sellerName || u.email) })
       }
       
       let finalDeposits = depositsData || [];
@@ -182,7 +182,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
         storage: '-', color: '-',
         imei: `ACC-${Date.now()}`,
         cost_price: totalCost,
-        price,
+        price: Math.max(price, paid),
         currency: 'ARS',
         payments,
         customer: cust.name ? cust : { name: 'Consumidor Final' },
@@ -231,7 +231,7 @@ export function SellClient({ isOwner, assignedDeposits = [] }: { isOwner?: boole
           if (unit.currency === 'ARS' && sc === 'USD') return unit.cost_price / rate;
           return unit.cost_price;
         })(),
-        price,
+        price: Math.max(price, paid),
         currency: sc,
         payments,
         customer: cust,

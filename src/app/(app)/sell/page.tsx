@@ -15,7 +15,7 @@ export default async function SellPage() {
 
   return (
     <Suspense fallback={<div>Cargando...</div>}>
-      <SellClient isOwner={isOwner} assignedDeposits={profile?.deposit_ids || []} />
+      <SellClient isOwner={isOwner} assignedDeposits={profile?.deposit_ids || []} sellerName={profile?.name || null} />
     </Suspense>
   )
 }

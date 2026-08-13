@@ -5,7 +5,7 @@ import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakd
 import { Sparkline } from '@/components/Sparkline';
 import { voidSale, voidSaleSummary } from '@/utils/voidSale';
 import { logAudit } from '@/utils/audit';
-import { Download, Package, AlertTriangle, Trash2 } from 'lucide-react';
+import { Download, Package, AlertTriangle, Trash2, Box, Wallet, ShoppingCart, TrendingUp } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -446,7 +446,7 @@ export function DashboardClient({
             <div className="sl" style={{ marginBottom: 8 }}>Ganancia · {RANGE_LABELS[range].toLowerCase()}</div>
 
             <div className="d-hero-top">
-              <div className={`d-hero-value ${profitUSD >= 0 ? 'pos' : 'neg'}`}>
+              <div className={`d-hero-value ${Math.round(profitUSD) === 0 ? 'zero' : profitUSD > 0 ? 'pos' : 'neg'}`}>
                 U$ {Math.round(profitUSD).toLocaleString('es-AR')}
               </div>
               {profitDelta != null && (
@@ -463,23 +463,31 @@ export function DashboardClient({
             </div>
           </div>
 
-          {/* El espacio de la derecha estaba vacío; acá va la tendencia */}
-          {hasSeries && (
+          {/* El espacio de la derecha estaba vacío: va la tendencia, y si no
+              hay movimiento reciente, lo que sí hay para mirar. */}
+          {hasSeries ? (
             <div className="d-hero-chart">
               <Sparkline
                 data={profitSeries}
-                color={profitUSD >= 0 ? 'var(--green)' : 'var(--red)'}
+                color={profitUSD >= 0 ? '#4ade80' : '#f87171'}
               />
               <div className="d-chart-label">ganancia día a día · últimas 4 semanas</div>
+            </div>
+          ) : (
+            <div className="d-hero-quiet">
+              <div className="d-hero-quiet-num">{av.length} equipos</div>
+              <div className="d-hero-quiet-lbl">
+                esperando en el stock · U$ {Math.round(capitalUSD).toLocaleString('es-AR')} invertidos
+              </div>
             </div>
           )}
         </div>
 
         {(() => {
           const cats = [
-            { key: 'device' as const,    label: 'Equipos',    s: catBreakdown.device,    color: 'var(--blue)' },
-            { key: 'accessory' as const, label: 'Accesorios', s: catBreakdown.accessory, color: 'var(--text-3)' },
-            { key: 'service' as const,   label: 'Servicio',   s: catBreakdown.service,   color: 'var(--green)' },
+            { key: 'device' as const,    label: 'Equipos',    s: catBreakdown.device,    color: '#60a5fa' },
+            { key: 'accessory' as const, label: 'Accesorios', s: catBreakdown.accessory, color: '#c084fc' },
+            { key: 'service' as const,   label: 'Servicio',   s: catBreakdown.service,   color: '#4ade80' },
           ];
           if (cats.every(c => c.s.profit === 0 && c.s.revenue === 0)) return null;
           const positive = cats.filter(c => c.s.profit > 0);
@@ -505,7 +513,8 @@ export function DashboardClient({
                       {c.label}
                       {c.s.missingCost > 0 && <AlertTriangle size={11} color="var(--amber)" />}
                     </div>
-                    <div className="d-legend-value" style={{ color: c.s.profit >= 0 ? 'var(--text)' : 'var(--red)' }}>
+                    <div className={`d-legend-value ${Math.round(c.s.profit) === 0 ? 'muted' : ''}`}
+                      style={c.s.profit < 0 ? { color: '#f87171' } : undefined}>
                       U$ {Math.round(c.s.profit).toLocaleString('es-AR')}
                       {c.s.revenue > 0 && <span className="d-legend-pct">{c.s.margin.toFixed(0)}%</span>}
                     </div>
@@ -522,6 +531,7 @@ export function DashboardClient({
       {/* ── Estado del negocio ─────────────────────────────────── */}
       <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginBottom: 14 }}>
         <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
+          <Box size={15} className="sc-icon" />
           <div className="sl">En stock</div>
           <div className="sv">{av.length}</div>
           <div className="sc-sub">equipos sin vender</div>
@@ -529,6 +539,7 @@ export function DashboardClient({
 
         {userRole !== 'seller' && (
           <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
+            <Wallet size={15} className="sc-icon" />
             <div className="sl">Capital</div>
             <div className="sv">U$ {Math.round(capitalUSD).toLocaleString('es-AR')}</div>
             <div className="sc-sub">invertido en esos equipos</div>
@@ -536,6 +547,7 @@ export function DashboardClient({
         )}
 
         <div className="sc">
+          <ShoppingCart size={15} className="sc-icon" />
           <div className="sl">Ventas</div>
           <div className="sv">{filteredSales.length}</div>
           <div className="sc-sub">
@@ -545,6 +557,7 @@ export function DashboardClient({
 
         {userRole !== 'seller' && (
           <div className="sc">
+            <TrendingUp size={15} className="sc-icon" />
             <div className="sl">Facturación</div>
             <div className="sv">U$ {Math.round(revenueUSD).toLocaleString('es-AR')}</div>
             <div className="sc-sub">{RANGE_LABELS[range].toLowerCase()}</div>

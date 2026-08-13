@@ -478,6 +478,10 @@ select.inp {
     width: 100% !important;
     border: none !important;
   }
+  /* Al imprimir, mostrar el recibo a tamaño real (sin el escalado de preview) */
+  .receipt-scaler { transform: none !important; width: 100% !important; }
+  .receipt-scaler-outer { height: auto !important; display: block !important; }
+  .receipt-scaler-outer .receipt-view { box-shadow: none !important; }
 }
 
 /* ═══════════════════════════════════════════

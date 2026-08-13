@@ -3,6 +3,7 @@ import { useState, useMemo, useRef } from 'react';
 import { Search, Printer, X, Receipt as ReceiptIcon, Share2, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
+import { ReceiptPreview } from '@/components/ReceiptPreview';
 import {
   type ShopSettings, type ReceiptConfig, type ReceiptLine, type ReceiptExtraField,
   type ReceiptFormat, normalizeReceiptConfig,
@@ -312,9 +313,11 @@ export function RecibosClient({ sales, shop }: { sales: Sale[]; shop: ShopSettin
               {/* ── Columna: vista previa ── */}
               <div className="receipt-editor-preview">
                 <div className="receipt-preview-scroll">
-                  <div style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.14)', borderRadius: 8, overflow: 'hidden', background: '#fff' }} ref={receiptRef}>
-                    <ReceiptDocument shop={shop} config={cfg} data={receiptData} />
-                  </div>
+                  <ReceiptPreview naturalWidth={cfg.format === 'a4' ? 720 : 300}>
+                    <div ref={receiptRef}>
+                      <ReceiptDocument shop={shop} config={cfg} data={receiptData} />
+                    </div>
+                  </ReceiptPreview>
                 </div>
                 <div className="receipt-editor-actions no-print">
                   <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => window.print()}>

@@ -8,6 +8,7 @@ import { downloadBackup } from '@/utils/backup';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
+import { ReceiptPreview } from '@/components/ReceiptPreview';
 import {
   type ShopSettings, type ReceiptConfig,
   DEFAULT_RECEIPT_CONFIG, normalizeReceiptConfig,
@@ -341,9 +342,9 @@ export function SettingsClient({ profile }: { profile: { org_id?: string } | nul
         <div className="settings-preview">
           <div className="lbl" style={{ marginBottom: 10 }}>Vista previa en vivo</div>
           <div style={{ background: '#e9e9e7', borderRadius: 16, padding: 18, border: '1px solid var(--border)', maxHeight: '75vh', overflow: 'auto' }}>
-            <div style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.12)', borderRadius: 8, overflow: 'hidden' }}>
+            <ReceiptPreview naturalWidth={cfg.format === 'a4' ? 720 : 300}>
               <ReceiptDocument shop={form} config={cfg} data={previewData} />
-            </div>
+            </ReceiptPreview>
           </div>
           <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, textAlign: 'center' }}>
             Los cambios se reflejan al instante. Acordate de <strong>Guardar</strong>.

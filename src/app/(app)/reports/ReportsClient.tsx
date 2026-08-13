@@ -123,6 +123,25 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
 
   const netProfit = grossProfit - totalExpensesUSD;
 
+  // ── Comparación con el período anterior (mismo largo) ──
+  const DAY = 86_400_000;
+  const periodDays = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : null;
+  const prevRange = periodDays ? { from: Date.now() - 2 * periodDays * DAY, to: Date.now() - periodDays * DAY } : null;
+  const inPrev = (t?: string | null) => {
+    if (!prevRange || !t) return false;
+    const d = new Date(t).getTime();
+    return d >= prevRange.from && d < prevRange.to;
+  };
+  const prevNet = useMemo(() => {
+    if (!prevRange) return null;
+    const pSales = sales.filter(s => s.brand !== 'MOVIMIENTO' && inPrev(s.created_at));
+    const pRepairs = repairs.filter(r => inPrev(r.updated_at || r.created_at));
+    const pExp = expenses.filter(e => inPrev(e.created_at)).reduce((a, e) => a + (e.currency === 'USD' ? e.amount : e.amount / exchangeRate), 0);
+    const gross = totalsFromBreakdown(categoryBreakdown(pSales, pRepairs, exchangeRate)).profit;
+    return gross - pExp;
+  }, [sales, repairs, expenses, exchangeRate, period]);
+  const netDelta = prevNet != null && prevNet !== 0 ? ((netProfit - prevNet) / Math.abs(prevNet)) * 100 : null;
+
   // --- Profitability by Model ---
   const modelProfit: Record<string, { model: string; revenue: number; cost: number; count: number }> = {};
   filteredSales.forEach(s => {
@@ -153,6 +172,15 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
   const sellerRanking = Object.values(sellerProfit)
     .map(s => ({ ...s, profit: s.revenue - s.cost }))
     .sort((a, b) => b.profit - a.profit);
+
+  // ── Insights accionables ──
+  const bestModel = modelRanking.find(m => m.profit > 0) || null;
+  const bestSeller = sellerRanking.find(s => s.profit > 0) || null;
+  const bestCat = [
+    { label: 'Equipos', s: breakdown.device },
+    { label: 'Accesorios', s: breakdown.accessory },
+    { label: 'Servicio técnico', s: breakdown.service },
+  ].filter(c => c.s.margin > 0).sort((a, b) => b.s.margin - a.s.margin)[0] || null;
 
   // --- Per deposit balance ---
   const depBalance = deposits.map(dep => {
@@ -206,7 +234,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
   const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
   return (
-    <div className="page">
+    <div className="page reports dash">
       <div className="sh" style={{ marginBottom: 20 }}>
         <h1 className="st">Rentabilidad</h1>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -216,41 +244,75 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="sg" style={{ marginBottom: 24 }}>
-        <div className="sc">
-          <div className="sl">Facturación</div>
-          <div className="sv">U$ {Math.round(totalRevenue).toLocaleString('es-AR')}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-            Todo lo que entró: equipos + accesorios + servicio
+      {/* ── Hero: la ganancia neta, explicada ── */}
+      <div className="d-hero" style={{ marginBottom: 14 }}>
+        <div className="d-hero-grid">
+          <div>
+            <div className="sl" style={{ marginBottom: 8 }}>Ganancia neta · {PERIOD_LABEL[period].toLowerCase()}</div>
+            <div className="d-hero-top">
+              <div className={`d-hero-value ${Math.round(netProfit) === 0 ? 'zero' : netProfit > 0 ? 'pos' : 'neg'}`}>
+                U$ {Math.round(netProfit).toLocaleString('es-AR')}
+              </div>
+              {netDelta != null && (
+                <span className={`d-delta ${netDelta >= 0 ? 'pos' : 'neg'}`}>
+                  {netDelta >= 0 ? '↑' : '↓'} {Math.abs(Math.round(netDelta))}% vs período anterior
+                </span>
+              )}
+            </div>
+            <div className="d-hero-sub">
+              {totalRevenue > 0
+                ? <>De U$ {Math.round(totalRevenue).toLocaleString('es-AR')} facturados te quedó el <strong>{margin.toFixed(0)}%</strong> bruto, y el <strong>{totalRevenue > 0 ? Math.round(netProfit / totalRevenue * 100) : 0}%</strong> neto tras gastos.</>
+                : 'Todavía no hubo facturación en este período.'}
+            </div>
           </div>
-        </div>
-        <div className="sc">
-          <div className="sl">Ganancia Bruta</div>
-          <div className="sv" style={{ color: grossProfit >= 0 ? 'var(--green)' : 'var(--red)' }}>
-            U$ {Math.round(grossProfit).toLocaleString('es-AR')}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-            Facturación − lo que te costó · margen {margin.toFixed(0)}%
-          </div>
-        </div>
-        <div className="sc">
-          <div className="sl">Gastos Operativos</div>
-          <div className="sv" style={{ color: 'var(--red)' }}>U$ {Math.round(totalExpensesUSD).toLocaleString('es-AR')}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-            Alquiler, sueldos, servicios ({filteredExpenses.length} {filteredExpenses.length === 1 ? 'registro' : 'registros'})
-          </div>
-        </div>
-        <div className="sc" style={{ border: '1px solid var(--green)', background: 'rgba(16,185,129,0.06)' }}>
-          <div className="sl">Ganancia Neta</div>
-          <div className="sv" style={{ color: netProfit >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 28 }}>
-            U$ {Math.round(netProfit).toLocaleString('es-AR')}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-            Lo que te queda: ganancia bruta − gastos
+
+          {/* La cuenta que da la neta, para que el número no sea un misterio */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9, padding: '4px 0' }}>
+            {[
+              { l: 'Facturación', v: totalRevenue, c: 'rgba(255,255,255,0.9)' },
+              { l: '− Costo de lo vendido', v: -totalCost, c: 'rgba(255,255,255,0.55)' },
+              { l: '− Gastos operativos', v: -totalExpensesUSD, c: '#f87171' },
+            ].map(r => (
+              <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12.5, color: 'rgba(255,255,255,0.55)' }}>
+                <span>{r.l}</span>
+                <span style={{ fontFamily: 'JetBrains Mono', color: r.c }}>U$ {Math.round(r.v).toLocaleString('es-AR')}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', margin: '3px 0' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 13, fontWeight: 700, color: '#fff' }}>
+              <span>Ganancia neta</span>
+              <span style={{ fontFamily: 'JetBrains Mono', color: netProfit >= 0 ? '#4ade80' : '#f87171' }}>U$ {Math.round(netProfit).toLocaleString('es-AR')}</span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Insights accionables */}
+      {(bestModel || bestSeller || bestCat) && (
+        <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', marginBottom: 14 }}>
+          {bestCat && (
+            <div className="sc">
+              <div className="sl">Rubro más rentable</div>
+              <div className="sv" style={{ fontSize: 18 }}>{bestCat.label}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>{bestCat.s.margin.toFixed(0)}% de margen · te dejó U$ {Math.round(bestCat.s.profit).toLocaleString('es-AR')}</div>
+            </div>
+          )}
+          {bestModel && (
+            <div className="sc">
+              <div className="sl">Modelo que más te deja</div>
+              <div className="sv" style={{ fontSize: 18 }}>{bestModel.model}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>{bestModel.count} {bestModel.count === 1 ? 'vendido' : 'vendidos'} · U$ {Math.round(bestModel.profit).toLocaleString('es-AR')} de ganancia</div>
+            </div>
+          )}
+          {bestSeller && (
+            <div className="sc">
+              <div className="sl">Mejor vendedor</div>
+              <div className="sv" style={{ fontSize: 18 }}>{bestSeller.name}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>{bestSeller.count} ventas · U$ {Math.round(bestSeller.profit).toLocaleString('es-AR')} de utilidad</div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Category breakdown cards */}
       <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 24 }}>

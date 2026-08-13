@@ -48,7 +48,22 @@ sin desplegar nada.
 
 ---
 
-## 3. Verificar aislamiento entre tiendas (RLS) — solo lectura
+## 3. Métricas de visitas del superadmin (para ver el tráfico del link)
+
+**Archivo:** `supabase/migrations/20260813_site_visits.sql`
+
+**Qué hace:** crea la tabla `site_visits` (registra cada visita al landing, con
+INSERT anónimo) y la función `get_visit_stats()` (restringida a tu email de
+superadmin). Con esto, el Panel Superadmin muestra **cuánta gente entró al
+link** (total, hoy, 7 y 30 días) y la **conversión visita → registro**.
+
+**Aplicala:** Supabase → SQL Editor → pegá el archivo → Run. Desde ese momento
+se empiezan a contar las visitas (las anteriores no se pueden recuperar). Los
+registros y usuarios ya se muestran sin necesidad de esta migración.
+
+---
+
+## 4. Verificar aislamiento entre tiendas (RLS) — solo lectura
 
 Corré esto en el SQL Editor para confirmar que **cada tabla tiene la política de
 aislamiento por organización** y no quedó ninguna política vieja permisiva

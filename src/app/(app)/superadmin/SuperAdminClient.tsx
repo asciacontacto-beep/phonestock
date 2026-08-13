@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { CheckCircle, Trash2, Building2, Users, Clock, RefreshCw, ShieldAlert, CreditCard, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Trash2, Building2, Users, Clock, RefreshCw, ShieldAlert, CreditCard, AlertTriangle, MousePointerClick } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -8,6 +8,7 @@ import { useConfirm } from '@/hooks/useConfirm';
 export function SuperAdminClient() {
   const { confirm, ConfirmDialog } = useConfirm();
   const [orgs, setOrgs] = useState<any[]>([]);
+  const [visits, setVisits] = useState<{ total: number; today: number; last7: number; prev7: number; last30: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const supabase = createClient();
@@ -17,6 +18,11 @@ export function SuperAdminClient() {
     const { data, error } = await supabase.rpc('get_all_organizations');
     if (!error && data) setOrgs(data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     else if (error) toast.error('Error cargando negocios');
+    // Métricas de visitas (si la migración site_visits está aplicada).
+    try {
+      const { data: vs } = await supabase.rpc('get_visit_stats');
+      if (vs && vs[0]) setVisits({ total: Number(vs[0].total) || 0, today: Number(vs[0].today) || 0, last7: Number(vs[0].last7) || 0, prev7: Number(vs[0].prev7) || 0, last30: Number(vs[0].last30) || 0 });
+    } catch { /* migración no aplicada aún */ }
     setLoading(false);
   };
 
@@ -59,6 +65,22 @@ export function SuperAdminClient() {
   });
   const expired = trial.filter(o => o.trial_expires_at && new Date(o.trial_expires_at).getTime() < Date.now());
 
+  // ── Métricas de registros (altas) derivadas de created_at ──
+  const nowMs = Date.now();
+  const DAY = 86_400_000;
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+  const signupAge = (o: any) => nowMs - new Date(o.created_at).getTime();
+  const signups = {
+    today: orgs.filter(o => new Date(o.created_at) >= startOfToday).length,
+    last7: orgs.filter(o => signupAge(o) <= 7 * DAY).length,
+    prev7: orgs.filter(o => signupAge(o) > 7 * DAY && signupAge(o) <= 14 * DAY).length,
+    last30: orgs.filter(o => signupAge(o) <= 30 * DAY).length,
+  };
+  const signupDelta = signups.prev7 > 0 ? Math.round((signups.last7 - signups.prev7) / signups.prev7 * 100) : null;
+  const totalUsers = orgs.reduce((a, o) => a + (o.user_count || 0), 0);
+  const convVisitReg = visits && visits.total > 0 ? (orgs.length / visits.total) * 100 : null;
+  const convRegActive = orgs.length > 0 ? (active.length / orgs.length) * 100 : null;
+
   return (
     <div className="page">
       <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -74,25 +96,64 @@ export function SuperAdminClient() {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="sg" style={{ marginBottom: 28 }}>
+      {/* ── Métricas principales ── */}
+      <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', marginBottom: 14 }}>
         {[
-          { label: 'Total', value: orgs.length, icon: <Building2 size={18} />, color: 'var(--text-2)' },
-          { label: 'Pagos', value: active.length, icon: <CreditCard size={18} />, color: 'var(--green)' },
-          { label: 'En Trial', value: trial.length - expired.length, icon: <Clock size={18} />, color: 'var(--amber)' },
-          { label: 'Vencidos', value: expired.length, icon: <AlertTriangle size={18} />, color: 'var(--red)' },
-          { label: 'Usuarios', value: orgs.reduce((a, o) => a + (o.user_count || 0), 0), icon: <Users size={18} />, color: 'var(--blue)' },
+          {
+            label: 'Visitas al link', icon: <MousePointerClick size={18} />, color: '#7c3aed',
+            value: visits ? visits.total.toLocaleString('es-AR') : '—',
+            sub: visits ? `${visits.today} hoy · ${visits.last7} en 7 días` : 'Aplicá la migración site_visits para activarlo',
+          },
+          {
+            label: 'Registros', icon: <Building2 size={18} />, color: 'var(--blue)',
+            value: orgs.length.toLocaleString('es-AR'),
+            sub: `${signups.last7} en 7 días`, delta: signupDelta,
+          },
+          {
+            label: 'Usuarios totales', icon: <Users size={18} />, color: 'var(--green)',
+            value: totalUsers.toLocaleString('es-AR'),
+            sub: `en ${orgs.length} ${orgs.length === 1 ? 'negocio' : 'negocios'}`,
+          },
+          {
+            label: 'Negocios pagos', icon: <CreditCard size={18} />, color: 'var(--green)',
+            value: active.length.toLocaleString('es-AR'),
+            sub: convRegActive != null ? `${convRegActive.toFixed(0)}% de los registrados` : '—',
+          },
         ].map(s => (
           <div key={s.label} className="sc">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
                 <div className="sl">{s.label}</div>
-                <div className="sv">{loading ? '—' : s.value}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <div className="sv">{loading ? '—' : s.value}</div>
+                  {'delta' in s && s.delta != null && (
+                    <span style={{ fontSize: 12, fontWeight: 700, color: s.delta >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                      {s.delta >= 0 ? '↑' : '↓'} {Math.abs(s.delta)}%
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.4 }}>{s.sub}</div>
               </div>
-              <div style={{ padding: 10, background: 'var(--surface-2)', borderRadius: 10, color: s.color }}>
+              <div style={{ padding: 10, background: 'var(--surface-2)', borderRadius: 10, color: s.color, flexShrink: 0 }}>
                 {s.icon}
               </div>
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Métricas secundarias ── */}
+      <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginBottom: 28 }}>
+        {[
+          { label: 'En trial', value: trial.length - expired.length, color: 'var(--amber)' },
+          { label: 'Vencidos', value: expired.length, color: 'var(--red)' },
+          { label: 'Altas hoy', value: signups.today, color: 'var(--text)' },
+          { label: 'Altas 30 días', value: signups.last30, color: 'var(--text)' },
+          { label: 'Conversión visita → registro', value: convVisitReg != null ? `${convVisitReg.toFixed(1)}%` : '—', color: '#7c3aed' },
+        ].map(s => (
+          <div key={s.label} className="sc" style={{ padding: '14px 16px' }}>
+            <div className="sl" style={{ marginBottom: 6 }}>{s.label}</div>
+            <div className="sv" style={{ fontSize: 20, color: s.color }}>{loading ? '—' : s.value}</div>
           </div>
         ))}
       </div>

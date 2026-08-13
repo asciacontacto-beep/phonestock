@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createClient } from "@/utils/supabase/client";
 import { ArrowRight, CheckCircle2, ChevronDown, Check, X, MessageCircle } from "lucide-react";
 
 const WA_LINK = "https://wa.me/5492262559559?text=Hola%2C%20quiero%20contratar%20Stackr%20%F0%9F%93%B1%20%C2%BFC%C3%B3mo%20procedo%3F";
@@ -72,6 +73,19 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 /* ─── Main component ─────────────────────────────── */
 export default function LandingPage() {
+  // Registra una visita al link público (una vez por sesión). Si la tabla no
+  // está creada todavía, falla en silencio y no afecta al visitante.
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined' || sessionStorage.getItem('sv_tracked')) return;
+      sessionStorage.setItem('sv_tracked', '1');
+      createClient()
+        .from('site_visits')
+        .insert({ path: window.location.pathname, referrer: document.referrer || null })
+        .then(() => {}, () => {});
+    } catch { /* noop */ }
+  }, []);
+
   return (
     <div className={styles.root}>
 

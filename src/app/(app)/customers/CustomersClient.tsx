@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
+import { EmptyState } from '@/components/EmptyState';
 
 export function CustomersClient({ initialCustomers, initialSales }: { initialCustomers: any[], initialSales: any[] }) {
   const { confirm, ConfirmDialog } = useConfirm();
@@ -133,15 +134,13 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-3)' }}>
-            <User size={48} style={{ opacity: 0.2, margin: '0 auto 16px', display: 'block' }} />
-            <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--text)' }}>
-              {q ? 'Sin resultados' : 'Aún no hay clientes registrados'}
-            </div>
-            <div style={{ fontSize: 13, marginTop: 8, maxWidth: 300, margin: '8px auto 0' }}>
-              {q ? 'Probá con otro término de búsqueda' : 'Los clientes se guardan automáticamente al completar una venta.'}
-            </div>
-          </div>
+          <EmptyState
+            icon={<User size={26} />}
+            title={q ? 'Sin resultados' : 'Aún no hay clientes registrados'}
+            description={q
+              ? 'Ningún cliente coincide con la búsqueda. Probá con otro término.'
+              : 'Los clientes se guardan automáticamente al completar una venta.'}
+          />
         ) : (
           <table className="table">
             <thead>

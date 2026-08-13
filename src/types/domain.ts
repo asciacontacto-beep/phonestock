@@ -134,6 +134,17 @@ export interface SparePart {
   [key: string]: unknown
 }
 
+/** Una caja / depósito de dinero (`deposits`). */
+export interface Deposit {
+  id?: string
+  org_id?: string
+  name?: string
+  balance?: number | null
+  currency?: Currency | string
+  created_at?: string
+  [key: string]: unknown
+}
+
 /** Perfil de usuario (`profiles`). */
 export interface Profile {
   id?: string

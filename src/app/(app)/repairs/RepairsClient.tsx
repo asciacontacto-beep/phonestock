@@ -6,38 +6,15 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { upsertCustomer } from '@/utils/customers';
 import { useConfirm } from '@/hooks/useConfirm';
+import { RepairOrderModal } from './RepairOrderModal';
+import { normalizeReceiptConfig, type ShopSettings } from '@/types/receipt';
 
+/** Abre la orden de reparación premium (branded) en un modal con preview + PDF. */
 function printRepairTicket(repair: any) {
-  const printWin = window.open('', '_blank');
-  if (!printWin) return;
-  printWin.document.write(`
-    <html><head><title>Orden de Ingreso</title>
-    <style>body { font-family: monospace; padding: 20px; max-width: 300px; } h2, h3 { margin: 5px 0; }</style>
-    </head><body>
-    <h2>ORDEN DE INGRESO</h2>
-    <div>Fecha: ${new Date(repair.created_at).toLocaleDateString()}</div>
-    <div>Orden: #${repair.id.split('-')[0]}</div>
-    <hr/>
-    <h3>Cliente</h3>
-    <div>${repair.customer_name} - ${repair.customer_phone || ''}</div>
-    <hr/>
-    <h3>Equipo</h3>
-    <div>${repair.device_brand} ${repair.device_model} ${repair.device_color ? `(${repair.device_color})` : ''}</div>
-    <div>Falla: ${repair.issue_description}</div>
-    ${repair.visual_condition ? `<div>Estado visual al ingreso: ${repair.visual_condition}</div>` : ''}
-    <hr/>
-    <div>Seña dejada: $${repair.deposit_paid || 0}</div>
-    <hr/>
-    <div style="font-size: 11px; margin-top: 16px;">Declaro haber revisado el estado visual y la descripción del equipo detallada arriba, y presto conformidad con lo indicado en esta orden de ingreso.</div>
-    <div style="font-size: 10px; margin-top: 24px;">Firma cliente: ......................</div>
-    <div style="font-size: 10px; margin-top: 20px;">Pasados los 90 dias no nos hacemos cargo del equipo.</div>
-    <script>window.print(); window.close();</script>
-    </body></html>
-  `);
-  printWin.document.close();
+  window.dispatchEvent(new CustomEvent('open-repair-order', { detail: repair }));
 }
 
-export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }) {
+export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, user: any, shop?: ShopSettings }) {
   const [repairs, setRepairs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -48,6 +25,8 @@ export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }
 
   const supabase = createClient();
   const router = useRouter();
+
+  const orderConfig = normalizeReceiptConfig(shop.receipt_config);
 
   useEffect(() => {
     fetchRepairs();
@@ -234,6 +213,7 @@ export function RepairsClient({ isOwner, user }: { isOwner: boolean, user: any }
 
       {showNew && <NewRepairModal onClose={() => setShowNew(false)} onSave={fetchRepairs} user={user} />}
       {detailItem && <RepairDetailModal repair={detailItem} onClose={() => setDetailItem(null)} onSave={fetchRepairs} user={user} isOwner={isOwner} STATUSES={STATUSES} />}
+      <RepairOrderModal shop={shop} config={orderConfig} />
     </div>
   );
 }

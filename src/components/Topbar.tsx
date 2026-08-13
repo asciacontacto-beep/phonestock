@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, ShoppingBag, X } from 'lucide-react';
+import { Menu, Bell, ShoppingBag, X, TrendingUp, Calculator, Receipt } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -10,6 +10,33 @@ interface TopbarProps {
 }
 
 const NOTIFICATIONS = [
+  {
+    id: 'rentabilidad-clara',
+    icon: <Calculator size={16} />,
+    color: '#059669',
+    title: 'Ahora los números se explican solos',
+    body: 'Tocá cualquier tarjeta de ganancia y vas a ver de dónde sale cada peso: lo que vendiste, lo que te costó y el margen, con el detalle equipo por equipo. Además corregimos tres cosas que daban números raros: las ventas viejas en pesos ya no se recalculan con el dólar de hoy, el costo de una reparación se cuenta recién cuando la entregás, y el sistema te avisa cuándo un equipo no tiene el costo cargado (eso hacía figurar 100% de ganancia).',
+    href: '/reports',
+    cta: 'Ver rentabilidad',
+  },
+  {
+    id: 'recibo-pdf',
+    icon: <Receipt size={16} />,
+    color: '#7c3aed',
+    title: 'Recibos en PDF',
+    body: 'En la sección Recibo podés armar el comprobante para el cliente con el precio que quieras mostrar, imprimirlo o mandarlo por WhatsApp como PDF.',
+    href: '/recibos',
+    cta: 'Ir a Recibo',
+  },
+  {
+    id: 'repuestos-buscador',
+    icon: <TrendingUp size={16} />,
+    color: '#0891b2',
+    title: 'Buscador de repuestos y orden de ingreso',
+    body: 'En Servicio Técnico ya podés buscar repuestos por nombre para saber qué tenés en stock. Y al registrar un ingreso se imprime sola la orden para que el cliente firme la conformidad.',
+    href: '/repairs',
+    cta: 'Ir a Servicio Técnico',
+  },
   {
     id: 'mayoristas-launch',
     icon: <ShoppingBag size={16} />,
@@ -42,6 +69,7 @@ export function Topbar({ page, user, onMenu }: TopbarProps) {
     reports: 'Rentabilidad',
     expenses: 'Gastos',
     accessories: 'Accesorios',
+    recibos: 'Recibo',
   };
 
   const [open, setOpen] = useState(false)

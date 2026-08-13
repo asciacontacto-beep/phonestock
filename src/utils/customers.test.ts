@@ -5,7 +5,7 @@ import { upsertCustomer } from './customers'
  * Base de clientes falsa. `maybeSingle` devuelve la primera coincidencia,
  * imitando a Postgres: a diferencia de `single`, no falla si hay varias.
  */
-function fakeDB(rows: any[] = []) {
+function fakeDB(rows: any[] = []): any {
   const calls: any[] = []
   const db = {
     rows,
@@ -63,7 +63,7 @@ describe('upsertCustomer', () => {
     const id = await upsertCustomer(db, { name: 'Juan Pérez', dni: '30111222', phone: '11223344' })
     expect(id).toBe('c1')
     expect(db.rows).toHaveLength(1)
-    expect(db.calls.some(c => c.type === 'insert')).toBe(false)
+    expect(db.calls.some((c: any) => c.type === 'insert')).toBe(false)
   })
 
   it('NO crea un duplicado cuando ya hay dos clientes con el mismo nombre', async () => {
@@ -76,7 +76,7 @@ describe('upsertCustomer', () => {
     const id = await upsertCustomer(db, { name: 'Juan Perez', phone: '555' })
     expect(id).toBe('c1')
     expect(db.rows).toHaveLength(2)
-    expect(db.calls.some(c => c.type === 'insert')).toBe(false)
+    expect(db.calls.some((c: any) => c.type === 'insert')).toBe(false)
   })
 
   it('empareja el nombre sin importar mayusculas', async () => {

@@ -1,3 +1,5 @@
+import type { Sale, SaleAccessory, Payment, Repair } from '@/types/domain'
+
 export type SaleCategory = 'device' | 'accessory' | 'service' | 'movement'
 
 export function saleCategory(sale: { brand?: string | null }): SaleCategory {
@@ -16,9 +18,9 @@ export function saleCategory(sale: { brand?: string | null }): SaleCategory {
  * Sin esto, una venta vieja en pesos se revalúa con el dólar de hoy y la
  * ganancia histórica cambia sola cada vez que se actualiza la cotización.
  */
-export function saleExchangeRate(sale: any, fallbackRate: number): number {
+export function saleExchangeRate(sale: Pick<Sale, 'payments'> | null | undefined, fallbackRate: number): number {
   const fromPayments = (sale?.payments || [])
-    .map((p: any) => parseFloat(p?.exchange_rate))
+    .map((p: Payment) => parseFloat(String(p?.exchange_rate)))
     .find((r: number) => Number.isFinite(r) && r > 0)
   return fromPayments || fallbackRate || 1
 }
@@ -28,16 +30,16 @@ export function toUSD(amount: number, currency: string | null | undefined, rate:
   return currency === 'USD' ? amount : amount / (rate || 1)
 }
 
-export function saleAccessoriesRevenueUSD(sale: any, rate: number): number {
-  return (sale.accessories || []).reduce((acc: number, a: any) => {
+export function saleAccessoriesRevenueUSD(sale: Pick<Sale, 'accessories'>, rate: number): number {
+  return (sale.accessories || []).reduce((acc: number, a: SaleAccessory) => {
     if (a.is_gift) return acc
     return acc + toUSD((a.price || 0) * (a.qty || 1), a.currency || 'ARS', rate)
   }, 0)
 }
 
-export function saleAccessoriesCostUSD(sale: any, rate: number): number {
+export function saleAccessoriesCostUSD(sale: Pick<Sale, 'accessories'>, rate: number): number {
   return (sale.accessories || []).reduce(
-    (acc: number, a: any) => acc + toUSD((a.cost_price || 0) * (a.qty || 1), a.currency || 'ARS', rate),
+    (acc: number, a: SaleAccessory) => acc + toUSD((a.cost_price || 0) * (a.qty || 1), a.currency || 'ARS', rate),
     0,
   )
 }
@@ -72,11 +74,11 @@ function finalize(s: CategoryStats): CategoryStats {
 }
 
 /** Una reparación aporta costo recién cuando se entrega: ahí se cierra el trabajo. */
-export function isRepairClosed(repair: any): boolean {
+export function isRepairClosed(repair: Pick<Repair, 'status'> | null | undefined): boolean {
   return (repair?.status || '').toUpperCase() === 'ENTREGADO'
 }
 
-export function categoryBreakdown(sales: any[], repairs: any[], exchangeRate: number): CategoryBreakdown {
+export function categoryBreakdown(sales: Sale[], repairs: Repair[], exchangeRate: number): CategoryBreakdown {
   const device = emptyStats()
   const accessory = emptyStats()
   const service = emptyStats()
@@ -90,11 +92,11 @@ export function categoryBreakdown(sales: any[], repairs: any[], exchangeRate: nu
     // Accesorios: siempre del JSON, tanto los vendidos sueltos como los que
     // acompañan a un equipo. Nunca de price/cost_price, para no duplicar.
     const accRev = saleAccessoriesRevenueUSD(s, rate)
-    if (accRev > 0 || (s.accessories || []).some((a: any) => !a.is_gift)) {
+    if (accRev > 0 || (s.accessories || []).some((a: SaleAccessory) => !a.is_gift)) {
       accessory.revenue += accRev
       accessory.cost += saleAccessoriesCostUSD(s, rate)
-      accessory.units += (s.accessories || []).filter((a: any) => !a.is_gift).length
-      accessory.missingCost += (s.accessories || []).filter((a: any) => !a.is_gift && !a.cost_price).length
+      accessory.units += (s.accessories || []).filter((a: SaleAccessory) => !a.is_gift).length
+      accessory.missingCost += (s.accessories || []).filter((a: SaleAccessory) => !a.is_gift && !a.cost_price).length
     }
 
     if (cat === 'device') {

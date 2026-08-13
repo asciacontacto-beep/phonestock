@@ -8,6 +8,9 @@
  * dejaba la base en dos estados distintos.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Sale } from '@/types/domain'
+
 export type VoidSaleResult = {
   deviceRestored: boolean
   accessoriesRestored: number
@@ -16,7 +19,7 @@ export type VoidSaleResult = {
   warnings: string[]
 }
 
-export async function voidSale(supabase: any, sale: any): Promise<VoidSaleResult> {
+export async function voidSale(supabase: SupabaseClient, sale: Sale): Promise<VoidSaleResult> {
   const warnings: string[] = []
   let deviceRestored = false
   let accessoriesRestored = 0

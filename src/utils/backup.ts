@@ -6,6 +6,8 @@
  * de un único archivo de texto, que se abre en Excel sin instalar nada.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js'
+
 const TABLES = [
   { name: 'stock', label: 'Inventario' },
   { name: 'sales', label: 'Ventas' },
@@ -17,7 +19,7 @@ const TABLES = [
   { name: 'deposits', label: 'Depositos' },
 ] as const
 
-function toCSV(rows: any[]): string {
+function toCSV(rows: Record<string, unknown>[]): string {
   if (!rows.length) return '(sin datos)\n'
   const cols = Array.from(
     rows.reduce((set: Set<string>, r) => {
@@ -25,7 +27,7 @@ function toCSV(rows: any[]): string {
       return set
     }, new Set<string>()),
   )
-  const cell = (v: any) => {
+  const cell = (v: unknown) => {
     if (v == null) return ''
     const str = typeof v === 'object' ? JSON.stringify(v) : String(v)
     return `"${str.replace(/"/g, '""')}"`
@@ -35,7 +37,7 @@ function toCSV(rows: any[]): string {
 
 export type BackupResult = { fileName: string; tables: { label: string; rows: number }[] }
 
-export async function downloadBackup(supabase: any): Promise<BackupResult> {
+export async function downloadBackup(supabase: SupabaseClient): Promise<BackupResult> {
   const parts: string[] = []
   const summary: { label: string; rows: number }[] = []
 

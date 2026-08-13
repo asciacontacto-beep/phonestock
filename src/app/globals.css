@@ -734,3 +734,155 @@ select.inp {
 
 /* ── Blue badge ─── */
 .b-blue { background: var(--blue-dim); color: var(--blue); }
+
+
+/* ═══════════════════════════════════════════
+   DASHBOARD — sistema de bloques
+   Alertas, reposición y actividad son el mismo patrón: panel con
+   encabezado y filas. Estaban escritos a mano con estilos inline
+   distintos, así que padding, bordes y hover no coincidían entre
+   bloques que el ojo lee como hermanos.
+   ═══════════════════════════════════════════ */
+
+/* ── Hero: la ganancia del período ─────── */
+.d-hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px 26px;
+  margin-bottom: 14px;
+}
+
+.d-hero-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+.d-hero-value {
+  font-size: clamp(32px, 7vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  font-family: 'JetBrains Mono', monospace;
+}
+.d-hero-value.pos { color: var(--green); }
+.d-hero-value.neg { color: var(--red); }
+
+.d-hero-sub { font-size: 13px; color: var(--text-3); margin-top: 10px; line-height: 1.5; }
+.d-hero-sub strong { color: var(--text-2); font-weight: 700; }
+
+.d-delta {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12.5px; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px;
+  white-space: nowrap;
+}
+.d-delta.pos { color: var(--green); background: var(--green-dim); }
+.d-delta.neg { color: var(--red);   background: var(--red-dim); }
+
+/* ── De dónde viene la ganancia ─────────── */
+.d-split {
+  display: flex; height: 8px; border-radius: 4px;
+  overflow: hidden; background: var(--surface-3);
+  margin-top: 20px;
+}
+.d-split > span { transition: width 0.4s cubic-bezier(0.16,1,0.3,1); }
+
+.d-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.d-legend-item {
+  background: none; border: none; padding: 0;
+  text-align: left; font-family: inherit; cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: opacity 0.15s ease;
+}
+.d-legend-item:hover { opacity: 0.65; }
+.d-legend-item:active { transform: none; }
+
+.d-legend-label { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-3); }
+.d-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.d-legend-value {
+  font-size: 15px; font-weight: 700; margin-top: 3px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;
+}
+.d-legend-pct { font-size: 11px; font-weight: 400; color: var(--text-3); margin-left: 5px; font-family: 'Inter', sans-serif; }
+
+.d-hint { font-size: 11.5px; color: var(--text-3); margin-top: 12px; font-weight: 500; }
+
+/* ── Panel genérico (alertas / reposición / actividad) ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.panel-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.panel-title { font-weight: 700; font-size: 13px; letter-spacing: -0.01em; }
+.panel-count { font-size: 12px; color: var(--text-3); }
+.panel-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; line-height: 1.45; }
+
+.panel-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px 18px; min-height: 46px; font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-row:last-child { border-bottom: none; }
+
+/* Una fila que navega tiene que verse como que navega */
+.panel-row.is-link { cursor: pointer; transition: background 0.13s ease; }
+.panel-row.is-link:hover { background: var(--surface-2); }
+.panel-row.is-link::after {
+  content: '\203A';
+  color: var(--text-3); font-size: 17px; line-height: 1; margin-left: 2px;
+  opacity: 0; transform: translateX(-3px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.panel-row.is-link:hover::after { opacity: 1; transform: translateX(0); }
+
+.panel-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.panel-dot.amber { background: var(--amber); }
+.panel-dot.red   { background: var(--red); }
+.panel-dot.green { background: var(--green); }
+.panel-dot.mute  { background: var(--text-3); }
+
+.panel-main   { flex: 1; min-width: 0; }
+.panel-strong { font-weight: 600; font-size: 13.5px; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel-meta   { font-size: 11.5px; color: var(--text-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel-text   { color: var(--text-2); line-height: 1.5; flex: 1; }
+.panel-right  { text-align: right; flex-shrink: 0; }
+.panel-amount { font-weight: 700; font-size: 14px; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; }
+.panel-note   { font-size: 11px; margin-top: 2px; color: var(--text-3); }
+.panel-note.warn   { color: var(--amber); font-weight: 700; }
+.panel-note.danger { color: var(--red);   font-weight: 700; }
+.panel-time   { font-size: 11px; color: var(--text-3); flex-shrink: 0; }
+
+/* ── Estado vacío ───────────────────────── */
+.d-empty { padding: 34px 22px; text-align: center; }
+.d-empty-icon {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--surface-3);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px; color: var(--text-3);
+}
+.d-empty-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.d-empty-text  { font-size: 12.5px; color: var(--text-3); line-height: 1.5; max-width: 320px; margin: 0 auto; }
+
+/* ── Mobile ─────────────────────────────── */
+@media (max-width: 768px) {
+  .d-hero { padding: 20px 18px; }
+  .panel-head, .panel-row { padding-left: 16px; padding-right: 16px; }
+  /* El chevron es afordancia de hover; en touch no aporta y roba ancho */
+  .panel-row.is-link::after { display: none; }
+  .d-legend { gap: 10px; }
+}
+
+@media (max-width: 380px) {
+  .d-legend { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .d-legend-value { font-size: 13px; }
+  .d-legend-pct { display: none; }
+}

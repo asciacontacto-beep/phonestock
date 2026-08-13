@@ -4,7 +4,7 @@ import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate,
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
 import { voidSale, voidSaleSummary } from '@/utils/voidSale';
 import { logAudit } from '@/utils/audit';
-import { TrendingUp, Download, Package, AlertTriangle, Trash2 } from 'lucide-react';
+import { Download, Package, AlertTriangle, Trash2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -357,12 +357,40 @@ export function DashboardClient({
   };
 
   /* ═══ RENDER ════════════════════════════════════════ */
+
+  // Negocio recién creado: mostrar el próximo paso, no ocho tarjetas en cero.
+  if (isEmpty) {
+    return (
+      <div className="page">
+        <div className="sh" style={{ marginBottom: 20 }}>
+          <h1 className="st">Resumen</h1>
+        </div>
+        <div className="panel" style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div className="d-empty-icon" style={{ width: 56, height: 56 }}>
+            <Package size={24} />
+          </div>
+          <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 6 }}>
+            Empecemos por el inventario
+          </div>
+          <div className="d-empty-text" style={{ marginBottom: 22 }}>
+            Cargá tu primer equipo y desde acá vas a ver cuánto ganás, qué se
+            vende y qué te conviene reponer.
+          </div>
+          <button className="btn btn-dark" onClick={() => router.push('/scan')}>
+            <Package size={17} style={{ marginRight: 8 }} /> Cargar mi primer equipo
+          </button>
+        </div>
+        {ConfirmDialog}
+      </div>
+    );
+  }
+
   return (
     <div className="page">
 
       {/* Header */}
       <div className="sh" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <h1 className="st">Dashboard</h1>
+        <h1 className="st">Resumen</h1>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="filters-wrap" style={{ margin: 0 }}>
             {(Object.keys(RANGE_LABELS) as Range[]).map(r => (
@@ -381,117 +409,91 @@ export function DashboardClient({
         </div>
       </div>
 
-      {/* Empty state */}
-      {isEmpty && (
-        <div style={{ marginBottom: 24, padding: 32, background: 'var(--surface-2)', borderRadius: 16, textAlign: 'center', border: '1px solid var(--border)' }}>
-          <div style={{ background: 'var(--surface-3)', width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <TrendingUp size={32} color="var(--text-3)" />
-          </div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>¡Bienvenido a Stackr!</h2>
-          <p style={{ color: 'var(--text-3)', maxWidth: 400, margin: '0 auto 24px' }}>
-            Cargá equipos al inventario para ver tus analíticas en tiempo real.
-          </p>
-          <button className="btn btn-dark" onClick={() => router.push('/scan')}>
-            <Package size={18} style={{ marginRight: 8 }} /> Cargar mi primer equipo
-          </button>
-        </div>
-      )}
-
       {/* ── Lo primero: cuánto ganaste y de dónde salió ────────── */}
-      <div className="card" style={{ padding: 24, marginBottom: 14 }}>
-        <div className="sl" style={{ marginBottom: 6 }}>Ganancia · {RANGE_LABELS[range].toLowerCase()}</div>
+      <div className="d-hero">
+        <div className="sl" style={{ marginBottom: 8 }}>Ganancia · {RANGE_LABELS[range].toLowerCase()}</div>
 
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1, color: profitUSD >= 0 ? 'var(--green)' : 'var(--red)' }}>
+        <div className="d-hero-top">
+          <div className={`d-hero-value ${profitUSD >= 0 ? 'pos' : 'neg'}`}>
             U$ {Math.round(profitUSD).toLocaleString('es-AR')}
           </div>
           {profitDelta != null && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12.5, fontWeight: 700,
-              padding: '3px 9px', borderRadius: 20,
-              color: profitDelta >= 0 ? 'var(--green)' : 'var(--red)',
-              background: profitDelta >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
-            }}>
+            <span className={`d-delta ${profitDelta >= 0 ? 'pos' : 'neg'}`}>
               {profitDelta >= 0 ? '↑' : '↓'} {Math.abs(Math.round(profitDelta))}% vs {RANGE_PREV_LABEL[range]}
             </span>
           )}
         </div>
 
-        <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 8 }}>
+        <div className="d-hero-sub">
           {revenueUSD > 0
-            ? <>Facturaste U$ {Math.round(revenueUSD).toLocaleString('es-AR')} · te quedó el <strong style={{ color: 'var(--text-2)' }}>{marginPct}%</strong></>
-            : 'Sin ventas en este período.'}
+            ? <>Facturaste U$ {Math.round(revenueUSD).toLocaleString('es-AR')} · te quedó el <strong>{marginPct}%</strong></>
+            : 'Todavía no hubo ventas en este período.'}
         </div>
 
-        {/* De dónde viene la ganancia */}
         {(() => {
           const cats = [
             { key: 'device' as const,    label: 'Equipos',    s: catBreakdown.device,    color: 'var(--blue)' },
-            { key: 'accessory' as const, label: 'Accesorios', s: catBreakdown.accessory, color: 'var(--purple)' },
+            { key: 'accessory' as const, label: 'Accesorios', s: catBreakdown.accessory, color: 'var(--text-3)' },
             { key: 'service' as const,   label: 'Servicio',   s: catBreakdown.service,   color: 'var(--green)' },
           ];
+          if (cats.every(c => c.s.profit === 0 && c.s.revenue === 0)) return null;
           const positive = cats.filter(c => c.s.profit > 0);
           const totalPositive = positive.reduce((a, c) => a + c.s.profit, 0);
-          if (cats.every(c => c.s.profit === 0 && c.s.revenue === 0)) return null;
 
           return (
-            <div style={{ marginTop: 18 }}>
+            <>
               {totalPositive > 0 && (
-                <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', background: 'var(--surface-3)' }}>
+                <div className="d-split">
                   {positive.map(c => (
-                    <div key={c.key} title={`${c.label}: U$ ${Math.round(c.s.profit).toLocaleString('es-AR')}`}
+                    <span key={c.key}
+                      title={`${c.label}: U$ ${Math.round(c.s.profit).toLocaleString('es-AR')}`}
                       style={{ width: `${(c.s.profit / totalPositive) * 100}%`, background: c.color }} />
                   ))}
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 18, marginTop: 12, flexWrap: 'wrap' }}>
+
+              <div className="d-legend">
                 {cats.map(c => (
-                  <button key={c.key} onClick={() => setDetailCat(c.key)}
-                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-3)' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: 2, background: c.color, flexShrink: 0 }} />
+                  <button key={c.key} className="d-legend-item" onClick={() => setDetailCat(c.key)}>
+                    <div className="d-legend-label">
+                      <span className="d-legend-dot" style={{ background: c.color }} />
                       {c.label}
                       {c.s.missingCost > 0 && <AlertTriangle size={11} color="var(--amber)" />}
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2, color: c.s.profit >= 0 ? 'var(--text)' : 'var(--red)' }}>
+                    <div className="d-legend-value" style={{ color: c.s.profit >= 0 ? 'var(--text)' : 'var(--red)' }}>
                       U$ {Math.round(c.s.profit).toLocaleString('es-AR')}
-                      {c.s.revenue > 0 && (
-                        <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)', marginLeft: 5 }}>
-                          {c.s.margin.toFixed(0)}%
-                        </span>
-                      )}
+                      {c.s.revenue > 0 && <span className="d-legend-pct">{c.s.margin.toFixed(0)}%</span>}
                     </div>
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 10, fontWeight: 600 }}>
-                Tocá cualquiera para ver cómo se calcula →
-              </div>
-            </div>
+
+              <div className="d-hint">Tocá cualquiera para ver cómo se calcula →</div>
+            </>
           );
         })()}
       </div>
 
-      {/* ── Estado del negocio, en una línea ────────────────────── */}
+      {/* ── Estado del negocio ─────────────────────────────────── */}
       <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginBottom: 14 }}>
         <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
           <div className="sl">En stock</div>
           <div className="sv">{av.length}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>equipos sin vender</div>
+          <div className="sc-sub">equipos sin vender</div>
         </div>
 
         {userRole !== 'seller' && (
           <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
             <div className="sl">Capital</div>
             <div className="sv">U$ {Math.round(capitalUSD).toLocaleString('es-AR')}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>invertido en esos equipos</div>
+            <div className="sc-sub">invertido en esos equipos</div>
           </div>
         )}
 
         <div className="sc">
           <div className="sl">Ventas</div>
           <div className="sv">{filteredSales.length}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+          <div className="sc-sub">
             {topSeller ? `mejor: ${topSeller.name.split(' ')[0]}` : RANGE_LABELS[range].toLowerCase()}
           </div>
         </div>
@@ -500,28 +502,23 @@ export function DashboardClient({
           <div className="sc">
             <div className="sl">Facturación</div>
             <div className="sv">U$ {Math.round(revenueUSD).toLocaleString('es-AR')}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{RANGE_LABELS[range].toLowerCase()}</div>
+            <div className="sc-sub">{RANGE_LABELS[range].toLowerCase()}</div>
           </div>
         )}
       </div>
 
       {/* ── Todo lo que pide atención, junto y accionable ───────── */}
       {userRole !== 'seller' && alerts.length > 0 && (
-        <div className="card" style={{ padding: 0, marginBottom: 24, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="panel">
+          <div className="panel-head">
             <AlertTriangle size={15} color="var(--amber)" />
-            <span style={{ fontWeight: 700, fontSize: 13 }}>Necesitan tu atención</span>
-            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>({alerts.length})</span>
+            <span className="panel-title">Necesitan tu atención</span>
+            <span className="panel-count">({alerts.length})</span>
           </div>
-          {alerts.map((a, i) => (
-            <div key={a.key} onClick={a.onClick}
-              style={{
-                display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 18px',
-                borderBottom: i < alerts.length - 1 ? '1px solid var(--border)' : 'none',
-                cursor: a.onClick ? 'pointer' : 'default', fontSize: 13, lineHeight: 1.5,
-              }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, marginTop: 6, background: a.tone === 'red' ? 'var(--red)' : 'var(--amber)' }} />
-              <span style={{ color: 'var(--text-2)' }}>{a.text}</span>
+          {alerts.map(a => (
+            <div key={a.key} className={`panel-row ${a.onClick ? 'is-link' : ''}`} onClick={a.onClick}>
+              <span className={`panel-dot ${a.tone}`} />
+              <span className="panel-text">{a.text}</span>
             </div>
           ))}
         </div>
@@ -531,38 +528,30 @@ export function DashboardClient({
            Reports explica la rentabilidad por modelo; acá se cruza con el
            stock para que la conclusión sea una acción, no un gráfico. */}
       {userRole !== 'seller' && restock.length > 0 && (
-        <div className="card" style={{ padding: 0, marginBottom: 24, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontWeight: 700, fontSize: 13 }}>Lo que más te deja</div>
-            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+        <div className="panel">
+          <div className="panel-head" style={{ display: 'block' }}>
+            <div className="panel-title">Lo que más te deja</div>
+            <div className="panel-sub">
               Modelos que dejaron ganancia {RANGE_LABELS[range].toLowerCase()} y cuántos te quedan
             </div>
           </div>
 
-          {restock.map((m, i) => {
+          {restock.map(m => {
             const agotado = m.stock === 0;
-            const poco = m.stock > 0 && m.stock <= 1;
+            const poco = m.stock === 1;
             return (
-              <div key={m.model}
-                onClick={() => router.push('/stock')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', cursor: 'pointer',
-                  borderBottom: i < restock.length - 1 ? '1px solid var(--border)' : 'none',
-                }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {m.model}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
-                    {m.units} {m.units === 1 ? 'vendido' : 'vendidos'} · U$ {Math.round(m.profit / m.units).toLocaleString('es-AR')} de ganancia c/u
+              <div key={m.model} className="panel-row is-link" onClick={() => router.push('/stock')}>
+                <div className="panel-main">
+                  <div className="panel-strong">{m.model}</div>
+                  <div className="panel-meta">
+                    {m.units} {m.units === 1 ? 'vendido' : 'vendidos'} · U$ {Math.round(m.profit / m.units).toLocaleString('es-AR')} c/u
                   </div>
                 </div>
-
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--green)' }}>
+                <div className="panel-right">
+                  <div className="panel-amount" style={{ color: 'var(--green)' }}>
                     U$ {Math.round(m.profit).toLocaleString('es-AR')}
                   </div>
-                  <div style={{ fontSize: 11, marginTop: 2, color: agotado ? 'var(--red)' : poco ? 'var(--amber)' : 'var(--text-3)', fontWeight: agotado || poco ? 700 : 400 }}>
+                  <div className={`panel-note ${agotado ? 'danger' : poco ? 'warn' : ''}`}>
                     {agotado ? 'sin stock — reponer' : poco ? 'queda 1 — reponer' : `${m.stock} en stock`}
                   </div>
                 </div>
@@ -572,13 +561,11 @@ export function DashboardClient({
         </div>
       )}
 
-      {/* ── Últimas operaciones, en una línea cada una ──────────
-           Antes cada evento ocupaba tres renglones con avatar. Lo único
-           que se mira acá es qué pasó recién y poder deshacerlo. */}
+      {/* ── Últimas operaciones ─────────────────────────────────── */}
       {userRole !== 'seller' && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 13 }}>
-            Últimas operaciones
+        <div className="panel">
+          <div className="panel-head">
+            <span className="panel-title">Últimas operaciones</span>
           </div>
 
           {(() => {
@@ -602,13 +589,17 @@ export function DashboardClient({
 
             if (events.length === 0) {
               return (
-                <div style={{ padding: '28px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-                  Sin actividad registrada aún
+                <div className="d-empty">
+                  <div className="d-empty-icon"><Package size={20} /></div>
+                  <div className="d-empty-title">Todavía no pasó nada</div>
+                  <div className="d-empty-text">
+                    Cuando cargues equipos o hagas ventas, las vas a ver acá.
+                  </div>
                 </div>
               );
             }
 
-            return events.map((e, i) => {
+            return events.map(e => {
               const mins = Math.floor((Date.now() - new Date(e.time).getTime()) / 60_000);
               const when = mins < 1 ? 'ahora'
                 : mins < 60 ? `hace ${mins}m`
@@ -617,23 +608,15 @@ export function DashboardClient({
                 : `hace ${Math.floor(mins / 1440)}d`;
 
               return (
-                <div key={`${e.type}-${e.id}`} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 18px', fontSize: 13,
-                  borderBottom: i < events.length - 1 ? '1px solid var(--border)' : 'none',
-                }}>
-                  <span style={{
-                    width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                    background: e.type === 'sale' ? 'var(--green)' : 'var(--text-3)',
-                  }} />
-                  <span style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flexShrink: 1 }}>
-                    {e.label}
-                  </span>
-                  <span style={{ color: 'var(--text-3)', fontSize: 12, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {e.sub}
-                  </span>
-                  <span style={{ color: 'var(--text-3)', fontSize: 11, flexShrink: 0 }}>{when}</span>
+                <div key={`${e.type}-${e.id}`} className="panel-row">
+                  <span className={`panel-dot ${e.type === 'sale' ? 'green' : 'mute'}`} />
+                  <div className="panel-main">
+                    <div className="panel-strong">{e.label}</div>
+                    <div className="panel-meta">{e.sub}</div>
+                  </div>
+                  <span className="panel-time">{when}</span>
                   {e.type === 'sale' && (
-                    <button className="btn-icon" style={{ color: 'var(--red)', opacity: 0.6, flexShrink: 0 }}
+                    <button className="btn-icon" style={{ color: 'var(--red)', opacity: 0.55, flexShrink: 0 }}
                       title="Anular venta" onClick={() => deleteSale(e.id)}>
                       <Trash2 size={13} />
                     </button>

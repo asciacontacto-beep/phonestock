@@ -13,7 +13,12 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://stackrarg.vercel.app";
+
 export const metadata: Metadata = {
+  // Base para resolver las URLs relativas de OG/Twitter (og-image, logo).
+  // Sin esto Next las resuelve contra localhost y se rompen los previews.
+  metadataBase: new URL(siteUrl),
   title: "Stackr — Software de Gestión para Locales de Celulares y Servicio Técnico",
   description: "Gestioná stock, reparaciones, ventas y finanzas de tu local de tecnología en un solo lugar. Pago único de $400 USD, sin mensualidades. Probalo gratis 48hs.",
   keywords: [

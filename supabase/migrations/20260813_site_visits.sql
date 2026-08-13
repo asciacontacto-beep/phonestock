@@ -4,9 +4,12 @@
 -- el navegador del visitante (rol anon), por eso se permite INSERT anónimo.
 -- Nadie puede leer la tabla directamente; los totales se obtienen por la RPC
 -- get_visit_stats(), restringida al superadmin.
+--
+-- Usa id UUID (gen_random_uuid) para no depender de una secuencia y evitar
+-- tener que otorgar permisos sobre ella.
 
 CREATE TABLE IF NOT EXISTS public.site_visits (
-  id         bigserial PRIMARY KEY,
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at timestamptz NOT NULL DEFAULT now(),
   path       text,
   referrer   text
@@ -20,7 +23,6 @@ CREATE POLICY "anon puede registrar visita" ON public.site_visits
   FOR INSERT TO anon, authenticated WITH CHECK (true);
 
 GRANT INSERT ON public.site_visits TO anon, authenticated;
-GRANT USAGE, SELECT ON SEQUENCE public.site_visits_id_seq TO anon, authenticated;
 
 -- Métricas de visitas para el superadmin (bypassa RLS con SECURITY DEFINER).
 CREATE OR REPLACE FUNCTION public.get_visit_stats()

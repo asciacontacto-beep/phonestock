@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck } from 'lucide-react';
+import { Menu, Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -103,6 +103,7 @@ const TITLES: Record<string, string> = {
 export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
   const [openPanel, setOpenPanel] = useState<'bell' | 'rate' | 'avatar' | null>(null)
   const [read, setRead] = useState<string[]>([])
+  const [bannerDismissed, setBannerDismissed] = useState(false)
   const [blueRate, setBlueRate] = useState<{ compra: number; venta: number; updatedAt: string } | null>(null)
   const [rateLoading, setRateLoading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -157,6 +158,32 @@ export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
     : null
 
   return (
+    <>
+    {hasUnread && !bannerDismissed && (
+      <div
+        className="no-print"
+        onClick={() => { setOpenPanel('bell'); setBannerDismissed(true); }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+          padding: '10px 18px', background: 'rgba(16,185,129,0.10)',
+          borderBottom: '1px solid rgba(16,185,129,0.25)', fontSize: 13,
+        }}
+      >
+        <Sparkles size={15} color="var(--green)" style={{ flexShrink: 0 }} />
+        <span style={{ color: 'var(--text-2)', flex: 1 }}>
+          <strong>Hay {unread.length} {unread.length === 1 ? 'novedad' : 'novedades'} en el sistema.</strong>{' '}
+          Mirá las notas de actualización para ver qué cambió.
+        </span>
+        <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>Ver →</span>
+        <button
+          onClick={e => { e.stopPropagation(); setBannerDismissed(true); }}
+          title="Ocultar"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', padding: 2 }}
+        >
+          <X size={14} />
+        </button>
+      </div>
+    )}
     <div className="topbar no-print">
       <button className="btn-icon mobile-menu-btn" onClick={onMenu} style={{ display: 'none' }}>
         <Menu size={22} />
@@ -252,10 +279,11 @@ export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
               width: 320, background: 'var(--surface)',
               border: '1px solid var(--border-md)', borderRadius: 14,
               boxShadow: 'var(--shadow)', zIndex: 200, overflow: 'hidden',
+              display: 'flex', flexDirection: 'column', maxHeight: 'min(70vh, 520px)',
             }}>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 16px 10px', borderBottom: '1px solid var(--border)',
+                padding: '14px 16px 10px', borderBottom: '1px solid var(--border)', flexShrink: 0,
               }}>
                 <span style={{ fontWeight: 700, fontSize: 14 }}>Novedades</span>
                 {hasUnread && (
@@ -273,7 +301,7 @@ export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
                   Sin novedades
                 </div>
               ) : (
-                <div>
+                <div style={{ overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
                   {NOTIFICATIONS.map(n => {
                     const isRead = read.includes(n.id)
                     return (
@@ -394,5 +422,6 @@ export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
 
       </div>
     </div>
+    </>
   );
 }

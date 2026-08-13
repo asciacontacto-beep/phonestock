@@ -30,6 +30,32 @@ function sinceDate(range: Range): Date | null {
   return null;
 }
 
+/** Ventana anterior del mismo largo, para poder decir "vas mejor o peor". */
+function previousWindow(range: Range): { from: Date; to: Date } | null {
+  if (range === 'all') return null;
+  const to = sinceDate(range)!;
+  const from = new Date(to);
+  if (range === 'today') from.setDate(from.getDate() - 1);
+  else if (range === 'week') from.setDate(from.getDate() - 7);
+  else if (range === 'month') from.setMonth(from.getMonth() - 1);
+  return { from, to };
+}
+
+const RANGE_PREV_LABEL: Record<Range, string> = {
+  today: 'ayer',
+  week: 'la semana anterior',
+  month: 'el mes anterior',
+  all: '',
+};
+
+/** Dias que un equipo lleva en stock. */
+function daysInStock(createdAt?: string | null): number | null {
+  if (!createdAt) return null;
+  const ms = Date.now() - new Date(createdAt).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  return Math.floor(ms / 86_400_000);
+}
+
 function fmtARS(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `$${Math.round(n / 1_000)}k`;
@@ -156,6 +182,88 @@ export function DashboardClient({
   const revenueUSD = totals.revenue;
   const profitUSD = totals.profit;
   const marginPct = Math.round(totals.margin);
+
+  /* ── Cómo venías en el período anterior ─────────────────────
+     Un número solo no dice nada: U$3.340 puede ser buenísimo o pésimo.
+     Contra el período anterior sí se entiende. */
+  const previousProfit = useMemo(() => {
+    const w = previousWindow(range);
+    if (!w) return null;
+    const inWindow = (t?: string | null) => {
+      if (!t) return false;
+      const d = new Date(t);
+      return d >= w.from && d < w.to;
+    };
+    const prevSales = allSales.filter(s => inWindow(s.created_at));
+    const prevRepairs = repairs.filter(r => inWindow(r.updated_at || r.created_at));
+    if (prevSales.length === 0 && prevRepairs.length === 0) return null;
+    return totalsFromBreakdown(categoryBreakdown(prevSales, prevRepairs, exchangeRate)).profit;
+  }, [allSales, repairs, range, exchangeRate]);
+
+  const profitDelta = useMemo(() => {
+    if (previousProfit == null || previousProfit === 0) return null;
+    return ((totals.profit - previousProfit) / Math.abs(previousProfit)) * 100;
+  }, [totals.profit, previousProfit]);
+
+  /* ── Equipos parados: capital que no rota ───────────────────── */
+  const agedStock = useMemo(() => {
+    const items = av.filter(s => {
+      const d = daysInStock(s.created_at);
+      return d != null && d >= 60;
+    });
+    const capital = items.reduce((a, s) => {
+      const c = s.cost_price || 0;
+      return a + (s.currency === 'USD' ? c : c / (exchangeRate || 1));
+    }, 0);
+    return { count: items.length, capital };
+  }, [av, exchangeRate]);
+
+  /* ── Quién debe plata ───────────────────────────────────────── */
+  const debts = useMemo(() => {
+    const rows = allSales.filter(s => s.balance_due > 0);
+    const usd = rows.reduce((a, s) => {
+      const b = s.balance_due || 0;
+      return a + (s.currency === 'USD' ? b : b / (exchangeRate || 1));
+    }, 0);
+    return { count: rows.length, usd };
+  }, [allSales, exchangeRate]);
+
+  /* ── Todo lo que pide atención, en una sola lista priorizada ──
+     Antes cada aviso era un cartel suelto en distinto lugar de la página. */
+  const alerts = useMemo(() => {
+    const list: { key: string; text: string; tone: 'red' | 'amber'; onClick?: () => void }[] = [];
+
+    if (debts.count > 0) list.push({
+      key: 'debts',
+      tone: 'amber',
+      text: `${debts.count} ${debts.count === 1 ? 'cliente debe' : 'clientes deben'} U$ ${Math.round(debts.usd).toLocaleString('es-AR')}`,
+      onClick: () => router.push('/sales'),
+    });
+
+    if (agedStock.count > 0) list.push({
+      key: 'aged',
+      tone: agedStock.count >= 5 ? 'red' : 'amber',
+      text: `${agedStock.count} ${agedStock.count === 1 ? 'equipo lleva' : 'equipos llevan'} más de 60 días sin venderse` +
+            (agedStock.capital > 0 ? ` — U$ ${Math.round(agedStock.capital).toLocaleString('es-AR')} parados` : ''),
+      onClick: () => router.push('/stock'),
+    });
+
+    if (totals.missingCost > 0) list.push({
+      key: 'cost',
+      tone: 'amber',
+      text: `${totals.missingCost} ${totals.missingCost === 1 ? 'operación no tiene' : 'operaciones no tienen'} el costo cargado — la ganancia figura más alta que la real`,
+      onClick: () => setDetailCat('device'),
+    });
+
+    if (lowStock.length > 0) list.push({
+      key: 'low',
+      tone: 'amber',
+      text: `${lowStock.length} ${lowStock.length === 1 ? 'modelo' : 'modelos'} con pocas unidades: ${lowStock.slice(0, 3).map(m => m.model).join(', ')}${lowStock.length > 3 ? ` y ${lowStock.length - 3} más` : ''}`,
+      onClick: () => router.push('/stock'),
+    });
+
+    return list;
+  }, [debts, agedStock, totals.missingCost, lowStock, router]);
 
   /* ── Detalle línea por línea de cada tarjeta de ganancia ───── */
   const byNewest = (a: { time: string }, b: { time: string }) =>
@@ -293,134 +401,133 @@ export function DashboardClient({
         </div>
       )}
 
-      {/* KPI cards */}
-      <div className="sg">
-        {/* En Stock — siempre visible */}
-        <div className="sc">
-          <div className="sl">En Stock</div>
+      {/* ── Lo primero: cuánto ganaste y de dónde salió ────────── */}
+      <div className="card" style={{ padding: 24, marginBottom: 14 }}>
+        <div className="sl" style={{ marginBottom: 6 }}>Ganancia · {RANGE_LABELS[range].toLowerCase()}</div>
+
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1, color: profitUSD >= 0 ? 'var(--green)' : 'var(--red)' }}>
+            U$ {Math.round(profitUSD).toLocaleString('es-AR')}
+          </div>
+          {profitDelta != null && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12.5, fontWeight: 700,
+              padding: '3px 9px', borderRadius: 20,
+              color: profitDelta >= 0 ? 'var(--green)' : 'var(--red)',
+              background: profitDelta >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+            }}>
+              {profitDelta >= 0 ? '↑' : '↓'} {Math.abs(Math.round(profitDelta))}% vs {RANGE_PREV_LABEL[range]}
+            </span>
+          )}
+        </div>
+
+        <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 8 }}>
+          {revenueUSD > 0
+            ? <>Facturaste U$ {Math.round(revenueUSD).toLocaleString('es-AR')} · te quedó el <strong style={{ color: 'var(--text-2)' }}>{marginPct}%</strong></>
+            : 'Sin ventas en este período.'}
+        </div>
+
+        {/* De dónde viene la ganancia */}
+        {(() => {
+          const cats = [
+            { key: 'device' as const,    label: 'Equipos',    s: catBreakdown.device,    color: 'var(--blue)' },
+            { key: 'accessory' as const, label: 'Accesorios', s: catBreakdown.accessory, color: 'var(--purple)' },
+            { key: 'service' as const,   label: 'Servicio',   s: catBreakdown.service,   color: 'var(--green)' },
+          ];
+          const positive = cats.filter(c => c.s.profit > 0);
+          const totalPositive = positive.reduce((a, c) => a + c.s.profit, 0);
+          if (cats.every(c => c.s.profit === 0 && c.s.revenue === 0)) return null;
+
+          return (
+            <div style={{ marginTop: 18 }}>
+              {totalPositive > 0 && (
+                <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', background: 'var(--surface-3)' }}>
+                  {positive.map(c => (
+                    <div key={c.key} title={`${c.label}: U$ ${Math.round(c.s.profit).toLocaleString('es-AR')}`}
+                      style={{ width: `${(c.s.profit / totalPositive) * 100}%`, background: c.color }} />
+                  ))}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 18, marginTop: 12, flexWrap: 'wrap' }}>
+                {cats.map(c => (
+                  <button key={c.key} onClick={() => setDetailCat(c.key)}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-3)' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: 2, background: c.color, flexShrink: 0 }} />
+                      {c.label}
+                      {c.s.missingCost > 0 && <AlertTriangle size={11} color="var(--amber)" />}
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2, color: c.s.profit >= 0 ? 'var(--text)' : 'var(--red)' }}>
+                      U$ {Math.round(c.s.profit).toLocaleString('es-AR')}
+                      {c.s.revenue > 0 && (
+                        <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)', marginLeft: 5 }}>
+                          {c.s.margin.toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 10, fontWeight: 600 }}>
+                Tocá cualquiera para ver cómo se calcula →
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* ── Estado del negocio, en una línea ────────────────────── */}
+      <div className="sg" style={{ gridTemplateColumns: userRole === 'seller' ? 'repeat(2,1fr)' : 'repeat(4,1fr)', marginBottom: 14 }}>
+        <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
+          <div className="sl">En stock</div>
           <div className="sv">{av.length}</div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>equipos sin vender</div>
         </div>
 
-        {/* Capital — solo owners */}
         {userRole !== 'seller' && (
           <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
             <div className="sl">Capital</div>
             <div className="sv">U$ {Math.round(capitalUSD).toLocaleString('es-AR')}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-              plata invertida en los equipos que tenés
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4, fontWeight: 600 }}>Ver inventario →</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>invertido en esos equipos</div>
           </div>
         )}
 
-        {/* Ventas del período */}
         <div className="sc">
           <div className="sl">Ventas</div>
           <div className="sv">{filteredSales.length}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>operaciones en {RANGE_LABELS[range].toLowerCase()}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+            {topSeller ? `mejor: ${topSeller.name.split(' ')[0]}` : RANGE_LABELS[range].toLowerCase()}
+          </div>
         </div>
 
-        {/* Facturación — solo owners */}
         {userRole !== 'seller' && (
           <div className="sc">
             <div className="sl">Facturación</div>
             <div className="sv">U$ {Math.round(revenueUSD).toLocaleString('es-AR')}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-              todo lo que cobraste en {RANGE_LABELS[range].toLowerCase()}
-            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{RANGE_LABELS[range].toLowerCase()}</div>
           </div>
         )}
-
-        {/* Ganancia — solo owners */}
-        {userRole !== 'seller' && (
-          <div className="sc">
-            <div className="sl">Ganancia</div>
-            <div className="sv" style={{ color: profitUSD >= 0 ? 'var(--green)' : 'var(--red)' }}>
-              U$ {Math.round(profitUSD).toLocaleString('es-AR')}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-              facturación − lo que te costó · margen{' '}
-              <strong style={{ color: profitUSD >= 0 ? 'var(--green)' : 'var(--red)' }}>{marginPct}%</strong>
-            </div>
-          </div>
-        )}
-
-        {/* Vendedor top */}
-        <div className="sc" style={{ minWidth: 0 }}>
-          <div className="sl">Vendedor top</div>
-          <div
-            className="sv"
-            title={topSeller?.name || ''}
-            style={{ fontSize: 20, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%' }}
-          >
-            {topSeller?.name || '—'}
-          </div>
-          {topSeller && (
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{topSeller.count} ventas</div>
-          )}
-        </div>
       </div>
 
-      <div className="sg" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginTop: 16 }}>
-        {([
-          { label: 'Ganancia Equipos', s: catBreakdown.device, cat: 'device' as const },
-          { label: 'Ganancia Accesorios', s: catBreakdown.accessory, cat: 'accessory' as const },
-          { label: 'Ganancia Servicio', s: catBreakdown.service, cat: 'service' as const },
-        ]).map((c, i) => (
-          <div className="sc" key={i} style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setDetailCat(c.cat)}>
-            <div className="sl" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              {c.label}
-              {c.s.missingCost > 0 && <AlertTriangle size={12} color="var(--amber)" />}
-            </div>
-            <div className="sv" style={{ color: c.s.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
-              U$ {Math.round(c.s.profit).toLocaleString('es-AR')}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-              {c.s.revenue > 0
-                ? `Vendiste U$ ${Math.round(c.s.revenue).toLocaleString('es-AR')} · margen ${c.s.margin.toFixed(0)}%`
-                : 'Sin ventas en el período'}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4, fontWeight: 600 }}>
-              Ver cómo se calcula →
-            </div>
+      {/* ── Todo lo que pide atención, junto y accionable ───────── */}
+      {userRole !== 'seller' && alerts.length > 0 && (
+        <div className="card" style={{ padding: 0, marginBottom: 24, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertTriangle size={15} color="var(--amber)" />
+            <span style={{ fontWeight: 700, fontSize: 13 }}>Necesitan tu atención</span>
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>({alerts.length})</span>
           </div>
-        ))}
-      </div>
-
-      {totals.missingCost > 0 && (
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12, padding: '12px 16px', marginTop: 12, marginBottom: 12 }}>
-          <AlertTriangle size={16} color="var(--amber)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-2)' }}>
-            <strong>{totals.missingCost} {totals.missingCost === 1 ? 'operación no tiene' : 'operaciones no tienen'} el costo cargado.</strong>{' '}
-            Su costo cuenta como cero, así que la ganancia de arriba está más alta que la real.
-            Tocá cada tarjeta para ver cuáles son.
-          </div>
-        </div>
-      )}
-
-      {/* Low stock alert */}
-      {lowStock.length > 0 && (
-        <div style={{ marginBottom: 24, padding: '14px 18px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <AlertTriangle size={16} color="var(--amber)" />
-            <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--amber)' }}>
-              Stock Bajo — {lowStock.length} modelo{lowStock.length > 1 ? 's' : ''} con pocas unidades
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {lowStock.map(m => (
-              <span
-                key={`${m.brand}${m.model}`}
-                style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 6, padding: '4px 10px', fontSize: 12 }}
-              >
-                {m.brand} {m.model} —{' '}
-                <strong style={{ color: m.count === 0 ? 'var(--red)' : 'var(--amber)' }}>
-                  {m.count} ud{m.count !== 1 ? 's' : ''}.
-                </strong>
-              </span>
-            ))}
-          </div>
+          {alerts.map((a, i) => (
+            <div key={a.key} onClick={a.onClick}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 18px',
+                borderBottom: i < alerts.length - 1 ? '1px solid var(--border)' : 'none',
+                cursor: a.onClick ? 'pointer' : 'default', fontSize: 13, lineHeight: 1.5,
+              }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, marginTop: 6, background: a.tone === 'red' ? 'var(--red)' : 'var(--amber)' }} />
+              <span style={{ color: 'var(--text-2)' }}>{a.text}</span>
+            </div>
+          ))}
         </div>
       )}
 

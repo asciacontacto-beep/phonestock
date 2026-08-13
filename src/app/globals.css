@@ -1132,3 +1132,56 @@ select.inp {
   font-size: 13px; color: var(--text-3); line-height: 1.55;
   max-width: 340px; margin-top: 7px;
 }
+
+/* ── Configuración: toggles y layout con preview ── */
+.toggle-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-family: inherit; font-size: 12.5px; font-weight: 500;
+  color: var(--text-2); cursor: pointer; text-align: left;
+  transition: border-color 0.13s ease, background 0.13s ease;
+}
+.toggle-chip:active { transform: none; }
+.toggle-dot {
+  width: 14px; height: 14px; border-radius: 5px; flex-shrink: 0;
+  border: 1px solid var(--border-md); background: var(--surface-2);
+  position: relative; transition: background 0.13s ease, border-color 0.13s ease;
+}
+.toggle-chip[data-on="true"] { border-color: var(--accent); color: var(--text); background: var(--surface-2); }
+.toggle-chip[data-on="true"] .toggle-dot { background: var(--accent); border-color: var(--accent); }
+.toggle-chip[data-on="true"] .toggle-dot::after {
+  content: ''; position: absolute; left: 4px; top: 1px;
+  width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.settings-preview { position: sticky; top: 16px; }
+
+@media (max-width: 900px) {
+  .settings-grid { grid-template-columns: 1fr !important; }
+  .settings-preview { position: static; }
+}
+
+/* ── Editor de recibo (modal ancho, 2 columnas) ── */
+.receipt-editor { max-width: 920px; width: 100%; }
+.receipt-editor-body { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,400px); gap: 0; }
+.receipt-editor-form {
+  padding: 18px 20px; max-height: 74vh; overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.receipt-editor-preview {
+  display: flex; flex-direction: column;
+  background: #e9e9e7; max-height: 74vh;
+}
+.receipt-preview-scroll { flex: 1; overflow: auto; padding: 20px; display: flex; justify-content: center; align-items: flex-start; }
+.receipt-editor-actions { display: flex; gap: 8px; padding: 14px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+
+.receipt-line-edit { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
+.receipt-line-edit .inp { padding: 8px 10px; }
+
+@media (max-width: 780px) {
+  .receipt-editor-body { grid-template-columns: 1fr; }
+  .receipt-editor-form { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
+  .receipt-editor-preview { max-height: 60vh; }
+}

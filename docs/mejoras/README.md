@@ -30,7 +30,25 @@ DROP FUNCTION IF EXISTS public.void_sale(uuid);
 
 ---
 
-## 2. Verificar aislamiento entre tiendas (RLS) — solo lectura
+## 2. Configuración ampliada + personalización del recibo
+
+**Archivo:** `supabase/migrations/20260813_settings_receipt.sql`
+
+**Qué hace:** agrega columnas nuevas (todas nullable) a la tabla `settings`:
+`logo_url`, `email`, `cuit`, `website` y `receipt_config` (jsonb con todo el
+diseño del recibo). **No borra ni cambia nada** existente.
+
+**La app degrada con gracia:** sin la migración, Configuración guarda los
+campos básicos y te avisa; el recibo usa el diseño por defecto. Con la
+migración aplicada se activan el logo, los datos extra y toda la
+personalización del recibo (colores, formato ticket/A4, qué mostrar, etc.).
+
+**Cómo aplicarla:** Supabase → SQL Editor → pegá el archivo → Run. Listo,
+sin desplegar nada.
+
+---
+
+## 3. Verificar aislamiento entre tiendas (RLS) — solo lectura
 
 Corré esto en el SQL Editor para confirmar que **cada tabla tiene la política de
 aislamiento por organización** y no quedó ninguna política vieja permisiva

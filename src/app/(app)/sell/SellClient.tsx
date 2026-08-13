@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
+import { upsertCustomer } from '@/utils/customers';
 
 export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null }) {
   const [stock, setStock] = useState<any[]>([]);
@@ -32,6 +33,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
   const [showTI, setShowTI] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  // Cuando se cobra menos que el precio marcado hay que saber si fue un
+  // descuento (la venta vale menos) o si el cliente quedo debiendo.
+  const [underpay, setUnderpay] = useState<'descuento' | 'debe'>('descuento');
   
   const [custSearch, setCustSearch] = useState('');
   const [custSuggestions, setCustSuggestions] = useState<any[]>([]);
@@ -91,6 +95,29 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
   const price = parseFloat(sp) || 0;
   const paid = payments.reduce((a, p) => a + p.amount, 0);
   const rem = price - paid;
+  const isUnderpaid = rem > 0.01;
+
+  /* Precio que queda registrado como venta:
+     - Cobro de mas: vale lo cobrado, esa plata entro.
+     - Cobro de menos por descuento: vale lo cobrado, ese es el precio real.
+     - Cobro de menos y queda debiendo: vale el precio completo y queda saldo.
+     Registrar el precio de lista cuando en realidad se cobro menos infla la
+     ganancia con plata que nunca entro. */
+  const finalPrice = paid > price ? paid
+    : isUnderpaid && underpay === 'descuento' ? paid
+    : price;
+  const balanceDue = isUnderpaid && underpay === 'debe' ? rem : 0;
+
+  /* Costo del equipo expresado en la moneda de la venta, para poder avisar
+     antes de confirmar si se esta vendiendo por debajo de lo que costo. */
+  const unitCostInSaleCurrency = (() => {
+    if (!unit?.cost_price) return null;
+    const r = parseFloat(exchangeRate) || 1;
+    if (unit.currency === 'USD' && sc === 'ARS') return unit.cost_price * r;
+    if (unit.currency === 'ARS' && sc === 'USD') return unit.cost_price / r;
+    return unit.cost_price;
+  })();
+  const sellingBelowCost = unitCostInSaleCurrency != null && finalPrice > 0 && finalPrice < unitCostInSaleCurrency;
 
   const addP = () => {
     if (!sm || !ma) return;
@@ -162,9 +189,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
   const confirmAccessoryOnly = async () => {
     if (selectedAccessories.length === 0) { toast.error('Agregá al menos un accesorio'); return; }
     if (!price || !payments.length) { toast.error('Datos incompletos'); return; }
-    if (rem > 0.01) { toast.error('El pago debe ser completo'); return; }
     try {
       setLoading(true);
+      const stockWarnings: string[] = [];
       const totalCost = selectedAccessories.reduce((acc, a) => acc + (a.cost_price || 0) * a.qty, 0);
       const resumen = selectedAccessories.map(a => `${a.qty}x ${a.name}`).join(' · ');
       const saleData = {
@@ -176,7 +203,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
         storage: '-', color: '-',
         imei: `ACC-${Date.now()}`,
         cost_price: totalCost,
-        price: Math.max(price, paid),
+        price: finalPrice,
+        balance_due: balanceDue || null,
         currency: 'ARS',
         payments,
         customer: cust.name ? cust : { name: 'Consumidor Final' },
@@ -187,12 +215,20 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       if (sErr) throw sErr;
 
       for (const acc of selectedAccessories) {
-        const { error: accErr } = await supabase.rpc('decrement_accessory_stock', { acc_id: acc.id, qty: acc.qty });
+        const { data: ok, error: accErr } = await supabase.rpc('decrement_accessory_stock', { acc_id: acc.id, qty: acc.qty });
         if (accErr) throw accErr;
+        if (ok === false) stockWarnings.push(acc.name);
       }
 
       setLastSale(saleRow[0]);
       toast.success('Venta de accesorios confirmada');
+      if (stockWarnings.length > 0) {
+        toast.warning(
+          `No se pudo descontar el stock de: ${stockWarnings.join(', ')}. ` +
+          `Figuraban con menos unidades de las que se vendieron — revisá el stock en Accesorios.`,
+          { duration: 10000 }
+        );
+      }
       setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
@@ -209,6 +245,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
     
     try {
       setLoading(true);
+      const stockWarnings: string[] = [];
       const saleData = {
         seller_id: user.id,
         seller_name: user.name,
@@ -225,7 +262,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
           if (unit.currency === 'ARS' && sc === 'USD') return unit.cost_price / rate;
           return unit.cost_price;
         })(),
-        price: Math.max(price, paid),
+        price: finalPrice,
+        balance_due: balanceDue || null,
         currency: sc,
         payments,
         customer: cust,
@@ -241,8 +279,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
 
       if (selectedAccessories.length > 0) {
         for (const acc of selectedAccessories) {
-          const { error: accErr } = await supabase.rpc('decrement_accessory_stock', { acc_id: acc.id, qty: acc.qty });
+          const { data: ok, error: accErr } = await supabase.rpc('decrement_accessory_stock', { acc_id: acc.id, qty: acc.qty });
           if (accErr) throw accErr;
+          if (ok === false) stockWarnings.push(acc.name);
         }
       }
 
@@ -270,28 +309,18 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       setStock((p: any[]) => p.map((s: any) => s.id === unit.id ? { ...s, status: 'sold' } : s));
 
       if (cust.name) {
-        const custData: any = {
-          name: cust.name,
-          phone: cust.phone || null,
-          email: cust.email || null,
-          instagram: cust.instagram || null,
-          updated_at: new Date().toISOString()
-        };
-        if (cust.dni) custData.dni = cust.dni;
-        if (cust.dni) {
-          await supabase.from('customers').upsert([custData], { onConflict: 'dni' });
-        } else {
-          const { data: existing } = await supabase.from('customers').select('id').eq('name', cust.name).maybeSingle();
-          if (existing) {
-            await supabase.from('customers').update({ phone: custData.phone, email: custData.email, instagram: custData.instagram, updated_at: custData.updated_at }).eq('id', existing.id);
-          } else {
-            await supabase.from('customers').insert([custData]);
-          }
-        }
+        await upsertCustomer(supabase, cust);
       }
       
       setLastSale(saleRow[0]);
       toast.success('Venta confirmada');
+      if (stockWarnings.length > 0) {
+        toast.warning(
+          `No se pudo descontar el stock de: ${stockWarnings.join(', ')}. ` +
+          `Figuraban con menos unidades de las que se vendieron — revisá el stock en Accesorios.`,
+          { duration: 10000 }
+        );
+      }
       setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
@@ -590,6 +619,46 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
                 <span style={{ flex: 1 }}>Saldo</span>
                 <span style={{ color: rem <= 0.01 ? 'var(--green)' : 'var(--amber)' }}>{rem <= 0.01 ? 'Cubierto' : `${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString(undefined, { maximumFractionDigits: 2 })} pendiente`}</span>
               </div>
+
+              {isUnderpaid && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border-md)' }}>
+                  <div style={{ fontSize: 13, marginBottom: 8 }}>
+                    Estás cobrando <strong>{sc === 'USD' ? 'U$' : '$'} {rem.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong> menos que el precio marcado.
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className={`btn btn-sm ${underpay === 'descuento' ? 'btn-dark' : 'btn-outline'}`}
+                      style={{ flex: 1 }}
+                      onClick={() => setUnderpay('descuento')}
+                    >
+                      Le hice precio
+                    </button>
+                    <button
+                      className={`btn btn-sm ${underpay === 'debe' ? 'btn-dark' : 'btn-outline'}`}
+                      style={{ flex: 1 }}
+                      onClick={() => setUnderpay('debe')}
+                    >
+                      Queda debiendo
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5 }}>
+                    {underpay === 'descuento'
+                      ? `Se registra la venta por ${sc === 'USD' ? 'U$' : '$'} ${finalPrice.toLocaleString('es-AR', { maximumFractionDigits: 2 })}, que es lo que realmente cobraste.`
+                      : `Se registra por el precio completo y queda un saldo pendiente de ${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString('es-AR', { maximumFractionDigits: 2 })}.`}
+                  </div>
+                </div>
+              )}
+
+              {sellingBelowCost && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 12, padding: '10px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8 }}>
+                  <AlertTriangle size={15} color="var(--red)" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-2)' }}>
+                    Estás vendiendo por debajo del costo. El equipo te salió{' '}
+                    <strong>{sc === 'USD' ? 'U$' : '$'} {unitCostInSaleCurrency!.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>{' '}
+                    y lo estás dejando en {sc === 'USD' ? 'U$' : '$'} {finalPrice.toLocaleString('es-AR', { maximumFractionDigits: 2 })}.
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <div className="field" style={{ marginTop: 16 }}>

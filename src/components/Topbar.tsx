@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, ShoppingBag, X, TrendingUp, Calculator, Receipt } from 'lucide-react';
+import { Menu, Bell, ShoppingBag, X, TrendingUp, Calculator, Receipt, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -10,6 +10,15 @@ interface TopbarProps {
 }
 
 const NOTIFICATIONS = [
+  {
+    id: 'integridad-stock',
+    icon: <ShieldCheck size={16} />,
+    color: '#0891b2',
+    title: 'Stock más confiable y saldos pendientes',
+    body: 'Anular una venta ahora devuelve siempre el equipo Y los accesorios, y saca el equipo que entró en canje — antes, si la anulabas desde el Resumen, los accesorios quedaban descontados para siempre. Además: si cobrás menos que el precio marcado, el sistema te pregunta si le hiciste precio o si el cliente quedó debiendo, y te avisa si estás vendiendo por debajo del costo. En Inventario ves cuántos días lleva cada equipo sin venderse, y en Configuración podés descargar un respaldo de todo.',
+    href: '/stock',
+    cta: 'Ver inventario',
+  },
   {
     id: 'rentabilidad-clara',
     icon: <Calculator size={16} />,

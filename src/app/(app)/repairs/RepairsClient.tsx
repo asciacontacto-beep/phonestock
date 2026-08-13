@@ -4,6 +4,7 @@ import { Plus, Search, Edit2, Trash2, X, Wrench, CheckCircle, PackageSearch, Pac
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { upsertCustomer } from '@/utils/customers';
 
 function printRepairTicket(repair: any) {
   const printWin = window.open('', '_blank');
@@ -530,16 +531,7 @@ function NewRepairModal({ onClose, onSave, user }: any) {
     setSaving(true);
     try {
       // 1. Create or update customer
-      let customerId = null;
-      const { data: existingCust } = await supabase.from('customers').select('id').eq('name', cust.name).single();
-      if (existingCust) {
-        customerId = existingCust.id;
-        await supabase.from('customers').update({ phone: cust.phone, dni: cust.dni, instagram: cust.instagram, email: cust.email }).eq('id', customerId);
-      } else {
-        const { data: newCust, error: custErr } = await supabase.from('customers').insert([cust]).select().single();
-        if (custErr) throw custErr;
-        customerId = newCust.id;
-      }
+      const customerId = await upsertCustomer(supabase, cust);
 
       const deposit_paid = parseFloat(f.deposit_paid) || 0;
       const budget = parseFloat(f.budget) || null;

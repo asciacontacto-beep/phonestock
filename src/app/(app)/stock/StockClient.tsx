@@ -1,11 +1,26 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
-import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart } from 'lucide-react';
+import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
+
+/** Dias que el equipo lleva sin venderse. Plata parada es lo que mas duele. */
+function daysInStock(createdAt?: string | null): number | null {
+  if (!createdAt) return null;
+  const ms = Date.now() - new Date(createdAt).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  return Math.floor(ms / 86_400_000);
+}
+
+/** Verde hasta 30 dias, ambar hasta 60, rojo pasando los 90. */
+function agingColor(days: number): string | null {
+  if (days >= 90) return 'var(--red)';
+  if (days >= 60) return 'var(--amber)';
+  return null;
+}
 
 export function StockClient({ isOwner }: { isOwner?: boolean }) {
   const [stock, setStock] = useState<any[]>([]);
@@ -21,6 +36,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
   const [bulkDeposit, setBulkDeposit] = useState<string>('');
   const [bulkTransferring, setBulkTransferring] = useState(false);
   const [visibleCount, setVisibleCount] = useState(50);
+  const [exchangeRate, setExchangeRate] = useState(1000);
   const router = useRouter();
   const supabase = createClient();
 
@@ -28,12 +44,14 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
 
   useEffect(() => {
     (async () => {
-      const [{ data: stockData }, { data: depositsData }] = await Promise.all([
+      const [{ data: stockData }, { data: depositsData }, { data: settingsData }] = await Promise.all([
         supabase.from('stock').select(STOCK_FIELDS).order('created_at', { ascending: false }),
         supabase.from('deposits').select('id,name,color').order('name'),
+        supabase.from('settings').select('exchange_rate').maybeSingle(),
       ]);
       setStock(stockData || []);
       setDeposits(depositsData || []);
+      if (settingsData?.exchange_rate) setExchangeRate(settingsData.exchange_rate);
       if (depositsData && depositsData.length > 0) setSelectedDeposit(depositsData[0].id);
       setDataLoaded(true);
     })();
@@ -52,8 +70,24 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
     );
     if (filter.sortPrice === 'asc') r = [...r].sort((a, b) => (a.price || 0) - (b.price || 0));
     else if (filter.sortPrice === 'desc') r = [...r].sort((a, b) => (b.price || 0) - (a.price || 0));
+    else if (filter.sortPrice === 'oldest') r = [...r].sort((a, b) =>
+      new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
     return r;
   }, [stock, filter]);
+
+  /* Equipos que llevan mucho tiempo sin venderse: es capital inmovilizado. */
+  const aged = useMemo(() => {
+    const items = stock.filter(s => {
+      if (s.status !== 'available') return false;
+      const d = daysInStock(s.created_at);
+      return d != null && d >= 60;
+    });
+    const capital = items.reduce((a, s) => {
+      const c = s.cost_price || 0;
+      return a + (s.currency === 'USD' ? c : c / (exchangeRate || 1));
+    }, 0);
+    return { count: items.length, capital };
+  }, [stock, exchangeRate]);
 
   const handleDelete = async (id: any) => {
     if (!confirm('¿Eliminar este equipo del stock?')) return;
@@ -164,6 +198,21 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         </>}
       </div>
 
+      {isOwner && aged.count > 0 && filter.status === 'available' && (
+        <div
+          className="no-print"
+          style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12, padding: '12px 16px', marginBottom: 14, cursor: 'pointer' }}
+          onClick={() => { setFilter({ ...filter, sortPrice: 'oldest' }); setVisibleCount(50); }}
+        >
+          <Clock size={16} color="var(--amber)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-2)' }}>
+            <strong>{aged.count} {aged.count === 1 ? 'equipo lleva' : 'equipos llevan'} más de 60 días sin venderse</strong>
+            {aged.capital > 0 && <> — son U$ {Math.round(aged.capital).toLocaleString('es-AR')} de capital parado.</>}
+            {' '}Tocá para verlos primero.
+          </div>
+        </div>
+      )}
+
       <div className="filters-wrap no-print">
         {[
           { v: 'available', l: 'En Stock' },
@@ -175,6 +224,12 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
             onClick={() => { setFilter({ ...filter, status: opt.v }); setVisibleCount(50); }}
           >{opt.l}</button>
         ))}
+        <div style={{ width: 1, height: 20, background: 'var(--border-md)', margin: '0 4px' }} />
+        <button
+          className={`btn-pill ${filter.sortPrice === 'oldest' ? 'active' : ''}`}
+          onClick={() => { setFilter({ ...filter, sortPrice: filter.sortPrice === 'oldest' ? '' : 'oldest' }); setVisibleCount(50); }}
+          title="Ver primero los equipos que llevan más tiempo sin venderse"
+        >Más antiguos</button>
         <div style={{ width: 1, height: 20, background: 'var(--border-md)', margin: '0 4px' }} />
         {[
           { v: 'all',  l: 'Todos' },
@@ -287,6 +342,16 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                       </span>
                       <span>{s.storage} · {s.color}</span>
                       {s.imei && <span style={{ fontFamily: 'JetBrains Mono', fontSize: 11 }}>· IMEI: {s.imei}</span>}
+                      {s.status === 'available' && (() => {
+                        const d = daysInStock(s.created_at);
+                        if (d == null) return null;
+                        const c = agingColor(d);
+                        return (
+                          <span style={{ fontSize: 11, color: c || 'var(--text-3)', fontWeight: c ? 700 : 400 }}>
+                            · {d === 0 ? 'hoy' : `hace ${d}d`}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
 

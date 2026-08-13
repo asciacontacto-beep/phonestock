@@ -22,6 +22,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
   const [depFilter, setDepFilter] = useState('');
   const [sellerFilter, setSellerFilter] = useState('');
   const [currencyFilter, setCurrencyFilter] = useState('');
+  const [onlyDebt, setOnlyDebt] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [voidLoading, setVoidLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -66,10 +67,22 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
       if (currencyFilter) {
         if (s.currency !== currencyFilter) return false;
       }
-      
+
+      // Solo las que quedaron con saldo pendiente
+      if (onlyDebt && !(s.balance_due > 0)) return false;
+
       return true;
     });
-  }, [validSales, q, depFilter, sellerFilter, currencyFilter, realSellers]);
+  }, [validSales, q, depFilter, sellerFilter, currencyFilter, onlyDebt, realSellers]);
+
+  /* Ventas que el cliente quedó debiendo. Se puede cerrar una venta cobrando
+     menos, así que hace falta un lugar donde ver quién debe plata. */
+  const debts = useMemo(() => {
+    const rows = validSales.filter(s => s.balance_due > 0);
+    const totalUSD = rows.reduce((a, s) => a + (s.currency === 'USD' ? s.balance_due : 0), 0);
+    const totalARS = rows.reduce((a, s) => a + (s.currency === 'USD' ? 0 : s.balance_due), 0);
+    return { count: rows.length, totalUSD, totalARS };
+  }, [validSales]);
 
   const PAY_LABELS: Record<string, string> = {
     ars_cash: 'Efvo ARS',
@@ -163,6 +176,26 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
         </div>
       </div>
 
+      {debts.count > 0 && (
+        <div
+          className="no-print"
+          style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 20, cursor: 'pointer',
+            background: onlyDebt ? 'rgba(245,158,11,0.16)' : 'rgba(245,158,11,0.08)',
+            border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12, padding: '12px 16px',
+          }}
+          onClick={() => setOnlyDebt(v => !v)}
+        >
+          <UserIcon size={16} color="var(--amber)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-2)' }}>
+            <strong>{debts.count} {debts.count === 1 ? 'cliente quedó debiendo' : 'clientes quedaron debiendo'}</strong>
+            {debts.totalUSD > 0 && <> · U$ {Math.round(debts.totalUSD).toLocaleString('es-AR')}</>}
+            {debts.totalARS > 0 && <> · $ {Math.round(debts.totalARS).toLocaleString('es-AR')}</>}
+            {' — '}{onlyDebt ? 'mostrando solo esas ventas, tocá para ver todas.' : 'tocá para verlas.'}
+          </div>
+        </div>
+      )}
+
       <div className="card no-print" style={{ padding: 0, overflow: 'hidden' }}>
         {filteredSales.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>
@@ -234,6 +267,11 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                         <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)' }}>
                           {sale.currency === 'USD' ? 'U$' : 'ARS '} {sale.price.toLocaleString('es-AR')}
                         </div>
+                        {sale.balance_due > 0 && (
+                          <div style={{ fontSize: 10, color: 'var(--amber)', fontWeight: 700, marginTop: 2 }}>
+                            Debe {sale.currency === 'USD' ? 'U$' : '$'} {Math.round(sale.balance_due).toLocaleString('es-AR')}
+                          </div>
+                        )}
                         <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
                           {sale.payments?.map((p: any) => PAY_LABELS[p.id] || p.label || p.id).join(', ')}
                         </div>
@@ -411,6 +449,18 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           payments: finalPayments
                         }).eq('id', selectedSale.id);
                         if (error) throw error;
+
+                        const cambios = describeChanges(
+                          { precio: selectedSale.price, moneda: selectedSale.currency, vendedor: selectedSale.seller_name, cliente: selectedSale.customer?.name, garantia: selectedSale.notes },
+                          { precio: newPrice, moneda: saleCurrency, vendedor: sellerName, cliente: editData.customer?.name, garantia: editData.notes },
+                          { precio: 'Precio', moneda: 'Moneda', vendedor: 'Vendedor', cliente: 'Cliente', garantia: 'Garantía' },
+                        );
+                        if (cambios) {
+                          await logAudit(supabase, {
+                            user, action: 'venta_editada', entity: 'sale', entityId: String(selectedSale.id),
+                            summary: `Editó la venta de ${selectedSale.brand} ${selectedSale.model} — ${cambios}`,
+                          });
+                        }
 
                         toast.success('Venta actualizada');
                         setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes, price: newPrice, currency: saleCurrency, payments: finalPayments });

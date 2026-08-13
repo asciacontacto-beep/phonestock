@@ -1,6 +1,7 @@
 "use client"
 import { useState } from 'react';
-import { Save, Building2, MapPin, Camera, Phone, FileText, Loader2, DollarSign } from 'lucide-react';
+import { Save, Building2, MapPin, Camera, Phone, FileText, Loader2, DollarSign, Download } from 'lucide-react';
+import { downloadBackup } from '@/utils/backup';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
@@ -14,6 +15,20 @@ export function SettingsClient({ initialSettings, profile }: { initialSettings: 
     exchange_rate: 1200
   });
   const [loading, setLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    try {
+      const { fileName, tables } = await downloadBackup(supabase);
+      const total = tables.reduce((a, t) => a + t.rows, 0);
+      toast.success(`Respaldo descargado (${total.toLocaleString('es-AR')} registros): ${fileName}`);
+    } catch (e: any) {
+      toast.error('No se pudo generar el respaldo: ' + (e.message || ''));
+    } finally {
+      setBackupLoading(false);
+    }
+  };
   const supabase = createClient();
 
   const save = async () => {
@@ -128,6 +143,22 @@ export function SettingsClient({ initialSettings, profile }: { initialSettings: 
           
           <button className="btn btn-dark btn-lg" style={{ width: '100%' }} onClick={save} disabled={loading}>
             {loading ? <Loader2 className="spin" size={20} /> : <><Save size={18} style={{ marginRight: 8 }} /> Guardar Configuración</>}
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 24 }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Respaldo de tus datos</div>
+            <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5 }}>
+              Descargá todo el negocio en un archivo: inventario, ventas, accesorios,
+              reparaciones, repuestos, clientes, gastos y depósitos. Se abre con Excel.
+              Conviene hacerlo cada tanto.
+            </div>
+          </div>
+          <button className="btn btn-outline" onClick={handleBackup} disabled={backupLoading}>
+            {backupLoading ? <Loader2 className="spin" size={16} /> : <Download size={16} />} Descargar respaldo
           </button>
         </div>
       </div>

@@ -19,10 +19,10 @@ export function BottomNav({ page, user, onMenu, isSuperAdmin }: BottomNavProps) 
     : isOwner
     ? [
         { id: 'dashboard', l: 'Resumen', i: <LayoutGrid size={20} /> },
-        { id: 'stock', l: 'Stock', i: <Box size={20} /> },
-        { id: 'sales', l: 'Ventas', i: <ShoppingCart size={20} /> },
-        { id: 'cashiers', l: 'Cajas', i: <Wallet size={20} /> },
-        { id: 'menu', l: 'Menú', i: <Menu size={20} />, action: onMenu }
+        { id: 'stock',     l: 'Stock',   i: <Box size={20} /> },
+        { id: 'sell',      l: 'Ventas',  i: <ShoppingCart size={20} /> },
+        { id: 'cashiers',  l: 'Cajas',   i: <Wallet size={20} /> },
+        { id: 'menu',      l: 'Menú',    i: <Menu size={20} />, action: onMenu }
       ]
     : [
         { id: 'sell', l: 'Vender', i: <ShoppingCart size={20} /> },

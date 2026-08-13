@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { Truck, Plus, Trash2, Edit2, Loader2, Check, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] }) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [suppliers, setSuppliers] = useState(initialSuppliers);
   const [saving, setSaving] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -43,7 +45,7 @@ export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] 
   }
 
   async function deleteSupplier(id: string) {
-    if (!confirm('¿Eliminar este proveedor? Se conservará en los productos que ya lo tengan asignado pero no aparecerá más en la lista.')) return;
+    if (!await confirm('¿Eliminar este proveedor? Se conservará en los productos que ya lo tengan asignado pero no aparecerá más en la lista.')) return;
     const { error } = await supabase.from('suppliers').delete().eq('id', id);
     if (error) {
       toast.error('Error: ' + error.message);
@@ -95,6 +97,7 @@ export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] 
         )}
       </div>
 
+      {ConfirmDialog}
       {showAdd && (
         <div className="mo">
           <div className="mb" style={{ maxWidth: 420 }}>

@@ -8,6 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { voidSale, voidSaleSummary } from '@/utils/voidSale';
 import { logAudit, describeChanges } from '@/utils/audit';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface Props {
   sales: any[];
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function SalesClient({ sales, deposits, realSellers, user, shop }: Props) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [q, setQ] = useState('');
   const [depFilter, setDepFilter] = useState('');
   const [sellerFilter, setSellerFilter] = useState('');
@@ -95,7 +97,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
   const handleVoidSale = async () => {
     if (!selectedSale) return;
-    if (!confirm('¿Estás seguro de anular esta venta? Esta acción revertirá el stock de equipos, eliminará equipos recibidos en canje y borrará la venta del historial.')) return;
+    if (!await confirm('¿Estás seguro de anular esta venta? Esta acción revertirá el stock de equipos, eliminará equipos recibidos en canje y borrará la venta del historial.')) return;
     
     setVoidLoading(true);
     try {
@@ -241,12 +243,22 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                             {sale.accessories.map((acc: any, idx: number) => (
                               <div key={idx} style={{ fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-3)' }} />
-                                {acc.qty}x {acc.name} 
+                                {acc.qty}x {acc.name}
                                 {acc.is_gift && <span style={{ fontSize: 9, background: 'var(--green-dim)', color: 'var(--green)', padding: '1px 4px', borderRadius: 4 }}>REGALO</span>}
                               </div>
                             ))}
                           </div>
                         )}
+                        {(() => {
+                          const ti = sale.payments?.find((p: any) => p.id === 'tradein' && p.device);
+                          if (!ti) return null;
+                          return (
+                            <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <span style={{ fontSize: 9, background: 'rgba(147,51,234,0.12)', color: 'var(--purple)', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>CANJE</span>
+                              {ti.device.brand} {ti.device.model}{ti.device.storage ? ` ${ti.device.storage}` : ''}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td>
                         <div style={{ fontWeight: 500 }}>{sale.customer?.name || '-'}</div>
@@ -285,6 +297,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
         )}
       </div>
 
+      {ConfirmDialog}
       {/* Sale Detail Modal */}
       {selectedSale && (
         <div className="mo">

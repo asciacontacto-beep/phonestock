@@ -4,6 +4,7 @@ import { Plus, Trash2, X, Wallet, Filter, TrendingDown } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useConfirm } from '@/hooks/useConfirm';
 
 const CATEGORIES = [
   'Operativo', 'Sueldos', 'Alquiler', 'Viáticos', 'Servicio Técnico',
@@ -34,6 +35,7 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
   });
   const supabase = createClient();
   const router = useRouter();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const handleSubmit = async () => {
     if (!form.description.trim() || !form.amount || !form.deposit_id) {
@@ -84,7 +86,7 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este gasto y restaurar el saldo en caja?')) return;
+    if (!await confirm('¿Eliminar este gasto y restaurar el saldo en caja?')) return;
     try {
       const { error } = await supabase.from('expenses').delete().eq('id', id);
       if (error) throw error;
@@ -254,6 +256,7 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
         </div>
       )}
 
+      {ConfirmDialog}
       {/* New expense modal */}
       {showForm && (
         <div className="mo" style={{ zIndex: 1100 }} onClick={() => setShowForm(false)}>

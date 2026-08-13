@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { CheckCircle, Trash2, Building2, Users, Clock, RefreshCw, ShieldAlert, CreditCard, AlertTriangle, MousePointerClick } from 'lucide-react';
+import { CheckCircle, Trash2, Building2, Users, Clock, RefreshCw, ShieldAlert, CreditCard, AlertTriangle, MousePointerClick, DollarSign, TrendingUp } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -81,6 +82,32 @@ export function SuperAdminClient() {
   const convVisitReg = visits && visits.total > 0 ? (orgs.length / visits.total) * 100 : null;
   const convRegActive = orgs.length > 0 ? (active.length / orgs.length) * 100 : null;
 
+  // ── Ingresos, promedios e insights ──
+  const PRICE_USD = 400; // pago único de Stackr
+  const revenueUSD = active.length * PRICE_USD;
+  const avgUsers = orgs.length > 0 ? totalUsers / orgs.length : 0;
+  const expiringSoon = trial.filter(o => {
+    if (!o.trial_expires_at) return false;
+    const d = new Date(o.trial_expires_at).getTime() - nowMs;
+    return d > 0 && d < DAY;
+  }).length;
+
+  // Altas por día (últimos 30 días) para el gráfico
+  const dailySignups = Array.from({ length: 30 }, (_, i) => {
+    const day = new Date(startOfToday); day.setDate(day.getDate() - (29 - i));
+    const next = new Date(day); next.setDate(day.getDate() + 1);
+    const count = orgs.filter(o => { const t = new Date(o.created_at); return t >= day && t < next; }).length;
+    return { label: day.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }), altas: count };
+  });
+
+  // Embudo de conversión
+  const funnel = [
+    { stage: 'Visitas al link', value: visits ? visits.total : null, color: '#7c3aed' },
+    { stage: 'Se registraron', value: orgs.length, color: '#3b82f6' },
+    { stage: 'Pagaron', value: active.length, color: '#16a34a' },
+  ];
+  const funnelMax = Math.max(...funnel.map(f => f.value ?? 0), 1);
+
   return (
     <div className="page">
       <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -118,6 +145,11 @@ export function SuperAdminClient() {
             label: 'Negocios pagos', icon: <CreditCard size={18} />, color: 'var(--green)',
             value: active.length.toLocaleString('es-AR'),
             sub: convRegActive != null ? `${convRegActive.toFixed(0)}% de los registrados` : '—',
+          },
+          {
+            label: 'Ingresos estimados', icon: <DollarSign size={18} />, color: '#16a34a',
+            value: `U$ ${revenueUSD.toLocaleString('es-AR')}`,
+            sub: `${active.length} × U$ ${PRICE_USD} (pago único)`,
           },
         ].map(s => (
           <div key={s.label} className="sc">
@@ -157,6 +189,85 @@ export function SuperAdminClient() {
           </div>
         ))}
       </div>
+
+      {/* ── Gráfico de altas + embudo de conversión ── */}
+      {!loading && (
+        <div className="row" style={{ marginBottom: 28, alignItems: 'stretch' }}>
+          <div className="col card" style={{ flex: 2, padding: 20, minWidth: 280 }}>
+            <div className="sl" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <TrendingUp size={15} /> Altas por día · últimos 30 días
+            </div>
+            <div style={{ height: 220, width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dailySignups} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="saSignup" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-3)', fontSize: 10 }} interval={4} />
+                  <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-3)', fontSize: 10 }} width={26} />
+                  <Tooltip contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} formatter={(v: any) => [`${v} ${v === 1 ? 'alta' : 'altas'}`, undefined]} />
+                  <Area type="monotone" dataKey="altas" stroke="#3b82f6" strokeWidth={2} fill="url(#saSignup)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="col card" style={{ flex: 1, padding: 20, minWidth: 240 }}>
+            <div className="sl" style={{ marginBottom: 18 }}>Embudo de conversión</div>
+            {funnel.map((f, i) => {
+              const prev = i > 0 ? funnel[i - 1].value : null;
+              const conv = prev && prev > 0 && f.value != null ? (f.value / prev * 100) : null;
+              const widthPct = f.value != null ? Math.max((f.value / funnelMax) * 100, 3) : 0;
+              return (
+                <div key={f.stage} style={{ marginBottom: 16 }}>
+                  {conv != null && (
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginBottom: 6 }}>
+                      ↓ {conv.toFixed(1)}%
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, fontSize: 12.5 }}>
+                    <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>{f.stage}</span>
+                    <span style={{ fontWeight: 700, fontFamily: 'JetBrains Mono' }}>{f.value != null ? f.value.toLocaleString('es-AR') : '—'}</span>
+                  </div>
+                  <div style={{ height: 8, background: 'var(--surface-3)', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${widthPct}%`, background: f.color, borderRadius: 4, transition: 'width 0.5s ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+            {!visits && (
+              <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.4 }}>
+                Aplicá la migración site_visits para ver las visitas y la conversión desde el link.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Insights rápidos */}
+      {!loading && (expiringSoon > 0 || orgs.length > 0) && (
+        <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 28 }}>
+          <div className="sc" style={{ padding: '14px 16px', ...(expiringSoon > 0 ? { border: '1px solid var(--amber)', background: 'rgba(245,158,11,0.06)' } : {}) }}>
+            <div className="sl" style={{ marginBottom: 6 }}>Vencen en 24h</div>
+            <div className="sv" style={{ fontSize: 20, color: expiringSoon > 0 ? 'var(--amber)' : 'var(--text)' }}>{expiringSoon}</div>
+          </div>
+          <div className="sc" style={{ padding: '14px 16px' }}>
+            <div className="sl" style={{ marginBottom: 6 }}>Prom. usuarios/negocio</div>
+            <div className="sv" style={{ fontSize: 20 }}>{avgUsers.toFixed(1)}</div>
+          </div>
+          <div className="sc" style={{ padding: '14px 16px' }}>
+            <div className="sl" style={{ marginBottom: 6 }}>Altas 7 días</div>
+            <div className="sv" style={{ fontSize: 20 }}>{signups.last7}</div>
+          </div>
+          <div className="sc" style={{ padding: '14px 16px' }}>
+            <div className="sl" style={{ marginBottom: 6 }}>Visitas hoy</div>
+            <div className="sv" style={{ fontSize: 20, color: '#7c3aed' }}>{visits ? visits.today : '—'}</div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-3)' }}>Cargando...</div>

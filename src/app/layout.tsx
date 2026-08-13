@@ -8,7 +8,9 @@ const interVariable = "font-sans";
 const jetbrainsVariable = "font-mono";
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  // Coincide con el fondo claro de la app (--bg) para que la barra del
+  // navegador en mobile no quede negra sobre una UI clara.
+  themeColor: "#f5f5f3",
   width: "device-width",
   initialScale: 1,
 };
@@ -116,7 +118,7 @@ export default function RootLayout({
       </head>
       <body className={`${interVariable} ${jetbrainsVariable} antialiased`} suppressHydrationWarning>
         {children}
-        <Toaster theme="dark" position="bottom-right" richColors />
+        <Toaster theme="light" position="bottom-right" richColors />
       </body>
     </html>
   );

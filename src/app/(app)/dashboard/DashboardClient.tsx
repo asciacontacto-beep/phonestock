@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react';
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
+import { Sparkline } from '@/components/Sparkline';
 import { voidSale, voidSaleSummary } from '@/utils/voidSale';
 import { logAudit } from '@/utils/audit';
 import { Download, Package, AlertTriangle, Trash2 } from 'lucide-react';
@@ -228,6 +229,35 @@ export function DashboardClient({
     return list;
   }, [debts, agedStock, totals.missingCost, lowStock, router]);
 
+  /* ── Ganancia día a día de las últimas 4 semanas ──────────────
+     El número grande dice cuánto ganaste; esto dice si venís subiendo o
+     cayendo, que es lo que un número solo no puede responder. Va siempre
+     sobre 28 días, independiente del filtro, para que sea comparable. */
+  const profitSeries = useMemo(() => {
+    const DAYS = 28;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (DAYS - 1));
+
+    const buckets: { sales: any[]; repairs: any[] }[] =
+      Array.from({ length: DAYS }, () => ({ sales: [], repairs: [] }));
+
+    const indexOf = (t?: string | null) => {
+      if (!t) return -1;
+      const d = new Date(t);
+      if (Number.isNaN(d.getTime())) return -1;
+      const i = Math.floor((d.getTime() - start.getTime()) / 86_400_000);
+      return i >= 0 && i < DAYS ? i : -1;
+    };
+
+    allSales.forEach(s => { const i = indexOf(s.created_at); if (i >= 0) buckets[i].sales.push(s); });
+    repairs.forEach(r => { const i = indexOf(r.updated_at || r.created_at); if (i >= 0) buckets[i].repairs.push(r); });
+
+    return buckets.map(b => totalsFromBreakdown(categoryBreakdown(b.sales, b.repairs, exchangeRate)).profit);
+  }, [allSales, repairs, exchangeRate]);
+
+  const hasSeries = useMemo(() => profitSeries.some(v => v !== 0), [profitSeries]);
+
   /* ── Qué conviene reponer ────────────────────────────────────
      La decisión que un local de celulares toma todas las semanas es qué
      comprar. Cruza lo que se vendió en el período con lo que queda en
@@ -411,23 +441,38 @@ export function DashboardClient({
 
       {/* ── Lo primero: cuánto ganaste y de dónde salió ────────── */}
       <div className="d-hero">
-        <div className="sl" style={{ marginBottom: 8 }}>Ganancia · {RANGE_LABELS[range].toLowerCase()}</div>
+        <div className="d-hero-grid">
+          <div>
+            <div className="sl" style={{ marginBottom: 8 }}>Ganancia · {RANGE_LABELS[range].toLowerCase()}</div>
 
-        <div className="d-hero-top">
-          <div className={`d-hero-value ${profitUSD >= 0 ? 'pos' : 'neg'}`}>
-            U$ {Math.round(profitUSD).toLocaleString('es-AR')}
+            <div className="d-hero-top">
+              <div className={`d-hero-value ${profitUSD >= 0 ? 'pos' : 'neg'}`}>
+                U$ {Math.round(profitUSD).toLocaleString('es-AR')}
+              </div>
+              {profitDelta != null && (
+                <span className={`d-delta ${profitDelta >= 0 ? 'pos' : 'neg'}`}>
+                  {profitDelta >= 0 ? '↑' : '↓'} {Math.abs(Math.round(profitDelta))}% vs {RANGE_PREV_LABEL[range]}
+                </span>
+              )}
+            </div>
+
+            <div className="d-hero-sub">
+              {revenueUSD > 0
+                ? <>Facturaste U$ {Math.round(revenueUSD).toLocaleString('es-AR')} · te quedó el <strong>{marginPct}%</strong></>
+                : 'Todavía no hubo ventas en este período.'}
+            </div>
           </div>
-          {profitDelta != null && (
-            <span className={`d-delta ${profitDelta >= 0 ? 'pos' : 'neg'}`}>
-              {profitDelta >= 0 ? '↑' : '↓'} {Math.abs(Math.round(profitDelta))}% vs {RANGE_PREV_LABEL[range]}
-            </span>
-          )}
-        </div>
 
-        <div className="d-hero-sub">
-          {revenueUSD > 0
-            ? <>Facturaste U$ {Math.round(revenueUSD).toLocaleString('es-AR')} · te quedó el <strong>{marginPct}%</strong></>
-            : 'Todavía no hubo ventas en este período.'}
+          {/* El espacio de la derecha estaba vacío; acá va la tendencia */}
+          {hasSeries && (
+            <div className="d-hero-chart">
+              <Sparkline
+                data={profitSeries}
+                color={profitUSD >= 0 ? 'var(--green)' : 'var(--red)'}
+              />
+              <div className="d-chart-label">ganancia día a día · últimas 4 semanas</div>
+            </div>
+          )}
         </div>
 
         {(() => {
@@ -442,7 +487,7 @@ export function DashboardClient({
 
           return (
             <>
-              {totalPositive > 0 && (
+              {positive.length > 1 && (
                 <div className="d-split">
                   {positive.map(c => (
                     <span key={c.key}

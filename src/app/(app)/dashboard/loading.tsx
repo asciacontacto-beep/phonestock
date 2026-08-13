@@ -14,17 +14,21 @@ export default function DashboardLoading() {
         <div className="skeleton" style={{ width: 220, height: 32, borderRadius: 20 }} />
       </div>
 
-      {/* Hero */}
+      {/* Hero: números a la izquierda, tendencia a la derecha */}
       <div className="d-hero">
-        <div className="skeleton" style={{ width: 110, height: 11, borderRadius: 4, marginBottom: 14 }} />
-        <div className="skeleton" style={{ width: 200, height: 40, borderRadius: 10 }} />
-        <div className="skeleton" style={{ width: 260, height: 13, borderRadius: 4, marginTop: 14 }} />
-        <div className="skeleton" style={{ height: 8, borderRadius: 4, marginTop: 22 }} />
+        <div className="d-hero-grid">
+          <div>
+            <div className="skeleton" style={{ width: 110, height: 11, borderRadius: 4, marginBottom: 12 }} />
+            <div className="skeleton" style={{ width: 190, height: 36, borderRadius: 9 }} />
+            <div className="skeleton" style={{ width: 250, height: 12, borderRadius: 4, marginTop: 12 }} />
+          </div>
+          <div className="skeleton" style={{ height: 56, borderRadius: 8 }} />
+        </div>
         <div className="d-legend">
           {[0, 1, 2].map(i => (
             <div key={i}>
-              <div className="skeleton" style={{ width: 62, height: 11, borderRadius: 4 }} />
-              <div className="skeleton" style={{ width: 78, height: 16, borderRadius: 5, marginTop: 6 }} />
+              <div className="skeleton" style={{ width: 58, height: 11, borderRadius: 4 }} />
+              <div className="skeleton" style={{ width: 74, height: 15, borderRadius: 5, marginTop: 6 }} />
             </div>
           ))}
         </div>

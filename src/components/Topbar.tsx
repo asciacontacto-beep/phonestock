@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles } from 'lucide-react';
+import { Menu, Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -190,6 +190,17 @@ export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
       </button>
 
       <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+
+        {/* Disparador visible de la command palette (⌘K) */}
+        <button
+          onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+          className="cmdk-trigger"
+          title="Buscar o navegar (Ctrl/⌘ + K)"
+        >
+          <Search size={14} />
+          <span className="cmdk-trigger-label">Buscar</span>
+          <kbd>⌘K</kbd>
+        </button>
 
         {/* Dólar Blue chip */}
         <div style={{ position: 'relative' }}>

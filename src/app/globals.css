@@ -1021,3 +1021,97 @@ select.inp {
   opacity: 0; transition: opacity 0.15s ease;
 }
 .dash .panel-row.is-link:hover::before { opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   COMMAND PALETTE (⌘K)
+   ═══════════════════════════════════════════ */
+.cmdk-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(17,17,17,0.28);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 12vh;
+  animation: cmdk-fade 0.12s ease;
+}
+@keyframes cmdk-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.cmdk {
+  width: 100%; max-width: 560px;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: cmdk-pop 0.14s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes cmdk-pop { from { transform: translateY(-8px) scale(0.98); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.cmdk-input-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+}
+.cmdk-search-icon { color: var(--text-3); flex-shrink: 0; }
+.cmdk-input {
+  flex: 1; border: none; background: none; outline: none;
+  font-size: 15px; color: var(--text);
+}
+.cmdk-input::placeholder { color: var(--text-3); }
+.cmdk-esc {
+  font-size: 10px; font-weight: 600; color: var(--text-3);
+  background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 2px 6px; font-family: 'JetBrains Mono', monospace;
+}
+
+.cmdk-list { max-height: 52vh; overflow-y: auto; padding: 6px; }
+.cmdk-empty { padding: 28px 16px; text-align: center; color: var(--text-3); font-size: 13px; }
+
+.cmdk-item {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 10px 12px; border-radius: var(--r-sm);
+  text-align: left; font-family: inherit; font-size: 13.5px;
+  color: var(--text-2); background: none; border: none;
+}
+.cmdk-item.active { background: var(--surface-3); color: var(--text); }
+.cmdk-item:active { transform: none; }
+.cmdk-item-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: var(--surface-2); color: var(--text-2);
+}
+.cmdk-item.active .cmdk-item-icon { background: var(--accent); color: #fff; }
+.cmdk-item-label { font-weight: 600; color: var(--text); }
+.cmdk-item-hint { font-size: 12px; color: var(--text-3); }
+.cmdk-item-enter { margin-left: auto; color: var(--text-3); flex-shrink: 0; }
+
+.cmdk-foot {
+  display: flex; gap: 16px; align-items: center;
+  padding: 9px 16px; border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 11px; color: var(--text-3);
+}
+.cmdk-foot kbd {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 5px; margin-right: 2px; color: var(--text-2);
+}
+
+/* Disparador de la command palette en el topbar */
+.cmdk-trigger {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 10px 6px 11px; border-radius: 20px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  font-size: 12px; font-weight: 500; color: var(--text-3);
+  cursor: pointer; transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
+}
+.cmdk-trigger:hover { background: var(--surface-3); color: var(--text-2); border-color: var(--border-md); }
+.cmdk-trigger:active { transform: none; }
+.cmdk-trigger-label { }
+.cmdk-trigger kbd {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 5px; padding: 1px 5px; color: var(--text-3);
+}
+@media (max-width: 640px) {
+  .cmdk-trigger-label, .cmdk-trigger kbd { display: none; }
+  .cmdk-trigger { padding: 7px; }
+}

@@ -1,12 +1,10 @@
 "use client"
 import { useState, useMemo } from 'react';
-import { BRANDS } from '@/constants/data';
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
 import { voidSale, voidSaleSummary } from '@/utils/voidSale';
 import { logAudit } from '@/utils/audit';
-import { TrendingUp, Download, ShoppingBag, Plus, Clock, Package, AlertTriangle, Trash2 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { TrendingUp, Download, Package, AlertTriangle, Trash2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -54,12 +52,6 @@ function daysInStock(createdAt?: string | null): number | null {
   const ms = Date.now() - new Date(createdAt).getTime();
   if (!Number.isFinite(ms) || ms < 0) return null;
   return Math.floor(ms / 86_400_000);
-}
-
-function fmtARS(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `$${Math.round(n / 1_000)}k`;
-  return `$${Math.round(n).toLocaleString('es-AR')}`;
 }
 
 export function DashboardClient({
@@ -112,37 +104,8 @@ export function DashboardClient({
      Derivados del mismo desglose por categoría que muestran las tarjetas
      de abajo, así el total siempre es exactamente la suma de las partes.  */
 
-  /* ── Brand ranking ─────────────────────────────────── */
-  const brandRanking = useMemo(
-    () => BRANDS
-      .map(b => ({ name: b, count: filteredSales.filter(s => s.brand === b).length }))
-      .filter(b => b.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5),
-    [filteredSales],
-  );
-
-  /* ── Trend chart ───────────────────────────────────── */
-  const trendDays = range === 'month' ? 30 : 7;
-  const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-  const weekTrend = useMemo(() => {
-    const today = new Date();
-    return Array.from({ length: trendDays }, (_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() - (trendDays - 1 - i));
-      const dayStr = d.toISOString().slice(0, 10);
-      return {
-        label: trendDays <= 7
-          ? DAYS[d.getDay()]
-          : `${d.getDate()}/${d.getMonth() + 1}`,
-        count: allSales.filter(s => s.created_at?.slice(0, 10) === dayStr).length,
-      };
-    });
-  }, [allSales, trendDays]);
-
   /* ── Seller stats ──────────────────────────────────── */
-  const { topSeller, sellerList } = useMemo(() => {
+  const { topSeller } = useMemo(() => {
     const counts: Record<string, { name: string; count: number }> = {};
     filteredSales.forEach(s => {
       if (!s.seller_id) return;
@@ -150,7 +113,7 @@ export function DashboardClient({
       counts[s.seller_id].count++;
     });
     const list = Object.values(counts).sort((a, b) => b.count - a.count);
-    return { topSeller: list[0], sellerList: list };
+    return { topSeller: list[0] };
   }, [filteredSales]);
 
   /* ── Low stock alert ───────────────────────────────── */
@@ -264,6 +227,39 @@ export function DashboardClient({
 
     return list;
   }, [debts, agedStock, totals.missingCost, lowStock, router]);
+
+  /* ── Qué conviene reponer ────────────────────────────────────
+     La decisión que un local de celulares toma todas las semanas es qué
+     comprar. Cruza lo que se vendió en el período con lo que queda en
+     stock: un modelo que deja plata y ya no tenés es plata que dejás de
+     hacer. Reports muestra la rentabilidad por modelo; esto muestra qué
+     hacer con esa información. */
+  const restock = useMemo(() => {
+    const byModel = new Map<string, { model: string; units: number; profit: number; stock: number }>();
+
+    filteredSales.filter(s => saleCategory(s) === 'device').forEach(s => {
+      const key = `${s.brand} ${s.model}`.trim();
+      const rate = saleExchangeRate(s, exchangeRate);
+      const profit = toUSD(s.price || 0, s.currency, rate) - toUSD(s.cost_price || 0, s.currency, rate);
+      const cur = byModel.get(key) || { model: key, units: 0, profit: 0, stock: 0 };
+      cur.units += 1;
+      cur.profit += profit;
+      byModel.set(key, cur);
+    });
+
+    if (byModel.size === 0) return [];
+
+    av.forEach(s => {
+      const key = `${s.brand} ${s.model}`.trim();
+      const cur = byModel.get(key);
+      if (cur) cur.stock += 1;
+    });
+
+    return Array.from(byModel.values())
+      .filter(m => m.profit > 0)
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 6);
+  }, [filteredSales, av, exchangeRate]);
 
   /* ── Detalle línea por línea de cada tarjeta de ganancia ───── */
   const byNewest = (a: { time: string }, b: { time: string }) =>
@@ -531,179 +527,124 @@ export function DashboardClient({
         </div>
       )}
 
-      {/* Charts row */}
-      <div className="row" style={{ marginBottom: 24 }}>
-        {/* Trend chart */}
-        <div className="col card" style={{ flex: 2, padding: 24 }}>
-          <div className="sl" style={{ marginBottom: 20 }}>
-            Tendencia — {trendDays === 7 ? 'últimos 7 días' : 'este mes'}
+      {/* ── Qué conviene reponer ────────────────────────────────
+           Reports explica la rentabilidad por modelo; acá se cruza con el
+           stock para que la conclusión sea una acción, no un gráfico. */}
+      {userRole !== 'seller' && restock.length > 0 && (
+        <div className="card" style={{ padding: 0, marginBottom: 24, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>Lo que más te deja</div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+              Modelos que dejaron ganancia {RANGE_LABELS[range].toLowerCase()} y cuántos te quedan
+            </div>
           </div>
-          <div style={{ height: 200, width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weekTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="var(--accent)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="label"
-                  axisLine={false} tickLine={false}
-                  tick={{ fill: 'var(--text-3)', fontSize: 11 }}
-                  dy={10}
-                  interval={trendDays > 14 ? 4 : 0}
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-3)', fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }}
-                  itemStyle={{ color: 'var(--accent)', fontWeight: 600 }}
-                />
-                <Area type="monotone" dataKey="count" name="Ventas" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
 
-        {/* Top brands */}
-        <div className="col card" style={{ padding: 24 }}>
-          <div className="sl" style={{ marginBottom: 20 }}>Top Marcas</div>
-          {brandRanking.length === 0 ? (
-            <div style={{ color: 'var(--text-3)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
-              Sin ventas en este período
-            </div>
-          ) : (
-            <div style={{ height: 200, width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={brandRanking} margin={{ top: 0, right: 30, left: -20, bottom: 0 }}>
-                  <XAxis type="number" hide />
-                  <YAxis
-                    dataKey="name" type="category"
-                    axisLine={false} tickLine={false}
-                    tick={{ fill: 'var(--text)', fontSize: 12, fontWeight: 500 }}
-                    width={80}
-                  />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(0,0,0,0.03)' }}
-                    contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }}
-                  />
-                  <Bar dataKey="count" name="Ventas" radius={[0, 4, 4, 0]} barSize={20}>
-                    {brandRanking.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--green)' : 'var(--surface-3)'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Seller leaderboard */}
-      <div className="row">
-        <div className="col card">
-          <div className="sl" style={{ marginBottom: 16 }}>Ventas por Vendedor</div>
-          {sellerList.length === 0 ? (
-            <div style={{ color: 'var(--text-3)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
-              Sin ventas en este período
-            </div>
-          ) : (
-            sellerList.map((s, i) => (
-              <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: i === 0 ? 'var(--amber)' : 'var(--surface-3)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: 12,
-                  color: i === 0 ? '#000' : 'var(--text-3)',
-                  flexShrink: 0,
+          {restock.map((m, i) => {
+            const agotado = m.stock === 0;
+            const poco = m.stock > 0 && m.stock <= 1;
+            return (
+              <div key={m.model}
+                onClick={() => router.push('/stock')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', cursor: 'pointer',
+                  borderBottom: i < restock.length - 1 ? '1px solid var(--border)' : 'none',
                 }}>
-                  {s.name.substring(0, 2).toUpperCase()}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {m.model}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
+                    {m.units} {m.units === 1 ? 'vendido' : 'vendidos'} · U$ {Math.round(m.profit / m.units).toLocaleString('es-AR')} de ganancia c/u
+                  </div>
                 </div>
-                <div style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{s.name}</div>
-                <span className="badge b-green">{s.count} ventas</span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
 
-      {/* Recent activity — owners only */}
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--green)' }}>
+                    U$ {Math.round(m.profit).toLocaleString('es-AR')}
+                  </div>
+                  <div style={{ fontSize: 11, marginTop: 2, color: agotado ? 'var(--red)' : poco ? 'var(--amber)' : 'var(--text-3)', fontWeight: agotado || poco ? 700 : 400 }}>
+                    {agotado ? 'sin stock — reponer' : poco ? 'queda 1 — reponer' : `${m.stock} en stock`}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Últimas operaciones, en una línea cada una ──────────
+           Antes cada evento ocupaba tres renglones con avatar. Lo único
+           que se mira acá es qué pasó recién y poder deshacerlo. */}
       {userRole !== 'seller' && (
-        <div className="card" style={{ marginTop: 24, padding: 24 }}>
-          <div className="sl" style={{ marginBottom: 20 }}>Actividad Reciente</div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {[
-              ...filteredSales.slice(0, 8).map(s => ({
-                id: s.id,
-                type: 'sale' as const,
-                label: `${s.seller_name || 'Alguien'} vendió un ${s.brand} ${s.model}`,
-                sub: s.customer?.name
-                  ? `Cliente: ${s.customer.name}`
-                  : `${s.currency === 'USD' ? 'U$' : '$'} ${(s.price || 0).toLocaleString('es-AR')}`,
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 13 }}>
+            Últimas operaciones
+          </div>
+
+          {(() => {
+            const events = [
+              ...filteredSales.slice(0, 6).map(s => ({
+                id: String(s.id), type: 'sale' as const,
+                label: `${s.brand} ${s.model}`,
+                sub: s.customer?.name || 'Consumidor final',
                 time: s.created_at,
               })),
-              ...stock.slice(0, 5).map(s => ({
-                id: s.id,
-                type: 'stock' as const,
-                label: `Stock cargado: ${s.brand} ${s.model}`,
-                sub: `${s.storage} · ${s.color} · ${s.condition === 'new' ? 'Nuevo' : 'Usado'}`,
+              ...stock.slice(0, 4).map(s => ({
+                id: String(s.id), type: 'stock' as const,
+                label: `${s.brand} ${s.model}`,
+                sub: 'ingresó al stock',
                 time: s.created_at,
               })),
             ]
               .filter(e => e.time)
               .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-              .slice(0, 10)
-              .map((event, i) => {
-                const diffMs    = Date.now() - new Date(event.time).getTime();
-                const diffMins  = Math.floor(diffMs / 60_000);
-                const diffHours = Math.floor(diffMs / 3_600_000);
-                const diffDays  = Math.floor(diffMs / 86_400_000);
-                const timeStr   = diffMins < 1   ? 'ahora'
-                                : diffMins < 60  ? `hace ${diffMins}m`
-                                : diffHours < 24 ? `hace ${diffHours}h`
-                                : diffDays === 1  ? 'ayer'
-                                : `hace ${diffDays}d`;
-                return (
-                  <div
-                    key={i}
-                    style={{ display: 'flex', gap: 14, padding: '14px 0', borderBottom: i < 9 ? '1px solid var(--border)' : 'none', alignItems: 'flex-start' }}
-                  >
-                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: event.type === 'sale' ? 'rgba(16,185,129,0.12)' : 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-                      {event.type === 'sale'
-                        ? <ShoppingBag size={16} color="var(--green)" />
-                        : <Plus size={16} color="var(--accent)" />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {event.label}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{event.sub}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-3)', fontSize: 11, flexShrink: 0 }}>
-                      <Clock size={11} />
-                      {timeStr}
-                      {event.type === 'sale' && (
-                        <button
-                          className="btn-icon"
-                          style={{ marginLeft: 8, color: 'var(--red)', opacity: 0.7 }}
-                          onClick={() => deleteSale(event.id)}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            {allSales.length === 0 && stock.length === 0 && (
-              <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-                Sin actividad registrada aún
-              </div>
-            )}
-          </div>
+              .slice(0, 8);
+
+            if (events.length === 0) {
+              return (
+                <div style={{ padding: '28px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+                  Sin actividad registrada aún
+                </div>
+              );
+            }
+
+            return events.map((e, i) => {
+              const mins = Math.floor((Date.now() - new Date(e.time).getTime()) / 60_000);
+              const when = mins < 1 ? 'ahora'
+                : mins < 60 ? `hace ${mins}m`
+                : mins < 1440 ? `hace ${Math.floor(mins / 60)}h`
+                : Math.floor(mins / 1440) === 1 ? 'ayer'
+                : `hace ${Math.floor(mins / 1440)}d`;
+
+              return (
+                <div key={`${e.type}-${e.id}`} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 18px', fontSize: 13,
+                  borderBottom: i < events.length - 1 ? '1px solid var(--border)' : 'none',
+                }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                    background: e.type === 'sale' ? 'var(--green)' : 'var(--text-3)',
+                  }} />
+                  <span style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flexShrink: 1 }}>
+                    {e.label}
+                  </span>
+                  <span style={{ color: 'var(--text-3)', fontSize: 12, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {e.sub}
+                  </span>
+                  <span style={{ color: 'var(--text-3)', fontSize: 11, flexShrink: 0 }}>{when}</span>
+                  {e.type === 'sale' && (
+                    <button className="btn-icon" style={{ color: 'var(--red)', opacity: 0.6, flexShrink: 0 }}
+                      title="Anular venta" onClick={() => deleteSale(e.id)}>
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
+
       {ConfirmDialog}
 
       {detailCat && (

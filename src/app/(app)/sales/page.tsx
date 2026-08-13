@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic'
 export default async function SalesPage() {
   const supabase = await createClient()
 
-  // Fetch all necessary data
-  const { data: { session } } = await supabase.auth.getSession()
-  
+  // Fetch all necessary data. getUser() valida el JWT (server-side).
+  const { data: { user } } = await supabase.auth.getUser()
+
   const [
     { data: sales },
     { data: deposits },
@@ -19,7 +19,7 @@ export default async function SalesPage() {
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
     supabase.from('deposits').select('*').order('name'),
     supabase.from('profiles').select('*').eq('role', 'seller'),
-    supabase.from('profiles').select('*').eq('id', session?.user?.id).single(),
+    supabase.from('profiles').select('*').eq('id', user?.id).single(),
     supabase.from('settings').select('*').single()
   ])
 
@@ -28,7 +28,7 @@ export default async function SalesPage() {
       sales={sales || []} 
       deposits={deposits || []} 
       realSellers={realSellers || []} 
-      user={currentUserProfile || { id: session?.user?.id }}
+      user={currentUserProfile || { id: user?.id }}
       shop={settings || {}}
     />
   )

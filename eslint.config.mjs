@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Artefacto de build legacy (Vite/PWA), no lintear
+    "dist/**",
+    // Scripts/throwaways legacy, fuera del código de la app
+    "scripts/legacy/**",
+    "scratch/**",
   ]),
 ]);
 

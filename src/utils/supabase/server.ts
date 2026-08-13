@@ -31,8 +31,10 @@ export const createClient = cache(async () => {
 
 export const getUser = cache(async () => {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  return session?.user || null
+  // getUser() valida el JWT contra el servidor de auth de Supabase.
+  // getSession() sólo lee la cookie sin verificarla: no usar en el servidor.
+  const { data: { user } } = await supabase.auth.getUser()
+  return user || null
 })
 
 export const getProfile = cache(async (userId: string) => {

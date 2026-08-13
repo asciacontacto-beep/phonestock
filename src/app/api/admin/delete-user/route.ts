@@ -19,11 +19,13 @@ export async function POST(req: NextRequest) {
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // getUser() valida el JWT contra el servidor de auth. Imprescindible acá:
+  // es el gate previo a operaciones con service role (bypassea RLS).
+  const { data: { user: caller } } = await supabase.auth.getUser();
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const callerId = session.user.id;
-  const callerEmail = session.user.email;
+  const callerId = caller.id;
+  const callerEmail = caller.email;
   const isSuperAdmin = callerEmail === 'asciacontacto@gmail.com';
 
   // Use service role to bypass RLS for all checks + deletion

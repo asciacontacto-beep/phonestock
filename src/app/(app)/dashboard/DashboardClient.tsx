@@ -473,7 +473,7 @@ export function DashboardClient({
       </div>
 
       {/* ── Estado del negocio, en una línea ────────────────────── */}
-      <div className="sg" style={{ gridTemplateColumns: userRole === 'seller' ? 'repeat(2,1fr)' : 'repeat(4,1fr)', marginBottom: 14 }}>
+      <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginBottom: 14 }}>
         <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
           <div className="sl">En stock</div>
           <div className="sv">{av.length}</div>

@@ -253,7 +253,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
       </div>
 
       {/* Category breakdown cards */}
-      <div className="sg" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 24 }}>
+      <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 24 }}>
         {([
           { key: 'device' as const, label: 'Ganancia Equipos', s: breakdown.device },
           { key: 'accessory' as const, label: 'Ganancia Accesorios', s: breakdown.accessory },

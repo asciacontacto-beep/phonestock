@@ -3,6 +3,8 @@ import { useState, useMemo } from 'react';
 import { BRANDS } from '@/constants/data';
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
+import { voidSale, voidSaleSummary } from '@/utils/voidSale';
+import { logAudit } from '@/utils/audit';
 import { TrendingUp, Download, ShoppingBag, Plus, Clock, Package, AlertTriangle, Trash2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { createClient } from '@/utils/supabase/client';
@@ -46,15 +48,17 @@ export function DashboardClient({
   const [detailCat, setDetailCat] = useState<'device' | 'accessory' | 'service' | null>(null);
 
   const deleteSale = async (saleId: string) => {
-    if (!await confirm('¿Eliminar esta venta?')) return;
+    const sale = sales.find(s => String(s.id) === String(saleId));
+    if (!sale) return;
+    if (!await confirm('¿Anular esta venta? Se devuelve el equipo y los accesorios al stock, y se elimina el equipo recibido en canje.')) return;
     try {
-      const sale = sales.find(s => s.id === saleId);
-      if (sale?.imei) {
-        await supabase.from('stock').update({ status: 'available' }).eq('imei', sale.imei);
-      }
-      const { error } = await supabase.from('sales').delete().eq('id', saleId);
-      if (error) throw error;
-      toast.success('Venta eliminada');
+      const result = await voidSale(supabase, sale);
+      await logAudit(supabase, {
+        action: 'venta_anulada', entity: 'sale', entityId: String(sale.id),
+        summary: `Anuló la venta de ${sale.brand} ${sale.model} (${sale.customer?.name || 'sin cliente'})`,
+      });
+      toast.success(voidSaleSummary(result));
+      result.warnings.forEach(w => toast.warning(w, { duration: 8000 }));
       router.refresh();
     } catch (e: any) {
       toast.error('Error: ' + e.message);

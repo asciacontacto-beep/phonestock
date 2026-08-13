@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Receipt } from '@/components/Receipt';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import { voidSale, voidSaleSummary } from '@/utils/voidSale';
+import { logAudit, describeChanges } from '@/utils/audit';
 
 interface Props {
   sales: any[];
@@ -84,42 +86,13 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
     
     setVoidLoading(true);
     try {
-      const s = selectedSale;
-
-      // 1. Revertir equipo principal al inventario
-      let stockQuery = supabase.from('stock').select('id').eq('status', 'sold').eq('brand', s.brand).eq('model', s.model);
-      if (s.imei) stockQuery = stockQuery.eq('imei', s.imei);
-      else stockQuery = stockQuery.eq('storage', s.storage).eq('color', s.color);
-
-      const { data: st } = await stockQuery.limit(1).maybeSingle();
-      if (st) {
-        await supabase.from('stock').update({ status: 'available' }).eq('id', st.id);
-      }
-
-      // 2. Revertir accesorios (devolver stock)
-      if (s.accessories && s.accessories.length > 0) {
-        for (const acc of s.accessories) {
-          const { data: aData } = await supabase.from('accessories').select('stock').eq('id', acc.id).single();
-          if (aData) {
-            await supabase.from('accessories').update({ stock: (aData.stock || 0) + acc.qty }).eq('id', acc.id);
-          }
-        }
-      }
-
-      // 3. Eliminar equipos de canje ingresados
-      if (s.payments) {
-        for (const p of s.payments) {
-          if (p.id === 'tradein' && p.device?.imei) {
-            await supabase.from('stock').delete().eq('imei', p.device.imei);
-          }
-        }
-      }
-
-      // 4. Eliminar la venta definitivamente
-      const { error: delErr } = await supabase.from('sales').delete().eq('id', s.id);
-      if (delErr) throw delErr;
-
-      toast.success('Venta anulada correctamente');
+      const result = await voidSale(supabase, selectedSale);
+      await logAudit(supabase, {
+        user, action: 'venta_anulada', entity: 'sale', entityId: String(selectedSale.id),
+        summary: `Anuló la venta de ${selectedSale.brand} ${selectedSale.model} (${selectedSale.customer?.name || 'sin cliente'})`,
+      });
+      toast.success(voidSaleSummary(result));
+      result.warnings.forEach(w => toast.warning(w, { duration: 8000 }));
       setSelectedSale(null);
       router.refresh();
     } catch (e: any) {

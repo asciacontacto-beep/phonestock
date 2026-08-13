@@ -103,6 +103,36 @@ describe('voidSale', () => {
   })
 })
 
+describe('voidSale — camino atómico (RPC void_sale)', () => {
+  it('usa el resultado de la RPC y no toca el camino secuencial', async () => {
+    const calls: any[] = []
+    const sb: any = {
+      calls,
+      rpc: async (fn: string, args: any) => {
+        calls.push({ type: 'rpc', fn, args })
+        return {
+          error: null,
+          data: { deviceRestored: true, accessoriesRestored: 3, tradeInsRemoved: 1, warnings: ['ojo'] },
+        }
+      },
+      // Si el camino atómico funciona, NUNCA debería tocarse `from`.
+      from: () => { throw new Error('no debería usar el camino secuencial') },
+    }
+    const r = await voidSale(sb, deviceSale)
+    expect(r).toEqual({ deviceRestored: true, accessoriesRestored: 3, tradeInsRemoved: 1, warnings: ['ojo'] })
+    expect(calls).toContainEqual({ type: 'rpc', fn: 'void_sale', args: { p_sale_id: '1' } })
+  })
+
+  it('cae al camino secuencial si la RPC no está instalada', async () => {
+    // El fake devuelve {error:null} sin data (como Postgres cuando la función
+    // no existe y PostgREST responde vacío): debe revertir a mano igual.
+    const sb = fakeSupabase()
+    const r = await voidSale(sb, deviceSale)
+    expect(r.deviceRestored).toBe(true)
+    expect(r.accessoriesRestored).toBe(1)
+  })
+})
+
 describe('voidSaleSummary', () => {
   it('resume solo lo que efectivamente se revirtio', () => {
     expect(voidSaleSummary({ deviceRestored: true, accessoriesRestored: 2, tradeInsRemoved: 0, warnings: [] }))

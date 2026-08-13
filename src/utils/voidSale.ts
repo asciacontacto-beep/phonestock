@@ -20,6 +20,27 @@ export type VoidSaleResult = {
 }
 
 export async function voidSale(supabase: SupabaseClient, sale: Sale): Promise<VoidSaleResult> {
+  // Camino atómico: si la función void_sale está instalada en la base, hace
+  // toda la reversión en una sola transacción (todo o nada). Si no está, o si
+  // devuelve error, caemos al camino secuencial de siempre (probado y estable).
+  // Así, sin la migración aplicada, el comportamiento es idéntico al anterior.
+  if (sale?.id) {
+    try {
+      const { data, error } = await supabase.rpc('void_sale', { p_sale_id: sale.id })
+      if (!error && data && typeof data === 'object') {
+        const d = data as Record<string, unknown>
+        return {
+          deviceRestored: Boolean(d.deviceRestored),
+          accessoriesRestored: Number(d.accessoriesRestored) || 0,
+          tradeInsRemoved: Number(d.tradeInsRemoved) || 0,
+          warnings: Array.isArray(d.warnings) ? (d.warnings as string[]) : [],
+        }
+      }
+    } catch {
+      // Función ausente o error de red: seguimos con el camino secuencial.
+    }
+  }
+
   const warnings: string[] = []
   let deviceRestored = false
   let accessoriesRestored = 0

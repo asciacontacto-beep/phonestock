@@ -944,3 +944,80 @@ select.inp {
   .d-legend-value { font-size: 13px; }
   .d-legend-pct { display: none; }
 }
+
+/* ═══════════════════════════════════════════
+   DASHBOARD — uplift visual (scopeado en .dash)
+   No afecta a las demás pantallas que comparten .sc / .panel.
+   ═══════════════════════════════════════════ */
+
+/* Ritmo: un poco más de aire entre bloques y el hero como pieza central */
+.dash .d-hero {
+  margin-bottom: 16px;
+  box-shadow: 0 18px 40px -18px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.18);
+}
+/* Filo superior de luz: le da relieve de "vidrio" al card oscuro */
+.dash .d-hero { position: relative; }
+.dash .d-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding-top: 1px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), transparent 40%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Stat cards: de "dato plano" a métrica con identidad ── */
+.dash .sg { gap: 12px; margin-bottom: 16px; }
+
+.dash .sg .sc {
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  transition: transform 0.16s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.dash .sg .sc:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-md);
+}
+
+/* El ícono pasa de una marca de agua en la esquina a un chip con color */
+.dash .sc-icon {
+  position: absolute; top: 14px; right: 14px;
+  width: 32px; height: 32px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 1;
+  background: var(--surface-3);
+  color: var(--text-2);
+  transition: transform 0.16s ease;
+}
+.dash .sc:hover .sc-icon { opacity: 1; transform: scale(1.06); }
+
+.dash .sc-i-blue   { background: var(--blue-dim);  color: var(--blue); }
+.dash .sc-i-green  { background: var(--green-dim); color: var(--green); }
+.dash .sc-i-violet { background: #f5f3ff;          color: #7c3aed; }
+.dash .sc-i-amber  { background: var(--amber-dim); color: var(--amber); }
+
+.dash .sg .sl { margin-bottom: 8px; }
+.dash .sg .sv { font-size: 25px; }
+.dash .sc-sub { color: var(--text-2); }
+
+/* ── Paneles: cabeceras más presentes y esquinas coherentes ── */
+.dash .panel { margin-bottom: 14px; }
+.dash .panel-head {
+  padding: 13px 16px;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+}
+.dash .panel-title { font-size: 13.5px; }
+
+/* Barra de acento a la izquierda de la fila al pasar el mouse: más "táctil" */
+.dash .panel-row.is-link { position: relative; }
+.dash .panel-row.is-link::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--accent);
+  opacity: 0; transition: opacity 0.15s ease;
+}
+.dash .panel-row.is-link:hover::before { opacity: 1; }

@@ -7,6 +7,8 @@
  * y no tiene sentido revertirla por no haber podido escribir la auditoría.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js'
+
 export type AuditEntry = {
   user?: { id?: string; name?: string; email?: string } | null
   action: string
@@ -16,7 +18,7 @@ export type AuditEntry = {
   details?: Record<string, unknown>
 }
 
-export async function logAudit(supabase: any, e: AuditEntry): Promise<void> {
+export async function logAudit(supabase: SupabaseClient, e: AuditEntry): Promise<void> {
   try {
     await supabase.from('audit_log').insert([{
       user_id: e.user?.id || null,
@@ -44,7 +46,7 @@ export function describeChanges(
     const b = after?.[key]
     if (a === b) continue
     if (a == null && b == null) continue
-    const fmt = (v: any) => (v == null || v === '' ? '(vacío)' : String(v))
+    const fmt = (v: unknown) => (v == null || v === '' ? '(vacío)' : String(v))
     parts.push(`${labels[key]}: ${fmt(a)} → ${fmt(b)}`)
   }
   return parts.join(' · ')

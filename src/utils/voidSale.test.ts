@@ -42,7 +42,7 @@ function fakeSupabase(opts: { stockMatch?: any; failIncrement?: boolean; failDel
 }
 
 const deviceSale = {
-  id: 1, brand: 'Apple', model: 'iPhone 15', imei: '123', storage: '128GB', color: 'Negro',
+  id: '1', brand: 'Apple', model: 'iPhone 15', imei: '123', storage: '128GB', color: 'Negro',
   accessories: [{ id: 'a1', name: 'Funda', qty: 2 }],
   payments: [{ id: 'tradein', device: { imei: 'TI-9' } }],
 }
@@ -90,7 +90,7 @@ describe('voidSale', () => {
 
   it('una venta de accesorios sueltos no busca ningun equipo', async () => {
     const sb = fakeSupabase()
-    const r = await voidSale(sb, { id: 2, brand: 'ACCESORIOS', accessories: [{ id: 'a1', name: 'Vidrio', qty: 1 }], payments: [] })
+    const r = await voidSale(sb, { id: '2', brand: 'ACCESORIOS', accessories: [{ id: 'a1', name: 'Vidrio', qty: 1 }], payments: [] })
     expect(r.deviceRestored).toBe(false)
     expect(r.warnings).toEqual([])
     expect(sb.calls.some((c: any) => c.type === 'select' && c.table === 'stock')).toBe(false)
@@ -98,8 +98,38 @@ describe('voidSale', () => {
 
   it('propaga el error si no se pudo borrar la venta', async () => {
     const sb = fakeSupabase({ failDelete: true })
-    await expect(voidSale(sb, { id: 3, brand: 'ACCESORIOS', accessories: [], payments: [] }))
+    await expect(voidSale(sb, { id: '3', brand: 'ACCESORIOS', accessories: [], payments: [] }))
       .rejects.toThrow('permiso denegado')
+  })
+})
+
+describe('voidSale — camino atómico (RPC void_sale)', () => {
+  it('usa el resultado de la RPC y no toca el camino secuencial', async () => {
+    const calls: any[] = []
+    const sb: any = {
+      calls,
+      rpc: async (fn: string, args: any) => {
+        calls.push({ type: 'rpc', fn, args })
+        return {
+          error: null,
+          data: { deviceRestored: true, accessoriesRestored: 3, tradeInsRemoved: 1, warnings: ['ojo'] },
+        }
+      },
+      // Si el camino atómico funciona, NUNCA debería tocarse `from`.
+      from: () => { throw new Error('no debería usar el camino secuencial') },
+    }
+    const r = await voidSale(sb, deviceSale)
+    expect(r).toEqual({ deviceRestored: true, accessoriesRestored: 3, tradeInsRemoved: 1, warnings: ['ojo'] })
+    expect(calls).toContainEqual({ type: 'rpc', fn: 'void_sale', args: { p_sale_id: '1' } })
+  })
+
+  it('cae al camino secuencial si la RPC no está instalada', async () => {
+    // El fake devuelve {error:null} sin data (como Postgres cuando la función
+    // no existe y PostgREST responde vacío): debe revertir a mano igual.
+    const sb = fakeSupabase()
+    const r = await voidSale(sb, deviceSale)
+    expect(r.deviceRestored).toBe(true)
+    expect(r.accessoriesRestored).toBe(1)
   })
 })
 

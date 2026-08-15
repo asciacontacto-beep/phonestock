@@ -11,10 +11,10 @@ import Link from "next/link";
 import Image from "next/image";
 
 const FEATURES = [
-  { icon: <Package size={15} />, label: "Stock y ventas en tiempo real" },
-  { icon: <CalendarDays size={15} />, label: "Turnos y reparaciones" },
-  { icon: <Users size={15} />, label: "Mayoristas y cuentas corrientes" },
-  { icon: <TrendingUp size={15} />, label: "Rentabilidad por equipo y vendedor" },
+  { icon: <Package size={15} />, label: "Stock y ventas en tiempo real", color: "c-blue" },
+  { icon: <CalendarDays size={15} />, label: "Turnos y reparaciones", color: "c-violet" },
+  { icon: <Users size={15} />, label: "Mayoristas y cuentas corrientes", color: "c-green" },
+  { icon: <TrendingUp size={15} />, label: "Rentabilidad por equipo y vendedor", color: "c-amber" },
 ];
 
 export default function LoginPage() {
@@ -185,6 +185,43 @@ export default function LoginPage() {
           justify-content: center;
           flex-shrink: 0;
           color: rgba(255,255,255,0.5);
+        }
+
+        /* Borde superior de luz (efecto vidrio), como el hero del dashboard */
+        .lp-left::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0; height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+          z-index: 2;
+        }
+
+        .lp-feature-icon.c-blue   { background: rgba(59,130,246,0.14);  border-color: rgba(59,130,246,0.25);  color: #93c5fd; }
+        .lp-feature-icon.c-violet { background: rgba(139,92,246,0.14);  border-color: rgba(139,92,246,0.25);  color: #c4b5fd; }
+        .lp-feature-icon.c-green  { background: rgba(52,211,153,0.14);  border-color: rgba(52,211,153,0.25);  color: #6ee7b7; }
+        .lp-feature-icon.c-amber  { background: rgba(245,158,11,0.14);  border-color: rgba(245,158,11,0.25);  color: #fcd34d; }
+
+        .lp-testimonial {
+          margin-top: 40px;
+          padding: 18px 20px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 14px;
+          max-width: 400px;
+        }
+        .lp-testimonial-quote { font-size: 14px; color: rgba(255,255,255,0.78); line-height: 1.6; }
+        .lp-testimonial-author { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 10px; font-weight: 500; }
+
+        .lp-trust-row {
+          display: flex; gap: 20px; flex-wrap: wrap;
+          margin-top: 26px;
+        }
+        .lp-trust-item { display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,0.5); font-size: 12.5px; font-weight: 500; }
+        .lp-trust-dot { width: 5px; height: 5px; border-radius: 50%; background: #34d399; }
+
+        .lp-cta-note {
+          text-align: center; margin-top: 14px;
+          font-size: 12px; color: #9ca3af; line-height: 1.5;
         }
 
         .lp-left-footer {
@@ -414,15 +451,26 @@ export default function LoginPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
                   >
-                    <div className="lp-feature-icon">{f.icon}</div>
+                    <div className={`lp-feature-icon ${f.color}`}>{f.icon}</div>
                     {f.label}
                   </motion.div>
                 ))}
               </div>
+
+              <div className="lp-testimonial">
+                <div className="lp-testimonial-quote">“Desde que uso Stackr sé exactamente cuánto gano con cada equipo. Dejé las planillas y no vuelvo más.”</div>
+                <div className="lp-testimonial-author">— Dueño de local, Buenos Aires</div>
+              </div>
+
+              <div className="lp-trust-row">
+                <div className="lp-trust-item"><span className="lp-trust-dot" /> Pago único, sin mensualidades</div>
+                <div className="lp-trust-item"><span className="lp-trust-dot" /> Tus datos, siempre tuyos</div>
+                <div className="lp-trust-item"><span className="lp-trust-dot" /> Soporte en español</div>
+              </div>
             </motion.div>
           </div>
 
-          <div className="lp-left-footer">© 2025 Stackr · Hecho en Argentina</div>
+          <div className="lp-left-footer">Stackr · Hecho en Argentina 🇦🇷</div>
         </div>
 
         {/* Right panel */}
@@ -514,6 +562,10 @@ export default function LoginPage() {
                 <button className="lp-submit" type="submit" disabled={loading}>
                   {loading ? <Loader2 size={18} className="spin" /> : isLogin ? "Ingresar" : "Empezar prueba gratis"}
                 </button>
+
+                {!isLogin && (
+                  <div className="lp-cta-note">48 horas gratis · Sin tarjeta · Configurás en minutos</div>
+                )}
               </form>
 
               <div className="lp-toggle">

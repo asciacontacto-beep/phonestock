@@ -475,6 +475,10 @@ select.inp {
     width: 100% !important;
     border: none !important;
   }
+  /* Al imprimir, mostrar el recibo a tamaño real (sin el escalado de preview) */
+  .receipt-scaler { transform: none !important; width: 100% !important; }
+  .receipt-scaler-outer { height: auto !important; display: block !important; }
+  .receipt-scaler-outer .receipt-view { box-shadow: none !important; }
 }
 
 /* ═══════════════════════════════════════════
@@ -940,4 +944,245 @@ select.inp {
   .d-legend { grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .d-legend-value { font-size: 13px; }
   .d-legend-pct { display: none; }
+}
+
+/* ═══════════════════════════════════════════
+   DASHBOARD — uplift visual (scopeado en .dash)
+   No afecta a las demás pantallas que comparten .sc / .panel.
+   ═══════════════════════════════════════════ */
+
+/* Ritmo: un poco más de aire entre bloques y el hero como pieza central */
+.dash .d-hero {
+  margin-bottom: 16px;
+  box-shadow: 0 18px 40px -18px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.18);
+}
+/* Filo superior de luz: le da relieve de "vidrio" al card oscuro */
+.dash .d-hero { position: relative; }
+.dash .d-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding-top: 1px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), transparent 40%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Stat cards: de "dato plano" a métrica con identidad ── */
+.dash .sg { gap: 12px; margin-bottom: 16px; }
+
+.dash .sg .sc {
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  transition: transform 0.16s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.dash .sg .sc:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-md);
+}
+
+/* El ícono pasa de una marca de agua en la esquina a un chip con color */
+.dash .sc-icon {
+  position: absolute; top: 14px; right: 14px;
+  width: 32px; height: 32px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 1;
+  background: var(--surface-3);
+  color: var(--text-2);
+  transition: transform 0.16s ease;
+}
+.dash .sc:hover .sc-icon { opacity: 1; transform: scale(1.06); }
+
+.dash .sc-i-blue   { background: var(--blue-dim);  color: var(--blue); }
+.dash .sc-i-green  { background: var(--green-dim); color: var(--green); }
+.dash .sc-i-violet { background: #f5f3ff;          color: #7c3aed; }
+.dash .sc-i-amber  { background: var(--amber-dim); color: var(--amber); }
+
+.dash .sg .sl { margin-bottom: 8px; }
+.dash .sg .sv { font-size: 25px; }
+.dash .sc-sub { color: var(--text-2); }
+
+/* ── Paneles: cabeceras más presentes y esquinas coherentes ── */
+.dash .panel { margin-bottom: 14px; }
+.dash .panel-head {
+  padding: 13px 16px;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+}
+.dash .panel-title { font-size: 13.5px; }
+
+/* Barra de acento a la izquierda de la fila al pasar el mouse: más "táctil" */
+.dash .panel-row.is-link { position: relative; }
+.dash .panel-row.is-link::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--accent);
+  opacity: 0; transition: opacity 0.15s ease;
+}
+.dash .panel-row.is-link:hover::before { opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   COMMAND PALETTE (⌘K)
+   ═══════════════════════════════════════════ */
+.cmdk-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(17,17,17,0.28);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 12vh;
+  animation: cmdk-fade 0.12s ease;
+}
+@keyframes cmdk-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.cmdk {
+  width: 100%; max-width: 560px;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: cmdk-pop 0.14s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes cmdk-pop { from { transform: translateY(-8px) scale(0.98); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.cmdk-input-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+}
+.cmdk-search-icon { color: var(--text-3); flex-shrink: 0; }
+.cmdk-input {
+  flex: 1; border: none; background: none; outline: none;
+  font-size: 15px; color: var(--text);
+}
+.cmdk-input::placeholder { color: var(--text-3); }
+.cmdk-esc {
+  font-size: 10px; font-weight: 600; color: var(--text-3);
+  background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 2px 6px; font-family: 'JetBrains Mono', monospace;
+}
+
+.cmdk-list { max-height: 52vh; overflow-y: auto; padding: 6px; }
+.cmdk-empty { padding: 28px 16px; text-align: center; color: var(--text-3); font-size: 13px; }
+
+.cmdk-item {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 10px 12px; border-radius: var(--r-sm);
+  text-align: left; font-family: inherit; font-size: 13.5px;
+  color: var(--text-2); background: none; border: none;
+}
+.cmdk-item.active { background: var(--surface-3); color: var(--text); }
+.cmdk-item:active { transform: none; }
+.cmdk-item-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: var(--surface-2); color: var(--text-2);
+}
+.cmdk-item.active .cmdk-item-icon { background: var(--accent); color: #fff; }
+.cmdk-item-label { font-weight: 600; color: var(--text); }
+.cmdk-item-hint { font-size: 12px; color: var(--text-3); }
+.cmdk-item-enter { margin-left: auto; color: var(--text-3); flex-shrink: 0; }
+
+.cmdk-foot {
+  display: flex; gap: 16px; align-items: center;
+  padding: 9px 16px; border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 11px; color: var(--text-3);
+}
+.cmdk-foot kbd {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 5px; margin-right: 2px; color: var(--text-2);
+}
+
+/* Disparador de la command palette en el topbar */
+.cmdk-trigger {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 10px 6px 11px; border-radius: 20px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  font-size: 12px; font-weight: 500; color: var(--text-3);
+  cursor: pointer; transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
+}
+.cmdk-trigger:hover { background: var(--surface-3); color: var(--text-2); border-color: var(--border-md); }
+.cmdk-trigger:active { transform: none; }
+.cmdk-trigger-label { }
+.cmdk-trigger kbd {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 5px; padding: 1px 5px; color: var(--text-3);
+}
+@media (max-width: 640px) {
+  .cmdk-trigger-label, .cmdk-trigger kbd { display: none; }
+  .cmdk-trigger { padding: 7px; }
+}
+
+/* ── Estado vacío reutilizable ── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 56px 24px;
+}
+.empty-state-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 60px; height: 60px; border-radius: 18px;
+  background: var(--surface-3); color: var(--text-3);
+  margin-bottom: 18px;
+}
+.empty-state-title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+.empty-state-text {
+  font-size: 13px; color: var(--text-3); line-height: 1.55;
+  max-width: 340px; margin-top: 7px;
+}
+
+/* ── Configuración: toggles y layout con preview ── */
+.toggle-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-family: inherit; font-size: 12.5px; font-weight: 500;
+  color: var(--text-2); cursor: pointer; text-align: left;
+  transition: border-color 0.13s ease, background 0.13s ease;
+}
+.toggle-chip:active { transform: none; }
+.toggle-dot {
+  width: 14px; height: 14px; border-radius: 5px; flex-shrink: 0;
+  border: 1px solid var(--border-md); background: var(--surface-2);
+  position: relative; transition: background 0.13s ease, border-color 0.13s ease;
+}
+.toggle-chip[data-on="true"] { border-color: var(--accent); color: var(--text); background: var(--surface-2); }
+.toggle-chip[data-on="true"] .toggle-dot { background: var(--accent); border-color: var(--accent); }
+.toggle-chip[data-on="true"] .toggle-dot::after {
+  content: ''; position: absolute; left: 4px; top: 1px;
+  width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.settings-preview { position: sticky; top: 16px; }
+
+@media (max-width: 900px) {
+  .settings-grid { grid-template-columns: 1fr !important; }
+  .settings-preview { position: static; }
+}
+
+/* ── Editor de recibo (modal ancho, 2 columnas) ── */
+.receipt-editor { max-width: 920px; width: 100%; }
+.receipt-editor-body { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,400px); gap: 0; }
+.receipt-editor-form {
+  padding: 18px 20px; max-height: 74vh; overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.receipt-editor-preview {
+  display: flex; flex-direction: column;
+  background: #e9e9e7; max-height: 74vh;
+}
+.receipt-preview-scroll { flex: 1; overflow: auto; padding: 20px; display: flex; justify-content: center; align-items: flex-start; }
+.receipt-editor-actions { display: flex; gap: 8px; padding: 14px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+
+.receipt-line-edit { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
+.receipt-line-edit .inp { padding: 8px 10px; }
+
+@media (max-width: 780px) {
+  .receipt-editor-body { grid-template-columns: 1fr; }
+  .receipt-editor-form { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
+  .receipt-editor-preview { max-height: 60vh; }
 }

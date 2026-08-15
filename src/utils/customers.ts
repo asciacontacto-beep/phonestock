@@ -10,6 +10,8 @@
  * por nombre, tomando el más reciente en lugar de fallar ante un empate.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js'
+
 export type CustomerInput = {
   name: string
   dni?: string
@@ -19,7 +21,7 @@ export type CustomerInput = {
 }
 
 /** Devuelve el id del cliente, creándolo o actualizándolo según corresponda. */
-export async function upsertCustomer(supabase: any, cust: CustomerInput): Promise<string | null> {
+export async function upsertCustomer(supabase: SupabaseClient, cust: CustomerInput): Promise<string | null> {
   const name = (cust.name || '').trim()
   if (!name) return null
 

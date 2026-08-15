@@ -391,7 +391,7 @@ export function DashboardClient({
   // Negocio recién creado: mostrar el próximo paso, no ocho tarjetas en cero.
   if (isEmpty) {
     return (
-      <div className="page">
+      <div className="page dash">
         <div className="sh" style={{ marginBottom: 20 }}>
           <h1 className="st">Resumen</h1>
         </div>
@@ -416,7 +416,7 @@ export function DashboardClient({
   }
 
   return (
-    <div className="page">
+    <div className="page dash">
 
       {/* Header */}
       <div className="sh" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -531,7 +531,7 @@ export function DashboardClient({
       {/* ── Estado del negocio ─────────────────────────────────── */}
       <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginBottom: 14 }}>
         <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
-          <Box size={15} className="sc-icon" />
+          <Box size={16} className="sc-icon sc-i-blue" />
           <div className="sl">En stock</div>
           <div className="sv">{av.length}</div>
           <div className="sc-sub">equipos sin vender</div>
@@ -539,7 +539,7 @@ export function DashboardClient({
 
         {userRole !== 'seller' && (
           <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/stock')}>
-            <Wallet size={15} className="sc-icon" />
+            <Wallet size={16} className="sc-icon sc-i-green" />
             <div className="sl">Capital</div>
             <div className="sv">U$ {Math.round(capitalUSD).toLocaleString('es-AR')}</div>
             <div className="sc-sub">invertido en esos equipos</div>
@@ -547,7 +547,7 @@ export function DashboardClient({
         )}
 
         <div className="sc">
-          <ShoppingCart size={15} className="sc-icon" />
+          <ShoppingCart size={16} className="sc-icon sc-i-violet" />
           <div className="sl">Ventas</div>
           <div className="sv">{filteredSales.length}</div>
           <div className="sc-sub">
@@ -557,7 +557,7 @@ export function DashboardClient({
 
         {userRole !== 'seller' && (
           <div className="sc">
-            <TrendingUp size={15} className="sc-icon" />
+            <TrendingUp size={16} className="sc-icon sc-i-amber" />
             <div className="sl">Facturación</div>
             <div className="sv">U$ {Math.round(revenueUSD).toLocaleString('es-AR')}</div>
             <div className="sc-sub">{RANGE_LABELS[range].toLowerCase()}</div>

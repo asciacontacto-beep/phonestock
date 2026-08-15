@@ -19,6 +19,8 @@
 
 # production
 /build
+# legacy Vite/PWA build artifact — no debe versionarse
+/dist
 
 # misc
 .DS_Store

@@ -38,11 +38,11 @@ export async function updateSession(request: NextRequest) {
   // IMPORTANT: Avoid writing any logic between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
+  // getUser() valida el JWT contra el servidor de auth; getSession() sólo lee
+  // la cookie (falsificable) y no debe usarse para proteger rutas.
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  
-  const user = session?.user || null
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Proteger las rutas privadas
   if (

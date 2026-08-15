@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { voidSale, voidSaleSummary } from '@/utils/voidSale';
 import { logAudit, describeChanges } from '@/utils/audit';
 import { useConfirm } from '@/hooks/useConfirm';
+import { EmptyState } from '@/components/EmptyState';
 
 interface Props {
   sales: any[];
@@ -200,10 +201,20 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
       <div className="card no-print" style={{ padding: 0, overflow: 'hidden' }}>
         {filteredSales.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>
-            <ShoppingCart size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-            <div>No se encontraron ventas con los filtros actuales</div>
-          </div>
+          validSales.length === 0 ? (
+            <EmptyState
+              icon={<ShoppingCart size={26} />}
+              title="Todavía no registraste ventas"
+              description="Cuando hagas tu primera operación, la vas a ver acá con su detalle y ganancia."
+              action={isOwner ? { label: 'Nueva venta', icon: <Plus size={17} style={{ marginRight: 8 }} />, onClick: () => router.push('/sell') } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon={<Search size={26} />}
+              title="Sin resultados"
+              description="Ninguna venta coincide con los filtros actuales. Probá ajustarlos."
+            />
+          )
         ) : (
           <div className="tw">
             <table className="table">

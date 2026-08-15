@@ -127,7 +127,6 @@ input, select, textarea { outline: none; }
   box-shadow: inset 2px 0 0 var(--text);
 }
 
-.s-foot { padding: 12px; border-top: 1px solid var(--border); }
 .u-row {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; background: var(--bg);
@@ -141,8 +140,6 @@ input, select, textarea { outline: none; }
   font-family: 'JetBrains Mono', monospace;
 }
 
-.u-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.u-role { font-size: 11px; color: var(--text-3); text-transform: capitalize; }
 
 /* ── Main ───────────────────────────────── */
 .main {

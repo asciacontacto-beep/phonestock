@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Box, ScanLine, ShoppingCart, Wallet, LogOut, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert, FileText, Package, Headphones, Wrench, Truck, BarChart3, CreditCard, ShoppingBag, CalendarDays, Receipt } from 'lucide-react';
+import { LayoutDashboard, Box, ScanLine, ShoppingCart, Wallet, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert, FileText, Package, Headphones, Wrench, Truck, BarChart3, CreditCard, ShoppingBag, CalendarDays, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -8,12 +8,11 @@ interface SidebarProps {
   user: any;
   page: string;
   setPage: (page: string) => void;
-  onLogout: () => void;
   isOpen?: boolean;
   isSuperAdmin?: boolean;
 }
 
-export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }: SidebarProps) {
+export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarProps) {
   const pathname = usePathname();
   // Derive active from real pathname so it updates instantly on navigation
   const currentPage = pathname.replace('/', '') || 'dashboard';
@@ -80,20 +79,6 @@ export function Sidebar({ user, page, setPage, onLogout, isOpen, isSuperAdmin }:
             {it.l}
           </Link>
         )}
-      </div>
-      <div className="s-foot">
-        <div className="u-row">
-          <div className="av" style={{ background: user.color, color: '#000', width: 32, height: 32 }}>
-            {user.initials}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="u-name">{user.name}</div>
-            <div className="u-role">{user.role}</div>
-          </div>
-          <button className="btn-ghost" onClick={onLogout} style={{ padding: 4 }}>
-            <LogOut size={16} />
-          </button>
-        </div>
       </div>
     </div>
   );

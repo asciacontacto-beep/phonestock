@@ -53,7 +53,6 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
         user={mergedUser}
         page={page}
         setPage={(p) => setSbOpen(false)}
-        onLogout={handleLogout}
         isOpen={sbOpen}
         isSuperAdmin={isSuperAdmin}
       />

@@ -58,7 +58,7 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
         isSuperAdmin={isSuperAdmin}
       />
       <div className="main" onClick={() => sbOpen && setSbOpen(false)}>
-        <Topbar page={page} user={mergedUser} onMenu={() => setSbOpen(true)} onLogout={handleLogout} />
+        <Topbar page={page} user={mergedUser} onLogout={handleLogout} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
           {children}
         </div>

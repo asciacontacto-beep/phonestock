@@ -38,15 +38,15 @@ export function BottomNav({ page, user, onMenu, isSuperAdmin }: BottomNavProps) 
         if (it.action) {
           return (
             <button key={it.id} className={`bn-item ${page === it.id ? 'on' : ''}`} onClick={it.action}>
-              {it.i}
-              <span>{it.l}</span>
+              <span className="bn-ico">{it.i}</span>
+              <span className="bn-lbl">{it.l}</span>
             </button>
           );
         }
         return (
           <Link key={it.id} href={`/${it.id}`} className={`bn-item ${page === it.id ? 'on' : ''}`}>
-            {it.i}
-            <span>{it.l}</span>
+            <span className="bn-ico">{it.i}</span>
+            <span className="bn-lbl">{it.l}</span>
           </Link>
         );
       })}

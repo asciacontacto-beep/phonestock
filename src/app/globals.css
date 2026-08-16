@@ -501,7 +501,7 @@ select.inp {
 
   /* ── App shell ─── */
   .main {
-    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
     overflow-x: hidden;
   }
   
@@ -513,9 +513,6 @@ select.inp {
   .tb-title { font-size: 14px; }
   .tb-sub   { font-size: 11px; }
   
-  .mobile-menu-btn {
-    display: inline-flex !important;
-  }
 
   /* ── Page ─── */
   .page {
@@ -613,18 +610,27 @@ select.inp {
   }
 
   /* ── Bottom navigation ─── */
+  /* Barra flotante, despegada de los bordes. Pegada abajo a lo ancho se
+     confunde con el borde de la pantalla y se ve como web metida en un
+     teléfono; flotando se lee como app. */
   .bottom-nav {
     display: flex;
     position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: calc(60px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(255,255,255,0.94);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-top: 1px solid var(--border);
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+    height: 62px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(26px) saturate(180%);
+    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    border: 1px solid rgba(0,0,0,0.055);
+    box-shadow:
+      0 10px 30px -8px rgba(0,0,0,0.20),
+      0 3px 10px -2px rgba(0,0,0,0.07);
     z-index: 900;
     justify-content: space-around;
+    padding: 0 4px;
   }
 
   .bn-item {
@@ -638,12 +644,28 @@ select.inp {
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.01em;
-    padding: 8px 0;
-    transition: color 0.15s;
+    padding: 0;
     -webkit-tap-highlight-color: transparent;
+    transition: color 0.18s ease;
   }
+
+  /* El icono vive en su propia cápsula: es lo que se pinta al estar activo */
+  .bn-ico {
+    display: flex; align-items: center; justify-content: center;
+    width: 46px; height: 27px;
+    border-radius: 9px;
+    transition: background 0.2s cubic-bezier(0.16,1,0.3,1), transform 0.2s;
+  }
+
   .bn-item.on { color: var(--text); }
-  .bn-item:active { opacity: 0.6; }
+  .bn-item.on .bn-ico { background: rgba(17,17,17,0.075); }
+  .bn-item:active .bn-ico { transform: scale(0.9); }
+  .bn-lbl { line-height: 1; }
+
+  /* Los toasts salen abajo y la barra flotante los tapaba */
+  [data-sonner-toaster][data-y-position='bottom'] {
+    bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  }
 
   /* ── Modal → bottom sheet ─── */
   .mo {

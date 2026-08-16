@@ -1,12 +1,11 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search } from 'lucide-react';
+import { Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopbarProps {
   page: string;
   user: any;
-  onMenu: () => void;
   onLogout?: () => void;
 }
 
@@ -100,7 +99,7 @@ const TITLES: Record<string, string> = {
   recibos: 'Recibo',
 }
 
-export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
+export function Topbar({ page, user, onLogout }: TopbarProps) {
   const [openPanel, setOpenPanel] = useState<'bell' | 'rate' | 'avatar' | null>(null)
   const [read, setRead] = useState<string[]>([])
   const [bannerDismissed, setBannerDismissed] = useState(false)
@@ -185,10 +184,6 @@ export function Topbar({ page, user, onMenu, onLogout }: TopbarProps) {
       </div>
     )}
     <div className="topbar no-print">
-      <button className="btn-icon mobile-menu-btn" onClick={onMenu} style={{ display: 'none' }}>
-        <Menu size={22} />
-      </button>
-
       <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
 
         {/* Disparador visible de la command palette (⌘K) */}

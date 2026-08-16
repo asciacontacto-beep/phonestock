@@ -148,9 +148,20 @@
 }
 
 @media (max-width: 768px) {
+  /* Las anclas a secciones se ocultan porque en mobile se scrollea igual.
+     "Entrar" NO: un cliente que ya tiene cuenta entra desde el celular, que
+     es el equipo que tiene en la mano en el local. Ocultarlo dejaba la
+     landing con "Probar gratis" como única salida. */
   .navLinks   { display: none; }
-  .navLinkBtn { display: none; }
-  .navInner   { gap: 0; justify-content: space-between; padding: 0 20px; }
+  .navInner   { gap: 0; justify-content: space-between; padding: 0 16px; }
+  .navActions { gap: 6px; }
+  .navLinkBtn { font-size: 13.5px; padding: 7px 10px; color: #333; }
+  .navCta     { font-size: 13.5px; padding: 8px 14px; }
+}
+
+@media (max-width: 380px) {
+  .navCta { padding: 8px 12px; }
+  .navLinkBtn { padding: 7px 8px; }
 }
 
 /* ── HERO ──────────────────────────────────────── */

@@ -439,7 +439,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
                   <div 
                     key={i} 
                     style={{ padding: '10px 14px', borderBottom: i === custSuggestions.length - 1 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
-                    className="hover-bg"
+                    className="hover-bg pick-row"
                     onMouseDown={(e) => { e.preventDefault(); applyCustSuggestion(c); }}
                   >
                     <div style={{ fontWeight: 600 }}>{c.name}</div>
@@ -475,8 +475,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
             <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>Agregá fundas, vidrios, cargadores a esta venta. Podés marcarlos como de regalo (costo 0) o cobrarlos.</p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div ref={accSearchRef} style={{ flex: 1, position: 'relative' }}>
+              <div className="sell-acc-row">
+                <div ref={accSearchRef} className="sell-acc-search" style={{ flex: 1, position: 'relative' }}>
                   <input
                     className="inp"
                     placeholder="Buscar accesorio..."
@@ -507,6 +507,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
                           return (
                             <div
                               key={a.id}
+                              className="pick-row"
                               onMouseDown={() => {
                                 setSelectedAccId(a.id);
                                 setAccSearch(label);
@@ -540,17 +541,17 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
                 </div>
                 <input
                   type="number"
-                  className="inp"
+                  className="inp sell-acc-qty"
                   value={accQty}
                   min={1}
                   onChange={e => setAccQty(parseInt(e.target.value) || 1)}
                   style={{ width: 70 }}
                 />
-                <select className="inp" value={accType} onChange={e => setAccType(e.target.value as 'venta' | 'regalo')} style={{ width: 130 }}>
+                <select className="inp sell-acc-type" value={accType} onChange={e => setAccType(e.target.value as 'venta' | 'regalo')} style={{ width: 130 }}>
                   <option value="venta">Vender</option>
                   <option value="regalo">De Regalo</option>
                 </select>
-                <button className="btn btn-dark" onClick={() => {
+                <button className="btn btn-dark sell-acc-add" onClick={() => {
                   if (!selectedAccId) return;
                   const acc = accessoriesList.find(a => a.id === selectedAccId);
                   if (!acc) return;
@@ -629,7 +630,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
             )}
           </div>
           <div className="lbl">Método de Cobro</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+          <div className="sell-pay-grid">
             {PAY.map(m => {
               const disabled = false; // Allow mixing currencies (ARS and USD)
               return <button key={m.id} disabled={disabled} className={`btn ${sm === m.id ? 'btn-dark' : 'btn-outline'} btn-sm`} onClick={() => { if (m.id === 'tradein') { setShowTI(true); setSm(null); } else { setSm(m.id); } }}>{m.label}</button>;

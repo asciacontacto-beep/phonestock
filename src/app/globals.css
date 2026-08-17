@@ -176,6 +176,9 @@ input, select, textarea { outline: none; }
 
 .st { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; color: var(--text); line-height: 1.2; }
 .helper-text { font-size: 13px; color: var(--text-2); margin-top: 4px; line-height: 1.5; }
+/* Subtítulo debajo del título de una pantalla. Se usaba en 7 pantallas pero
+   nunca se había definido, así que quedaba con el tamaño del cuerpo. */
+.ss2 { font-size: 13px; color: var(--text-3); margin-top: 3px; line-height: 1.5; }
 
 /* ── Buttons ────────────────────────────── */
 .btn {

@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Box, ScanLine, ShoppingCart, Wallet, User as UserIcon, Settings, Warehouse, Users2, ShieldAlert, FileText, Package, Headphones, Wrench, Truck, BarChart3, CreditCard, ShoppingBag, CalendarDays, Receipt } from 'lucide-react';
+import { LayoutDashboard, Box, ScanLine, ShoppingCart, Wallet, User as UserIcon, Settings, Warehouse, Users2, FileText, Package, Headphones, Wrench, Truck, BarChart3, CreditCard, ShoppingBag, CalendarDays, Receipt, Building2, MessageSquare, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -20,7 +20,11 @@ export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarPr
   const nav = isSuperAdmin ?
     [
       { g: 'Stackr Admin' },
-      { id: 'superadmin', l: 'Negocios', i: <ShieldAlert size={17} /> },
+      { id: 'superadmin',             l: 'Resumen',      i: <LayoutDashboard size={17} /> },
+      { id: 'superadmin/negocios',    l: 'Negocios',     i: <Building2 size={17} /> },
+      { id: 'superadmin/seguimiento', l: 'Seguimiento',  i: <MessageSquare size={17} /> },
+      { id: 'superadmin/cobros',      l: 'Cobros',       i: <DollarSign size={17} /> },
+      { id: 'superadmin/agenda',      l: 'Agenda',       i: <CalendarDays size={17} /> },
     ] :
     user.role === 'owner' ?
     [

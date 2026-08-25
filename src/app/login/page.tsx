@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { confirmUserEmail } from "@/app/actions";
+import { authErrorMessage, isNetworkError } from "@/utils/authErrors";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -41,7 +42,7 @@ export default function LoginPage() {
       setError("");
       toast.success("Te enviamos un email para restablecer tu contraseña.");
     } catch (err: any) {
-      setError(err.message || "Error al enviar email de recuperación");
+      setError(isNetworkError(err) ? authErrorMessage(err) : err.message || "Error al enviar email de recuperación");
     } finally { setLoading(false); }
   };
 
@@ -71,11 +72,15 @@ export default function LoginPage() {
         if (data.user) { router.push("/dashboard"); router.refresh(); }
       }
     } catch (err: any) {
-      let msg = err.message || "Error en la autenticación";
-      if (msg.includes("User already registered")) { setIsLogin(true); msg = "Este email ya tiene una cuenta. Ingresá tu contraseña para continuar."; }
-      else if (msg.includes("Invalid login credentials")) { msg = "Email o contraseña incorrectos."; }
-      else if (msg.includes("Password should be at least")) { msg = "La contraseña debe tener al menos 6 caracteres."; }
-      else if (msg.toLowerCase().includes("email not confirmed")) {
+      // Una falla de red no es un problema de credenciales: cortar acá evita
+      // que el usuario vea el "Load failed" crudo del navegador y crea que se
+      // equivocó de contraseña.
+      if (isNetworkError(err)) { setError(authErrorMessage(err)); return; }
+
+      const raw: string = err?.message || "";
+      let msg = authErrorMessage(err);
+      if (raw.includes("User already registered")) { setIsLogin(true); msg = "Este email ya tiene una cuenta. Ingresá tu contraseña para continuar."; }
+      else if (raw.toLowerCase().includes("email not confirmed")) {
         try {
           const result = await confirmUserEmail(cleanEmail);
           if (result.success) {

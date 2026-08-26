@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { cache } from 'react'
-import { supabaseEnv } from './env'
+import { supabaseEnv, supabaseStorageKey } from './env'
 
 export const createClient = cache(async () => {
   const cookieStore = await cookies()
@@ -11,6 +11,8 @@ export const createClient = cache(async () => {
     url,
     anonKey,
     {
+      // Fija, para coincidir con el navegador, que ve otro host por el proxy.
+      auth: { storageKey: supabaseStorageKey() },
       cookies: {
         getAll() {
           return cookieStore.getAll()

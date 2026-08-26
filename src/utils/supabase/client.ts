@@ -1,7 +1,10 @@
 import { createBrowserClient } from '@supabase/ssr'
-import { supabaseEnv } from './env'
+import { supabaseEnv, supabaseBrowserUrl, supabaseStorageKey } from './env'
 
 export function createClient() {
-  const { url, anonKey } = supabaseEnv()
-  return createBrowserClient(url, anonKey)
+  const { anonKey } = supabaseEnv()
+  // Mismo origen (ver env.ts): Safari bloquea las peticiones entre sitios.
+  return createBrowserClient(supabaseBrowserUrl(), anonKey, {
+    auth: { storageKey: supabaseStorageKey() },
+  })
 }

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { storageKeyFor } from './env'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -18,6 +19,8 @@ export async function updateSession(request: NextRequest) {
     supabaseUrl,
     supabaseKey,
     {
+      // Fija, para coincidir con el navegador, que ve otro host por el proxy.
+      auth: { storageKey: storageKeyFor(supabaseUrl) },
       cookies: {
         getAll() {
           return request.cookies.getAll()

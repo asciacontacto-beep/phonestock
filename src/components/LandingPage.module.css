@@ -376,6 +376,23 @@
   border-bottom: 1px solid var(--line);
 }
 .shotLight { width: 10px; height: 10px; border-radius: var(--rf); background: #e4e4e7; }
+/* La barra de dirección hace que el marco se lea como producto y no como
+   adorno alrededor de una imagen. */
+.shotUrl {
+  flex: 1;
+  max-width: 260px;
+  margin-left: var(--s4);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--rf);
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--t3);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .shotImg { display: block; width: 100%; height: auto; }
 /* El recorte inferior de la captura se difumina en vez de cortar en seco */
 .shotFade {
@@ -958,6 +975,7 @@
   .heroTrust { gap: var(--s3); }
   .shot { margin-top: var(--s8); border-radius: var(--r3); }
   .shotBar { height: 30px; }
+  .shotUrl { display: none; }
 
   .head { margin-bottom: var(--s7); }
   .clients { padding: var(--s7) var(--s4); }
@@ -998,4 +1016,102 @@
     transition: none !important;
   }
   .jsOn .reveal { opacity: 1; transform: none; }
+}
+
+/* ── La cuenta del dólar ────────────────────────────────────────── */
+/* Bloque interactivo: el argumento central del producto se toca en vez
+   de leerse. Los números son aritmética, no una promesa. */
+
+.calc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: var(--s8);
+  align-items: center;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: var(--s8);
+  border-radius: var(--r4);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  box-shadow: var(--sh3);
+}
+
+.calcInputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); }
+.calcField { display: flex; flex-direction: column; gap: var(--s2); }
+.calcLabel {
+  font-size: var(--f-xs);
+  font-weight: 650;
+  color: var(--t3);
+  letter-spacing: 0.02em;
+}
+.calcInputWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  background: var(--bg);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.calcInputWrap:focus-within {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(9,9,11,0.06);
+}
+.calcPrefix { font-size: var(--f-sm); font-weight: 600; color: var(--t3); flex-shrink: 0; }
+.calcInput {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--f-body);
+  font-weight: 650;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.calcOut { display: flex; flex-direction: column; gap: var(--s3); }
+
+.calcResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4) var(--s5);
+  border-radius: var(--r2);
+  background: var(--bg3);
+}
+.calcResultLabel { font-size: var(--f-sm); color: var(--t2); line-height: 1.45; }
+.calcResultBad,
+.calcResultGood {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.calcResultBad  { color: var(--t3); }
+.calcResultGood { color: var(--green); }
+
+.calcGap {
+  margin: var(--s2) 0 0;
+  font-size: var(--f-sm);
+  color: var(--t2);
+  text-align: center;
+}
+.calcGap strong { color: var(--ink); font-weight: 750; }
+
+@media (max-width: 960px) {
+  .calc { grid-template-columns: 1fr; gap: var(--s7); padding: var(--s7); }
+}
+
+@media (max-width: 640px) {
+  .calc { padding: var(--s5); border-radius: var(--r3); gap: var(--s6); }
+  .calcInputs { grid-template-columns: 1fr; gap: var(--s3); }
+  .calcResult { flex-direction: column; align-items: flex-start; gap: var(--s2); }
+  .calcResultBad, .calcResultGood { font-size: 24px; }
+  .calcGap { text-align: left; }
 }

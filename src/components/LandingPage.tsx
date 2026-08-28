@@ -136,6 +136,83 @@ function useReveal() {
   return root;
 }
 
+
+/* ─── La cuenta del dólar ────────────────────────── */
+/* El diferencial de Stackr es aritmética, no una promesa: una venta en
+   pesos vale distinto según qué cotización use el sistema para medirla.
+   Acá se puede tocar con los números propios en vez de leerlo. */
+
+const money = (n: number) =>
+  n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
+
+function CuentaDolar() {
+  const [venta, setVenta] = useState(650000);
+  const [costo, setCosto] = useState(400);
+  const [dolarVenta, setDolarVenta] = useState(1000);
+  const [dolarHoy, setDolarHoy] = useState(1300);
+
+  const num = (v: string) => {
+    const n = parseFloat(v.replace(/[^\d.]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const seguro = (d: number) => (d > 0 ? d : 1);
+
+  const conHoy   = venta / seguro(dolarHoy)   - costo;
+  const conVenta = venta / seguro(dolarVenta) - costo;
+  const brecha   = conVenta - conHoy;
+
+  const campos: { l: string; v: number; set: (n: number) => void; pre: string }[] = [
+    { l: "Precio de venta", v: venta,      set: setVenta,      pre: "$" },
+    { l: "Costo del equipo", v: costo,     set: setCosto,      pre: "US$" },
+    { l: "Dólar ese día",   v: dolarVenta, set: setDolarVenta, pre: "$" },
+    { l: "Dólar hoy",       v: dolarHoy,   set: setDolarHoy,   pre: "$" },
+  ];
+
+  return (
+    <div className={styles.calc}>
+      <div className={styles.calcInputs}>
+        {campos.map(({ l, v, set, pre }) => (
+          <label key={l} className={styles.calcField}>
+            <span className={styles.calcLabel}>{l}</span>
+            <span className={styles.calcInputWrap}>
+              <span className={styles.calcPrefix}>{pre}</span>
+              <input
+                className={styles.calcInput}
+                type="text"
+                inputMode="numeric"
+                value={money(v)}
+                onChange={e => set(num(e.target.value))}
+              />
+            </span>
+          </label>
+        ))}
+      </div>
+
+      <div className={styles.calcOut}>
+        <div className={styles.calcResult}>
+          <span className={styles.calcResultLabel}>
+            Un sistema que mide todo al dólar de hoy
+          </span>
+          <span className={styles.calcResultBad}>US$ {money(Math.round(conHoy))}</span>
+        </div>
+
+        <div className={styles.calcResult}>
+          <span className={styles.calcResultLabel}>
+            Stackr, con el dólar del día de esa venta
+          </span>
+          <span className={styles.calcResultGood}>US$ {money(Math.round(conVenta))}</span>
+        </div>
+
+        <p className={styles.calcGap}>
+          {brecha === 0
+            ? "Con esta cotización la diferencia se anula."
+            : <>Diferencia: <strong>US$ {money(Math.abs(Math.round(brecha)))}</strong> en un solo equipo.</>}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Preguntas ──────────────────────────────────── */
 
 function Pregunta({ q, a }: { q: string; a: string }) {
@@ -238,6 +315,7 @@ export default function LandingPage() {
             <span className={styles.shotLight} />
             <span className={styles.shotLight} />
             <span className={styles.shotLight} />
+            <span className={styles.shotUrl}>stackrarg.com/dashboard</span>
           </div>
           <img src="/hero-dashboard.png" alt="Panel de control de Stackr" className={styles.shotImg} />
           <span className={styles.shotFade} aria-hidden />
@@ -278,8 +356,26 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      {/* ── LA CUENTA DEL DÓLAR ────────────────────── */}
+      <section className={`${styles.section} ${styles.sectionTint}`}>
+        <div className={styles.inner}>
+          <div className={`${styles.head} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>Probalo vos</span>
+            <h2 className={styles.h2}>La misma venta, dos ganancias distintas</h2>
+            <p className={styles.lead}>
+              Vendés en pesos, comprás en dólares. Si el sistema mide tus ventas viejas
+              con el dólar de hoy, tu ganancia se deforma. Poné tus números y mirá.
+            </p>
+          </div>
+          <div className={styles.reveal}>
+            <CuentaDolar />
+          </div>
+        </div>
+      </section>
+
       {/* ── FUNCIONES ──────────────────────────────── */}
-      <section id="funciones" className={`${styles.section} ${styles.sectionTint}`}>
+      <section id="funciones" className={styles.section}>
         <div className={styles.inner}>
           <div className={`${styles.head} ${styles.reveal}`}>
             <span className={styles.eyebrow}>La solución</span>

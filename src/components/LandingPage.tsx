@@ -1,6 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  ArrowRight, Check, ChevronDown, MessageCircle,
+  TrendingUp, Package, Wrench, Clock,
+} from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,145 +15,138 @@ const WA_LINK =
 
 /* ─── Datos ──────────────────────────────────────── */
 
+const LOCALES = ["La tiendita", "GoldenApple Tandil", "Hola Apple Tandil"];
+
 const PROBLEMAS = [
   {
-    n: "i",
+    icon: <TrendingUp size={19} />, tono: "icGreen",
     t: "No sabés cuánto ganás",
     d: "Vendés todos los días, pero entre el costo, los gastos y el dólar que cambió desde que compraste, el margen real nunca aparece en ningún lado.",
   },
   {
-    n: "ii",
-    t: "El stock vive en la cabeza de alguien",
+    icon: <Package size={19} />, tono: "icBlue",
+    t: "El stock es un caos",
     d: "Repuestos que no se encuentran, equipos cargados dos veces, precios de la semana pasada. Y la única copia de la verdad es un mensaje de WhatsApp.",
   },
   {
-    n: "iii",
+    icon: <Wrench size={19} />, tono: "icViolet",
     t: "Las reparaciones se pierden",
     d: "Un cuaderno con nombres y fallas. El cliente llama para preguntar por su equipo y nadie sabe dónde está ni qué se le hizo.",
   },
   {
-    n: "iv",
+    icon: <Clock size={19} />, tono: "icAmber",
     t: "El cierre se come la noche",
-    d: "Sumar la caja, controlar lo que vendió cada uno, revisar los movimientos. Todos los días, a mano, cuando ya cerraste.",
+    d: "Sumar la caja, controlar lo que vendió cada uno, revisar los movimientos. Todos los días, a mano, cuando ya cerraste el local.",
   },
 ];
 
-type Capitulo = {
-  n: string; fig: string | null; img: string | null; alt: string;
-  epigrafe: string; t: string; d: string; puntos: string[]; recorte?: boolean;
+type Funcion = {
+  eyebrow: string; t: string; d: string; puntos: string[];
+  img: string | null; alt: string; recorte?: boolean;
 };
 
-const CAPITULOS: Capitulo[] = [
+const FUNCIONES: Funcion[] = [
   {
-    n: "01",
-    fig: "Fig. 2",
+    eyebrow: "Rentabilidad",
+    t: "El número real, no el aproximado",
+    d: "Cada venta guarda el dólar del día en que se hizo, no el de hoy. Los repuestos se descuentan de la reparación que los usó. Lo que ves como ganancia es la ganancia.",
+    puntos: ["Margen por equipo, accesorio y servicio", "Histórico en pesos y dólares", "Cierre de caja automático"],
     img: "/hero-stats.png",
     alt: "Indicadores de ganancia y margen en Stackr",
-    epigrafe: "Ganancia del mes y margen real, con el capital inmovilizado en stock.",
     recorte: true,
-    t: "La rentabilidad, calculada bien",
-    d: "Cada venta guarda el dólar del día en que se hizo, no el de hoy. Los repuestos se descuentan de la reparación que los usó. Lo que ves como ganancia es la ganancia.",
-    puntos: ["Margen por equipo, accesorio y servicio", "Histórico en ARS y USD", "Cierre de caja automático"],
   },
   {
-    n: "02",
-    fig: "Fig. 3",
-    img: "/hero-stock.png",
-    alt: "Inventario de Stackr",
-    epigrafe: "Inventario por depósito, con IMEI, costo y condición de cada unidad.",
-    t: "Un inventario que no se discute",
+    eyebrow: "Inventario",
+    t: "Un stock que no se discute",
     d: "Cada equipo tiene IMEI, costo, precio y condición. Cuando se vende, sale del stock solo. Si tenés más de un local, cada uno tiene el suyo y podés transferir entre ellos.",
-    puntos: ["Alta por escaneo de código", "Depósitos y sucursales", "Transferencias con registro"],
+    puntos: ["Alta por escaneo de código de barras", "Depósitos y sucursales separados", "Transferencias con registro"],
+    img: "/hero-stock.png",
+    alt: "Inventario por depósito en Stackr",
   },
   {
-    n: "03",
-    fig: null,
+    eyebrow: "Servicio técnico",
+    t: "El taller, ordenado",
+    d: "Ingresás el equipo con la falla, el presupuesto y el técnico. Cargás los repuestos que se usaron y el costo entra solo en la cuenta. Cuando está listo, el cliente recibe un WhatsApp.",
+    puntos: ["Orden de servicio imprimible", "Repuestos con stock propio", "Aviso automático al cliente"],
     img: null,
     alt: "",
-    epigrafe: "",
-    t: "El taller, ordenado",
-    d: "Ingresa el equipo con la falla, el presupuesto y el técnico. Se cargan los repuestos que se usaron y el costo entra solo en la cuenta. Cuando está listo, el cliente recibe un WhatsApp.",
-    puntos: ["Orden de servicio imprimible", "Repuestos con stock propio", "Aviso automático al cliente"],
   },
 ];
 
 const PASOS = [
-  {
-    n: "01",
-    t: "Registrás el negocio",
-    tiempo: "30 segundos",
-    d: "Nombre del local, email y contraseña. Sin tarjeta. La cuenta queda activa al instante.",
-  },
-  {
-    n: "02",
-    t: "Creás el depósito",
-    tiempo: "1 minuto",
-    d: "El depósito es tu local. Todo el stock vive adentro de uno. Si tenés dos sucursales, creás dos.",
-  },
-  {
-    n: "03",
-    t: "Cargás el inventario",
-    tiempo: "2 a 5 minutos",
-    d: "Escaneás el código o escribís marca, modelo y precio. Se guarda costo, venta, IMEI y condición.",
-  },
-  {
-    n: "04",
-    t: "Hacés la primera venta",
-    tiempo: "30 segundos",
-    d: "Equipo, cliente, forma de pago. El comprobante con la garantía sale solo, listo para imprimir.",
-  },
+  { n: "1", tiempo: "30 segundos", t: "Registrás el negocio", d: "Nombre del local, email y contraseña. Sin tarjeta de crédito." },
+  { n: "2", tiempo: "1 minuto", t: "Creás el depósito", d: "El depósito es tu local. Todo el stock vive adentro de uno." },
+  { n: "3", tiempo: "2 a 5 minutos", t: "Cargás el inventario", d: "Escaneás el código o escribís marca, modelo y precio." },
+  { n: "4", tiempo: "30 segundos", t: "Hacés la primera venta", d: "El comprobante con la garantía se genera solo, listo para imprimir." },
 ];
 
-const TABLA = [
-  { c: "Costo al empezar", otros: "$0", stackr: "$260" },
-  { c: "Año 1", otros: "$600", stackr: "—" },
-  { c: "Año 2", otros: "$600", stackr: "—" },
-  { c: "Año 3", otros: "$600", stackr: "—" },
-  { c: "Actualizaciones", otros: "Según plan", stackr: "Incluidas" },
-  { c: "Soporte", otros: "Plan premium", stackr: "Incluido" },
+const COMPARA = [
+  { c: "Costo al empezar", a: "$0", b: "$260" },
+  { c: "Año 1", a: "$600", b: "—" },
+  { c: "Año 2", a: "$600", b: "—" },
+  { c: "Año 3", a: "$600", b: "—" },
+  { c: "Actualizaciones", a: "Según plan", b: "Incluidas" },
+  { c: "Soporte", a: "Plan premium", b: "Incluido" },
+];
+
+const INCLUYE = [
+  "Sucursales ilimitadas", "Usuarios ilimitados",
+  "Stock, ventas y caja", "Servicio técnico",
+  "Reportes de rentabilidad", "Pesos y dólares",
+  "Avisos por WhatsApp", "Soporte prioritario",
 ];
 
 const FAQ = [
-  {
-    q: "¿Puedo probarlo antes de pagar?",
-    a: "Sí. Tenés 48 horas con todas las funciones abiertas y sin tarjeta de crédito. Si necesitás más tiempo para cargar el inventario, escribinos y te lo extendemos.",
-  },
-  {
-    q: "¿Qué pasa si necesito ayuda?",
-    a: "Soporte por WhatsApp incluido de por vida, sin plan premium ni tickets. Respondemos en menos de 24 horas hábiles.",
-  },
-  {
-    q: "¿Funciona desde el celular?",
-    a: "Sí, y está hecho para eso. Vendés, cargás stock y mirás las métricas desde el teléfono, sin instalar nada.",
-  },
-  {
-    q: "¿Puedo darle acceso a mis empleados?",
-    a: "Sí. Creás usuarios con rol de Vendedor o Propietario. El vendedor ve lo que necesita para trabajar y no ve los costos ni la rentabilidad.",
-  },
-  {
-    q: "¿Sirve para varias sucursales?",
-    a: "Sí. Un depósito por local, vendedores asignados a cada uno y transferencias de stock entre ellos. Todo se ve desde el mismo panel.",
-  },
-  {
-    q: "¿Las actualizaciones se cobran aparte?",
-    a: "No. El pago único incluye todo lo que venga después, para siempre.",
-  },
+  { q: "¿Puedo probarlo antes de pagar?", a: "Sí. Tenés 48 horas con todas las funciones abiertas y sin tarjeta de crédito. Si necesitás más tiempo para terminar de cargar el inventario, escribinos y te lo extendemos." },
+  { q: "¿Qué pasa si necesito ayuda?", a: "Soporte por WhatsApp incluido de por vida, sin plan premium ni sistema de tickets. Respondemos en menos de 24 horas hábiles." },
+  { q: "¿Funciona desde el celular?", a: "Sí, y está hecho para eso. Vendés, cargás stock y mirás las métricas desde el teléfono, sin instalar nada." },
+  { q: "¿Puedo darle acceso a mis empleados?", a: "Sí. Creás usuarios con rol de Vendedor o Propietario. El vendedor ve lo que necesita para trabajar y no ve los costos ni la rentabilidad." },
+  { q: "¿Sirve para varias sucursales?", a: "Sí. Un depósito por local, vendedores asignados a cada uno y transferencias de stock entre ellos. Todo se ve desde el mismo panel." },
+  { q: "¿Las actualizaciones se cobran aparte?", a: "No. El pago único incluye todo lo que venga después, para siempre." },
 ];
+
+/* ─── Aparición al hacer scroll ──────────────────── */
+/* El contenido se sirve visible. Sólo cuando hay JS se marca la raíz y
+   recién ahí el CSS lo esconde para poder revelarlo: sin JavaScript la
+   página se ve completa igual. */
+
+function useReveal() {
+  const root = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    el.classList.add(styles.jsOn);
+    const objetivos = el.querySelectorAll(`.${styles.reveal}`);
+    const obs = new IntersectionObserver(
+      entradas => entradas.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add(styles.revealIn);
+          obs.unobserve(e.target);
+        }
+      }),
+      { rootMargin: "0px 0px -8% 0px" },
+    );
+    objetivos.forEach(t => obs.observe(t));
+    return () => obs.disconnect();
+  }, []);
+
+  return root;
+}
 
 /* ─── Preguntas ──────────────────────────────────── */
 
-function Pregunta({ q, a, n }: { q: string; a: string; n: string }) {
+function Pregunta({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`${styles.qaItem} ${open ? styles.qaOpen : ""}`}>
-      <button className={styles.qaQ} onClick={() => setOpen(o => !o)} aria-expanded={open}>
-        <span className={styles.qaN}>{n}</span>
-        <span className={styles.qaText}>{q}</span>
-        <span className={styles.qaMark} aria-hidden>{open ? "−" : "+"}</span>
+    <div className={`${styles.faqItem} ${open ? styles.faqOpen : ""}`}>
+      <button className={styles.faqQ} onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <span>{q}</span>
+        <ChevronDown size={18} className={styles.faqChevron} />
       </button>
-      <div className={styles.qaBody} hidden={!open}>
-        <p className={styles.qaA}>{a}</p>
-      </div>
+      <div hidden={!open}><p className={styles.faqA}>{a}</p></div>
     </div>
   );
 }
@@ -157,6 +154,8 @@ function Pregunta({ q, a, n }: { q: string; a: string; n: string }) {
 /* ─── Página ─────────────────────────────────────── */
 
 export default function LandingPage() {
+  const root = useReveal();
+
   // Registra una visita al link público (una vez por sesión). Si la tabla no
   // está creada todavía, falla en silencio y no afecta al visitante.
   useEffect(() => {
@@ -170,316 +169,265 @@ export default function LandingPage() {
     } catch { /* noop */ }
   }, []);
 
-  const anio = new Date().getFullYear();
-
   return (
-    <div className={styles.root}>
+    <div className={styles.root} ref={root}>
 
-      {/* ── CABECERA ───────────────────────────────── */}
-      <header className={styles.masthead}>
-        <div className={styles.mastheadInner}>
-          <Link href="/" className={styles.mastheadBrand}>
-            <Image src="/logo.png" alt="" width={26} height={26} className={styles.mastheadLogo} />
-            <span className={styles.mastheadName}>Stackr</span>
+      {/* ── BARRA ──────────────────────────────────── */}
+      <nav className={styles.nav}>
+        <div className={styles.navInner}>
+          <Link href="/" className={styles.navBrand}>
+            <Image src="/logo.png" alt="" width={30} height={30} className={styles.navLogo} />
+            <span className={styles.navName}>Stackr</span>
           </Link>
-          <nav className={styles.mastheadNav}>
-            <a href="#sistema">Sistema</a>
-            <a href="#cuenta">La cuenta</a>
-            <a href="#preguntas">Preguntas</a>
-          </nav>
-          <div className={styles.mastheadActions}>
-            <Link href="/login" className={styles.linkPlain}>Entrar</Link>
-            <Link href="/onboarding" className={styles.btnInk}>Probar gratis</Link>
+          <div className={styles.navLinks}>
+            <a href="#funciones" className={styles.navLink}>Funciones</a>
+            <a href="#precio" className={styles.navLink}>Precio</a>
+            <a href="#faq" className={styles.navLink}>Preguntas</a>
           </div>
+          <div className={styles.navActions}>
+            <Link href="/login" className={styles.navEnter}>Entrar</Link>
+            <Link href="/onboarding" className={`${styles.btn} ${styles.btnSm} ${styles.btnPrimary}`}>
+              Probar gratis
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* ── PORTADA ────────────────────────────────── */}
+      <header className={styles.hero}>
+        <div className={styles.heroBg} aria-hidden />
+        <div className={styles.heroInner}>
+          <span className={styles.badge}>
+            <span className={styles.badgeDot} />
+            Prueba de 48 horas — sin tarjeta de crédito
+          </span>
+
+          <h1 className={styles.h1}>
+            El sistema para tu local de celulares<em> que se paga solo</em>
+          </h1>
+
+          <p className={styles.heroSub}>
+            Stock, ventas, reparaciones y caja en un solo panel. Hecho para locales
+            de celulares en Argentina — y por primera vez, el número real de lo que ganás.
+          </p>
+
+          <div className={styles.heroCtas}>
+            <Link href="/onboarding" className={`${styles.btn} ${styles.btnPrimary}`}>
+              Empezar prueba gratis <ArrowRight size={17} />
+            </Link>
+            <a href="#funciones" className={`${styles.btn} ${styles.btnGhost}`}>
+              Ver cómo funciona
+            </a>
+          </div>
+
+          <p className={styles.heroPrice}>
+            <s>$400</s> <strong>$260 USD</strong> · un solo pago, sin mensualidades
+          </p>
+
+          <div className={styles.heroTrust}>
+            <span className={styles.heroTrustItem}><Check size={13} strokeWidth={3} /> Sin tarjeta</span>
+            <span className={styles.dot} />
+            <span className={styles.heroTrustItem}><Check size={13} strokeWidth={3} /> Soporte por WhatsApp</span>
+            <span className={styles.dot} />
+            <span className={styles.heroTrustItem}><Check size={13} strokeWidth={3} /> Actualizaciones de por vida</span>
+          </div>
+        </div>
+
+        <div className={styles.shot}>
+          <div className={styles.shotBar} aria-hidden>
+            <span className={styles.shotLight} />
+            <span className={styles.shotLight} />
+            <span className={styles.shotLight} />
+          </div>
+          <img src="/hero-dashboard.png" alt="Panel de control de Stackr" className={styles.shotImg} />
+          <span className={styles.shotFade} aria-hidden />
         </div>
       </header>
 
-      {/* ── PORTADA ────────────────────────────────── */}
-      <section className={styles.cover}>
-        <div className={styles.coverInner}>
-          <div className={styles.dateline}>
-            <span>Edición Argentina</span>
-            <span className={styles.datelineSep} />
-            <span>Locales de celulares y servicio técnico</span>
-            <span className={styles.datelineSep} />
-            <span>{anio}</span>
-          </div>
-
-          <h1
-            className={styles.coverH1}
-          >
-            Vendés todos los días.
-            <em> ¿Sabés cuánto ganaste?</em>
-          </h1>
-
-          <div className={styles.coverGrid}>
-            <p
-              className={styles.coverDeck}
-            >
-              Stackr es el sistema de gestión para locales de celulares en Argentina.
-              Stock, ventas, reparaciones y caja en un solo lugar — y por primera vez,
-              el número real de lo que te queda.
-            </p>
-
-            <div
-              className={styles.coverAside}
-            >
-              <div className={styles.coverActions}>
-                <Link href="/onboarding" className={styles.btnInkLg}>Empezar la prueba</Link>
-                <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.linkUnderline}>
-                  Comprar por WhatsApp
-                </a>
-              </div>
-              <p className={styles.coverFine}>
-                48 horas completas, sin tarjeta de crédito.
-              </p>
-            </div>
-          </div>
-
-          {/* Lámina principal */}
-          <figure
-            className={styles.plate}
-          >
-            <div className={styles.plateFrame}>
-              <img src="/hero-dashboard.png" alt="Panel de control de Stackr" className={styles.plateImg} />
-            </div>
-            <figcaption className={styles.plateCaption}>
-              <span className={styles.plateFig}>Fig. 1</span>
-              Panel de rentabilidad. Los datos de la imagen son de demostración.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      {/* ── FRANJA DE CIFRAS ───────────────────────── */}
-      <section className={styles.ledger}>
-        <div className={styles.ledgerInner}>
-          <div className={styles.ledgerCell}>
-            <span className={styles.ledgerNum}>$260</span>
-            <span className={styles.ledgerLbl}>Pago único, en dólares</span>
-          </div>
-          <div className={styles.ledgerCell}>
-            <span className={styles.ledgerNum}>$0</span>
-            <span className={styles.ledgerLbl}>Por mes, para siempre</span>
-          </div>
-          <div className={styles.ledgerCell}>
-            <span className={styles.ledgerNum}>48 h</span>
-            <span className={styles.ledgerLbl}>De prueba, sin tarjeta</span>
-          </div>
-          <div className={styles.ledgerCell}>
-            <span className={styles.ledgerNum}>10 min</span>
-            <span className={styles.ledgerLbl}>Hasta tu primera venta</span>
+      {/* ── LOCALES ────────────────────────────────── */}
+      <section className={styles.clients}>
+        <div className={styles.clientsInner}>
+          <p className={styles.clientsLabel}>Locales que ya lo usan</p>
+          <div className={styles.clientsRow}>
+            {LOCALES.map(n => <span key={n} className={styles.clientName}>{n}</span>)}
           </div>
         </div>
       </section>
 
-      {/* ── § EL PROBLEMA ──────────────────────────── */}
+      {/* ── PROBLEMA ───────────────────────────────── */}
       <section className={styles.section}>
-        <div className={styles.sectionInner}>
-          <header className={styles.sectionHead}>
-            <span className={styles.sectionNum}>§ 01</span>
-            <h2 className={styles.sectionH2}>Lo que se escapa</h2>
-          </header>
+        <div className={styles.inner}>
+          <div className={`${styles.head} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>El problema</span>
+            <h2 className={styles.h2}>¿Te suena familiar?</h2>
+            <p className={styles.lead}>
+              La mayoría de los locales usan herramientas que no fueron hechas para este
+              rubro. El resultado es plata que se escapa sin que te des cuenta.
+            </p>
+          </div>
 
-          <p className={styles.lead}>
-            <span className={styles.dropcap}>L</span>a mayoría de los locales de celulares trabajan
-            con herramientas que no fueron hechas para este rubro: una planilla, un cuaderno y un
-            grupo de WhatsApp. Funciona, hasta que deja de funcionar. Y el costo de que deje de
-            funcionar no se ve en ningún lado — se ve en lo que no te quedó a fin de mes.
-          </p>
-
-          <div className={styles.problemList}>
-            {PROBLEMAS.map(({ n, t, d }) => (
-              <article key={t} className={styles.problemItem}>
-                <span className={styles.problemNum}>{n}</span>
-                <h3 className={styles.problemT}>{t}</h3>
-                <p className={styles.problemD}>{d}</p>
+          <div className={styles.grid4}>
+            {PROBLEMAS.map(({ icon, tono, t, d }) => (
+              <article key={t} className={`${styles.card} ${styles.reveal}`}>
+                <span className={`${styles.cardIcon} ${styles[tono]}`}>{icon}</span>
+                <h3 className={styles.cardTitle}>{t}</h3>
+                <p className={styles.cardText}>{d}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── § EL SISTEMA ───────────────────────────── */}
-      <section id="sistema" className={styles.sectionAlt}>
-        <div className={styles.sectionInner}>
-          <header className={styles.sectionHead}>
-            <span className={styles.sectionNum}>§ 02</span>
-            <h2 className={styles.sectionH2}>El sistema</h2>
-          </header>
+      {/* ── FUNCIONES ──────────────────────────────── */}
+      <section id="funciones" className={`${styles.section} ${styles.sectionTint}`}>
+        <div className={styles.inner}>
+          <div className={`${styles.head} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>La solución</span>
+            <h2 className={styles.h2}>Todo lo que necesitás, nada de lo que no</h2>
+            <p className={styles.lead}>
+              Stackr reemplaza el cuaderno, la planilla y el grupo de WhatsApp con
+              un sistema que hace el trabajo por vos.
+            </p>
+          </div>
 
-          {CAPITULOS.map(({ n, fig, img, alt, epigrafe, t, d, puntos, recorte }, i) => (
+          {FUNCIONES.map(({ eyebrow, t, d, puntos, img, alt, recorte }, i) => (
             <div
-              key={n}
-              className={`${styles.chapter} ${i % 2 === 1 ? styles.chapterFlip : ""}`}
-             
+              key={t}
+              className={[
+                styles.featureRow,
+                img ? (i % 2 === 1 ? styles.featureFlip : "") : styles.featureSolo,
+                styles.reveal,
+              ].filter(Boolean).join(" ")}
             >
-              <div className={styles.chapterText}>
-                <span className={styles.chapterNum}>{n}</span>
-                <h3 className={styles.chapterH3}>{t}</h3>
-                <p className={styles.chapterP}>{d}</p>
-                <ul className={styles.chapterList}>
-                  {puntos.map(p => <li key={p}>{p}</li>)}
+              <div className={styles.featureText}>
+                <span className={styles.eyebrow}>{eyebrow}</span>
+                <h3 className={styles.featureH3}>{t}</h3>
+                <p className={styles.featureP}>{d}</p>
+                <ul className={styles.featureList}>
+                  {puntos.map(p => (
+                    <li key={p}>
+                      <Check size={16} strokeWidth={3} className={styles.featureCheck} />
+                      {p}
+                    </li>
+                  ))}
                 </ul>
               </div>
               {img && (
-                <figure className={styles.chapterFigure}>
-                  <div className={styles.plateFrame}>
-                    <img
-                      src={img}
-                      alt={alt}
-                      className={`${styles.plateImg} ${recorte ? styles.plateCrop : ""}`}
-                      loading="lazy"
-                    />
-                  </div>
-                  <figcaption className={styles.plateCaption}>
-                    <span className={styles.plateFig}>{fig}</span>
-                    {epigrafe}
-                  </figcaption>
-                </figure>
+                <div className={`${styles.featureShot} ${recorte ? styles.featureShotCrop : ""}`}>
+                  <img src={img} alt={alt} loading="lazy" />
+                </div>
               )}
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── § CÓMO EMPIEZA ─────────────────────────── */}
+      {/* ── CÓMO EMPIEZA ───────────────────────────── */}
       <section className={styles.section}>
-        <div className={styles.sectionInner}>
-          <header className={styles.sectionHead}>
-            <span className={styles.sectionNum}>§ 03</span>
-            <h2 className={styles.sectionH2}>De cero a la primera venta</h2>
-          </header>
+        <div className={styles.inner}>
+          <div className={`${styles.head} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>Cómo funciona</span>
+            <h2 className={styles.h2}>De cero a tu primera venta en 10 minutos</h2>
+            <p className={styles.lead}>Cada paso desbloquea el siguiente. No hay instalación ni configuración.</p>
+          </div>
 
           <div className={styles.steps}>
-            {PASOS.map(({ n, t, tiempo, d }) => (
-              <article key={n} className={styles.step}>
-                <div className={styles.stepMeta}>
-                  <span className={styles.stepNum}>{n}</span>
-                  <span className={styles.stepTime}>{tiempo}</span>
-                </div>
-                <div className={styles.stepBody}>
-                  <h3 className={styles.stepT}>{t}</h3>
-                  <p className={styles.stepD}>{d}</p>
-                </div>
+            {PASOS.map(({ n, tiempo, t, d }) => (
+              <article key={n} className={`${styles.step} ${styles.reveal}`}>
+                <span className={styles.stepNum}>{n}</span>
+                <span className={styles.stepTime}>{tiempo}</span>
+                <h3 className={styles.stepTitle}>{t}</h3>
+                <p className={styles.stepText}>{d}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── § LA CUENTA ────────────────────────────── */}
-      <section id="cuenta" className={styles.sectionInk}>
-        <div className={styles.sectionInner}>
-          <header className={styles.sectionHead}>
-            <span className={styles.sectionNum}>§ 04</span>
-            <h2 className={styles.sectionH2}>La cuenta que casi nadie hace</h2>
-          </header>
+      {/* ── PRECIO ─────────────────────────────────── */}
+      <section id="precio" className={`${styles.section} ${styles.sectionTint}`}>
+        <div className={styles.inner}>
+          <div className={`${styles.head} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>Precio</span>
+            <h2 className={styles.h2}>La cuenta que casi nadie hace</h2>
+            <p className={styles.lead}>
+              Los sistemas con mensualidad parecen baratos el primer mes. La comparación
+              honesta es contra lo que vas a haber pagado en tres años.
+            </p>
+          </div>
 
-          <p className={styles.leadInk}>
-            Los sistemas con mensualidad parecen baratos el primer mes. La comparación honesta
-            no es contra el precio de entrada: es contra lo que vas a haber pagado en tres años.
+          <div className={`${styles.compare} ${styles.reveal}`}>
+            <div className={`${styles.compareRow} ${styles.compareHead}`}>
+              <span>Concepto</span>
+              <span className={styles.compareA}>Sistema mensual</span>
+              <span className={styles.compareB}>Stackr</span>
+            </div>
+            {COMPARA.map(({ c, a, b }) => (
+              <div key={c} className={styles.compareRow}>
+                <span className={styles.compareLabel}>{c}</span>
+                <span className={styles.compareA}>{a}</span>
+                <span className={styles.compareB}>{b}</span>
+              </div>
+            ))}
+            <div className={`${styles.compareRow} ${styles.compareTotal}`}>
+              <span className={styles.compareLabel}>Total a tres años</span>
+              <span className={styles.compareA}>$1.800</span>
+              <span className={styles.compareB}>$260</span>
+            </div>
+          </div>
+          <p className={styles.compareNote}>
+            Cifras en dólares. «Sistema mensual» toma un plan de referencia de $50 por mes.
           </p>
 
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col" className={styles.thLabel}>Concepto</th>
-                  <th scope="col" className={styles.thNum}>Sistema mensual</th>
-                  <th scope="col" className={`${styles.thNum} ${styles.thUs}`}>Stackr</th>
-                </tr>
-              </thead>
-              <tbody>
-                {TABLA.map(({ c, otros, stackr }) => (
-                  <tr key={c}>
-                    <th scope="row" className={styles.tdLabel}>{c}</th>
-                    <td className={styles.tdNum}>{otros}</td>
-                    <td className={`${styles.tdNum} ${styles.tdUs}`}>{stackr}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <th scope="row" className={styles.tfLabel}>Total a tres años</th>
-                  <td className={styles.tfNum}>$1.800</td>
-                  <td className={`${styles.tfNum} ${styles.tfUs}`}>$260</td>
-                </tr>
-              </tfoot>
-            </table>
-            <p className={styles.tableNote}>
-              Cifras en dólares. «Sistema mensual» toma un plan de referencia de $50 por mes.
-            </p>
-          </div>
-
-          <div className={styles.offer}>
-            <div className={styles.offerMain}>
-              <span className={styles.offerLbl}>Precio de lanzamiento</span>
-              <p className={styles.offerPrice}>
-                <s>$400</s>
-                <strong>$260</strong>
-                <span>USD</span>
+          <div className={`${styles.priceCard} ${styles.reveal}`}>
+            <div>
+              <span className={styles.priceTag}>Precio de lanzamiento</span>
+              <p className={styles.priceAmount}>
+                <s>$400</s><strong>$260</strong><span>USD</span>
               </p>
-              <p className={styles.offerSub}>Un solo pago. Sin mensualidades. Para siempre.</p>
-              <div className={styles.offerActions}>
-                <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.btnPaper}>
-                  Comprar por WhatsApp
+              <p className={styles.priceNote}>Un solo pago. Sin mensualidades. Para siempre.</p>
+              <div className={styles.priceCtas}>
+                <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={`${styles.btn} ${styles.btnLight}`}>
+                  <MessageCircle size={17} /> Comprar por WhatsApp
                 </a>
-                <Link href="/onboarding" className={styles.linkUnderlineLight}>
-                  o probalo 48 h gratis
-                </Link>
+                <Link href="/onboarding" className={styles.priceLink}>o probalo 48 h gratis</Link>
               </div>
             </div>
-            <ul className={styles.offerList}>
-              {[
-                "Sucursales ilimitadas",
-                "Usuarios ilimitados",
-                "Stock, ventas, reparaciones y caja",
-                "Reportes de rentabilidad",
-                "Gestión en pesos y dólares",
-                "Avisos por WhatsApp",
-                "Actualizaciones de por vida",
-                "Soporte prioritario incluido",
-              ].map(f => <li key={f}>{f}</li>)}
+            <ul className={styles.priceFeatures}>
+              {INCLUYE.map(f => (
+                <li key={f}><Check size={15} strokeWidth={3} /> {f}</li>
+              ))}
             </ul>
           </div>
-        </div>
-      </section>
 
-      {/* ── MANIFIESTO ─────────────────────────────── */}
-      <section className={styles.manifesto}>
-        <div className={styles.manifestoInner}>
-          <blockquote className={styles.manifestoQuote}>
-            <p>
-              No cobramos por mes porque no queremos que nuestro negocio crezca
-              cobrándole más al que ya confió. Crece sumando locales nuevos.
-            </p>
-          </blockquote>
-          <div className={styles.manifestoBody}>
-            <p>
+          <div className={`${styles.manifesto} ${styles.reveal}`}>
+            <h3 className={styles.manifestoH3}>¿Por qué no cobramos mensualidades?</h3>
+            <p className={styles.manifestoP}>
               Stackr corre sobre infraestructura barata y está escrito para que siga siéndolo.
-              Tu pago único cubre los servidores por años y nos deja un margen razonable. Es una
-              decisión de cómo queremos ganar plata, no una promoción que vence.
+              Tu pago único cubre los servidores por años y nos deja un margen razonable.{" "}
+              <mark>Nuestro negocio crece sumando locales nuevos</mark>, no cobrándole más
+              al que ya confió.
             </p>
-            <footer className={styles.signature}>
-              <span className={styles.signatureName}>Juan Pedro Nielsen</span>
-              <span className={styles.signatureRole}>Fundador</span>
-            </footer>
+            <div className={styles.signature}>
+              <span className={styles.signatureAv}>JP</span>
+              <span className={styles.signatureText}>
+                <strong className={styles.signatureName}>Juan Pedro Nielsen</strong>
+                <span className={styles.signatureRole}>Fundador de Stackr</span>
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── § PREGUNTAS ────────────────────────────── */}
-      <section id="preguntas" className={styles.section}>
-        <div className={styles.sectionInner}>
-          <header className={styles.sectionHead}>
-            <span className={styles.sectionNum}>§ 05</span>
-            <h2 className={styles.sectionH2}>Preguntas</h2>
-          </header>
-          <div className={styles.qaList}>
-            {FAQ.map((item, i) => (
-              <Pregunta key={item.q} q={item.q} a={item.a} n={String(i + 1).padStart(2, "0")} />
-            ))}
+      {/* ── PREGUNTAS ──────────────────────────────── */}
+      <section id="faq" className={styles.section}>
+        <div className={styles.inner}>
+          <div className={`${styles.head} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>Preguntas</span>
+            <h2 className={styles.h2}>Lo que suelen preguntarnos</h2>
+          </div>
+          <div className={`${styles.faq} ${styles.reveal}`}>
+            {FAQ.map(item => <Pregunta key={item.q} q={item.q} a={item.a} />)}
           </div>
         </div>
       </section>
@@ -487,57 +435,61 @@ export default function LandingPage() {
       {/* ── CIERRE ─────────────────────────────────── */}
       <section className={styles.closing}>
         <div className={styles.closingInner}>
-          <h2 className={styles.closingH2}>
-            Empezá esta semana.
-          </h2>
+          <h2 className={styles.closingH2}>Empezá hoy, sin riesgo</h2>
           <p className={styles.closingSub}>
-            Cuarenta y ocho horas con todo abierto. Si no te convence, no pagás nada
+            Cuarenta y ocho horas con todo abierto. Si no te convence no pagás nada,
             y no te pedimos una tarjeta para averiguarlo.
           </p>
-          <div className={styles.closingActions}>
-            <Link href="/onboarding" className={styles.btnInkLg}>Empezar la prueba</Link>
-            <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.linkUnderline}>
-              Hablar por WhatsApp
+          <div className={styles.closingCtas}>
+            <Link href="/onboarding" className={`${styles.btn} ${styles.btnLight}`}>
+              Empezar prueba gratis <ArrowRight size={17} />
+            </Link>
+            <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={`${styles.btn} ${styles.btnOnDark}`}>
+              <MessageCircle size={17} /> Hablar por WhatsApp
             </a>
+          </div>
+          <div className={styles.closingTrust}>
+            <span><Check size={13} strokeWidth={3} /> $260 una sola vez</span>
+            <span className={styles.dot} />
+            <span><Check size={13} strokeWidth={3} /> Sin mensualidades</span>
+            <span className={styles.dot} />
+            <span><Check size={13} strokeWidth={3} /> Soporte incluido</span>
           </div>
         </div>
       </section>
 
-      {/* ── COLOFÓN ────────────────────────────────── */}
-      <footer className={styles.colophon}>
-        <div className={styles.colophonInner}>
-          <div className={styles.colophonBrand}>
-            <span className={styles.colophonName}>Stackr</span>
-            <p className={styles.colophonLine}>
-              Sistema de gestión para locales de celulares y servicio técnico.
-              Hecho en Argentina.
+      {/* ── PIE ────────────────────────────────────── */}
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div>
+            <p className={styles.footerName}>Stackr</p>
+            <p className={styles.footerTag}>
+              El sistema de gestión para locales de celulares y servicio técnico que se paga solo.
             </p>
           </div>
-          <nav className={styles.colophonNav}>
-            <div>
-              <span className={styles.colophonHead}>Producto</span>
-              <a href="#sistema">Sistema</a>
-              <a href="#cuenta">Precio</a>
+          <div className={styles.footerCols}>
+            <div className={styles.footerCol}>
+              <p className={styles.footerColHead}>Producto</p>
+              <a href="#funciones">Funciones</a>
+              <a href="#precio">Precio</a>
               <Link href="/onboarding">Probar gratis</Link>
             </div>
-            <div>
-              <span className={styles.colophonHead}>Contacto</span>
-              <a href="#preguntas">Preguntas</a>
+            <div className={styles.footerCol}>
+              <p className={styles.footerColHead}>Soporte</p>
+              <a href="#faq">Preguntas</a>
               <a href={WA_LINK} target="_blank" rel="noopener noreferrer">WhatsApp</a>
               <a href="mailto:hola@stackrarg.com">Correo</a>
             </div>
-            <div>
-              <span className={styles.colophonHead}>Cuenta</span>
+            <div className={styles.footerCol}>
+              <p className={styles.footerColHead}>Cuenta</p>
               <Link href="/login">Entrar</Link>
               <Link href="/onboarding">Crear cuenta</Link>
             </div>
-          </nav>
+          </div>
         </div>
-        <div className={styles.colophonBottom}>
-          <span>© {anio} Stackr</span>
-          <span className={styles.colophonType}>
-            Compuesto en Instrument Serif y Instrument Sans.
-          </span>
+        <div className={styles.footerBottom}>
+          <span>© {new Date().getFullYear()} Stackr · Todos los derechos reservados</span>
+          <span>Hecho en Argentina 🇦🇷</span>
         </div>
       </footer>
 

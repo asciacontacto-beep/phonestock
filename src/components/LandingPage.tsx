@@ -1,517 +1,543 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowRight, CheckCircle2, ChevronDown, Check, X, MessageCircle } from "lucide-react";
-
-const WA_LINK = "https://wa.me/5492262559559?text=Hola%2C%20quiero%20contratar%20Stackr%20%F0%9F%93%B1%20%C2%BFC%C3%B3mo%20procedo%3F";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./LandingPage.module.css";
 
-/* ─── FAQ data ───────────────────────────────────── */
-const FAQ = [
+const WA_LINK =
+  "https://wa.me/5492262559559?text=Hola%2C%20quiero%20contratar%20Stackr%20%F0%9F%93%B1%20%C2%BFC%C3%B3mo%20procedo%3F";
+
+/* ─── Datos ──────────────────────────────────────── */
+
+const PROBLEMAS = [
   {
-    q: "¿Puedo probar Stackr antes de pagar?",
-    a: "Sí. Tenés 48 horas de prueba completa y gratuita con acceso a todas las funciones. Sin tarjeta de crédito requerida.",
+    n: "i",
+    t: "No sabés cuánto ganás",
+    d: "Vendés todos los días, pero entre el costo, los gastos y el dólar que cambió desde que compraste, el margen real nunca aparece en ningún lado.",
   },
   {
-    q: "¿Qué pasa si necesito soporte?",
-    a: "Soporte prioritario por WhatsApp incluido de por vida. Respondemos en menos de 24hs en días hábiles.",
+    n: "ii",
+    t: "El stock vive en la cabeza de alguien",
+    d: "Repuestos que no se encuentran, equipos cargados dos veces, precios de la semana pasada. Y la única copia de la verdad es un mensaje de WhatsApp.",
   },
   {
-    q: "¿Funciona en el celular?",
-    a: "Sí. Stackr está optimizado para mobile. Vendé, controlá el stock y revisá las métricas desde cualquier celular, sin instalar nada.",
+    n: "iii",
+    t: "Las reparaciones se pierden",
+    d: "Un cuaderno con nombres y fallas. El cliente llama para preguntar por su equipo y nadie sabe dónde está ni qué se le hizo.",
   },
   {
-    q: "¿Puedo tener varios empleados con distintos permisos?",
-    a: "Claro. Podés crear usuarios con roles de Vendedor o Propietario. Los vendedores solo ven lo que necesitan para operar.",
-  },
-  {
-    q: "¿Funciona con varias sucursales?",
-    a: "Sí. Creás múltiples depósitos, asignás vendedores a cada uno y transferís stock entre ellos. Todo en un panel.",
-  },
-  {
-    q: "¿Las actualizaciones futuras cuestan extra?",
-    a: "No. Tu pago único incluye todas las actualizaciones y funciones futuras para siempre. Sin sorpresas.",
+    n: "iv",
+    t: "El cierre se come la noche",
+    d: "Sumar la caja, controlar lo que vendió cada uno, revisar los movimientos. Todos los días, a mano, cuando ya cerraste.",
   },
 ];
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+type Capitulo = {
+  n: string; fig: string | null; img: string | null; alt: string;
+  epigrafe: string; t: string; d: string; puntos: string[]; recorte?: boolean;
+};
+
+const CAPITULOS: Capitulo[] = [
+  {
+    n: "01",
+    fig: "Fig. 2",
+    img: "/hero-stats.png",
+    alt: "Indicadores de ganancia y margen en Stackr",
+    epigrafe: "Ganancia del mes y margen real, con el capital inmovilizado en stock.",
+    recorte: true,
+    t: "La rentabilidad, calculada bien",
+    d: "Cada venta guarda el dólar del día en que se hizo, no el de hoy. Los repuestos se descuentan de la reparación que los usó. Lo que ves como ganancia es la ganancia.",
+    puntos: ["Margen por equipo, accesorio y servicio", "Histórico en ARS y USD", "Cierre de caja automático"],
+  },
+  {
+    n: "02",
+    fig: "Fig. 3",
+    img: "/hero-stock.png",
+    alt: "Inventario de Stackr",
+    epigrafe: "Inventario por depósito, con IMEI, costo y condición de cada unidad.",
+    t: "Un inventario que no se discute",
+    d: "Cada equipo tiene IMEI, costo, precio y condición. Cuando se vende, sale del stock solo. Si tenés más de un local, cada uno tiene el suyo y podés transferir entre ellos.",
+    puntos: ["Alta por escaneo de código", "Depósitos y sucursales", "Transferencias con registro"],
+  },
+  {
+    n: "03",
+    fig: null,
+    img: null,
+    alt: "",
+    epigrafe: "",
+    t: "El taller, ordenado",
+    d: "Ingresa el equipo con la falla, el presupuesto y el técnico. Se cargan los repuestos que se usaron y el costo entra solo en la cuenta. Cuando está listo, el cliente recibe un WhatsApp.",
+    puntos: ["Orden de servicio imprimible", "Repuestos con stock propio", "Aviso automático al cliente"],
+  },
+];
+
+const PASOS = [
+  {
+    n: "01",
+    t: "Registrás el negocio",
+    tiempo: "30 segundos",
+    d: "Nombre del local, email y contraseña. Sin tarjeta. La cuenta queda activa al instante.",
+  },
+  {
+    n: "02",
+    t: "Creás el depósito",
+    tiempo: "1 minuto",
+    d: "El depósito es tu local. Todo el stock vive adentro de uno. Si tenés dos sucursales, creás dos.",
+  },
+  {
+    n: "03",
+    t: "Cargás el inventario",
+    tiempo: "2 a 5 minutos",
+    d: "Escaneás el código o escribís marca, modelo y precio. Se guarda costo, venta, IMEI y condición.",
+  },
+  {
+    n: "04",
+    t: "Hacés la primera venta",
+    tiempo: "30 segundos",
+    d: "Equipo, cliente, forma de pago. El comprobante con la garantía sale solo, listo para imprimir.",
+  },
+];
+
+const TABLA = [
+  { c: "Costo al empezar", otros: "$0", stackr: "$260" },
+  { c: "Año 1", otros: "$600", stackr: "—" },
+  { c: "Año 2", otros: "$600", stackr: "—" },
+  { c: "Año 3", otros: "$600", stackr: "—" },
+  { c: "Actualizaciones", otros: "Según plan", stackr: "Incluidas" },
+  { c: "Soporte", otros: "Plan premium", stackr: "Incluido" },
+];
+
+const FAQ = [
+  {
+    q: "¿Puedo probarlo antes de pagar?",
+    a: "Sí. Tenés 48 horas con todas las funciones abiertas y sin tarjeta de crédito. Si necesitás más tiempo para cargar el inventario, escribinos y te lo extendemos.",
+  },
+  {
+    q: "¿Qué pasa si necesito ayuda?",
+    a: "Soporte por WhatsApp incluido de por vida, sin plan premium ni tickets. Respondemos en menos de 24 horas hábiles.",
+  },
+  {
+    q: "¿Funciona desde el celular?",
+    a: "Sí, y está hecho para eso. Vendés, cargás stock y mirás las métricas desde el teléfono, sin instalar nada.",
+  },
+  {
+    q: "¿Puedo darle acceso a mis empleados?",
+    a: "Sí. Creás usuarios con rol de Vendedor o Propietario. El vendedor ve lo que necesita para trabajar y no ve los costos ni la rentabilidad.",
+  },
+  {
+    q: "¿Sirve para varias sucursales?",
+    a: "Sí. Un depósito por local, vendedores asignados a cada uno y transferencias de stock entre ellos. Todo se ve desde el mismo panel.",
+  },
+  {
+    q: "¿Las actualizaciones se cobran aparte?",
+    a: "No. El pago único incluye todo lo que venga después, para siempre.",
+  },
+];
+
+/* ─── Preguntas ──────────────────────────────────── */
+
+function Pregunta({ q, a, n }: { q: string; a: string; n: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={styles.faqItem}>
-      <button className={styles.faqQ} onClick={() => setOpen(o => !o)}>
-        <span>{q}</span>
-        <ChevronDown
-          size={18}
-          style={{
-            flexShrink: 0,
-            color: "#888",
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform 0.2s ease",
-          }}
-        />
+    <div className={`${styles.qaItem} ${open ? styles.qaOpen : ""}`}>
+      <button className={styles.qaQ} onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <span className={styles.qaN}>{n}</span>
+        <span className={styles.qaText}>{q}</span>
+        <span className={styles.qaMark} aria-hidden>{open ? "−" : "+"}</span>
       </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            style={{ overflow: "hidden" }}
-          >
-            <p className={styles.faqA}>{a}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className={styles.qaBody} hidden={!open}>
+        <p className={styles.qaA}>{a}</p>
+      </div>
     </div>
   );
 }
 
-/* ─── Main component ─────────────────────────────── */
+/* ─── Página ─────────────────────────────────────── */
+
 export default function LandingPage() {
   // Registra una visita al link público (una vez por sesión). Si la tabla no
   // está creada todavía, falla en silencio y no afecta al visitante.
   useEffect(() => {
     try {
-      if (typeof window === 'undefined' || sessionStorage.getItem('sv_tracked')) return;
-      sessionStorage.setItem('sv_tracked', '1');
+      if (typeof window === "undefined" || sessionStorage.getItem("sv_tracked")) return;
+      sessionStorage.setItem("sv_tracked", "1");
       createClient()
-        .from('site_visits')
+        .from("site_visits")
         .insert({ path: window.location.pathname, referrer: document.referrer || null })
         .then(() => {}, () => {});
     } catch { /* noop */ }
   }, []);
 
+  const anio = new Date().getFullYear();
+
   return (
     <div className={styles.root}>
 
-      {/* ── NAVBAR ─────────────────────────────────── */}
-      <nav className={styles.nav}>
-        <div className={styles.navInner}>
-          <div className={styles.navBrand}>
-            <Image src="/logo.png" alt="Stackr" width={34} height={34} className={styles.navLogo} />
-            <span className={styles.navName}>Stackr</span>
-          </div>
-          <div className={styles.navLinks}>
-            <a href="#features" className={styles.navLink}>Funciones</a>
-            <a href="#pricing"  className={styles.navLink}>Precios</a>
-            <a href="#faq"      className={styles.navLink}>FAQ</a>
-          </div>
-          <div className={styles.navActions}>
-            <Link href="/login"      className={styles.navLinkBtn}>Entrar</Link>
-            <Link href="/onboarding" className={styles.navCta}>Probar gratis →</Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── HERO ───────────────────────────────────── */}
-      <section className={styles.hero}>
-        <div className={styles.heroBg} aria-hidden />
-        <div className={styles.heroInner}>
-          <motion.div
-            className={styles.heroBadge}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <span className={styles.heroBadgeDot} />
-            Prueba gratuita de 48 horas — sin tarjeta de crédito
-          </motion.div>
-
-          <motion.h1
-            className={styles.heroH1}
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-          >
-            El sistema de gestión para locales de celulares
-            <span className={styles.heroAccent}> que se paga solo</span>
-          </motion.h1>
-
-          <motion.p
-            className={styles.heroSub}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-          >
-            Stock, ventas, reparaciones y caja — todo en un panel. Diseñado para tiendas de celulares en Argentina.
-          </motion.p>
-
-          <motion.div
-            className={styles.heroCtaRow}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.24 }}
-          >
-            <Link href="/onboarding" className={styles.heroPrimaryBtn}>
-              Empezar prueba gratis
-              <ArrowRight size={18} />
-            </Link>
-            <a href="#features" className={styles.heroSecondaryBtn}>Ver cómo funciona</a>
-          </motion.div>
-
-          <motion.div
-            className={styles.heroPriceBadge}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.30 }}
-          >
-            🔥 Precio de lanzamiento — <s style={{ opacity: 0.45, fontWeight: 400 }}>$400</s> <strong>$260 USD</strong> · pago único, sin mensualidades
-          </motion.div>
-
-          <motion.div
-            className={styles.heroTrust}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.36 }}
-          >
-            <span>🏪 5 locales activos en Argentina</span>
-            <span className={styles.dot} />
-            <span><Check size={13} strokeWidth={3} /> Sin tarjeta de crédito</span>
-            <span className={styles.dot} />
-            <span><Check size={13} strokeWidth={3} /> Soporte por WhatsApp</span>
-          </motion.div>
-
-          <motion.div
-            className={styles.heroScreenWrap}
-            initial={{ opacity: 0, y: 56 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <img src="/hero-dashboard.png" alt="Panel de control Stackr" className={styles.heroScreen} />
-            <div className={styles.heroScreenFade} />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── MARQUEE ────────────────────────────────── */}
-      <div className={styles.marqueeSection}>
-        <p className={styles.marqueeLabel}>Usado por locales de celulares en toda Argentina</p>
-        <div className={styles.marqueeWrapper}>
-          <div className={styles.marqueeTrack}>
-            {["La tiendita", "GoldenApple Tandil", "Hola Apple Tandil", "La tiendita", "GoldenApple Tandil", "Hola Apple Tandil",
-              "La tiendita", "GoldenApple Tandil", "Hola Apple Tandil", "La tiendita", "GoldenApple Tandil", "Hola Apple Tandil"].map((n, i) => (
-              <span key={i} className={styles.marqueeItem}>{n}</span>
-            ))}
+      {/* ── CABECERA ───────────────────────────────── */}
+      <header className={styles.masthead}>
+        <div className={styles.mastheadInner}>
+          <Link href="/" className={styles.mastheadBrand}>
+            <Image src="/logo.png" alt="" width={26} height={26} className={styles.mastheadLogo} />
+            <span className={styles.mastheadName}>Stackr</span>
+          </Link>
+          <nav className={styles.mastheadNav}>
+            <a href="#sistema">Sistema</a>
+            <a href="#cuenta">La cuenta</a>
+            <a href="#preguntas">Preguntas</a>
+          </nav>
+          <div className={styles.mastheadActions}>
+            <Link href="/login" className={styles.linkPlain}>Entrar</Link>
+            <Link href="/onboarding" className={styles.btnInk}>Probar gratis</Link>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* ── PROBLEMA ───────────────────────────────── */}
-      <section className={styles.problem}>
-        <div className={styles.sectionInner}>
-          <motion.p className={styles.sectionLabel} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>El problema</motion.p>
-          <motion.h2 className={styles.sectionH2} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>¿Te suena familiar?</motion.h2>
-          <motion.p className={styles.sectionSub} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-            La mayoría de los locales de celulares usan herramientas que no fueron hechas para este rubro. El resultado: dinero que se escapa sin que te des cuenta.
-          </motion.p>
-          <div className={styles.problemGrid}>
-            {[
-              { icon: "📊", title: "No sabés cuánto ganás realmente",  desc: "Vendés, pero entre el costo, los gastos y el tipo de cambio, el margen real nunca está claro." },
-              { icon: "📦", title: "El stock es un caos",               desc: "Repuestos que desaparecen, equipos duplicados, precios desactualizados. Todo por WhatsApp." },
-              { icon: "🔧", title: "Las reparaciones se pierden",       desc: "Un cuaderno lleno de nombres y fallas. El cliente llama y no sabés dónde está el equipo." },
-              { icon: "⏰", title: "El cierre te lleva horas",          desc: "Sumar caja, controlar vendedores, revisar movimientos. Un trabajo manual que podría ser automático." },
-            ].map(({ icon, title, desc }, i) => (
-              <motion.div key={title} className={styles.problemCard} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ delay: i * 0.08 }}>
-                <span className={styles.problemIcon}>{icon}</span>
-                <h3 className={styles.problemTitle}>{title}</h3>
-                <p className={styles.problemDesc}>{desc}</p>
-              </motion.div>
-            ))}
+      {/* ── PORTADA ────────────────────────────────── */}
+      <section className={styles.cover}>
+        <div className={styles.coverInner}>
+          <div className={styles.dateline}>
+            <span>Edición Argentina</span>
+            <span className={styles.datelineSep} />
+            <span>Locales de celulares y servicio técnico</span>
+            <span className={styles.datelineSep} />
+            <span>{anio}</span>
           </div>
-        </div>
-      </section>
 
-      {/* ── FEATURES ───────────────────────────────── */}
-      <section id="features" className={styles.features}>
-        <div className={styles.sectionInner}>
-          <motion.p className={styles.sectionLabel} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>Solución</motion.p>
-          <motion.h2 className={styles.sectionH2} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>Todo lo que necesitás, nada de lo que no.</motion.h2>
-          <motion.p className={styles.sectionSub} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-            Stackr reemplaza los cuadernos, las planillas y los mensajes de WhatsApp con un sistema que hace el trabajo por vos.
-          </motion.p>
+          <h1
+            className={styles.coverH1}
+          >
+            Vendés todos los días.
+            <em> ¿Sabés cuánto ganaste?</em>
+          </h1>
 
-          <div className={styles.bentoGrid}>
-            {/* Métricas */}
-            <motion.div className={`${styles.bentoCard} ${styles.cardLarge}`} initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }}>
-              <div className={styles.mockBox}>
-                <div className={styles.mockBars}>
-                  {[40, 65, 50, 85, 55, 100, 72].map((h, i) => (
-                    <motion.div key={i} className={styles.mockBar} initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} viewport={{ once: true }} transition={{ delay: 0.3 + i * 0.07, ease: [0.16, 1, 0.3, 1] }} style={{ height: `${h}%`, transformOrigin: "bottom" }} />
-                  ))}
-                </div>
+          <div className={styles.coverGrid}>
+            <p
+              className={styles.coverDeck}
+            >
+              Stackr es el sistema de gestión para locales de celulares en Argentina.
+              Stock, ventas, reparaciones y caja en un solo lugar — y por primera vez,
+              el número real de lo que te queda.
+            </p>
+
+            <div
+              className={styles.coverAside}
+            >
+              <div className={styles.coverActions}>
+                <Link href="/onboarding" className={styles.btnInkLg}>Empezar la prueba</Link>
+                <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.linkUnderline}>
+                  Comprar por WhatsApp
+                </a>
               </div>
-              <h3 className={styles.cardH3}>Métricas en tiempo real</h3>
-              <p className={styles.cardP}>Facturación, márgenes y tendencias calculados al instante. Sabé exactamente cuánto ganás, cuándo y con qué producto.</p>
-            </motion.div>
-
-            {/* POS */}
-            <motion.div className={`${styles.bentoCard} ${styles.cardMedium}`} initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ delay: 0.1 }}>
-              <div className={styles.mockBox}>
-                <div className={styles.mockReceipt}>
-                  <div>
-                    <div className={styles.mockLine} style={{ width: 70, marginBottom: 8, background: "#d1d5db" }} />
-                    <div className={styles.mockLine} style={{ width: 110 }} />
-                  </div>
-                  <span className={styles.mockPrice}>$1,200</span>
-                </div>
-              </div>
-              <h3 className={styles.cardH3}>Punto de Venta</h3>
-              <p className={styles.cardP}>Escanear el código, cargar el cliente y cerrar la venta en segundos. El stock se descuenta solo.</p>
-            </motion.div>
-
-            {/* Reparaciones */}
-            <motion.div className={`${styles.bentoCard} ${styles.cardWide}`} initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ delay: 0.15 }}>
-              <div style={{ flex: 1 }}>
-                <h3 className={styles.cardH3}>Gestión de Reparaciones</h3>
-                <p className={styles.cardP}>Ingresá el equipo, describí la falla, asigná técnico y presupuesto. Cuando esté listo, el sistema le manda un WhatsApp al cliente automáticamente.</p>
-              </div>
-              <div className={styles.mockBox} style={{ flex: 1, marginBottom: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <div className={styles.mockAvatar}>WP</div>
-                  <div>
-                    <div className={styles.mockLine} style={{ width: 130, marginBottom: 6 }} />
-                    <div className={styles.mockLine} style={{ width: 70, background: "#d1d5db" }} />
-                  </div>
-                </div>
-                <div className={styles.mockWhatsapp}>¡Hola! Tu iPhone 13 Pro ya está reparado y listo para retirar. 🚀</div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CÓMO FUNCIONA ──────────────────────────── */}
-      <section className={styles.how}>
-        <div className={styles.howInner}>
-          <motion.div className={styles.howHead} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <p className={styles.howLabel}>Cómo funciona</p>
-            <h2 className={styles.howH2}>De cero a tu primera venta<br />en menos de 10 minutos</h2>
-            <p className={styles.howSub}>Seguí estos pasos en orden — cada uno desbloquea el siguiente.</p>
-          </motion.div>
-
-          <div className={styles.howTimeline}>
-            {([
-              {
-                n: "01",
-                time: "30 segundos",
-                title: "Registrá tu negocio",
-                desc: "Nombre del local, email y contraseña. Sin tarjeta ni datos de pago. Tu cuenta queda activa al instante con 48hs de prueba completa.",
-                tip: null,
-              },
-              {
-                n: "02",
-                time: "1 minuto",
-                title: "Creá tu primer depósito",
-                desc: "Un depósito es tu local físico o punto de venta. Todo el stock vive dentro de un depósito — sin esto, no podés cargar equipos.",
-                tip: "Si tenés más de una sucursal, creás un depósito por local. Cada uno tiene su propio stock y caja.",
-              },
-              {
-                n: "03",
-                time: "2 a 5 minutos",
-                title: "Cargá tu inventario",
-                desc: "Escaneás el código de barras del equipo o escribís marca, modelo y precio. El sistema guarda el costo, el precio de venta, el IMEI y la condición.",
-                tip: null,
-              },
-              {
-                n: "04",
-                time: "30 segundos",
-                title: "Hacé tu primera venta",
-                desc: "Seleccionás el equipo, el cliente y el método de pago. El ticket con la garantía se genera solo — listo para imprimir o enviar por WhatsApp.",
-                tip: null,
-              },
-            ] as { n: string; time: string; title: string; desc: string; tip: string | null }[]).map(({ n, time, title, desc, tip }, i, arr) => (
-              <motion.div
-                key={n}
-                className={styles.howStep}
-                initial={{ opacity: 0, x: -16 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <div className={styles.howLeft}>
-                  <div className={styles.howCircle}>{n}</div>
-                  {i < arr.length - 1 && <div className={styles.howLine} />}
-                </div>
-                <div className={styles.howContent}>
-                  <span className={styles.howTime}>{time}</span>
-                  <h3 className={styles.howTitle}>{title}</h3>
-                  <p className={styles.howDesc}>{desc}</p>
-                  {tip && (
-                    <div className={styles.howTip}>
-                      <span className={styles.howTipIcon}>→</span>
-                      {tip}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIOS ────────────────────────────── */}
-      <section className={styles.testimonials}>
-        <div className={styles.sectionInner}>
-          <motion.p className={styles.sectionLabel} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>Testimonios</motion.p>
-          <motion.h2 className={styles.sectionH2} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>Lo que dicen los que ya lo usan</motion.h2>
-          <div className={styles.testiGrid}>
-            {[
-              { quote: "Antes perdíamos repuestos y no sabíamos cuánto ganábamos. Con Stackr, la caja siempre cuadra y mis empleados saben qué hacer.", result: "Cierre de caja en 10 min por primera vez", name: "Carlos M.", role: "Dueño, FixMobile Center", av: "CM", color: "#f59e0b" },
-              { quote: "La notificación automática por WhatsApp cuando el celular está listo es un game-changer. Los clientes quedan impresionados.", result: "0 llamados perdidos de clientes", name: "Mariana V.", role: "Gerente, iStore Fix", av: "MV", color: "#10b981" },
-              { quote: "Manejo mis 3 sucursales desde el celular. Veo en vivo las ventas y el stock de cada local sin tener que llamar a nadie.", result: "3 sucursales controladas en tiempo real", name: "Julián R.", role: "CEO, Cellular Point", av: "JR", color: "#6366f1" },
-            ].map(({ quote, result, name, role, av, color }, i) => (
-              <motion.div key={name} className={styles.testiCard} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                <div className={styles.testiStars}>★★★★★</div>
-                <p className={styles.testiQuote}>"{quote}"</p>
-                <div className={styles.testiResult}>
-                  <Check size={13} strokeWidth={3} color="#10b981" />
-                  <span>{result}</span>
-                </div>
-                <div className={styles.testiAuthor}>
-                  <div className={styles.testiAv} style={{ background: color }}>{av}</div>
-                  <div><strong>{name}</strong><span>{role}</span></div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── PRECIOS ────────────────────────────────── */}
-      <section id="pricing" className={styles.pricing}>
-        <div className={styles.sectionInner}>
-          <motion.p className={styles.sectionLabel} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>Precios</motion.p>
-          <motion.h2 className={styles.sectionH2} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>La cuenta que la mayoría no hace</motion.h2>
-          <motion.p className={styles.sectionSub} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-            Los sistemas con mensualidades parecen baratos hasta que los sumás. Stackr cuesta lo mismo en año 1 que en año 5.
-          </motion.p>
-
-          <div className={styles.compareWrap}>
-            <div className={styles.compareHead}>
-              <div />
-              <div className={styles.compareColLabel}>Competidor típico</div>
-              <div className={`${styles.compareColLabel} ${styles.compareColStackr}`}><span>✦</span> Stackr</div>
-            </div>
-            {[
-              { label: "Costo inicial",   comp: "$0",                       stackr: "$260 USD",            bold: false },
-              { label: "Costo año 1",     comp: "$600 USD (≈ $50/mes)",     stackr: "$0",                  bold: false },
-              { label: "Costo año 2",     comp: "$600 USD más",             stackr: "$0",                  bold: false },
-              { label: "Costo año 3",     comp: "$600 USD más",             stackr: "$0",                  bold: false },
-              { label: "Total 3 años",    comp: "$1,800 USD",               stackr: "$260 USD",            bold: true  },
-              { label: "Actualizaciones", comp: "Según plan",               stackr: "Gratis para siempre", bold: false },
-              { label: "Soporte",         comp: "Plan premium = más costo", stackr: "Incluido siempre",    bold: false },
-            ].map(({ label, comp, stackr, bold }, i) => (
-              <motion.div key={label} className={`${styles.compareRow} ${bold ? styles.compareRowTotal : ""}`} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-                <div className={styles.compareLabel}>{label}</div>
-                <div className={styles.compareComp}>{bold && <X size={14} color="#ef4444" style={{ marginRight: 6, flexShrink: 0 }} />}{comp}</div>
-                <div className={styles.compareStackr}>{bold && <Check size={14} strokeWidth={3} color="#10b981" style={{ marginRight: 6, flexShrink: 0 }} />}{stackr}</div>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div className={styles.pricingCard} initial={{ opacity: 0, y: 32, scale: 0.97 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", bounce: 0.2 }}>
-            <div className={styles.pricingLeft}>
-              <div className={styles.pricingBadge}>🔥 Precio de lanzamiento</div>
-              <div className={styles.pricingPrice}>
-                <s style={{ fontSize: '0.55em', opacity: 0.4, marginRight: 6, fontWeight: 500 }}>$400</s>$260 <span>USD</span>
-              </div>
-              <p className={styles.pricingNote}>Un solo pago · Sin mensualidades · Para siempre</p>
-              <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.pricingCta}>
-                <MessageCircle size={18} /> Comprar por WhatsApp
-              </a>
-              <p className={styles.pricingTrialNote}>
-                o <Link href="/onboarding" style={{ color: 'inherit', textDecoration: 'underline' }}>probá 48hs gratis</Link> — sin tarjeta de crédito
+              <p className={styles.coverFine}>
+                48 horas completas, sin tarjeta de crédito.
               </p>
             </div>
-            <div className={styles.pricingFeatures}>
-              {["Sucursales ilimitadas","Usuarios ilimitados","Stock, Ventas, Reparaciones y Caja","Reportes de rentabilidad","Gestión en ARS y USD","Notificaciones por WhatsApp","Actualizaciones de por vida","Soporte prioritario incluido"].map(f => (
-                <div key={f} className={styles.pricingFeatureItem}><CheckCircle2 size={17} color="#10b981" strokeWidth={2.5} /><span>{f}</span></div>
-              ))}
-            </div>
-          </motion.div>
+          </div>
 
-          <motion.div className={styles.manifesto} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-            <h3 className={styles.manifestoTitle}>¿Por qué no cobramos mensualidades?</h3>
-            <p className={styles.manifestoText}>
-              Stackr está construido con tecnología eficiente y costos de infraestructura bajos. Tu pago único cubre los servidores a largo plazo y nos deja un margen justo.{" "}
-              <mark>Nuestro negocio crece sumando nuevos clientes felices</mark>, no exprimiendo a los que ya confiaron en nosotros.
-            </p>
-            <div className={styles.manifestoAuthor}>
-              <div className={styles.manifestoAv}>JP</div>
-              <div><strong>Juan Pedro Nielsen</strong><span>Fundador de Stackr</span></div>
+          {/* Lámina principal */}
+          <figure
+            className={styles.plate}
+          >
+            <div className={styles.plateFrame}>
+              <img src="/hero-dashboard.png" alt="Panel de control de Stackr" className={styles.plateImg} />
             </div>
-          </motion.div>
+            <figcaption className={styles.plateCaption}>
+              <span className={styles.plateFig}>Fig. 1</span>
+              Panel de rentabilidad. Los datos de la imagen son de demostración.
+            </figcaption>
+          </figure>
         </div>
       </section>
 
-      {/* ── FAQ ────────────────────────────────────── */}
-      <section id="faq" className={styles.faqSection}>
+      {/* ── FRANJA DE CIFRAS ───────────────────────── */}
+      <section className={styles.ledger}>
+        <div className={styles.ledgerInner}>
+          <div className={styles.ledgerCell}>
+            <span className={styles.ledgerNum}>$260</span>
+            <span className={styles.ledgerLbl}>Pago único, en dólares</span>
+          </div>
+          <div className={styles.ledgerCell}>
+            <span className={styles.ledgerNum}>$0</span>
+            <span className={styles.ledgerLbl}>Por mes, para siempre</span>
+          </div>
+          <div className={styles.ledgerCell}>
+            <span className={styles.ledgerNum}>48 h</span>
+            <span className={styles.ledgerLbl}>De prueba, sin tarjeta</span>
+          </div>
+          <div className={styles.ledgerCell}>
+            <span className={styles.ledgerNum}>10 min</span>
+            <span className={styles.ledgerLbl}>Hasta tu primera venta</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── § EL PROBLEMA ──────────────────────────── */}
+      <section className={styles.section}>
         <div className={styles.sectionInner}>
-          <motion.p className={styles.sectionLabel} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>FAQ</motion.p>
-          <motion.h2 className={styles.sectionH2} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>Preguntas frecuentes</motion.h2>
-          <div className={styles.faqList}>
-            {FAQ.map((item, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-                <FaqItem q={item.q} a={item.a} />
-              </motion.div>
+          <header className={styles.sectionHead}>
+            <span className={styles.sectionNum}>§ 01</span>
+            <h2 className={styles.sectionH2}>Lo que se escapa</h2>
+          </header>
+
+          <p className={styles.lead}>
+            <span className={styles.dropcap}>L</span>a mayoría de los locales de celulares trabajan
+            con herramientas que no fueron hechas para este rubro: una planilla, un cuaderno y un
+            grupo de WhatsApp. Funciona, hasta que deja de funcionar. Y el costo de que deje de
+            funcionar no se ve en ningún lado — se ve en lo que no te quedó a fin de mes.
+          </p>
+
+          <div className={styles.problemList}>
+            {PROBLEMAS.map(({ n, t, d }) => (
+              <article key={t} className={styles.problemItem}>
+                <span className={styles.problemNum}>{n}</span>
+                <h3 className={styles.problemT}>{t}</h3>
+                <p className={styles.problemD}>{d}</p>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FINAL CTA ──────────────────────────────── */}
-      <section className={styles.finalCta}>
-        <div className={styles.finalCtaInner}>
-          <motion.h2 className={styles.finalCtaH2} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>Empezá hoy, sin riesgos</motion.h2>
-          <motion.p className={styles.finalCtaSub} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }}>
-            48 horas de prueba completa. Si no te convence, no pagás nada.
-          </motion.p>
-          <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.16 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-            <Link href="/onboarding" className={styles.finalCtaBtn}>Comenzar prueba gratis de 48hs <ArrowRight size={20} /></Link>
-            <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.finalCtaWa}>
-              <MessageCircle size={16} /> Comprar ahora por WhatsApp
-            </a>
-            <div className={styles.finalCtaTrust}>
-              <span><Check size={13} strokeWidth={3} /> $260 USD una sola vez</span>
-              <span className={styles.dot} />
-              <span><Check size={13} strokeWidth={3} /> Sin mensualidades jamás</span>
-              <span className={styles.dot} />
-              <span><Check size={13} strokeWidth={3} /> Soporte incluido siempre</span>
+      {/* ── § EL SISTEMA ───────────────────────────── */}
+      <section id="sistema" className={styles.sectionAlt}>
+        <div className={styles.sectionInner}>
+          <header className={styles.sectionHead}>
+            <span className={styles.sectionNum}>§ 02</span>
+            <h2 className={styles.sectionH2}>El sistema</h2>
+          </header>
+
+          {CAPITULOS.map(({ n, fig, img, alt, epigrafe, t, d, puntos, recorte }, i) => (
+            <div
+              key={n}
+              className={`${styles.chapter} ${i % 2 === 1 ? styles.chapterFlip : ""}`}
+             
+            >
+              <div className={styles.chapterText}>
+                <span className={styles.chapterNum}>{n}</span>
+                <h3 className={styles.chapterH3}>{t}</h3>
+                <p className={styles.chapterP}>{d}</p>
+                <ul className={styles.chapterList}>
+                  {puntos.map(p => <li key={p}>{p}</li>)}
+                </ul>
+              </div>
+              {img && (
+                <figure className={styles.chapterFigure}>
+                  <div className={styles.plateFrame}>
+                    <img
+                      src={img}
+                      alt={alt}
+                      className={`${styles.plateImg} ${recorte ? styles.plateCrop : ""}`}
+                      loading="lazy"
+                    />
+                  </div>
+                  <figcaption className={styles.plateCaption}>
+                    <span className={styles.plateFig}>{fig}</span>
+                    {epigrafe}
+                  </figcaption>
+                </figure>
+              )}
             </div>
-          </motion.div>
+          ))}
         </div>
       </section>
 
-      {/* ── FOOTER ─────────────────────────────────── */}
-      <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <div className={styles.footerBrand}>
-            <span className={styles.footerLogo}>Stackr</span>
-            <p className={styles.footerTagline}>El software de gestión para locales de celulares que se paga solo.</p>
-          </div>
-          <div className={styles.footerCols}>
-            <div className={styles.footerCol}>
-              <p className={styles.footerColHead}>Producto</p>
-              <a href="#features">Funciones</a>
-              <a href="#pricing">Precios</a>
-              <Link href="/onboarding">Probar gratis</Link>
-            </div>
-            <div className={styles.footerCol}>
-              <p className={styles.footerColHead}>Soporte</p>
-              <a href="#faq">FAQ</a>
-              <a href="mailto:hola@stackrarg.com">Contacto</a>
-              <Link href="/login">Iniciar sesión</Link>
-            </div>
+      {/* ── § CÓMO EMPIEZA ─────────────────────────── */}
+      <section className={styles.section}>
+        <div className={styles.sectionInner}>
+          <header className={styles.sectionHead}>
+            <span className={styles.sectionNum}>§ 03</span>
+            <h2 className={styles.sectionH2}>De cero a la primera venta</h2>
+          </header>
+
+          <div className={styles.steps}>
+            {PASOS.map(({ n, t, tiempo, d }) => (
+              <article key={n} className={styles.step}>
+                <div className={styles.stepMeta}>
+                  <span className={styles.stepNum}>{n}</span>
+                  <span className={styles.stepTime}>{tiempo}</span>
+                </div>
+                <div className={styles.stepBody}>
+                  <h3 className={styles.stepT}>{t}</h3>
+                  <p className={styles.stepD}>{d}</p>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
-        <div className={styles.footerBottom}>
-          <span>© {new Date().getFullYear()} Stackr · Todos los derechos reservados</span>
-          <span>Hecho en Argentina 🇦🇷</span>
+      </section>
+
+      {/* ── § LA CUENTA ────────────────────────────── */}
+      <section id="cuenta" className={styles.sectionInk}>
+        <div className={styles.sectionInner}>
+          <header className={styles.sectionHead}>
+            <span className={styles.sectionNum}>§ 04</span>
+            <h2 className={styles.sectionH2}>La cuenta que casi nadie hace</h2>
+          </header>
+
+          <p className={styles.leadInk}>
+            Los sistemas con mensualidad parecen baratos el primer mes. La comparación honesta
+            no es contra el precio de entrada: es contra lo que vas a haber pagado en tres años.
+          </p>
+
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th scope="col" className={styles.thLabel}>Concepto</th>
+                  <th scope="col" className={styles.thNum}>Sistema mensual</th>
+                  <th scope="col" className={`${styles.thNum} ${styles.thUs}`}>Stackr</th>
+                </tr>
+              </thead>
+              <tbody>
+                {TABLA.map(({ c, otros, stackr }) => (
+                  <tr key={c}>
+                    <th scope="row" className={styles.tdLabel}>{c}</th>
+                    <td className={styles.tdNum}>{otros}</td>
+                    <td className={`${styles.tdNum} ${styles.tdUs}`}>{stackr}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row" className={styles.tfLabel}>Total a tres años</th>
+                  <td className={styles.tfNum}>$1.800</td>
+                  <td className={`${styles.tfNum} ${styles.tfUs}`}>$260</td>
+                </tr>
+              </tfoot>
+            </table>
+            <p className={styles.tableNote}>
+              Cifras en dólares. «Sistema mensual» toma un plan de referencia de $50 por mes.
+            </p>
+          </div>
+
+          <div className={styles.offer}>
+            <div className={styles.offerMain}>
+              <span className={styles.offerLbl}>Precio de lanzamiento</span>
+              <p className={styles.offerPrice}>
+                <s>$400</s>
+                <strong>$260</strong>
+                <span>USD</span>
+              </p>
+              <p className={styles.offerSub}>Un solo pago. Sin mensualidades. Para siempre.</p>
+              <div className={styles.offerActions}>
+                <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.btnPaper}>
+                  Comprar por WhatsApp
+                </a>
+                <Link href="/onboarding" className={styles.linkUnderlineLight}>
+                  o probalo 48 h gratis
+                </Link>
+              </div>
+            </div>
+            <ul className={styles.offerList}>
+              {[
+                "Sucursales ilimitadas",
+                "Usuarios ilimitados",
+                "Stock, ventas, reparaciones y caja",
+                "Reportes de rentabilidad",
+                "Gestión en pesos y dólares",
+                "Avisos por WhatsApp",
+                "Actualizaciones de por vida",
+                "Soporte prioritario incluido",
+              ].map(f => <li key={f}>{f}</li>)}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ── MANIFIESTO ─────────────────────────────── */}
+      <section className={styles.manifesto}>
+        <div className={styles.manifestoInner}>
+          <blockquote className={styles.manifestoQuote}>
+            <p>
+              No cobramos por mes porque no queremos que nuestro negocio crezca
+              cobrándole más al que ya confió. Crece sumando locales nuevos.
+            </p>
+          </blockquote>
+          <div className={styles.manifestoBody}>
+            <p>
+              Stackr corre sobre infraestructura barata y está escrito para que siga siéndolo.
+              Tu pago único cubre los servidores por años y nos deja un margen razonable. Es una
+              decisión de cómo queremos ganar plata, no una promoción que vence.
+            </p>
+            <footer className={styles.signature}>
+              <span className={styles.signatureName}>Juan Pedro Nielsen</span>
+              <span className={styles.signatureRole}>Fundador</span>
+            </footer>
+          </div>
+        </div>
+      </section>
+
+      {/* ── § PREGUNTAS ────────────────────────────── */}
+      <section id="preguntas" className={styles.section}>
+        <div className={styles.sectionInner}>
+          <header className={styles.sectionHead}>
+            <span className={styles.sectionNum}>§ 05</span>
+            <h2 className={styles.sectionH2}>Preguntas</h2>
+          </header>
+          <div className={styles.qaList}>
+            {FAQ.map((item, i) => (
+              <Pregunta key={item.q} q={item.q} a={item.a} n={String(i + 1).padStart(2, "0")} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CIERRE ─────────────────────────────────── */}
+      <section className={styles.closing}>
+        <div className={styles.closingInner}>
+          <h2 className={styles.closingH2}>
+            Empezá esta semana.
+          </h2>
+          <p className={styles.closingSub}>
+            Cuarenta y ocho horas con todo abierto. Si no te convence, no pagás nada
+            y no te pedimos una tarjeta para averiguarlo.
+          </p>
+          <div className={styles.closingActions}>
+            <Link href="/onboarding" className={styles.btnInkLg}>Empezar la prueba</Link>
+            <a href={WA_LINK} target="_blank" rel="noopener noreferrer" className={styles.linkUnderline}>
+              Hablar por WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── COLOFÓN ────────────────────────────────── */}
+      <footer className={styles.colophon}>
+        <div className={styles.colophonInner}>
+          <div className={styles.colophonBrand}>
+            <span className={styles.colophonName}>Stackr</span>
+            <p className={styles.colophonLine}>
+              Sistema de gestión para locales de celulares y servicio técnico.
+              Hecho en Argentina.
+            </p>
+          </div>
+          <nav className={styles.colophonNav}>
+            <div>
+              <span className={styles.colophonHead}>Producto</span>
+              <a href="#sistema">Sistema</a>
+              <a href="#cuenta">Precio</a>
+              <Link href="/onboarding">Probar gratis</Link>
+            </div>
+            <div>
+              <span className={styles.colophonHead}>Contacto</span>
+              <a href="#preguntas">Preguntas</a>
+              <a href={WA_LINK} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              <a href="mailto:hola@stackrarg.com">Correo</a>
+            </div>
+            <div>
+              <span className={styles.colophonHead}>Cuenta</span>
+              <Link href="/login">Entrar</Link>
+              <Link href="/onboarding">Crear cuenta</Link>
+            </div>
+          </nav>
+        </div>
+        <div className={styles.colophonBottom}>
+          <span>© {anio} Stackr</span>
+          <span className={styles.colophonType}>
+            Compuesto en Instrument Serif y Instrument Sans.
+          </span>
         </div>
       </footer>
 

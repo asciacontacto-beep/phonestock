@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
-import {
-  ArrowRight, Check, ChevronDown, MessageCircle,
-  TrendingUp, Package, Wrench, Clock,
-} from "lucide-react";
+import { ArrowRight, Check, ChevronDown, MessageCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
@@ -19,22 +16,22 @@ const LOCALES = ["La tiendita", "GoldenApple Tandil", "Hola Apple Tandil"];
 
 const PROBLEMAS = [
   {
-    icon: <TrendingUp size={19} />, tono: "icGreen",
+    n: "01",
     t: "No sabés cuánto ganás",
     d: "Vendés todos los días, pero entre el costo, los gastos y el dólar que cambió desde que compraste, el margen real nunca aparece en ningún lado.",
   },
   {
-    icon: <Package size={19} />, tono: "icBlue",
+    n: "02",
     t: "El stock es un caos",
     d: "Repuestos que no se encuentran, equipos cargados dos veces, precios de la semana pasada. Y la única copia de la verdad es un mensaje de WhatsApp.",
   },
   {
-    icon: <Wrench size={19} />, tono: "icViolet",
+    n: "03",
     t: "Las reparaciones se pierden",
     d: "Un cuaderno con nombres y fallas. El cliente llama para preguntar por su equipo y nadie sabe dónde está ni qué se le hizo.",
   },
   {
-    icon: <Clock size={19} />, tono: "icAmber",
+    n: "04",
     t: "El cierre se come la noche",
     d: "Sumar la caja, controlar lo que vendió cada uno, revisar los movimientos. Todos los días, a mano, cuando ya cerraste el local.",
   },
@@ -136,82 +133,6 @@ function useReveal() {
   return root;
 }
 
-
-/* ─── La cuenta del dólar ────────────────────────── */
-/* El diferencial de Stackr es aritmética, no una promesa: una venta en
-   pesos vale distinto según qué cotización use el sistema para medirla.
-   Acá se puede tocar con los números propios en vez de leerlo. */
-
-const money = (n: number) =>
-  n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
-
-function CuentaDolar() {
-  const [venta, setVenta] = useState(650000);
-  const [costo, setCosto] = useState(400);
-  const [dolarVenta, setDolarVenta] = useState(1000);
-  const [dolarHoy, setDolarHoy] = useState(1300);
-
-  const num = (v: string) => {
-    const n = parseFloat(v.replace(/[^\d.]/g, ""));
-    return Number.isFinite(n) ? n : 0;
-  };
-  const seguro = (d: number) => (d > 0 ? d : 1);
-
-  const conHoy   = venta / seguro(dolarHoy)   - costo;
-  const conVenta = venta / seguro(dolarVenta) - costo;
-  const brecha   = conVenta - conHoy;
-
-  const campos: { l: string; v: number; set: (n: number) => void; pre: string }[] = [
-    { l: "Precio de venta", v: venta,      set: setVenta,      pre: "$" },
-    { l: "Costo del equipo", v: costo,     set: setCosto,      pre: "US$" },
-    { l: "Dólar ese día",   v: dolarVenta, set: setDolarVenta, pre: "$" },
-    { l: "Dólar hoy",       v: dolarHoy,   set: setDolarHoy,   pre: "$" },
-  ];
-
-  return (
-    <div className={styles.calc}>
-      <div className={styles.calcInputs}>
-        {campos.map(({ l, v, set, pre }) => (
-          <label key={l} className={styles.calcField}>
-            <span className={styles.calcLabel}>{l}</span>
-            <span className={styles.calcInputWrap}>
-              <span className={styles.calcPrefix}>{pre}</span>
-              <input
-                className={styles.calcInput}
-                type="text"
-                inputMode="numeric"
-                value={money(v)}
-                onChange={e => set(num(e.target.value))}
-              />
-            </span>
-          </label>
-        ))}
-      </div>
-
-      <div className={styles.calcOut}>
-        <div className={styles.calcResult}>
-          <span className={styles.calcResultLabel}>
-            Un sistema que mide todo al dólar de hoy
-          </span>
-          <span className={styles.calcResultBad}>US$ {money(Math.round(conHoy))}</span>
-        </div>
-
-        <div className={styles.calcResult}>
-          <span className={styles.calcResultLabel}>
-            Stackr, con el dólar del día de esa venta
-          </span>
-          <span className={styles.calcResultGood}>US$ {money(Math.round(conVenta))}</span>
-        </div>
-
-        <p className={styles.calcGap}>
-          {brecha === 0
-            ? "Con esta cotización la diferencia se anula."
-            : <>Diferencia: <strong>US$ {money(Math.abs(Math.round(brecha)))}</strong> en un solo equipo.</>}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 /* ─── Preguntas ──────────────────────────────────── */
 
@@ -333,23 +254,28 @@ export default function LandingPage() {
       </section>
 
       {/* ── PROBLEMA ───────────────────────────────── */}
-      <section className={styles.section}>
+      {/* Banda oscura: corta el blanco a la altura donde la página se
+          volvía monótona, y el tema —lo que se te escapa— pide ese tono. */}
+      <section className={styles.sectionDark}>
+        <div className={styles.darkGlow} aria-hidden />
         <div className={styles.inner}>
-          <div className={`${styles.head} ${styles.reveal}`}>
-            <span className={styles.eyebrow}>El problema</span>
-            <h2 className={styles.h2}>¿Te suena familiar?</h2>
-            <p className={styles.lead}>
-              La mayoría de los locales usan herramientas que no fueron hechas para este
-              rubro. El resultado es plata que se escapa sin que te des cuenta.
+          <div className={`${styles.head} ${styles.headDark} ${styles.reveal}`}>
+            <span className={styles.eyebrowDark}>El problema</span>
+            <h2 className={styles.h2Dark}>Todos los meses se te escapa plata</h2>
+            <p className={styles.leadDark}>
+              Y no la ves irse. La mayoría de los locales trabajan con herramientas
+              que no fueron hechas para este rubro.
             </p>
           </div>
 
-          <div className={styles.grid4}>
-            {PROBLEMAS.map(({ icon, tono, t, d }) => (
-              <article key={t} className={`${styles.card} ${styles.reveal}`}>
-                <span className={`${styles.cardIcon} ${styles[tono]}`}>{icon}</span>
-                <h3 className={styles.cardTitle}>{t}</h3>
-                <p className={styles.cardText}>{d}</p>
+          <div className={styles.painList}>
+            {PROBLEMAS.map(({ n, t, d }) => (
+              <article key={t} className={`${styles.painItem} ${styles.reveal}`}>
+                <span className={styles.painNum}>{n}</span>
+                <div>
+                  <h3 className={styles.painTitle}>{t}</h3>
+                  <p className={styles.painText}>{d}</p>
+                </div>
               </article>
             ))}
           </div>
@@ -357,29 +283,14 @@ export default function LandingPage() {
       </section>
 
 
-      {/* ── LA CUENTA DEL DÓLAR ────────────────────── */}
-      <section className={`${styles.section} ${styles.sectionTint}`}>
-        <div className={styles.inner}>
-          <div className={`${styles.head} ${styles.reveal}`}>
-            <span className={styles.eyebrow}>Probalo vos</span>
-            <h2 className={styles.h2}>La misma venta, dos ganancias distintas</h2>
-            <p className={styles.lead}>
-              Vendés en pesos, comprás en dólares. Si el sistema mide tus ventas viejas
-              con el dólar de hoy, tu ganancia se deforma. Poné tus números y mirá.
-            </p>
-          </div>
-          <div className={styles.reveal}>
-            <CuentaDolar />
-          </div>
-        </div>
-      </section>
-
       {/* ── FUNCIONES ──────────────────────────────── */}
-      <section id="funciones" className={styles.section}>
+      <section id="funciones" className={`${styles.section} ${styles.washBlue}`}>
         <div className={styles.inner}>
-          <div className={`${styles.head} ${styles.reveal}`}>
+          <div className={`${styles.headSplit} ${styles.reveal}`}>
+            <div>
             <span className={styles.eyebrow}>La solución</span>
-            <h2 className={styles.h2}>Todo lo que necesitás, nada de lo que no</h2>
+            <h2 className={styles.h2}>Todo lo que necesitás,<br />nada de lo que no</h2>
+            </div>
             <p className={styles.lead}>
               Stackr reemplaza el cuaderno, la planilla y el grupo de WhatsApp con
               un sistema que hace el trabajo por vos.
@@ -419,7 +330,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CÓMO EMPIEZA ───────────────────────────── */}
-      <section className={styles.section}>
+      <section className={`${styles.section} ${styles.sectionTint} ${styles.washGreen}`}>
         <div className={styles.inner}>
           <div className={`${styles.head} ${styles.reveal}`}>
             <span className={styles.eyebrow}>Cómo funciona</span>
@@ -441,11 +352,13 @@ export default function LandingPage() {
       </section>
 
       {/* ── PRECIO ─────────────────────────────────── */}
-      <section id="precio" className={`${styles.section} ${styles.sectionTint}`}>
+      <section id="precio" className={`${styles.section} ${styles.washViolet}`}>
         <div className={styles.inner}>
-          <div className={`${styles.head} ${styles.reveal}`}>
-            <span className={styles.eyebrow}>Precio</span>
-            <h2 className={styles.h2}>La cuenta que casi nadie hace</h2>
+          <div className={`${styles.headSplit} ${styles.reveal}`}>
+            <div>
+              <span className={styles.eyebrow}>Precio</span>
+              <h2 className={styles.h2}>La cuenta que<br />casi nadie hace</h2>
+            </div>
             <p className={styles.lead}>
               Los sistemas con mensualidad parecen baratos el primer mes. La comparación
               honesta es contra lo que vas a haber pagado en tres años.
@@ -516,7 +429,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── PREGUNTAS ──────────────────────────────── */}
-      <section id="faq" className={styles.section}>
+      <section id="faq" className={`${styles.section} ${styles.sectionTint}`}>
         <div className={styles.inner}>
           <div className={`${styles.head} ${styles.reveal}`}>
             <span className={styles.eyebrow}>Preguntas</span>

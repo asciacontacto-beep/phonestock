@@ -83,7 +83,25 @@
 .inner { max-width: var(--wrap); margin: 0 auto; }
 
 /* Encabezado de sección: una sola composición para toda la página */
+/* El encabezado repetido en cada sección —etiqueta, título, bajada,
+   siempre centrado— es lo que hace que una página se lea como plantilla.
+   Hay dos composiciones y se alternan. */
 .head { max-width: 660px; margin: 0 auto var(--s8); text-align: center; }
+
+/* Composición al ras: título a la izquierda, bajada al costado. */
+.headSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  gap: var(--s8);
+  align-items: end;
+  max-width: none;
+  margin: 0 0 var(--s8);
+  padding-bottom: var(--s6);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.headSplit .lead { margin: 0; padding-bottom: var(--s1); }
+.headSplit .eyebrow { margin-bottom: var(--s4); }
 
 .eyebrow {
   display: inline-block;
@@ -433,61 +451,6 @@
   color: #a1a1aa;
 }
 
-/* ── Rejilla de tarjetas ────────────────────────────────────────── */
-
-.grid4 {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--s5);
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  padding: var(--s6);
-  border-radius: var(--r3);
-  border: 1px solid var(--line);
-  background: var(--bg);
-  box-shadow: var(--sh1);
-  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease),
-              border-color 0.25s;
-}
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--sh3);
-  border-color: var(--line2);
-}
-
-.cardIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r2);
-  margin-bottom: var(--s5);
-  flex-shrink: 0;
-}
-.icBlue   { background: rgba(59,130,246,0.1);  color: #2563eb; }
-.icViolet { background: rgba(139,92,246,0.1);  color: #7c3aed; }
-.icAmber  { background: rgba(245,158,11,0.12); color: #d97706; }
-.icGreen  { background: rgba(22,163,74,0.1);   color: #15803d; }
-
-.cardTitle {
-  font-size: var(--f-h3);
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  line-height: 1.25;
-  color: var(--ink);
-  margin: 0 0 var(--s3);
-}
-.cardText {
-  font-size: var(--f-sm);
-  line-height: 1.65;
-  color: var(--t2);
-  margin: 0;
-}
-
 /* ── Funciones ──────────────────────────────────────────────────── */
 
 .featureRow {
@@ -530,8 +493,6 @@
 
 .featureShot {
   border-radius: var(--r3);
-  border: 1px solid var(--line);
-  background: #fff;
   box-shadow: var(--sh3);
   overflow: hidden;
 }
@@ -602,31 +563,27 @@
 .compare {
   max-width: 760px;
   margin: 0 auto var(--s4);
-  border: 1px solid var(--line);
-  border-radius: var(--r3);
-  overflow: hidden;
-  background: var(--bg);
-  box-shadow: var(--sh1);
+  border-top: 1px solid var(--line2);
 }
 .compareRow {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   gap: var(--s4);
-  padding: var(--s4) var(--s5);
+  padding: var(--s4) 0;
   border-bottom: 1px solid var(--line);
   font-size: var(--f-sm);
 }
 .compareRow:last-child { border-bottom: none; }
 .compareHead {
-  background: var(--bg2);
+  background: none;
   font-size: var(--f-xs);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--t3);
 }
-.compareTotal { background: var(--bg2); font-weight: 700; }
+.compareTotal { border-bottom: none; border-top: 1px solid var(--line2); font-weight: 700; }
 .compareLabel { color: var(--t1); font-weight: 550; }
 .compareA { text-align: right; color: var(--t3); font-variant-numeric: tabular-nums; }
 .compareB {
@@ -725,21 +682,24 @@
 /* ── Manifiesto ─────────────────────────────────────────────────── */
 
 .manifesto {
-  max-width: 760px;
-  margin: var(--s9) auto 0;
-  padding: var(--s8);
-  border-radius: var(--r3);
-  border: 1px solid var(--line);
-  background: var(--bg);
-  box-shadow: var(--sh1);
-  text-align: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--s8);
+  align-items: start;
+  max-width: var(--wrap);
+  margin: var(--s10) auto 0;
+  padding-top: var(--s8);
+  border-top: 1px solid var(--line2);
+  text-align: left;
 }
 .manifestoH3 {
-  font-size: 24px;
+  font-size: clamp(24px, 2.8vw, 34px);
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
   color: var(--ink);
-  margin: 0 0 var(--s4);
+  margin: 0;
+  text-wrap: balance;
 }
 .manifestoP {
   font-size: var(--f-body);
@@ -755,7 +715,7 @@
   border-radius: var(--s1);
 }
 .signature {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--s3);
   padding-top: var(--s5);
@@ -782,15 +742,8 @@
 
 .faq { max-width: 760px; margin: 0 auto; }
 .faqItem {
-  border: 1px solid var(--line);
-  border-radius: var(--r2);
-  background: var(--bg);
-  margin-bottom: var(--s3);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  border-bottom: 1px solid var(--line);
 }
-.faqItem:last-child { margin-bottom: 0; }
-.faqItem:hover { border-color: var(--line2); }
-.faqOpen { border-color: var(--line2); box-shadow: var(--sh1); }
 
 .faqQ {
   width: 100%;
@@ -798,7 +751,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--s4);
-  padding: var(--s5);
+  padding: var(--s5) 0;
   background: none;
   border: none;
   cursor: pointer;
@@ -813,7 +766,7 @@
 .faqOpen .faqChevron { transform: rotate(180deg); }
 .faqA {
   margin: 0;
-  padding: 0 var(--s5) var(--s5);
+  padding: 0 var(--s8) var(--s5) 0;
   font-size: var(--f-sm);
   line-height: 1.7;
   color: var(--t2);
@@ -949,7 +902,7 @@
 /* ── Tablet ─────────────────────────────────────────────────────── */
 
 @media (max-width: 960px) {
-  .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .headSplit { grid-template-columns: 1fr; gap: var(--s4); align-items: start; }
   .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s6) var(--s5); }
   .featureRow { grid-template-columns: 1fr; gap: var(--s7); }
   .featureFlip .featureText { order: 0; }
@@ -981,9 +934,6 @@
   .clients { padding: var(--s7) var(--s4); }
   .clientsRow { gap: var(--s5); }
 
-  .grid4 { grid-template-columns: 1fr; gap: var(--s4); }
-  .card { padding: var(--s5); }
-  .cardIcon { margin-bottom: var(--s4); }
 
   .featureRow { padding: var(--s7) 0; }
   .featureSolo .featureList { grid-template-columns: 1fr; }
@@ -1018,100 +968,144 @@
   .jsOn .reveal { opacity: 1; transform: none; }
 }
 
-/* ── La cuenta del dólar ────────────────────────────────────────── */
-/* Bloque interactivo: el argumento central del producto se toca en vez
-   de leerse. Los números son aritmética, no una promesa. */
 
-.calc {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: var(--s8);
-  align-items: center;
-  max-width: 940px;
-  margin: 0 auto;
-  padding: var(--s8);
-  border-radius: var(--r4);
-  border: 1px solid var(--line);
-  background: var(--bg);
-  box-shadow: var(--sh3);
+/* ── Ritmo tonal ────────────────────────────────────────────────────
+   La página venía blanco sobre blanco sobre blanco: sin variación, el
+   ojo no tiene dónde apoyarse y todo se lee igual de plano. Cada
+   sección clara lleva ahora su propio lavado de color, y una banda
+   oscura corta la mitad de la página. */
+
+/* Grano finísimo sobre todo: le saca el aspecto plástico al plano. */
+.root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+.root > * { position: relative; z-index: 2; }
+
+/* Lavados: cada sección clara tiene su propia temperatura */
+.washBlue, .washGreen, .washViolet { position: relative; }
+.washBlue::before, .washGreen::before, .washViolet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.washBlue::before {
+  background:
+    radial-gradient(ellipse 60% 44% at 88% 6%,  rgba(59,130,246,0.07) 0%, transparent 62%),
+    radial-gradient(ellipse 44% 34% at 4% 86%,  rgba(139,92,246,0.05) 0%, transparent 60%);
+}
+.washGreen::before {
+  background:
+    radial-gradient(ellipse 56% 42% at 8% 4%,   rgba(22,163,74,0.07)  0%, transparent 62%),
+    radial-gradient(ellipse 46% 36% at 92% 92%, rgba(59,130,246,0.05) 0%, transparent 60%);
+}
+.washViolet::before {
+  background:
+    radial-gradient(ellipse 58% 44% at 50% 0%,  rgba(139,92,246,0.06) 0%, transparent 64%),
+    radial-gradient(ellipse 40% 32% at 12% 96%, rgba(22,163,74,0.045) 0%, transparent 58%);
+}
+.washBlue > *, .washGreen > *, .washViolet > * { position: relative; }
+
+/* Degradé de papel: el blanco puro nunca ocupa toda la altura */
+.sectionTint {
+  background: linear-gradient(180deg, #ffffff 0%, var(--bg2) 22%, var(--bg2) 78%, #ffffff 100%);
 }
 
-.calcInputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); }
-.calcField { display: flex; flex-direction: column; gap: var(--s2); }
-.calcLabel {
+/* ── Banda oscura ──────────────────────────────────────────────────
+   Corta la monotonía justo donde la página se volvía toda igual. */
+
+.sectionDark {
+  position: relative;
+  padding: var(--s10) var(--s5);
+  background: var(--dark);
+  color: #fff;
+  overflow: hidden;
+}
+.darkGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 54% 44% at 78% 2%,  rgba(59,130,246,0.15)  0%, transparent 64%),
+    radial-gradient(ellipse 46% 40% at 10% 96%, rgba(239,68,68,0.10)   0%, transparent 60%),
+    radial-gradient(ellipse 40% 34% at 46% 50%, rgba(139,92,246,0.08)  0%, transparent 62%);
+}
+
+.headDark { margin-bottom: var(--s9); }
+.eyebrowDark {
+  display: inline-block;
   font-size: var(--f-xs);
-  font-weight: 650;
-  color: var(--t3);
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.42);
+  margin-bottom: var(--s3);
 }
-.calcInputWrap {
-  display: flex;
-  align-items: center;
-  gap: var(--s1);
-  height: 44px;
-  padding: 0 var(--s3);
-  border: 1px solid var(--line2);
-  border-radius: var(--r2);
-  background: var(--bg);
-  transition: border-color 0.15s, box-shadow 0.15s;
+.h2Dark {
+  font-size: var(--f-h2);
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  line-height: 1.06;
+  margin: 0;
+  color: #fff;
+  text-wrap: balance;
 }
-.calcInputWrap:focus-within {
-  border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgba(9,9,11,0.06);
+.leadDark {
+  font-size: var(--f-lead);
+  line-height: 1.65;
+  color: rgba(255,255,255,0.6);
+  margin: var(--s4) 0 0;
+  text-wrap: pretty;
 }
-.calcPrefix { font-size: var(--f-sm); font-weight: 600; color: var(--t3); flex-shrink: 0; }
-.calcInput {
-  width: 100%;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: none;
-  font-family: inherit;
-  font-size: var(--f-body);
-  font-weight: 650;
-  color: var(--ink);
+
+/* Sin caja, sin icono de color: numeral grande y un filete. */
+.painList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s5) var(--s9);
+}
+.painItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s5);
+  align-items: start;
+  padding: var(--s6) 0;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+.painNum {
+  font-size: 15px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.04em;
+  padding-top: 3px;
 }
-
-.calcOut { display: flex; flex-direction: column; gap: var(--s3); }
-
-.calcResult {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s4);
-  padding: var(--s4) var(--s5);
-  border-radius: var(--r2);
-  background: var(--bg3);
-}
-.calcResultLabel { font-size: var(--f-sm); color: var(--t2); line-height: 1.45; }
-.calcResultBad,
-.calcResultGood {
-  font-size: 26px;
-  font-weight: 800;
+.painTitle {
+  font-size: clamp(20px, 2.1vw, 26px);
+  font-weight: 750;
   letter-spacing: -0.03em;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
+  line-height: 1.16;
+  color: #fff;
+  margin: 0 0 var(--s3);
 }
-.calcResultBad  { color: var(--t3); }
-.calcResultGood { color: var(--green); }
-
-.calcGap {
-  margin: var(--s2) 0 0;
+.painText {
   font-size: var(--f-sm);
-  color: var(--t2);
-  text-align: center;
+  line-height: 1.68;
+  color: rgba(255,255,255,0.58);
+  margin: 0;
 }
-.calcGap strong { color: var(--ink); font-weight: 750; }
 
 @media (max-width: 960px) {
-  .calc { grid-template-columns: 1fr; gap: var(--s7); padding: var(--s7); }
+  .painList { grid-template-columns: 1fr; gap: 0; }
 }
-
 @media (max-width: 640px) {
-  .calc { padding: var(--s5); border-radius: var(--r3); gap: var(--s6); }
-  .calcInputs { grid-template-columns: 1fr; gap: var(--s3); }
-  .calcResult { flex-direction: column; align-items: flex-start; gap: var(--s2); }
-  .calcResultBad, .calcResultGood { font-size: 24px; }
-  .calcGap { text-align: left; }
+  .sectionDark { padding: var(--s9) var(--s4); }
+  .headDark { margin-bottom: var(--s7); }
+  .painItem { padding: var(--s5) 0; gap: var(--s4); }
 }

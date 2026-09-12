@@ -29,6 +29,51 @@ export function NegociosClient() {
     await reload(); setActionId(null); setDetail(null)
   }
 
+  /* ── Extender la prueba gratis ───────────────────────────────
+     Si el trial ya venció, los días se cuentan desde hoy (lo hace la RPC),
+     así "+7 días" siempre significa una semana más de uso real. */
+  const extendTrial = async (orgId: string, days: number) => {
+    setActionId(orgId)
+    const { data, error } = await supabase.rpc('extend_trial', { org_id: orgId, days })
+    if (error) {
+      toast.error(error.message.includes('function') ? 'Falta aplicar la migración extend_trial' : error.message)
+    } else {
+      toast.success(`Prueba extendida ${days} días · vence el ${fmtDateTime(data as string)}`)
+      await reload()
+      setDetail(d => (d && d.id === orgId ? { ...d, trial_expires_at: data as string } : d))
+    }
+    setActionId(null)
+  }
+
+  const setTrialDate = async (orgId: string, dateStr: string) => {
+    if (!dateStr) return
+    // Vence al final del día elegido.
+    const iso = new Date(`${dateStr}T23:59:59`).toISOString()
+    setActionId(orgId)
+    const { error } = await supabase.rpc('set_trial_expiration', { org_id: orgId, expires_at: iso })
+    if (error) {
+      toast.error(error.message.includes('function') ? 'Falta aplicar la migración extend_trial' : error.message)
+    } else {
+      toast.success(`Prueba hasta el ${fmtDateTime(iso)}`)
+      await reload()
+      setDetail(d => (d && d.id === orgId ? { ...d, trial_expires_at: iso } : d))
+    }
+    setActionId(null)
+  }
+
+  const clearTrialLimit = async (orgId: string) => {
+    if (!await confirm('¿Dejar este negocio sin fecha de vencimiento? Sigue sin figurar como pago.')) return
+    setActionId(orgId)
+    const { error } = await supabase.rpc('set_trial_expiration', { org_id: orgId, expires_at: null })
+    if (error) toast.error(error.message)
+    else {
+      toast.success('Sin vencimiento')
+      await reload()
+      setDetail(d => (d && d.id === orgId ? { ...d, trial_expires_at: null } : d))
+    }
+    setActionId(null)
+  }
+
   const deleteOrg = async (orgId: string, name: string) => {
     if (!await confirm(`¿Borrar "${name}" y TODOS sus datos? Es irreversible.`)) return
     setActionId(orgId)
@@ -231,6 +276,47 @@ export function NegociosClient() {
                       <span className="panel-text">Última actividad: {fmtDateTime(a.last_activity)}</span>
                     </div>
                   )}
+                </div>
+
+                {/* ── Extender la prueba gratis ── */}
+                <div className="panel" style={{ marginBottom: 14, padding: '14px 16px' }}>
+                  <div className="sl" style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Clock size={13} /> Prueba gratis
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10 }}>
+                    {detail.trial_expires_at
+                      ? (trialInfo(detail).expired
+                          ? 'Vencida — los días se suman desde hoy.'
+                          : `Vence el ${fmtDateTime(detail.trial_expires_at)}`)
+                      : 'Sin fecha de vencimiento.'}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                    {[3, 7, 15, 30, 60].map(d => (
+                      <button key={d} className="btn-pill" disabled={actionId === detail.id}
+                        onClick={() => extendTrial(detail.id, d)}>
+                        +{d} días
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Hasta:</label>
+                    <input
+                      type="date"
+                      className="inp"
+                      style={{ width: 170, padding: '7px 10px', fontSize: 13 }}
+                      disabled={actionId === detail.id}
+                      defaultValue={detail.trial_expires_at ? detail.trial_expires_at.slice(0, 10) : ''}
+                      onChange={e => setTrialDate(detail.id, e.target.value)}
+                    />
+                    {detail.trial_expires_at && (
+                      <button className="btn-ghost" style={{ fontSize: 12, color: 'var(--text-3)' }}
+                        disabled={actionId === detail.id} onClick={() => clearTrialLimit(detail.id)}>
+                        Sin vencimiento
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

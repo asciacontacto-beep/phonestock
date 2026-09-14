@@ -20,17 +20,30 @@
 --   * `org_id` primero — cada negocio tiene su inventario. Un teléfono que
 --     un local vendió puede terminar comprado por otro local.
 --
--- NO BORRA NI MODIFICA NINGÚN DATO. Sólo crea un índice.
+-- NO BORRA NI MODIFICA NINGUNA FILA. Crea un índice y borra otro: un
+-- DROP INDEX elimina la estructura de búsqueda, nunca los equipos.
 -- ============================================================================
 
 
--- ── PASO 1: ¿ya existe algo parecido? ───────────────────────────────────
--- Corré esto solo para mirar. Si ya hay un índice único sobre imei, el
--- PASO 3 no hace nada (es IF NOT EXISTS) y no molesta.
-
-SELECT indexname, indexdef
-FROM pg_indexes
-WHERE tablename = 'stock' AND indexdef ILIKE '%imei%';
+-- ── LO QUE HABÍA ANTES ──────────────────────────────────────────────────
+-- Existía este índice, creado a mano y nunca versionado:
+--
+--     CREATE UNIQUE INDEX stock_imei_key ON public.stock USING btree (imei)
+--
+-- Global sobre `imei` solo, sin organización y sin filtro de estado. Eso
+-- provocaba dos cosas malas:
+--
+--   * Un IMEI usado por un negocio quedaba bloqueado para TODOS los demás.
+--     Si un local vende un equipo y otro lo compra, el segundo no podía
+--     cargarlo — y el error le confirmaba que ese IMEI existe en otra
+--     organización.
+--
+--   * Como vender no borra la fila sino que la marca vendida, el IMEI
+--     quedaba tomado para siempre: un equipo que volvía en canje no se
+--     podía reingresar nunca.
+--
+-- Se reemplaza por el índice parcial de abajo. Se crea el nuevo primero y
+-- recién después se borra el viejo, para no dejar ni un instante sin regla.
 
 
 -- ── PASO 2: ¿hay duplicados hoy? ────────────────────────────────────────
@@ -51,8 +64,16 @@ GROUP BY org_id, imei
 HAVING count(*) > 1;
 
 
--- ── PASO 3: la regla ────────────────────────────────────────────────────
+-- ── PASO 3: la regla nueva ──────────────────────────────────────────────
 
 CREATE UNIQUE INDEX IF NOT EXISTS stock_imei_disponible_unico
   ON public.stock (org_id, imei)
   WHERE imei IS NOT NULL AND imei <> '' AND status = 'available';
+
+
+-- ── PASO 4: sacar la regla vieja ────────────────────────────────────────
+-- DROP INDEX borra el índice, NO las filas. Ningún equipo se pierde.
+-- Es lo que habilita reingresar un equipo vendido y que dos locales
+-- distintos puedan haber tenido el mismo teléfono.
+
+DROP INDEX IF EXISTS public.stock_imei_key;

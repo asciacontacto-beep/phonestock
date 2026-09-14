@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Plus, Printer, Search, AlertTriangle, FileText, X, MapPin, PackageOpen, CreditCard, ChevronRight, Receipt as ReceiptIcon, User as UserIcon, Loader2 } from 'lucide-react';
 import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
+import { ModelPicker } from '@/components/ModelPicker';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
@@ -832,9 +833,13 @@ function TradeInForm({ currency, onConfirm }: any) {
         )}
         <div className="col field">
           <label className="lbl">Modelo</label>
-          <select className="inp" value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))}>
-            {(f.brand === 'Apple' ? (MODELS['Apple'] || []).filter(m => m.startsWith(appleCategory)) : (MODELS[f.brand] || [])).map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
+          <ModelPicker
+            value={f.model}
+            onChange={v => setF(p => ({ ...p, model: v }))}
+            options={f.brand === 'Apple'
+              ? (MODELS['Apple'] || []).filter(m => m.startsWith(appleCategory))
+              : (MODELS[f.brand] || [])}
+          />
         </div>
       </div>
       <div className="row"><div className="col field"><label className="lbl">GB</label><select className="inp" value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))}>{STORAGES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>

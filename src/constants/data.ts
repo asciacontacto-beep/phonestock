@@ -12,8 +12,17 @@ export const DEPOSITS = [
   { id: 4, name: 'En tránsito', color: '#f59e0b' }
 ];
 
-export const BRANDS = ['Apple', 'Samsung', 'Xiaomi', 'Motorola', 'POCO'];
+export const BRANDS = [
+  'Apple', 'Samsung', 'Xiaomi', 'Motorola', 'POCO', 'Google',
+  'Honor', 'Realme', 'OnePlus', 'Huawei', 'TCL', 'ZTE', 'Infinix', 'Nokia', 'LG', 'Otra'
+];
 
+/**
+ * Catálogo de modelos. Es una ayuda para escribir rápido, NO una lista
+ * cerrada: el selector acepta cualquier texto, porque salen modelos nuevos
+ * todos los meses y esta lista siempre va a ir atrás. Si falta uno que
+ * vendés seguido, agregalo acá para tenerlo a mano.
+ */
 export const MODELS: Record<string, string[]> = {
   Apple: [
     'iPhone 17 Pro Max', 'iPhone 17 Pro', 'iPhone 17 Air', 'iPhone 17',
@@ -23,7 +32,9 @@ export const MODELS: Record<string, string[]> = {
     'iPhone 13 Pro Max', 'iPhone 13 Pro', 'iPhone 13', 'iPhone 13 mini',
     'iPhone 12 Pro Max', 'iPhone 12 Pro', 'iPhone 12', 'iPhone 12 mini',
     'iPhone 11 Pro Max', 'iPhone 11 Pro', 'iPhone 11',
-    'iPhone SE (3ra Gen)', 'iPhone SE (2da Gen)', 'iPhone XS Max', 'iPhone XS', 'iPhone XR', 'iPhone X',
+    'iPhone SE (3ra Gen)', 'iPhone SE (2da Gen)', 'iPhone SE (1ra Gen)',
+    'iPhone XS Max', 'iPhone XS', 'iPhone XR', 'iPhone X',
+    'iPhone 8 Plus', 'iPhone 8', 'iPhone 7 Plus', 'iPhone 7',
     'MacBook Air M5', 'MacBook Air M4', 'MacBook Air M3', 'MacBook Air M2', 'MacBook Air M1', 'MacBook Air (Intel)',
     'MacBook Pro M5', 'MacBook Pro M4', 'MacBook Pro M3', 'MacBook Pro M2', 'MacBook Pro M1', 'MacBook Pro (Intel)',
     'MacBook (12-inch)', 'MacBook Neo',
@@ -31,31 +42,90 @@ export const MODELS: Record<string, string[]> = {
     'iPad Air 13" (M4)', 'iPad Air 11" (M4)', 'iPad Air 13" (M3)', 'iPad Air 11" (M3)', 'iPad Air 13" (M2)', 'iPad Air 11" (M2)', 'iPad Air (5.ª gen - M1)', 'iPad Air (4.ª gen)', 'iPad Air (3.ª gen)', 'iPad Air 2', 'iPad Air (1.ª gen)',
     'iPad mini (7.ª gen - A17 Pro)', 'iPad mini (6.ª gen)', 'iPad mini 5', 'iPad mini 4', 'iPad mini 3', 'iPad mini 2', 'iPad mini (1.ª gen)',
     'iPad (11.ª gen)', 'iPad (10.ª gen)', 'iPad (9.ª gen)', 'iPad (8.ª gen)', 'iPad (7.ª gen)', 'iPad (6.ª gen)', 'iPad (5.ª gen)', 'iPad (4.ª gen)', 'iPad (3.ª gen)', 'iPad 2', 'iPad (1.ª gen)',
-    'AirPods 2', 'AirPods 3', 'AirPods 4', 'AirPods Pro', 'AirPods Pro 2', 'AirPods Max',
+    'AirPods 4', 'AirPods 3', 'AirPods 2', 'AirPods Pro 3', 'AirPods Pro 2', 'AirPods Pro', 'AirPods Max',
     'Apple Watch Ultra 3', 'Apple Watch Ultra 2', 'Apple Watch Ultra (1.ª gen)',
     'Apple Watch Series 11', 'Apple Watch Series 10', 'Apple Watch Series 9', 'Apple Watch Series 8', 'Apple Watch Series 7', 'Apple Watch Series 6', 'Apple Watch Series 5', 'Apple Watch Series 4', 'Apple Watch Series 3', 'Apple Watch Series 2', 'Apple Watch Series 1', 'Apple Watch (1.ª gen)',
     'Apple Watch SE (3.ª gen)', 'Apple Watch SE (2.ª gen)', 'Apple Watch SE (1.ª gen)'
   ],
   Samsung: [
-    'Galaxy S25 Ultra', 'Galaxy S25+', 'Galaxy S25',
+    'Galaxy S26 Ultra', 'Galaxy S26+', 'Galaxy S26',
+    'Galaxy S25 Ultra', 'Galaxy S25 Edge', 'Galaxy S25+', 'Galaxy S25', 'Galaxy S25 FE',
     'Galaxy S24 Ultra', 'Galaxy S24+', 'Galaxy S24', 'Galaxy S24 FE',
     'Galaxy S23 Ultra', 'Galaxy S23+', 'Galaxy S23', 'Galaxy S23 FE',
-    'Galaxy A55', 'Galaxy A35', 'Galaxy A25', 'Galaxy A15',
-    'Galaxy A54', 'Galaxy A34', 'Galaxy A24', 'Galaxy A14',
-    'Galaxy Z Fold 6', 'Galaxy Z Flip 6'
+    'Galaxy S22 Ultra', 'Galaxy S22+', 'Galaxy S22',
+    'Galaxy S21 Ultra', 'Galaxy S21+', 'Galaxy S21', 'Galaxy S21 FE',
+    'Galaxy S20 Ultra', 'Galaxy S20+', 'Galaxy S20', 'Galaxy S20 FE',
+    'Galaxy Note 20 Ultra', 'Galaxy Note 20', 'Galaxy Note 10+', 'Galaxy Note 10',
+    'Galaxy A56', 'Galaxy A36', 'Galaxy A26', 'Galaxy A16', 'Galaxy A06',
+    'Galaxy A55', 'Galaxy A35', 'Galaxy A25', 'Galaxy A15', 'Galaxy A05', 'Galaxy A05s',
+    'Galaxy A54', 'Galaxy A34', 'Galaxy A24', 'Galaxy A14', 'Galaxy A04', 'Galaxy A04s',
+    'Galaxy A53', 'Galaxy A33', 'Galaxy A23', 'Galaxy A13', 'Galaxy A03', 'Galaxy A03 Core',
+    'Galaxy A52', 'Galaxy A32', 'Galaxy A22', 'Galaxy A12', 'Galaxy A02', 'Galaxy A02s',
+    'Galaxy A73', 'Galaxy A72', 'Galaxy A71', 'Galaxy A51', 'Galaxy A31', 'Galaxy A21s', 'Galaxy A11',
+    'Galaxy M55', 'Galaxy M35', 'Galaxy M15', 'Galaxy M14', 'Galaxy M53', 'Galaxy M23',
+    'Galaxy Z Fold 7', 'Galaxy Z Flip 7', 'Galaxy Z Fold 6', 'Galaxy Z Flip 6',
+    'Galaxy Z Fold 5', 'Galaxy Z Flip 5', 'Galaxy Z Fold 4', 'Galaxy Z Flip 4', 'Galaxy Z Flip 3',
+    'Galaxy Tab S10 Ultra', 'Galaxy Tab S10+', 'Galaxy Tab S9 Ultra', 'Galaxy Tab S9+', 'Galaxy Tab S9',
+    'Galaxy Tab S8', 'Galaxy Tab A9+', 'Galaxy Tab A9', 'Galaxy Tab A8',
+    'Galaxy Buds 3 Pro', 'Galaxy Buds 3', 'Galaxy Buds 2 Pro', 'Galaxy Buds FE',
+    'Galaxy Watch 7', 'Galaxy Watch 6', 'Galaxy Watch Ultra'
   ],
   Xiaomi: [
-    'Xiaomi 14 Ultra', 'Xiaomi 14 Pro', 'Xiaomi 14',
+    'Xiaomi 15 Ultra', 'Xiaomi 15 Pro', 'Xiaomi 15',
+    'Xiaomi 14 Ultra', 'Xiaomi 14 Pro', 'Xiaomi 14', 'Xiaomi 14T Pro', 'Xiaomi 14T',
+    'Xiaomi 13 Pro', 'Xiaomi 13', 'Xiaomi 13T Pro', 'Xiaomi 13T', 'Xiaomi 12',
+    'Redmi Note 14 Pro+ 5G', 'Redmi Note 14 Pro', 'Redmi Note 14',
     'Redmi Note 13 Pro+ 5G', 'Redmi Note 13 Pro', 'Redmi Note 13',
-    'Redmi 13C', 'Redmi 12', 'Poco F6 Pro', 'Poco X6 Pro'
+    'Redmi Note 12 Pro', 'Redmi Note 12', 'Redmi Note 11',
+    'Redmi 14C', 'Redmi 13C', 'Redmi 13', 'Redmi 12C', 'Redmi 12', 'Redmi A3', 'Redmi A2',
+    'Redmi Pad SE', 'Redmi Pad'
   ],
   Motorola: [
-    'Moto Edge 50 Ultra', 'Moto Edge 50 Pro', 'Moto Edge 50 Fusion',
-    'Moto Edge 40 Pro', 'Moto Edge 40 Neo',
-    'Moto G85', 'Moto G55', 'Moto G84', 'Moto G54',
-    'Moto Razr 50 Ultra', 'Moto Razr 50'
+    'Moto Edge 60 Pro', 'Moto Edge 60 Fusion', 'Moto Edge 60',
+    'Moto Edge 50 Ultra', 'Moto Edge 50 Pro', 'Moto Edge 50 Fusion', 'Moto Edge 50 Neo',
+    'Moto Edge 40 Pro', 'Moto Edge 40 Neo', 'Moto Edge 40', 'Moto Edge 30',
+    'Moto G96', 'Moto G86', 'Moto G85', 'Moto G75', 'Moto G55', 'Moto G45', 'Moto G35', 'Moto G15', 'Moto G05',
+    'Moto G84', 'Moto G54', 'Moto G34', 'Moto G24', 'Moto G14', 'Moto G04',
+    'Moto G82', 'Moto G72', 'Moto G62', 'Moto G52', 'Moto G42', 'Moto G32', 'Moto G22',
+    'Moto G200', 'Moto G100', 'Moto G60', 'Moto G50', 'Moto G30', 'Moto G20', 'Moto G10',
+    'Moto E15', 'Moto E14', 'Moto E13', 'Moto E22', 'Moto E20',
+    'Moto Razr 60 Ultra', 'Moto Razr 60', 'Moto Razr 50 Ultra', 'Moto Razr 50', 'Moto Razr 40 Ultra', 'Moto Razr 40'
   ],
-  POCO: ['POCO X6 Pro', 'POCO F6 Pro', 'POCO M6 Pro', 'POCO C65']
+  POCO: [
+    'POCO F7 Ultra', 'POCO F7 Pro', 'POCO F6 Pro', 'POCO F6', 'POCO F5 Pro', 'POCO F5',
+    'POCO X7 Pro', 'POCO X7', 'POCO X6 Pro', 'POCO X6', 'POCO X5 Pro',
+    'POCO M6 Pro', 'POCO M6', 'POCO M5', 'POCO C75', 'POCO C65', 'POCO C61'
+  ],
+  Google: [
+    'Pixel 10 Pro XL', 'Pixel 10 Pro', 'Pixel 10',
+    'Pixel 9 Pro XL', 'Pixel 9 Pro', 'Pixel 9', 'Pixel 9a', 'Pixel 9 Pro Fold',
+    'Pixel 8 Pro', 'Pixel 8', 'Pixel 8a', 'Pixel 7 Pro', 'Pixel 7', 'Pixel 7a',
+    'Pixel 6 Pro', 'Pixel 6', 'Pixel 6a', 'Pixel 5', 'Pixel 4a'
+  ],
+  Honor: [
+    'Honor Magic 7 Pro', 'Honor Magic 6 Pro', 'Honor Magic 5 Pro',
+    'Honor 400 Pro', 'Honor 400', 'Honor 200 Pro', 'Honor 200', 'Honor 90',
+    'Honor X9c', 'Honor X9b', 'Honor X8b', 'Honor X7b', 'Honor X6b', 'Honor X5'
+  ],
+  Realme: [
+    'Realme GT 7 Pro', 'Realme GT 6', 'Realme 14 Pro+', 'Realme 13 Pro+', 'Realme 13 Pro',
+    'Realme 12 Pro+', 'Realme 12 Pro', 'Realme 12', 'Realme 11 Pro+',
+    'Realme Note 60', 'Realme C75', 'Realme C67', 'Realme C65', 'Realme C55', 'Realme C53'
+  ],
+  OnePlus: [
+    'OnePlus 13', 'OnePlus 13R', 'OnePlus 12', 'OnePlus 12R', 'OnePlus 11',
+    'OnePlus Nord 4', 'OnePlus Nord CE 4', 'OnePlus Nord 3', 'OnePlus Nord CE 3'
+  ],
+  Huawei: [
+    'Huawei Mate 60 Pro', 'Huawei Mate 50 Pro', 'Huawei P60 Pro', 'Huawei P50 Pro',
+    'Huawei Nova 13', 'Huawei Nova 12', 'Huawei Nova 11', 'Huawei Y9a', 'Huawei Y7'
+  ],
+  TCL: ['TCL 50 Pro', 'TCL 50 SE', 'TCL 50', 'TCL 40 SE', 'TCL 40', 'TCL 30', 'TCL 20'],
+  ZTE: ['ZTE Blade A75', 'ZTE Blade A55', 'ZTE Blade A54', 'ZTE Blade V50', 'ZTE Blade V40', 'ZTE Nubia Neo 3'],
+  Infinix: ['Infinix Note 40 Pro', 'Infinix Note 40', 'Infinix Hot 50', 'Infinix Hot 40', 'Infinix Smart 9', 'Infinix Smart 8'],
+  Nokia: ['Nokia G42', 'Nokia G22', 'Nokia C32', 'Nokia C22', 'Nokia 110', 'Nokia 105'],
+  LG: ['LG K62', 'LG K52', 'LG K42', 'LG Velvet', 'LG G8', 'LG K61'],
+  Otra: []
 };
 
 export const STORAGES = ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB'];

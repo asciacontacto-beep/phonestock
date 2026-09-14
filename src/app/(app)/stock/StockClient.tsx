@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
-import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
+import { BRANDS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
 import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -154,6 +154,18 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
     }
   };
 
+  // El filtro de modelo sale del stock real, no del catálogo: ofrecer 400
+  // modelos que no tenés no ayuda a encontrar los que sí.
+  const modelosEnStock = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of stock) {
+      if (!s?.model) continue;
+      if (filter.brand !== 'all' && s.brand !== filter.brand) continue;
+      set.add(s.model);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+  }, [stock, filter.brand]);
+
   const depositMap = useMemo(() => Object.fromEntries(deposits.map(d => [String(d.id), d])), [deposits]);
   const depositOf = (s: any) => depositMap[String(s.deposit)];
 
@@ -237,10 +249,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           onChange={e => { setFilter({ ...filter, model: e.target.value }); setVisibleCount(50); }}
         >
           <option value="all">Modelo</option>
-          {(filter.brand !== 'all'
-            ? (MODELS[filter.brand] || [])
-            : Object.values(MODELS).flat()
-          ).map(m => <option key={m} value={m}>{m}</option>)}
+          {modelosEnStock.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
 
         <select className={`sel-pill ${filter.storage !== 'all' ? 'active' : ''}`} style={{ maxWidth: 130 }} value={filter.storage}

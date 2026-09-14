@@ -1287,3 +1287,26 @@ select.inp {
   .receipt-editor-form { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
   .receipt-editor-preview { max-height: 60vh; }
 }
+
+/* ── Selector de modelo con búsqueda ────── */
+
+.mp-trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; text-align: left; cursor: pointer; font-family: inherit;
+}
+.mp-placeholder { color: var(--text-3); }
+.mp-chevron { color: var(--text-3); flex-shrink: 0; }
+
+.mp-wrap { position: relative; }
+.mp-search-icon {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); pointer-events: none; z-index: 1; display: flex;
+}
+.mp-input { padding-left: 32px; }
+
+/* Resaltado del teclado y del mouse: el mismo, para que no haya dos focos */
+.acc-option.mp-on { background: var(--surface-2); }
+
+/* La opción de usar texto libre se separa del catálogo */
+.mp-nuevo { border-top: 1px solid var(--border); }
+.mp-nuevo .acc-option-name { font-weight: 600; }

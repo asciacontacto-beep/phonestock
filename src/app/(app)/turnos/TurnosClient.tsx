@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, CalendarDays, LayoutList, Search, X, Check, Ban, Edit2, Clock, Phone, ArrowLeftRight, ChevronLeft, ChevronRight, AtSign } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { ModelPicker } from '@/components/ModelPicker';
 import { toast } from 'sonner';
 import { BRANDS, MODELS, STORAGES, COLORS, PAY } from '@/constants/data';
 
@@ -594,9 +595,11 @@ function TradeInSection({ f, setF }: any) {
         )}
         <div className="col field" style={{ marginBottom: 0 }}>
           <label className="lbl">Modelo</label>
-          <select className="inp" value={f.trade_in_model || ''} onChange={e => setF((p: any) => ({ ...p, trade_in_model: e.target.value }))}>
-            {models.map((m: string) => <option key={m} value={m}>{m}</option>)}
-          </select>
+          <ModelPicker
+            value={f.trade_in_model || ''}
+            onChange={v => setF((p: any) => ({ ...p, trade_in_model: v }))}
+            options={models}
+          />
         </div>
       </div>
 

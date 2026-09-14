@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, EAN_DB } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
+import { ModelPicker } from './ModelPicker';
 import { Check, X, ChevronRight, ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -223,9 +224,16 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                   </select>
                 </div>
               )}
-              <div><label className="lbl">Modelo</label><select className="inp" value={model} onChange={e => handleModel(e.target.value)}>
-                {(brand === 'Apple' ? (MODELS['Apple'] || []).filter(m => m.startsWith(appleCategory)) : (MODELS[brand] || [])).map(m => <option key={m} value={m}>{m}</option>)}
-              </select></div>
+              <div>
+                <label className="lbl">Modelo</label>
+                <ModelPicker
+                  value={model}
+                  onChange={handleModel}
+                  options={brand === 'Apple'
+                    ? (MODELS['Apple'] || []).filter(m => m.startsWith(appleCategory))
+                    : (MODELS[brand] || [])}
+                />
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px', gap: 12 }}>
                 <div><label className="lbl">Precio Venta</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
                 <div><label className="lbl">Precio Costo</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>

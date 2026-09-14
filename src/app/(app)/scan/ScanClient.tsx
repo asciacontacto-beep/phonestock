@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
 import { Html5Qrcode } from 'html5-qrcode';
 import { toast } from 'sonner';
+import { limpiarImei, buscarImeisEnStock, avisoDuplicado, esErrorImeiRepetido } from '@/utils/imei';
 
 const isOldPro = (m: string) => {
   if (!m || typeof m !== 'string') return false;
@@ -103,6 +104,11 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
   const confirm = async () => {
     if (!det || !price || !dep) { toast.error('Datos incompletos'); return; }
     try {
+      // Mismo control que en la carga manual: el equipo no puede entrar dos
+      // veces al stock disponible.
+      const yaEstan = await buscarImeisEnStock(supabase, [imei]);
+      if (yaEstan.length > 0) { toast.error(avisoDuplicado(yaEstan)); return; }
+
       const { data: inserted, error } = await supabase.from('stock').insert([{
         brand: det.brand,
         model: det.model,
@@ -110,7 +116,7 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
         color: det.color,
         condition: cond,
         battery: cond === 'used' ? battery : null,
-        imei: imei || `S/N-${Date.now()}`,
+        imei: limpiarImei(imei) || `S/N-${Date.now()}`,
         price: parseFloat(price),
         currency: cur,
         deposit: dep,
@@ -125,8 +131,8 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
         ref.current?.focus();
       }
     } catch (e: any) {
-      if (e.message?.includes('stock_imei_key')) {
-        toast.error('Este IMEI / Serie ya se encuentra registrado.');
+      if (esErrorImeiRepetido(e)) {
+        toast.error('Este IMEI ya está en el inventario disponible.');
       } else {
         toast.error(e.message || 'Error al guardar');
       }

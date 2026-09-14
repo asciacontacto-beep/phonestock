@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, EAN_DB } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
 import { ModelPicker } from './ModelPicker';
+import { limpiarImei, repetidosEnLote, buscarImeisEnStock, avisoDuplicado, esErrorImeiRepetido } from '@/utils/imei';
 import { Check, X, ChevronRight, ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -133,6 +134,27 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
         const { data: exists } = await supabase.from('product_catalog').select('id').eq('upc', upc).maybeSingle();
         if (!exists) await supabase.from('product_catalog').insert({ upc, brand, model });
       }
+      // El IMEI identifica al aparato: dos disponibles con el mismo número
+      // son el mismo teléfono contado dos veces. Se avisa antes de guardar,
+      // nombrando el equipo; el índice de la base es la garantía final.
+      const imeisCargados = variants
+        .filter(v => (Number(v.qty) || 0) === 1)
+        .map(v => limpiarImei(v.imei));
+
+      const repes = repetidosEnLote(imeisCargados);
+      if (repes.length > 0) {
+        toast.error(`Repetiste el IMEI ${repes.join(', ')} en esta misma carga.`);
+        setLoading(false);
+        return;
+      }
+
+      const yaEstan = await buscarImeisEnStock(supabase, imeisCargados);
+      if (yaEstan.length > 0) {
+        toast.error(avisoDuplicado(yaEstan));
+        setLoading(false);
+        return;
+      }
+
       const units: any[] = [];
       variants.forEach(v => {
         const qty = Number(v.qty) || 0;
@@ -141,7 +163,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
             brand, model, storage: v.storage, color: v.color,
             condition: v.condition,
             battery: v.condition === 'used' ? v.battery : null,
-            imei: qty === 1 && v.imei ? v.imei : null,
+            imei: qty === 1 && limpiarImei(v.imei) ? limpiarImei(v.imei) : null,
             price: v.price ? parseFloat(v.price) : parseFloat(price), 
             cost_price: v.costPrice ? parseFloat(v.costPrice) : parseFloat(costPrice),
             currency: cur,
@@ -160,8 +182,8 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
         onClose();
       }
     } catch (e: any) {
-      if (e.message?.includes('stock_imei_key')) {
-        toast.error('Uno o más IMEI ingresados ya están registrados en el inventario.');
+      if (esErrorImeiRepetido(e)) {
+        toast.error('Uno o más IMEI ingresados ya están en el inventario disponible.');
       } else {
         toast.error(e.message || 'Error al guardar');
       }

@@ -10,6 +10,7 @@ import { voidSale, voidSaleSummary } from '@/utils/voidSale';
 import { logAudit, describeChanges } from '@/utils/audit';
 import { useConfirm } from '@/hooks/useConfirm';
 import { EmptyState } from '@/components/EmptyState';
+import { PAY } from '@/constants/data';
 
 interface Props {
   sales: any[];
@@ -30,6 +31,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
   const [voidLoading, setVoidLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
+  /* Alta de un pago que faltaba (típico: el canje que no se pudo cargar en el
+     momento). Si es canje, al guardar el equipo entra al inventario. */
+  const [newPay, setNewPay] = useState<any>(null);
   const [editLoading, setEditLoading] = useState(false);
 
   const router = useRouter();
@@ -381,7 +385,32 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                         const needsRate = p.currency !== editData.currency;
                         return (
                           <div key={i} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600 }}>{p.label || p.id}</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600 }}>
+                                {p.label || p.id}
+                                {p.device && (
+                                  <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>
+                                    {' '}· {[p.device.brand, p.device.model, p.device.imei].filter(Boolean).join(' ')}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                className="btn-icon"
+                                title="Quitar este pago"
+                                style={{ color: 'var(--red)' }}
+                                onClick={() => {
+                                  setEditData((prev: any) => ({
+                                    ...prev,
+                                    payments: prev.payments.filter((_: any, xi: number) => xi !== i),
+                                  }));
+                                  if (p.id === 'tradein' && !p.__new) {
+                                    toast.warning('Quitaste un canje ya registrado: revisá el inventario, el equipo recibido sigue cargado.', { duration: 8000 });
+                                  }
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                             <div style={{ display: 'flex', gap: 8 }}>
                               <div style={{ flex: 1 }}>
                                 <label className="lbl" style={{ fontSize: 10 }}>Monto cobrado</label>
@@ -438,8 +467,99 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                       })}
                     </div>
                   </div>
+                  {/* Agregar un pago que faltaba, sin tener que anular la venta */}
+                  {!newPay ? (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button className="btn btn-outline btn-sm" onClick={() => setNewPay({ id: 'tradein', label: 'Canje', original_amount: '', currency: editData.currency || 'USD', brand: '', model: '', storage: '', color: '', imei: '' })}>
+                        <Plus size={13} /> Agregar canje
+                      </button>
+                      <button className="btn btn-outline btn-sm" onClick={() => setNewPay({ id: 'ars_cash', label: '$ Efectivo', original_amount: '', currency: 'ARS' })}>
+                        <Plus size={13} /> Agregar pago
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-md)', borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700 }}>{newPay.id === 'tradein' ? 'Equipo recibido en canje' : 'Pago que faltaba'}</span>
+                        <button className="btn-icon" onClick={() => setNewPay(null)}><X size={15} /></button>
+                      </div>
+
+                      {newPay.id !== 'tradein' && (
+                        <select className="inp" value={newPay.id} onChange={e => {
+                          const m = PAY.find(x => x.id === e.target.value);
+                          setNewPay((p: any) => ({ ...p, id: m!.id, label: m!.label, currency: m!.cur === 'ANY' ? p.currency : m!.cur }));
+                        }}>
+                          {PAY.filter(m => m.id !== 'tradein').map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                        </select>
+                      )}
+
+                      {newPay.id === 'tradein' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          <input className="inp" placeholder="Marca" value={newPay.brand} onChange={e => setNewPay((p: any) => ({ ...p, brand: e.target.value }))} />
+                          <input className="inp" placeholder="Modelo" value={newPay.model} onChange={e => setNewPay((p: any) => ({ ...p, model: e.target.value }))} />
+                          <input className="inp" placeholder="Almacenamiento" value={newPay.storage} onChange={e => setNewPay((p: any) => ({ ...p, storage: e.target.value }))} />
+                          <input className="inp" placeholder="Color" value={newPay.color} onChange={e => setNewPay((p: any) => ({ ...p, color: e.target.value }))} />
+                          <input className="inp" style={{ gridColumn: '1 / -1' }} placeholder="IMEI (opcional)" value={newPay.imei} onChange={e => setNewPay((p: any) => ({ ...p, imei: e.target.value }))} />
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <label className="lbl" style={{ fontSize: 10 }}>{newPay.id === 'tradein' ? 'Valor tomado' : 'Monto'}</label>
+                          <input className="inp" type="number" value={newPay.original_amount} onChange={e => setNewPay((p: any) => ({ ...p, original_amount: e.target.value }))} />
+                        </div>
+                        <div style={{ width: 100 }}>
+                          <label className="lbl" style={{ fontSize: 10 }}>Moneda</label>
+                          <select className="inp" value={newPay.currency} onChange={e => setNewPay((p: any) => ({ ...p, currency: e.target.value }))}>
+                            <option value="ARS">ARS</option>
+                            <option value="USD">USD</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <button className="btn btn-dark btn-sm" onClick={() => {
+                        const amt = parseFloat(newPay.original_amount) || 0;
+                        if (amt === 0) { toast.error('Poné el monto'); return; }
+                        if (newPay.id === 'tradein' && !newPay.model.trim()) { toast.error('Poné al menos el modelo del equipo'); return; }
+                        const entry: any = {
+                          id: newPay.id, label: newPay.label,
+                          original_amount: amt, amount: amt, currency: newPay.currency,
+                          __new: true,
+                        };
+                        if (newPay.id === 'tradein') {
+                          entry.device = {
+                            brand: newPay.brand.trim() || 'Equipo', model: newPay.model.trim(),
+                            storage: newPay.storage.trim() || '-', color: newPay.color.trim() || '-',
+                            imei: newPay.imei.trim() || '',
+                          };
+                        }
+                        setEditData((prev: any) => ({ ...prev, payments: [...(prev.payments || []), entry] }));
+                        setNewPay(null);
+                      }}>Agregar</button>
+                    </div>
+                  )}
+
+                  {/* Cómo queda la venta con los pagos cargados */}
+                  {(() => {
+                    const cur = editData.currency;
+                    const total = (editData.payments || []).reduce((a: number, p: any) => {
+                      const orig = parseFloat(p.original_amount) || 0;
+                      if (p.currency === cur) return a + orig;
+                      const rate = parseFloat(p.exchange_rate) || 1;
+                      return a + (p.currency === 'USD' ? orig * rate : orig / rate);
+                    }, 0);
+                    return (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 13, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                        <span>La venta va a quedar en</span>
+                        <span style={{ fontFamily: 'JetBrains Mono' }}>{cur === 'USD' ? 'U$' : '$'} {total.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                      </div>
+                    );
+                  })()}
+
                   <p style={{ fontSize: 12, color: 'var(--text-3)', margin: 0 }}>
                     Corregí el monto/moneda de cada pago si el vendedor cobró distinto a lo cargado — impacta directamente en la rentabilidad de esta venta.
+                    Si te faltó cargar un canje, agregalo acá: el equipo entra al inventario al guardar. Para devolverle una diferencia al cliente,
+                    agregá un pago con monto negativo.
                   </p>
 
                   <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
@@ -462,6 +582,26 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           return { ...p, original_amount: origAmt, amount, exchange_rate };
                         });
                         const newPrice = finalPayments.reduce((a: number, p: any) => a + p.amount, 0);
+
+                        /* Los canjes agregados recién ahora tienen que entrar al
+                           inventario, igual que cuando se cargan en la venta. */
+                        const nuevosCanjes = finalPayments.filter((p: any) => p.__new && p.id === 'tradein' && p.device);
+                        if (nuevosCanjes.length > 0) {
+                          const rows = nuevosCanjes.map((p: any) => ({
+                            brand: p.device.brand, model: p.device.model,
+                            storage: p.device.storage, color: p.device.color,
+                            imei: p.device.imei || `TI-${Date.now()}`,
+                            condition: 'used', status: 'available',
+                            deposit: selectedSale.deposit_id ?? null,
+                            price: p.original_amount, cost_price: p.original_amount,
+                            currency: p.currency,
+                          }));
+                          const { error: stErr } = await supabase.from('stock').insert(rows);
+                          if (stErr) throw stErr;
+                        }
+
+                        // __new es sólo para saber qué crear; no se guarda.
+                        finalPayments.forEach((p: any) => { delete p.__new; });
 
                         const { error } = await supabase.from('sales').update({
                           seller_id: editData.seller_id,
@@ -486,7 +626,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           });
                         }
 
-                        toast.success('Venta actualizada');
+                        toast.success(nuevosCanjes.length > 0
+                          ? `Venta actualizada · ${nuevosCanjes.length === 1 ? 'el equipo del canje entró' : 'los equipos del canje entraron'} al inventario`
+                          : 'Venta actualizada');
                         setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes, price: newPrice, currency: saleCurrency, payments: finalPayments });
                         setIsEditing(false);
                         router.refresh();

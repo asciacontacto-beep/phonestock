@@ -11,6 +11,15 @@ interface TopbarProps {
 
 const NOTIFICATIONS = [
   {
+    id: 'canje-mayor-2026-09',
+    icon: <Receipt size={16} />,
+    color: '#0891b2',
+    title: 'Canje que vale más que la venta, y arreglar una venta sin anularla',
+    body: 'Si tomás un equipo en parte de pago por más de lo que vendés (vendés un 13 en 350 y te dejan un 15 Pro Max tomado en 600), ya podés cerrar la operación: elegís si le devolviste la diferencia o si cobraste de más. La venta se registra por el precio real —antes se trababa y había que ponerla como contado, o quedaba inflada por el valor del canje—. Además, en Historial de Ventas ahora podés editar una venta ya hecha para agregar el canje que te faltó cargar (el equipo entra solo al inventario), sumar un pago o quitar uno, sin anularla ni perder la venta.',
+    href: '/sales',
+    cta: 'Ver historial de ventas',
+  },
+  {
     id: 'catalogo-modelos-2026-09',
     icon: <Smartphone size={16} />,
     color: '#2563eb',

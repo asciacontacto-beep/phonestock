@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search } from 'lucide-react';
+import { Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -10,6 +10,15 @@ interface TopbarProps {
 }
 
 const NOTIFICATIONS = [
+  {
+    id: 'catalogo-modelos-2026-09',
+    icon: <Smartphone size={16} />,
+    color: '#2563eb',
+    title: 'Ya podés cargar cualquier modelo',
+    body: 'El catálogo pasó de 148 a 417 modelos: Moto G15 y G05, Galaxy A16 y A06, S26 Ultra, la línea A y M de Samsung completa, Redmi, POCO, Pixel, Honor, Realme, OnePlus y más. Y ahora el campo de modelo se escribe para buscar: poné «a16» o «g15» y aparece solo. Lo más importante: si el modelo no está en la lista, lo escribís igual y se guarda — no te va a frenar una carga nunca más.',
+    href: '/stock',
+    cta: 'Cargar un equipo',
+  },
   {
     id: 'integridad-stock',
     icon: <ShieldCheck size={16} />,

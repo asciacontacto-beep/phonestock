@@ -1289,24 +1289,30 @@ select.inp {
 }
 
 /* ── Selector de modelo con búsqueda ────── */
-
-.mp-trigger {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  width: 100%; text-align: left; cursor: pointer; font-family: inherit;
-}
-.mp-placeholder { color: var(--text-3); }
-.mp-chevron { color: var(--text-3); flex-shrink: 0; }
+/* Un solo <input> en los dos estados y el chevron como imagen de fondo,
+   igual que los <select> de la app. La versión anterior usaba un <button>
+   flex y un icono absoluto: Safari envuelve el contenido del botón en una
+   caja anónima y el layout se rompía. */
 
 .mp-wrap { position: relative; }
-.mp-search-icon {
-  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
-  color: var(--text-3); pointer-events: none; z-index: 1; display: flex;
-}
-.mp-input { padding-left: 32px; }
 
-/* Resaltado del teclado y del mouse: el mismo, para que no haya dos focos */
+.mp-input {
+  cursor: pointer;
+  text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+}
+/* Escribiendo, el chevron estorba y el cursor vuelve a ser de texto */
+.mp-input.mp-abierto {
+  cursor: text;
+  background-image: none;
+  padding-right: 14px;
+}
+
+/* El resaltado del teclado y el del mouse son el mismo, para no tener dos */
 .acc-option.mp-on { background: var(--surface-2); }
 
-/* La opción de usar texto libre se separa del catálogo */
 .mp-nuevo { border-top: 1px solid var(--border); }
 .mp-nuevo .acc-option-name { font-weight: 600; }

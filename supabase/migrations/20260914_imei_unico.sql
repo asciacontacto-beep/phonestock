@@ -72,8 +72,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS stock_imei_disponible_unico
 
 
 -- ── PASO 4: sacar la regla vieja ────────────────────────────────────────
--- DROP INDEX borra el índice, NO las filas. Ningún equipo se pierde.
--- Es lo que habilita reingresar un equipo vendido y que dos locales
+-- Ojo: `stock_imei_key` no es un índice suelto sino una restricción UNIQUE
+-- de la tabla; el índice es cómo Postgres la implementa. Por eso hay que
+-- soltar la restricción y no el índice:
+--
+--     DROP INDEX public.stock_imei_key;
+--     -> ERROR 2BP01: cannot drop index ... because constraint ... requires it
+--
+-- Soltar una restricción elimina una regla, nunca filas. Ningún equipo se
+-- pierde. Es lo que habilita reingresar un equipo vendido y que dos locales
 -- distintos puedan haber tenido el mismo teléfono.
 
-DROP INDEX IF EXISTS public.stock_imei_key;
+ALTER TABLE public.stock DROP CONSTRAINT IF EXISTS stock_imei_key;
+
+
+-- Para volver atrás, si hiciera falta:
+--     ALTER TABLE public.stock ADD CONSTRAINT stock_imei_key UNIQUE (imei);

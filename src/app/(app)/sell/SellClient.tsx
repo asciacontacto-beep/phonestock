@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
 import { upsertCustomer } from '@/utils/customers';
+import { resolveSale } from '@/utils/saleTotals';
 
 export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null }) {
   const [stock, setStock] = useState<any[]>([]);
@@ -37,6 +38,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
   // Cuando se cobra menos que el precio marcado hay que saber si fue un
   // descuento (la venta vale menos) o si el cliente quedo debiendo.
   const [underpay, setUnderpay] = useState<'descuento' | 'debe'>('descuento');
+  /* Qué hacer cuando lo entregado supera el precio. Pasa sobre todo con un
+     canje tomado por más que la venta: el local le devuelve la diferencia. */
+  const [overpay, setOverpay] = useState<'vuelto' | 'cobre_mas'>('vuelto');
   
   const [custSearch, setCustSearch] = useState('');
   const [custSuggestions, setCustSuggestions] = useState<any[]>([]);
@@ -102,18 +106,19 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
   const price = parseFloat(sp) || 0;
   const paid = payments.reduce((a, p) => a + p.amount, 0);
   const rem = price - paid;
-  const isUnderpaid = rem > 0.01;
+  /* Las reglas de plata viven en utils/saleTotals para poder testearlas:
+     qué precio se registra, qué queda debiendo y qué se devolvió. */
+  const { finalPrice, balanceDue, changeGiven, isUnderpaid, isOverpaid } =
+    resolveSale(price, paid, underpay, overpay);
+  const overAmount = changeGiven || (isOverpaid ? -rem : 0);
 
-  /* Precio que queda registrado como venta:
-     - Cobro de mas: vale lo cobrado, esa plata entro.
-     - Cobro de menos por descuento: vale lo cobrado, ese es el precio real.
-     - Cobro de menos y queda debiendo: vale el precio completo y queda saldo.
-     Registrar el precio de lista cuando en realidad se cobro menos infla la
-     ganancia con plata que nunca entro. */
-  const finalPrice = paid > price ? paid
-    : isUnderpaid && underpay === 'descuento' ? paid
-    : price;
-  const balanceDue = isUnderpaid && underpay === 'debe' ? rem : 0;
+  /* Si se devolvió la diferencia, queda asentada como un movimiento más: así
+     la suma de los pagos coincide con el precio de la venta y el recibo
+     muestra qué se le devolvió al cliente. */
+  const paymentsToSave = () =>
+    isOverpaid && overpay === 'vuelto'
+      ? [...payments, { id: 'vuelto', label: 'Vuelto entregado', amount: -overAmount, original_amount: -overAmount, currency: sc }]
+      : payments;
 
   /* Costo del equipo expresado en la moneda de la venta, para poder avisar
      antes de confirmar si se esta vendiendo por debajo de lo que costo. */
@@ -213,7 +218,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
         price: finalPrice,
         balance_due: balanceDue || null,
         currency: 'ARS',
-        payments,
+        payments: paymentsToSave(),
         customer: cust.name ? cust : { name: 'Consumidor Final' },
         notes: notes.trim() || null,
         accessories: selectedAccessories,
@@ -236,7 +241,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
           { duration: 10000 }
         );
       }
-      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
+      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto');
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
     } catch (e: any) {
@@ -272,7 +277,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
         price: finalPrice,
         balance_due: balanceDue || null,
         currency: sc,
-        payments,
+        payments: paymentsToSave(),
         customer: cust,
         notes: notes.trim() || null,
         accessories: selectedAccessories
@@ -328,7 +333,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
           { duration: 10000 }
         );
       }
-      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]);
+      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto');
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
     } catch (e: any) {
@@ -709,7 +714,11 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
               <div className="divider" style={{ margin: '10px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
                 <span style={{ flex: 1 }}>Saldo</span>
-                <span style={{ color: rem <= 0.01 ? 'var(--green)' : 'var(--amber)' }}>{rem <= 0.01 ? 'Cubierto' : `${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString(undefined, { maximumFractionDigits: 2 })} pendiente`}</span>
+                <span style={{ color: isOverpaid ? 'var(--blue)' : rem <= 0.01 ? 'var(--green)' : 'var(--amber)' }}>
+                  {isOverpaid
+                    ? `${sc === 'USD' ? 'U$' : '$'} ${overAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} a favor del cliente`
+                    : rem <= 0.01 ? 'Cubierto' : `${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString(undefined, { maximumFractionDigits: 2 })} pendiente`}
+                </span>
               </div>
 
               {isUnderpaid && (
@@ -741,6 +750,35 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
                 </div>
               )}
 
+              {isOverpaid && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border-md)' }}>
+                  <div style={{ fontSize: 13, marginBottom: 8 }}>
+                    Lo entregado supera el precio en <strong>{sc === 'USD' ? 'U$' : '$'} {overAmount.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong>.
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className={`btn btn-sm ${overpay === 'vuelto' ? 'btn-dark' : 'btn-outline'}`}
+                      style={{ flex: 1 }}
+                      onClick={() => setOverpay('vuelto')}
+                    >
+                      Le devolví la diferencia
+                    </button>
+                    <button
+                      className={`btn btn-sm ${overpay === 'cobre_mas' ? 'btn-dark' : 'btn-outline'}`}
+                      style={{ flex: 1 }}
+                      onClick={() => setOverpay('cobre_mas')}
+                    >
+                      Cobré de más
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5 }}>
+                    {overpay === 'vuelto'
+                      ? `La venta se registra por ${sc === 'USD' ? 'U$' : '$'} ${price.toLocaleString('es-AR', { maximumFractionDigits: 2 })} y queda asentado que le devolviste ${sc === 'USD' ? 'U$' : '$'} ${overAmount.toLocaleString('es-AR', { maximumFractionDigits: 2 })}. Es lo habitual cuando el equipo que te dejan en canje vale más que la venta.`
+                      : `La venta se registra por ${sc === 'USD' ? 'U$' : '$'} ${paid.toLocaleString('es-AR', { maximumFractionDigits: 2 })}, que es todo lo que entró.`}
+                  </div>
+                </div>
+              )}
+
               {sellingBelowCost && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 12, padding: '10px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8 }}>
                   <AlertTriangle size={15} color="var(--red)" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -761,7 +799,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             <button className="btn btn-ghost" onClick={() => setStep(3)}>Atrás</button>
-            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading || rem > 0.01 || rem < -(price * 0.10)} onClick={confirm}>
+            {/* Antes se bloqueaba si no cerraba exacto: no se podía registrar
+                ni un saldo pendiente ni un canje tomado por más que la venta.
+                Ahora cada caso tiene su resolución explícita arriba. */}
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading} onClick={confirm}>
               {loading ? 'Procesando...' : 'Finalizar Operación'}
             </button>
           </div>

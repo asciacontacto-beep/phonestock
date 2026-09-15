@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Save, Building2, MapPin, Camera, Phone, Mail, Globe, FileText, Loader2,
-  DollarSign, Download, Hash, Image as ImageIcon, Palette, ReceiptText, Trash2,
+  DollarSign, Download, Hash, Image as ImageIcon, Palette, ReceiptText, Trash2, Copy,
 } from 'lucide-react';
 import { downloadBackup } from '@/utils/backup';
 import { createClient } from '@/utils/supabase/client';
@@ -52,6 +52,12 @@ export function SettingsClient({ profile }: { profile: { org_id?: string } | nul
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [backupLoading, setBackupLoading] = useState(false);
+  /* Link de referidos del negocio. Si la migración no está aplicada, la
+     tarjeta simplemente no aparece. */
+  const [referral, setReferral] = useState<{ code: string; invitados: number; pagos: number } | null>(null);
+  const referralLink = referral?.code
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/?ref=${referral.code}`
+    : '';
 
   const cfg = useMemo(() => normalizeReceiptConfig(form.receipt_config), [form.receipt_config]);
 
@@ -70,6 +76,12 @@ export function SettingsClient({ profile }: { profile: { org_id?: string } | nul
         setRowId(id ?? null);
         setForm({ ...DEFAULTS, ...rest, receipt_config: normalizeReceiptConfig(receipt_config) });
       }
+      try {
+        const { data: ref } = await supabase.rpc('my_referrals');
+        if (ref && ref[0]?.code) {
+          setReferral({ code: ref[0].code, invitados: Number(ref[0].invitados) || 0, pagos: Number(ref[0].pagos) || 0 });
+        }
+      } catch { /* migración de referidos sin aplicar */ }
       setFetching(false);
     };
     load();
@@ -321,6 +333,42 @@ export function SettingsClient({ profile }: { profile: { org_id?: string } | nul
               })}
             </div>
           </div>
+
+          {/* Invitá a otro local */}
+          {referral?.code && (
+            <div className="card" style={{ border: '1px solid var(--green)', background: 'var(--green-dim)' }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>Invitá a otro local y ganá U$50</div>
+              <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5, marginBottom: 12 }}>
+                Pasale este link a un colega del rubro. Si se suma, te pasamos U$50.
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  className="inp"
+                  readOnly
+                  value={referralLink}
+                  onFocus={e => e.currentTarget.select()}
+                  style={{ flex: 1, minWidth: 220, fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}
+                />
+                <button className="btn btn-dark" onClick={() => {
+                  navigator.clipboard?.writeText(referralLink);
+                  toast.success('Link copiado');
+                }}>
+                  <Copy size={15} /> Copiar
+                </button>
+                <a
+                  className="btn btn-outline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={`https://wa.me/?text=${encodeURIComponent(`Che, mirá este sistema que uso en el local para stock, ventas y reparaciones. Te dejo el link por si te sirve: ${referralLink}`)}`}
+                >
+                  Compartir
+                </a>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 10 }}>
+                Invitaste a <strong>{referral.invitados}</strong> · se quedaron <strong>{referral.pagos}</strong>
+              </div>
+            </div>
+          )}
 
           {/* Respaldo */}
           <div className="card">

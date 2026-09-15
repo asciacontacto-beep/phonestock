@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Bell, ShoppingBag, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search, Smartphone } from 'lucide-react';
+import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -10,6 +10,24 @@ interface TopbarProps {
 }
 
 const NOTIFICATIONS = [
+  {
+    id: 'referidos-2026-09',
+    icon: <ShoppingBag size={16} />,
+    color: '#16a34a',
+    title: 'Invitá a otro local y ganá U$50',
+    body: 'En Configuración vas a encontrar tu link para invitar. Si le pasás el link a un colega del rubro y se suma, te pasamos U$50. Desde ahí mismo podés copiarlo o compartirlo por WhatsApp, y ver a cuántos invitaste.',
+    href: '/settings',
+    cta: 'Ver mi link',
+  },
+  {
+    id: 'canje-mayor-2026-09',
+    icon: <Receipt size={16} />,
+    color: '#0891b2',
+    title: 'Canje que vale más que la venta, y arreglar una venta sin anularla',
+    body: 'Si tomás un equipo en parte de pago por más de lo que vendés (vendés un 13 en 350 y te dejan un 15 Pro Max tomado en 600), ya podés cerrar la operación: elegís si le devolviste la diferencia o si cobraste de más. La venta se registra por el precio real —antes se trababa y había que ponerla como contado, o quedaba inflada por el valor del canje—. Además, en Historial de Ventas ahora podés editar una venta ya hecha para agregar el canje que te faltó cargar (el equipo entra solo al inventario), sumar un pago o quitar uno, sin anularla ni perder la venta.',
+    href: '/sales',
+    cta: 'Ver historial de ventas',
+  },
   {
     id: 'catalogo-modelos-2026-09',
     icon: <Smartphone size={16} />,
@@ -86,6 +104,11 @@ const NOTIFICATIONS = [
 
 const STORAGE_KEY = 'stackr_notif_read'
 
+/* Soporte: número en formato internacional para wa.me / tel:, y cómo se
+   muestra en pantalla. */
+const SUPPORT_PHONE = '5492262559559'
+const SUPPORT_PHONE_LABEL = '2262 55-9559'
+
 const TITLES: Record<string, string> = {
   dashboard: 'Panel de Control',
   '': 'Panel de Control',
@@ -109,7 +132,7 @@ const TITLES: Record<string, string> = {
 }
 
 export function Topbar({ page, user, onLogout }: TopbarProps) {
-  const [openPanel, setOpenPanel] = useState<'bell' | 'rate' | 'avatar' | null>(null)
+  const [openPanel, setOpenPanel] = useState<'bell' | 'rate' | 'avatar' | 'help' | null>(null)
   const [read, setRead] = useState<string[]>([])
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [blueRate, setBlueRate] = useState<{ compra: number; venta: number; updatedAt: string } | null>(null)
@@ -142,7 +165,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
 
   useEffect(() => { fetchBlue() }, [])
 
-  const toggle = (panel: 'bell' | 'rate' | 'avatar') =>
+  const toggle = (panel: 'bell' | 'rate' | 'avatar' | 'help') =>
     setOpenPanel(v => v === panel ? null : panel)
 
   const unread = NOTIFICATIONS.filter(n => !read.includes(n.id))
@@ -205,6 +228,49 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           <span className="cmdk-trigger-label">Buscar</span>
           <kbd>⌘K</kbd>
         </button>
+
+        {/* Soporte: que nunca tengan que buscar el número para escribir */}
+        <div style={{ position: 'relative' }}>
+          <button onClick={() => toggle('help')} className="cmdk-trigger" title="Soporte">
+            <MessageCircle size={14} />
+            <span className="cmdk-trigger-label">Soporte</span>
+          </button>
+
+          {openPanel === 'help' && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              background: 'var(--surface)', border: '1px solid var(--border-md)',
+              borderRadius: 14, boxShadow: 'var(--shadow-lg)', zIndex: 200,
+              width: 260, overflow: 'hidden',
+            }}>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>¿Necesitás una mano?</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.5 }}>
+                  Escribinos por WhatsApp y te respondemos.
+                </div>
+              </div>
+              <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <a
+                  className="btn btn-dark"
+                  href={`https://wa.me/${SUPPORT_PHONE}?text=${encodeURIComponent('Hola! Necesito una mano con Stackr')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setOpenPanel(null)}
+                  style={{ justifyContent: 'center' }}
+                >
+                  <MessageCircle size={15} /> Escribir por WhatsApp
+                </a>
+                <a
+                  href={`tel:+${SUPPORT_PHONE}`}
+                  className="btn btn-outline"
+                  style={{ justifyContent: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}
+                >
+                  {SUPPORT_PHONE_LABEL}
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Dólar Blue chip */}
         <div style={{ position: 'relative' }}>

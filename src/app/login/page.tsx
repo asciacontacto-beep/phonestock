@@ -64,6 +64,17 @@ export default function LoginPage() {
           const { data: orgId, error: rpcErr } = await supabase.rpc("create_new_tenant", { org_name: orgName, user_name: name });
           if (rpcErr) throw rpcErr;
           await supabase.from("profiles").upsert({ id: data.user.id, name, email, role: "owner", org_id: orgId, initials: name.substring(0, 2).toUpperCase(), color: "#f59e0b" });
+
+          /* Si llegó por el link de otro local, queda registrado quién lo trajo.
+             Nunca frena el alta: si falla, la cuenta se crea igual. */
+          try {
+            const ref = localStorage.getItem("stackr_ref");
+            if (ref && orgId) {
+              await supabase.rpc("set_referral", { p_org_id: orgId, p_code: ref });
+              localStorage.removeItem("stackr_ref");
+            }
+          } catch { /* noop */ }
+
           router.push("/dashboard");
         }
       } else {

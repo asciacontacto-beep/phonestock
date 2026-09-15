@@ -158,7 +158,13 @@ export default function LandingPage() {
   // está creada todavía, falla en silencio y no afecta al visitante.
   useEffect(() => {
     try {
-      if (typeof window === "undefined" || sessionStorage.getItem("sv_tracked")) return;
+      if (typeof window === "undefined") return;
+      /* Si llegó por el link de un referido (?ref=CODIGO), se guarda hasta que
+         se registre: puede mirar la landing hoy y crear la cuenta mañana. */
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (ref) localStorage.setItem("stackr_ref", ref.trim().toUpperCase());
+
+      if (sessionStorage.getItem("sv_tracked")) return;
       sessionStorage.setItem("sv_tracked", "1");
       createClient()
         .from("site_visits")

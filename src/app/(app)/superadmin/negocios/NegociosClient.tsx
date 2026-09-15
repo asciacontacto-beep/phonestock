@@ -1,8 +1,8 @@
 "use client"
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Search, Building2, X, CheckCircle, Trash2, Mail, Clock, Activity,
+  Search, Building2, X, CheckCircle, Trash2, Mail, Clock, Activity, Users,
   Download, ChevronDown, ChevronRight, MessageSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -21,6 +21,17 @@ export function NegociosClient() {
   // Los vencidos se guardan plegados: son los que más se acumulan y llenaban
   // la pantalla arriba de los clientes que sí importan hoy.
   const [showExpired, setShowExpired] = useState(false)
+  /* Quién trajo a quién, para saber a quién le corresponde la comisión. */
+  const [referrers, setReferrers] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    supabase.rpc('get_referrals').then(({ data }: any) => {
+      if (!data) return
+      const m: Record<string, string> = {}
+      data.forEach((r: any) => { if (r.org_id) m[r.org_id] = r.referrer_name || r.referred_by_code })
+      setReferrers(m)
+    }, () => { /* migración de referidos sin aplicar */ })
+  }, [])
 
   const activate = async (orgId: string) => {
     if (!await confirm('¿Activar este negocio? El trial queda activo indefinidamente.')) return
@@ -268,6 +279,12 @@ export function NegociosClient() {
                     <div className="panel-row">
                       <Clock size={14} color="var(--text-3)" />
                       <span className="panel-text">Trial vence el {fmtDateTime(detail.trial_expires_at)}</span>
+                    </div>
+                  )}
+                  {referrers[detail.id] && (
+                    <div className="panel-row">
+                      <Users size={14} color="var(--green)" />
+                      <span className="panel-text">Lo trajo <strong>{referrers[detail.id]}</strong> — corresponde comisión</span>
                     </div>
                   )}
                   {a?.last_activity && (

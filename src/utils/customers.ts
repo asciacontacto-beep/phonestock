@@ -20,10 +20,28 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  */
 export const CLIENTE_ANONIMO = 'Consumidor Final'
 
+/**
+ * Devuelve el DNI sólo si de verdad identifica a alguien.
+ *
+ * El campo es libre y se llena con rellenos: "-", ".", "0", "s/n". El código
+ * los tomaba como documento válido, con una consecuencia fea: la primera
+ * venta creaba una ficha con DNI "-", y cada venta siguiente con el mismo
+ * relleno ENCONTRABA esa ficha y le pisaba el nombre. Cuatro clientes
+ * distintos terminaban siendo una sola ficha, con el nombre del último y
+ * las cuatro compras encima.
+ *
+ * Un DNI argentino tiene 7 u 8 dígitos y un pasaporte al menos 6
+ * caracteres; menos que eso no alcanza para afirmar que dos ventas son de
+ * la misma persona.
+ */
+export function dniIdentificable(dni?: string | null): string {
+  const limpio = (dni || '').replace(/[^0-9A-Za-z]/g, '')
+  return limpio.length >= 6 ? limpio : ''
+}
+
 /** ¿La venta tiene un cliente identificable, o fue mostrador? */
 export function ventaTieneCliente(saleCustomer: any): boolean {
-  const dni = (saleCustomer?.dni || '').trim()
-  if (dni) return true
+  if (dniIdentificable(saleCustomer?.dni)) return true
   const name = (saleCustomer?.name || '').trim()
   return Boolean(name) && name.toLowerCase() !== CLIENTE_ANONIMO.toLowerCase()
 }
@@ -41,8 +59,10 @@ export function ventaEsDe(
 ): boolean {
   if (!ventaTieneCliente(saleCustomer)) return false
 
-  const fichaDni = (c.dni || '').trim()
-  if (fichaDni) return (saleCustomer?.dni || '').trim() === fichaDni
+  // Comparar los dos lados normalizados: así "30.111.222" y "30111222" son
+  // la misma persona, y un "-" no empareja con nada.
+  const fichaDni = dniIdentificable(c.dni)
+  if (fichaDni) return dniIdentificable(saleCustomer?.dni) === fichaDni
 
   const nombreVenta = (saleCustomer?.name || '').trim().toLowerCase()
   const nombreFicha = (c.name || '').trim().toLowerCase()
@@ -62,7 +82,9 @@ export async function upsertCustomer(supabase: SupabaseClient, cust: CustomerInp
   const name = (cust.name || '').trim()
   if (!name) return null
 
-  const dni = (cust.dni || '').trim()
+  const dniCrudo = (cust.dni || '').trim()
+  // Sólo se usa como identificador si realmente lo es: ver dniIdentificable.
+  const dni = dniIdentificable(dniCrudo) ? dniCrudo : ''
   let existing: { id: string } | null = null
 
   if (dni) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { upsertCustomer, ventaTieneCliente, ventaEsDe } from './customers'
+import { upsertCustomer, ventaTieneCliente, ventaEsDe, dniIdentificable } from './customers'
 
 /**
  * Base de clientes falsa. `maybeSingle` devuelve la primera coincidencia,
@@ -143,5 +143,62 @@ describe('ventaEsDe', () => {
 
   it('una ficha sin nombre no se queda con nada', () => {
     expect(ventaEsDe({ name: 'Juan Perez' }, { name: '', dni: null })).toBe(false)
+  })
+})
+
+describe('dniIdentificable', () => {
+  it('los rellenos no son documentos', () => {
+    // El caso real: cuatro ventas cargadas con "-" en el DNI.
+    expect(dniIdentificable('-')).toBe('')
+    expect(dniIdentificable('--')).toBe('')
+    expect(dniIdentificable(' - ')).toBe('')
+    expect(dniIdentificable('.')).toBe('')
+    expect(dniIdentificable('0')).toBe('')
+    expect(dniIdentificable('s/n')).toBe('')
+    expect(dniIdentificable('')).toBe('')
+    expect(dniIdentificable(null)).toBe('')
+    expect(dniIdentificable(undefined)).toBe('')
+  })
+
+  it('un DNI real pasa, con o sin puntos', () => {
+    expect(dniIdentificable('30111222')).toBe('30111222')
+    expect(dniIdentificable('30.111.222')).toBe('30111222')
+    expect(dniIdentificable(' 30111222 ')).toBe('30111222')
+  })
+
+  it('acepta pasaportes con letras', () => {
+    expect(dniIdentificable('AB123456')).toBe('AB123456')
+  })
+})
+
+describe('el caso de las cuatro ventas con DNI "-"', () => {
+  // Cuatro personas distintas, todas cargadas con "-" como documento.
+  const ventas = [
+    { name: 'Agustin Ledesma', dni: '-' },
+    { name: 'Agustina Pensa', dni: '-' },
+    { name: 'Sofia Ortiz', dni: '-' },
+    { name: 'Ezequiel Quiroga', dni: '-' },
+  ]
+
+  it('cada venta queda con su propia persona, no todas con la última', () => {
+    // Antes el "-" hacía que las cuatro colgaran de una sola ficha.
+    const ficha = { name: 'Ezequiel Quiroga', dni: '-' }
+    const suyas = ventas.filter(v => ventaEsDe(v, ficha))
+    expect(suyas).toHaveLength(1)
+    expect(suyas[0].name).toBe('Ezequiel Quiroga')
+  })
+
+  it('ninguna venta se le atribuye a otra persona', () => {
+    for (const v of ventas) {
+      const otras = ventas.filter(o => o.name !== v.name)
+      for (const o of otras) {
+        expect(ventaEsDe(v, { name: o.name, dni: '-' })).toBe(false)
+      }
+    }
+  })
+
+  it('con DNI de verdad sí manda el documento sobre el nombre', () => {
+    const ficha = { name: 'Juan Perez', dni: '30.111.222' }
+    expect(ventaEsDe({ name: 'J. Perez', dni: '30111222' }, ficha)).toBe(true)
   })
 })

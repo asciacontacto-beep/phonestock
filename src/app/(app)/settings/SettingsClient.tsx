@@ -339,8 +339,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string } | nul
             <div className="card" style={{ border: '1px solid var(--green)', background: 'var(--green-dim)' }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Invitá a otro local y ganá U$50</div>
               <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5, marginBottom: 12 }}>
-                Pasale este link a un colega del rubro. Si se suma, te pasamos U$50
-                (o soporte y actualizaciones de por vida, lo que prefieras).
+                Pasale este link a un colega del rubro. Si se suma, te pasamos U$50.
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <input

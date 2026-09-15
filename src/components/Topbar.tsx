@@ -11,6 +11,15 @@ interface TopbarProps {
 
 const NOTIFICATIONS = [
   {
+    id: 'referidos-2026-09',
+    icon: <ShoppingBag size={16} />,
+    color: '#16a34a',
+    title: 'Invitá a otro local y ganá U$50',
+    body: 'En Configuración vas a encontrar tu link para invitar. Si le pasás el link a un colega del rubro y se suma, te pasamos U$50 — o soporte y actualizaciones de por vida, lo que prefieras. Desde ahí mismo podés copiarlo o compartirlo por WhatsApp, y ver a cuántos invitaste.',
+    href: '/settings',
+    cta: 'Ver mi link',
+  },
+  {
     id: 'canje-mayor-2026-09',
     icon: <Receipt size={16} />,
     color: '#0891b2',

@@ -128,11 +128,21 @@ describe('ventaEsDe', () => {
     expect(ventaEsDe({ name: '' }, fichaSinDni)).toBe(false)
   })
 
-  it('el DNI manda cuando la ficha lo tiene', () => {
+  it('el documento manda cuando los DOS lados lo tienen', () => {
     expect(ventaEsDe({ name: 'J. Perez', dni: '30111222' }, ficha)).toBe(true)
+    // Dos homónimos reales: el documento los separa.
     expect(ventaEsDe({ name: 'Juan Perez', dni: '99999999' }, ficha)).toBe(false)
-    // Mismo nombre pero sin DNI: la ficha tiene DNI, así que no alcanza.
-    expect(ventaEsDe({ name: 'Juan Perez' }, ficha)).toBe(false)
+  })
+
+  it('si la venta no trae documento, alcanza el nombre', () => {
+    // La mayoría de los locales no piden DNI. Si se lo tomaron una vez y en
+    // la venta siguiente no, esa venta no puede quedarse sin dueño.
+    expect(ventaEsDe({ name: 'Juan Perez' }, ficha)).toBe(true)
+    expect(ventaEsDe({ name: 'juan perez', dni: '-' }, ficha)).toBe(true)
+  })
+
+  it('si la ficha no trae documento pero la venta sí, también por nombre', () => {
+    expect(ventaEsDe({ name: 'Ana Torres', dni: '30111222' }, fichaSinDni)).toBe(true)
   })
 
   it('sin DNI en la ficha empareja por nombre, sin importar mayúsculas', () => {

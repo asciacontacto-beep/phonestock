@@ -49,9 +49,13 @@ export function ventaTieneCliente(saleCustomer: any): boolean {
 /**
  * ¿Esta venta es de este cliente?
  *
- * El DNI manda cuando la ficha lo tiene. Sin DNI sólo queda el nombre, con
- * el riesgo de homónimos que eso implica — pero al menos las ventas de
- * mostrador dejan de atribuirse a nadie.
+ * El documento decide SÓLO cuando los dos lados lo tienen. La mayoría de los
+ * locales no piden DNI, y exigirlo rompía un caso normal: si a un cliente le
+ * tomaron el documento una vez y después le vendieron sin pedírselo, esa
+ * segunda venta quedaba sin dueño — la ficha tenía DNI, la venta no.
+ *
+ * Cuando los dos lo tienen, manda: es lo único que separa a dos homónimos de
+ * verdad. Si falta de un lado, se empareja por nombre.
  */
 export function ventaEsDe(
   saleCustomer: any,
@@ -59,10 +63,11 @@ export function ventaEsDe(
 ): boolean {
   if (!ventaTieneCliente(saleCustomer)) return false
 
-  // Comparar los dos lados normalizados: así "30.111.222" y "30111222" son
-  // la misma persona, y un "-" no empareja con nada.
-  const fichaDni = dniIdentificable(c.dni)
-  if (fichaDni) return dniIdentificable(saleCustomer?.dni) === fichaDni
+  // Normalizados de los dos lados: "30.111.222" y "30111222" son la misma
+  // persona, y un "-" no empareja con nada.
+  const dniVenta = dniIdentificable(saleCustomer?.dni)
+  const dniFicha = dniIdentificable(c.dni)
+  if (dniVenta && dniFicha) return dniVenta === dniFicha
 
   const nombreVenta = (saleCustomer?.name || '').trim().toLowerCase()
   const nombreFicha = (c.name || '').trim().toLowerCase()

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { upsertCustomer } from './customers'
+import { upsertCustomer, ventaTieneCliente, ventaEsDe } from './customers'
 
 /**
  * Base de clientes falsa. `maybeSingle` devuelve la primera coincidencia,
@@ -96,5 +96,52 @@ describe('upsertCustomer', () => {
     const db = fakeDB([{ id: 'c1', name: 'Juan Perez', dni: '30111222' }])
     await upsertCustomer(db, { name: 'Juan Perez', phone: '555' })
     expect(db.rows[0].dni).toBe('30111222')
+  })
+})
+
+describe('ventaTieneCliente', () => {
+  it('el relleno de mostrador no es una persona', () => {
+    expect(ventaTieneCliente({ name: 'Consumidor Final' })).toBe(false)
+    expect(ventaTieneCliente({ name: 'consumidor final' })).toBe(false)
+    expect(ventaTieneCliente({ name: '' })).toBe(false)
+    expect(ventaTieneCliente({ name: '   ' })).toBe(false)
+    expect(ventaTieneCliente(null)).toBe(false)
+    expect(ventaTieneCliente(undefined)).toBe(false)
+  })
+
+  it('con nombre real o con DNI sí', () => {
+    expect(ventaTieneCliente({ name: 'Juan Perez' })).toBe(true)
+    expect(ventaTieneCliente({ name: '', dni: '30111222' })).toBe(true)
+  })
+})
+
+describe('ventaEsDe', () => {
+  const ficha = { name: 'Juan Perez', dni: '30111222' }
+  const fichaSinDni = { name: 'Ana Torres', dni: null }
+
+  it('NO atribuye las ventas de mostrador a nadie', () => {
+    // Este era el bug: una ficha llamada "Consumidor Final" se quedaba con
+    // todas las ventas anónimas y figuraba comprando todo el local.
+    const mostrador = { name: 'Consumidor Final' }
+    expect(ventaEsDe(mostrador, { name: 'Consumidor Final', dni: null })).toBe(false)
+    expect(ventaEsDe(mostrador, fichaSinDni)).toBe(false)
+    expect(ventaEsDe({ name: '' }, fichaSinDni)).toBe(false)
+  })
+
+  it('el DNI manda cuando la ficha lo tiene', () => {
+    expect(ventaEsDe({ name: 'J. Perez', dni: '30111222' }, ficha)).toBe(true)
+    expect(ventaEsDe({ name: 'Juan Perez', dni: '99999999' }, ficha)).toBe(false)
+    // Mismo nombre pero sin DNI: la ficha tiene DNI, así que no alcanza.
+    expect(ventaEsDe({ name: 'Juan Perez' }, ficha)).toBe(false)
+  })
+
+  it('sin DNI en la ficha empareja por nombre, sin importar mayúsculas', () => {
+    expect(ventaEsDe({ name: 'ana torres' }, fichaSinDni)).toBe(true)
+    expect(ventaEsDe({ name: ' Ana Torres ' }, fichaSinDni)).toBe(true)
+    expect(ventaEsDe({ name: 'Otro' }, fichaSinDni)).toBe(false)
+  })
+
+  it('una ficha sin nombre no se queda con nada', () => {
+    expect(ventaEsDe({ name: 'Juan Perez' }, { name: '', dni: null })).toBe(false)
   })
 })

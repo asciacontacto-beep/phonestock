@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, TrendingUp, AtSign, Edit2, Trash2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { ventaEsDe } from '@/utils/customers';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -24,11 +25,9 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
     !q || `${c.name} ${c.dni} ${c.phone} ${c.email}`.toLowerCase().includes(q.toLowerCase())
   );
 
-  const custSales = (c: any) =>
-    sales.filter(s =>
-      (c.dni && s.customer?.dni === c.dni) ||
-      (!c.dni && s.customer?.name === c.name)
-    );
+  // Las ventas de mostrador no son de nadie: antes, una ficha llamada
+  // "Consumidor Final" se quedaba con todas y aparecía comprando todo.
+  const custSales = (c: any) => sales.filter(s => ventaEsDe(s.customer, c));
 
   const totalSpent = (c: any) =>
     custSales(c).reduce((a: number, s: any) => {

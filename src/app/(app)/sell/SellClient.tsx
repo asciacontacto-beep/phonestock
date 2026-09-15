@@ -7,7 +7,7 @@ import { ModelPicker } from '@/components/ModelPicker';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
-import { upsertCustomer } from '@/utils/customers';
+import { upsertCustomer, CLIENTE_ANONIMO } from '@/utils/customers';
 
 export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null }) {
   const [stock, setStock] = useState<any[]>([]);
@@ -214,7 +214,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
         balance_due: balanceDue || null,
         currency: 'ARS',
         payments,
-        customer: cust.name ? cust : { name: 'Consumidor Final' },
+        customer: cust.name.trim() ? cust : { name: CLIENTE_ANONIMO },
         notes: notes.trim() || null,
         accessories: selectedAccessories,
       };
@@ -273,7 +273,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
         balance_due: balanceDue || null,
         currency: sc,
         payments,
-        customer: cust,
+        // Misma forma que la venta de accesorios: sin cliente va el relleno,
+        // no un objeto con campos vacíos. Dos representaciones para lo mismo
+        // hacían imposible saber después si una venta tenía cliente o no.
+        customer: cust.name.trim() ? cust : { name: CLIENTE_ANONIMO },
         notes: notes.trim() || null,
         accessories: selectedAccessories
       };

@@ -12,6 +12,43 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+/**
+ * Nombre de relleno que llevan las ventas sin cliente identificado. Se
+ * guarda para que el comprobante impreso diga algo, pero NO representa a
+ * una persona: si alguien crea una ficha con ese nombre, no debe quedarse
+ * con todas las ventas anónimas del local.
+ */
+export const CLIENTE_ANONIMO = 'Consumidor Final'
+
+/** ¿La venta tiene un cliente identificable, o fue mostrador? */
+export function ventaTieneCliente(saleCustomer: any): boolean {
+  const dni = (saleCustomer?.dni || '').trim()
+  if (dni) return true
+  const name = (saleCustomer?.name || '').trim()
+  return Boolean(name) && name.toLowerCase() !== CLIENTE_ANONIMO.toLowerCase()
+}
+
+/**
+ * ¿Esta venta es de este cliente?
+ *
+ * El DNI manda cuando la ficha lo tiene. Sin DNI sólo queda el nombre, con
+ * el riesgo de homónimos que eso implica — pero al menos las ventas de
+ * mostrador dejan de atribuirse a nadie.
+ */
+export function ventaEsDe(
+  saleCustomer: any,
+  c: { dni?: string | null; name?: string | null },
+): boolean {
+  if (!ventaTieneCliente(saleCustomer)) return false
+
+  const fichaDni = (c.dni || '').trim()
+  if (fichaDni) return (saleCustomer?.dni || '').trim() === fichaDni
+
+  const nombreVenta = (saleCustomer?.name || '').trim().toLowerCase()
+  const nombreFicha = (c.name || '').trim().toLowerCase()
+  return Boolean(nombreFicha) && nombreVenta === nombreFicha
+}
+
 export type CustomerInput = {
   name: string
   dni?: string

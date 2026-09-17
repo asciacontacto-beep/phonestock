@@ -54,6 +54,9 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/update-password') &&
     !request.nextUrl.pathname.startsWith('/onboarding') &&
+    // La documentación de la API la lee el programador de un cliente, que no
+    // tiene cuenta en Stackr.
+    !request.nextUrl.pathname.startsWith('/docs') &&
     request.nextUrl.pathname !== '/'
   ) {
     const url = request.nextUrl.clone()

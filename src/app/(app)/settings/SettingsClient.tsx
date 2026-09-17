@@ -9,6 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
+import { ApiKeysCard } from '@/components/ApiKeysCard';
 import {
   type ShopSettings, type ReceiptConfig,
   DEFAULT_RECEIPT_CONFIG, normalizeReceiptConfig,
@@ -45,7 +46,7 @@ const TOGGLES: { key: keyof ReceiptConfig; label: string }[] = [
   { key: 'showFooterBrand', label: '“Generado con Stackr”' },
 ];
 
-export function SettingsClient({ profile }: { profile: { org_id?: string } | null }) {
+export function SettingsClient({ profile }: { profile: { org_id?: string; role?: string } | null }) {
   const supabase = createClient();
   const [form, setForm] = useState<ShopSettings>(DEFAULTS);
   const [rowId, setRowId] = useState<string | null>(null);
@@ -384,6 +385,9 @@ export function SettingsClient({ profile }: { profile: { org_id?: string } | nul
               </button>
             </div>
           </div>
+
+          {/* Las claves dan acceso a costos y datos de clientes: sólo el dueño. */}
+          {profile?.role === 'owner' && <ApiKeysCard />}
         </div>
 
         {/* ── Vista previa en vivo ── */}

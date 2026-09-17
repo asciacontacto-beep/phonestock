@@ -1,10 +1,9 @@
-import { describe, it, expect } from 'vitest'
-import { createHmac } from 'node:crypto'
+import { describe, it, expect, beforeEach } from 'vitest'
 import {
   hashClave, formatoValido, claveDelHeader, scopesValidos, PREFIJO_CLAVE,
 } from './claves'
 import { generarClave, sha256Hex } from './claveNavegador'
-import { firmarTokenUsuario } from './token'
+import { tokenDeUsuario, limpiarCacheSesiones } from './sesion'
 import {
   RECURSOS, limpiarFila, tomarCampos, paginacion, fechaParam, ErrorApi, ESTADOS_REPARACION_API,
 } from './recursos'
@@ -52,40 +51,6 @@ describe('claves', () => {
   it('ignora permisos inventados y repetidos', () => {
     expect(scopesValidos(['stock:read', 'stock:read', 'admin:todo', 42])).toEqual(['stock:read'])
     expect(scopesValidos('stock:read')).toEqual([])
-  })
-})
-
-describe('token de usuario', () => {
-  const secreto = 'secreto-de-prueba'
-
-  it('es un JWT HS256 que la base puede verificar con el mismo secreto', () => {
-    const t = firmarTokenUsuario('user-123', secreto, 1_000_000)
-    const [h, p, firma] = t.split('.')
-    const esperada = createHmac('sha256', secreto).update(`${h}.${p}`).digest('base64url')
-    expect(firma).toBe(esperada)
-
-    expect(JSON.parse(Buffer.from(h, 'base64url').toString())).toEqual({ alg: 'HS256', typ: 'JWT' })
-  })
-
-  it('actúa como el usuario de la clave y vence al minuto', () => {
-    const t = firmarTokenUsuario('user-123', secreto, 1_000_000)
-    const payload = JSON.parse(Buffer.from(t.split('.')[1], 'base64url').toString())
-    expect(payload.sub).toBe('user-123')
-    expect(payload.role).toBe('authenticated')
-    expect(payload.aud).toBe('authenticated')
-    expect(payload.exp - payload.iat).toBe(60)
-  })
-
-  it('con otro secreto la firma no coincide', () => {
-    const t = firmarTokenUsuario('user-123', secreto, 1_000_000)
-    const [h, p, firma] = t.split('.')
-    const otra = createHmac('sha256', 'otro').update(`${h}.${p}`).digest('base64url')
-    expect(firma).not.toBe(otra)
-  })
-
-  it('no firma sin usuario ni sin secreto', () => {
-    expect(() => firmarTokenUsuario('', secreto)).toThrow()
-    expect(() => firmarTokenUsuario('u', '')).toThrow()
   })
 })
 
@@ -192,5 +157,86 @@ describe('paginación y fechas', () => {
     expect(fechaParam(null, 'desde')).toBeNull()
     expect(fechaParam('2026-09-01', 'desde')).toMatch(/^2026-09-01/)
     expect(() => fechaParam('ayer', 'desde')).toThrow(/desde/)
+  })
+})
+
+describe('sesión del dueño de la clave', () => {
+  beforeEach(() => limpiarCacheSesiones())
+
+  /** Supabase falso: cuenta cuántas sesiones se pidieron. */
+  function falso(opts: { email?: string | null; falla?: 'link' | 'otp'; venceSeg?: number } = {}) {
+    const llamadas = { usuario: 0, link: 0, otp: 0 }
+    const admin: any = {
+      auth: {
+        admin: {
+          getUserById: async () => {
+            llamadas.usuario++
+            return { data: { user: opts.email === null ? {} : { email: opts.email ?? 'dueno@local.com' } }, error: null }
+          },
+          generateLink: async () => {
+            llamadas.link++
+            return opts.falla === 'link'
+              ? { data: null, error: { message: 'no' } }
+              : { data: { properties: { hashed_token: 'hash-123' } }, error: null }
+          },
+        },
+      },
+    }
+    const crearAnon: any = () => ({
+      auth: {
+        verifyOtp: async ({ token_hash }: any) => {
+          llamadas.otp++
+          if (opts.falla === 'otp') return { data: { session: null }, error: { message: 'vencido' } }
+          expect(token_hash).toBe('hash-123')
+          return { data: { session: { access_token: `tok-${llamadas.otp}`, expires_at: opts.venceSeg ?? 10_000 } }, error: null }
+        },
+      },
+    })
+    return { admin, crearAnon, llamadas }
+  }
+
+  it('pide una sesión real a Supabase y la devuelve', async () => {
+    const { admin, crearAnon, llamadas } = falso()
+    expect(await tokenDeUsuario(admin, crearAnon, 'u1', 0)).toBe('tok-1')
+    expect(llamadas).toEqual({ usuario: 1, link: 1, otp: 1 })
+  })
+
+  it('reutiliza la sesión mientras está vigente, en vez de abrir una por consulta', async () => {
+    const { admin, crearAnon, llamadas } = falso({ venceSeg: 3600 })
+    await tokenDeUsuario(admin, crearAnon, 'u1', 0)
+    await tokenDeUsuario(admin, crearAnon, 'u1', 60_000)
+    await tokenDeUsuario(admin, crearAnon, 'u1', 30 * 60_000)
+    expect(llamadas.otp).toBe(1)
+  })
+
+  it('la renueva cinco minutos antes de que venza', async () => {
+    const { admin, crearAnon, llamadas } = falso({ venceSeg: 3600 })
+    await tokenDeUsuario(admin, crearAnon, 'u1', 0)
+    const t = await tokenDeUsuario(admin, crearAnon, 'u1', (3600 - 4 * 60) * 1000)
+    expect(llamadas.otp).toBe(2)
+    expect(t).toBe('tok-2')
+  })
+
+  it('cada dueño tiene su propia sesión', async () => {
+    const { admin, crearAnon, llamadas } = falso()
+    await tokenDeUsuario(admin, crearAnon, 'u1', 0)
+    await tokenDeUsuario(admin, crearAnon, 'u2', 0)
+    expect(llamadas.otp).toBe(2)
+  })
+
+  it('si el usuario ya no existe, la clave no sirve', async () => {
+    const { admin, crearAnon } = falso({ email: null })
+    await expect(tokenDeUsuario(admin, crearAnon, 'u1', 0)).rejects.toMatchObject({ status: 403, codigo: 'clave_sin_dueno' })
+  })
+
+  it('si Supabase no da la sesión, responde 503 y no guarda nada roto', async () => {
+    for (const falla of ['link', 'otp'] as const) {
+      limpiarCacheSesiones()
+      const { admin, crearAnon } = falso({ falla })
+      await expect(tokenDeUsuario(admin, crearAnon, 'u1', 0)).rejects.toMatchObject({ status: 503, codigo: 'sesion_no_disponible' })
+    }
+    // Con Supabase sano, el próximo intento sí la obtiene: no quedó un fallo en caché.
+    const ok = falso()
+    expect(await tokenDeUsuario(ok.admin, ok.crearAnon, 'u1', 0)).toBe('tok-1')
   })
 })

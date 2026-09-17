@@ -10,9 +10,10 @@
 -- dependería de no olvidarse jamás un filtro por organización.
 --
 -- Por eso cada clave pertenece a un usuario DUEÑO del negocio, y la API
--- actúa como ese usuario: en cada pedido firma un token de 60 segundos a su
--- nombre. La base aplica RLS, defaults y triggers exactamente igual que en
--- la app. La separación entre negocios la sigue haciendo Postgres.
+-- actúa como ese usuario con una sesión que emite Supabase a su nombre (ver
+-- src/utils/api/sesion.ts). La base aplica RLS, defaults y triggers
+-- exactamente igual que en la app. La separación entre negocios la sigue
+-- haciendo Postgres.
 --
 -- La clave nunca se guarda: sólo su hash SHA-256 y un prefijo para
 -- reconocerla en la lista. Se muestra completa una única vez, al crearla.

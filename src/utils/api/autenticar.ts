@@ -1,15 +1,15 @@
 /**
  * Validación de la clave y armado del cliente con el que opera la API.
  *
- * La clave de servicio se usa para UNA sola cosa: encontrar la clave por su
- * hash. A partir de ahí todo pasa por un cliente que actúa como el dueño de
- * la clave, así que cada lectura y escritura queda sujeta a las mismas
- * políticas RLS que en la app.
+ * La clave de servicio se usa para dos cosas: encontrar la clave por su hash
+ * y pedirle a Supabase una sesión para su dueño (ver sesion.ts). A partir de
+ * ahí todo pasa por un cliente que actúa como ese dueño, así que cada lectura
+ * y escritura queda sujeta a las mismas políticas RLS que en la app.
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { claveDelHeader, formatoValido, hashClave, scopesValidos, type Scope } from './claves'
-import { firmarTokenUsuario } from './token'
+import { tokenDeUsuario } from './sesion'
 import { ErrorApi } from './recursos'
 
 export type ContextoApi = {
@@ -37,8 +37,7 @@ export async function autenticar(req: Request): Promise<ContextoApi> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const servicio = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const secreto = process.env.SUPABASE_JWT_SECRET
-  if (!url || !anon || !servicio || !secreto) {
+  if (!url || !anon || !servicio) {
     throw new ErrorApi(503, 'api_no_configurada', 'La API no está habilitada en este servidor.')
   }
 
@@ -57,7 +56,8 @@ export async function autenticar(req: Request): Promise<ContextoApi> {
     throw new ErrorApi(401, 'clave_invalida', 'La clave no es válida o fue revocada.')
   }
 
-  const token = firmarTokenUsuario(fila.user_id, secreto)
+  const crearAnon = () => createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } })
+  const token = await tokenDeUsuario(admin, crearAnon, fila.user_id)
   const db = createClient(url, anon, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
@@ -68,16 +68,15 @@ export async function autenticar(req: Request): Promise<ContextoApi> {
   const { data: perfil, error: errPerfil } = await db.from('profiles').select('role, org_id').eq('id', fila.user_id).maybeSingle()
 
   // Que la consulta FALLE no es lo mismo que "no es dueño": significa que la
-  // base rechazó la sesión firmada por la API, casi siempre porque
-  // SUPABASE_JWT_SECRET no es el del proyecto. Mezclar los dos casos
-  // escondía un error de configuración detrás de un mensaje sobre permisos.
-  // El código de PostgREST no contiene datos de ningún negocio.
+  // base rechazó la sesión. Mezclar los dos casos escondió una vez un error
+  // de configuración detrás de un mensaje sobre permisos. El código de
+  // PostgREST no contiene datos de ningún negocio.
   if (errPerfil) {
-    console.error('[api/v1] la base rechazó la sesión firmada', errPerfil)
+    console.error('[api/v1] la base rechazó la sesión', errPerfil)
     throw new ErrorApi(
       503,
       'sesion_rechazada',
-      `La base rechazó la sesión de la API (${errPerfil.code || 'sin código'}: ${errPerfil.message || 'sin detalle'}). Revisá SUPABASE_JWT_SECRET.`,
+      `La base rechazó la sesión de la API (${errPerfil.code || 'sin código'}). Si se repite, avisá a soporte.`,
     )
   }
 

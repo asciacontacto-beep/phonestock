@@ -186,10 +186,12 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           value={filter.q}
           onChange={e => setFilter({ ...filter, q: e.target.value })}
         />
+        {/* En mobile estos dos selectores aplastaban el campo de búsqueda
+            hasta dejarlo invisible: ahí viven en la tira de filtros. */}
         {deposits.length > 0 && <>
-          <div className="search-divider" />
+          <div className="search-divider inv-desk" />
           <select
-            className="inp"
+            className="inp inv-desk"
             style={{ border: 'none', background: 'transparent', width: 'auto', padding: '13px 0', flexShrink: 0 }}
             value={filter.deposit}
             onChange={e => setFilter({ ...filter, deposit: e.target.value })}
@@ -199,9 +201,9 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           </select>
         </>}
         {BRANDS.length > 0 && <>
-          <div className="search-divider" />
+          <div className="search-divider inv-desk" />
           <select
-            className="inp"
+            className="inp inv-desk"
             style={{ border: 'none', background: 'transparent', width: 'auto', padding: '13px 0', flexShrink: 0 }}
             value={filter.brand}
             onChange={e => setFilter({ ...filter, brand: e.target.value })}
@@ -236,6 +238,22 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
             onClick={() => { setFilter({ ...filter, status: filter.status === opt.v ? 'all' : opt.v }); setVisibleCount(50); }}
           >{opt.l}</button>
         ))}
+
+        {deposits.length > 0 && (
+          <select className={`sel-pill inv-mob ${filter.deposit !== 'all' ? 'active' : ''}`} value={filter.deposit}
+            onChange={e => { setFilter({ ...filter, deposit: e.target.value }); setVisibleCount(50); }}
+          >
+            <option value="all">Depósito</option>
+            {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
+          </select>
+        )}
+
+        <select className={`sel-pill inv-mob ${filter.brand !== 'all' ? 'active' : ''}`} value={filter.brand}
+          onChange={e => { setFilter({ ...filter, brand: e.target.value }); setVisibleCount(50); }}
+        >
+          <option value="all">Marca</option>
+          {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+        </select>
 
         <select className={`sel-pill ${filter.condition !== 'all' ? 'active' : ''}`} style={{ maxWidth: 110 }} value={filter.condition}
           onChange={e => { setFilter({ ...filter, condition: e.target.value }); setVisibleCount(50); }}
@@ -300,8 +318,8 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 <div
                   key={s.id}
                   onClick={() => setDetailItem(s)}
+                  className="inv-row"
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
                     background: isSelected ? 'var(--surface-2)' : 'transparent',
                     borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
                     cursor: 'pointer', transition: 'background 0.1s',
@@ -310,7 +328,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                   onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                 >
                   {/* Custom checkbox */}
-                  <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }}>
+                  <div className="inv-check" onClick={e => e.stopPropagation()}>
                     <div
                       onClick={() => {
                         if (isSelected) setSelectedItems(selectedItems.filter(id => id !== s.id));
@@ -329,17 +347,16 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                   </div>
 
                   {/* Condition dot */}
-                  <div style={{
-                    width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                  <div className="inv-dot" style={{
                     background: s.condition === 'new' ? 'var(--green)' : 'var(--text-3)',
                   }} />
 
                   {/* Main info */}
                   <div style={{ flex: '1 1 160px', minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div className="inv-name">
                       {s.model}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2, display: 'flex', gap: 5, flexWrap: 'nowrap', overflow: 'hidden' }}>
+                    <div className="inv-meta">
                       <span>{s.storage}</span>
                       {s.color && <><span>·</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.color}</span></>}
                       {batteryLabel && s.condition === 'used' && <><span>·</span><span>{batteryLabel}</span></>}
@@ -350,6 +367,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                         const c = agingColor(d);
                         return <><span>·</span><span style={{ color: c || undefined, fontWeight: c ? 700 : 400, flexShrink: 0 }}>{d === 0 ? 'hoy' : `${d}d`}</span></>;
                       })()}
+                      {dep && <span className="inv-mob">· {dep.name}</span>}
                     </div>
                   </div>
 
@@ -366,7 +384,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                   </div>
 
                   {/* Deposit */}
-                  <div style={{ flex: '0 0 90px', display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                  <div className="inv-dep">
                     {dep ? <>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: dep.color || 'var(--text-3)', flexShrink: 0 }} />
                       <span style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dep.name}</span>
@@ -374,7 +392,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display: 'flex', gap: 2, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                  <div className="inv-actions" onClick={e => e.stopPropagation()}>
                     <button className="btn-icon" style={{ width: 28, height: 28 }} onClick={() => setEditItem(s)}><Edit2 size={13} /></button>
                     <button className="btn-icon" style={{ width: 28, height: 28, color: 'var(--red)' }} onClick={() => handleDelete(s.id)}><Trash2 size={13} /></button>
                   </div>
@@ -570,6 +588,12 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 <button className="btn btn-outline" style={{ flex: detailItem.status === 'available' ? 0 : 1, minWidth: 100 }}
                   onClick={() => { setDetailItem(null); setEditItem(detailItem); }}>
                   <Edit2 size={15} /> Editar
+                </button>
+                {/* En mobile la fila no muestra los botones de acción, así que
+                    borrar tiene que estar acá. */}
+                <button className="btn btn-outline" style={{ color: 'var(--red)', flex: 0 }} aria-label="Eliminar equipo"
+                  onClick={() => handleDelete(detailItem.id)}>
+                  <Trash2 size={15} />
                 </button>
               </div>
             </div>

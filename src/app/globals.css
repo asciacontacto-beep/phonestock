@@ -1316,3 +1316,52 @@ select.inp {
 
 .mp-nuevo { border-top: 1px solid var(--border); }
 .mp-nuevo .acc-option-name { font-weight: 600; }
+
+/* ── Inventario: fila de equipo ─────────── */
+/* Los valores de escritorio son los mismos que tenía la fila en estilos en
+   línea; pasaron a clases para poder cambiarlos en mobile. */
+.inv-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.inv-check { flex-shrink: 0; }
+.inv-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.inv-name {
+  font-weight: 600; font-size: 14px; letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.inv-meta {
+  font-size: 11px; color: var(--text-3); margin-top: 2px;
+  display: flex; gap: 5px; flex-wrap: nowrap; overflow: hidden;
+}
+.inv-dep { flex: 0 0 90px; display: flex; align-items: center; gap: 5px; min-width: 0; }
+.inv-actions { display: flex; gap: 2px; flex-shrink: 0; }
+
+/* Sólo en mobile / sólo en escritorio */
+.inv-mob { display: none; }
+
+@media (max-width: 768px) {
+  .inv-desk { display: none; }
+  .inv-mob { display: revert; }
+
+  /* Dentro de la tira que scrollea de costado, un selector que se achica
+     queda ilegible: mejor que empuje y se scrollee. */
+  .filters-wrap .sel-pill { flex-shrink: 0; }
+
+  /* A 390px la fila metía checkbox, punto, precio, depósito (90px fijos) y
+     dos botones: al nombre del modelo le quedaban ~15px. En mobile se van la
+     columna de depósito (pasa a la línea de datos) y los botones (editar y
+     borrar están en el detalle, al tocar la fila). */
+  .inv-row { gap: 10px; padding: 12px; align-items: flex-start; }
+  .inv-check { margin-top: 1px; }
+  .inv-dot { margin-top: 6px; }
+  .inv-dep, .inv-actions { display: none; }
+
+  /* El nombre puede ocupar dos líneas antes de cortarse */
+  .inv-name {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    font-size: 14.5px;
+  }
+  .inv-meta { flex-wrap: wrap; row-gap: 2px; font-size: 12px; margin-top: 3px; }
+}

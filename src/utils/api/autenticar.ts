@@ -65,7 +65,22 @@ export async function autenticar(req: Request): Promise<ContextoApi> {
 
   // Si al dueño de la clave lo pasaron a vendedor, o cambió de negocio, la
   // clave deja de servir. Se verifica como él mismo, no con la de servicio.
-  const { data: perfil } = await db.from('profiles').select('role, org_id').eq('id', fila.user_id).maybeSingle()
+  const { data: perfil, error: errPerfil } = await db.from('profiles').select('role, org_id').eq('id', fila.user_id).maybeSingle()
+
+  // Que la consulta FALLE no es lo mismo que "no es dueño": significa que la
+  // base rechazó la sesión firmada por la API, casi siempre porque
+  // SUPABASE_JWT_SECRET no es el del proyecto. Mezclar los dos casos
+  // escondía un error de configuración detrás de un mensaje sobre permisos.
+  // El código de PostgREST no contiene datos de ningún negocio.
+  if (errPerfil) {
+    console.error('[api/v1] la base rechazó la sesión firmada', errPerfil)
+    throw new ErrorApi(
+      503,
+      'sesion_rechazada',
+      `La base rechazó la sesión de la API (${errPerfil.code || 'sin código'}: ${errPerfil.message || 'sin detalle'}). Revisá SUPABASE_JWT_SECRET.`,
+    )
+  }
+
   if (!perfil || perfil.role !== 'owner' || perfil.org_id !== fila.org_id) {
     throw new ErrorApi(403, 'clave_sin_dueno', 'El usuario de esta clave ya no es dueño del negocio. Creá una clave nueva.')
   }

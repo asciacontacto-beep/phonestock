@@ -1,21 +1,31 @@
 {
+  "id": "/dashboard",
   "name": "Stackr — Gestión de Tiendas",
   "short_name": "Stackr",
-  "description": "La plataforma definitiva para gestionar stock, reparaciones y finanzas.",
-  "start_url": "/",
+  "description": "Stock, ventas, reparaciones y caja de tu local de celulares.",
+  "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#f5f5f3",
+  "theme_color": "#f5f5f3",
   "icons": [
     {
-      "src": "/logo.jpg",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/logo.jpg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

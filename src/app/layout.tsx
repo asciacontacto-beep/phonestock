@@ -64,7 +64,8 @@ export const metadata: Metadata = {
   icons: {
     icon: "/logo.jpg",
     shortcut: "/logo.jpg",
-    apple: "/logo.jpg",
+    // iOS espera un PNG cuadrado de 180px; antes apuntaba a la foto de 1254px.
+    apple: "/apple-touch-icon.png",
   },
   robots: {
     index: true,

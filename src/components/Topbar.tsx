@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
 import { BotonTema } from '@/components/BotonTema';
-import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Smartphone } from 'lucide-react';
+import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Smartphone, Store, Wallet, CreditCard, Wrench } from 'lucide-react';
 
 /* Íconos propios para los dos controles que se ven siempre.
    La lupa y el globito redondos de la librería son los que trae cualquier
@@ -37,6 +37,78 @@ interface TopbarProps {
 }
 
 const NOTIFICATIONS = [
+  {
+    id: 'catalogo-2026-09-19',
+    icon: <Store size={16} />,
+    color: '#0f766e',
+    title: 'Nuevo: tu catálogo público',
+    body: 'Ya tenés un link propio con los equipos que vos elijas, para poner en la bio de Instagram o mandar por WhatsApp. El cliente ve el equipo, el precio y un botón que te escribe con la consulta ya redactada. Nunca ve el IMEI ni lo que te costó, y un equipo vendido desaparece solo. Se arma desde la sección Catálogo: prendés el link y marcás los equipos.',
+    href: '/catalogo',
+    cta: 'Armar mi catálogo',
+  },
+  {
+    id: 'cuenta-corriente-2026-09-19',
+    icon: <Wallet size={16} />,
+    color: '#7c3aed',
+    title: 'Ya podés cobrar lo que te deben',
+    body: 'Antes una venta podía quedar debiendo, pero no había forma de cobrar ese saldo después. Ahora en la ficha del cliente tenés su cuenta corriente: cuánto debe, desde cuándo, y un botón para registrar el cobro. La plata entra a la caja con la fecha real en que cobraste, así el arqueo del día cierra bien.',
+    href: '/customers',
+    cta: 'Ver clientes',
+  },
+  {
+    id: 'cuotas-2026-09-19',
+    icon: <CalendarDays size={16} />,
+    color: '#2563eb',
+    title: 'Ventas en cuotas, con vencimientos',
+    body: 'Cuando cobrás menos y marcás "queda debiendo", ahora podés armar un plan de cuotas con fechas. Ves las cuotas antes de confirmar la venta, con o sin interés — el interés se calcula sobre lo que se financia, no sobre el precio, y suma a tu ganancia. El tablero te avisa quién tiene cuotas vencidas.',
+    href: '/sell',
+    cta: 'Ir a vender',
+  },
+  {
+    id: 'tarjeta-recargo-2026-09-19',
+    icon: <CreditCard size={16} />,
+    color: '#b45309',
+    title: 'Tarjeta con recargo, por plan',
+    body: 'Cargá una vez tus planes (Visa 3 cuotas 12%, Naranja 6 cuotas 25%…) en Configuración y después en la venta elegís cuál. Podés decidir si el recargo lo paga el cliente o lo absorbés vos, y la pantalla te muestra en el momento cuánto entra a la caja y cuánto te queda. Si el plan te come el margen, te avisa en rojo antes de confirmar.',
+    href: '/settings',
+    cta: 'Cargar mis planes',
+  },
+  {
+    id: 'reparacion-propia-2026-09-19',
+    icon: <Wrench size={16} />,
+    color: '#dc2626',
+    title: 'Arreglá tus propios equipos sin perder el margen',
+    body: 'Desde Inventario podés mandar un equipo tuyo al taller. Sale del stock disponible mientras está en reparación, y al cerrarla lo que gastaste en repuestos y mano de obra se suma al costo de ese equipo. Antes ese gasto no se sumaba a ningún lado y el margen te salía inflado por lo que te costó el arreglo.',
+    href: '/stock',
+    cta: 'Ver inventario',
+  },
+  {
+    id: 'compras-caja-2026-09-19',
+    icon: <ShoppingBag size={16} />,
+    color: '#0891b2',
+    title: 'Ahora comprar mercadería descuenta de la caja',
+    body: 'Al ingresar equipos podés registrar con qué pagaste y de qué caja sale. Es opcional: podés seguir cargando con el costo nomás, como siempre. Pero si no lo registrás, la plata que pagaste no sale de ningún lado y tanto la caja como la ganancia te quedan más altas de lo que son.',
+    href: '/stock',
+    cta: 'Cargar equipos',
+  },
+  {
+    id: 'respaldo-completo-2026-09-19',
+    icon: <ShieldCheck size={16} />,
+    color: '#16a34a',
+    title: 'El respaldo ahora sí baja todo',
+    body: 'Bajaba ocho tablas y dejaba afuera mayoristas, turnos, movimientos de caja, proveedores y la configuración del local. Ahora son veintiuna: todo tu negocio en un archivo que abrís con Excel. Las claves de API quedan afuera a propósito, porque un respaldo es un archivo que viaja por mail.',
+    href: '/settings',
+    cta: 'Descargar respaldo',
+  },
+  {
+    id: 'tema-oscuro-2026-09-19',
+    icon: <Sparkles size={16} />,
+    color: '#5f5f5c',
+    title: 'Modo oscuro y una app más prolija',
+    body: 'Arriba, al lado del buscador, tenés el botón para pasar de claro a oscuro. Queda guardado en ese aparato: podés usarlo oscuro en la notebook y claro en el mostrador. Además se repasaron las tablas, los formularios, los menús y las animaciones de toda la app.',
+    href: '/dashboard',
+    cta: 'Ver el tablero',
+  },
   {
     id: 'referidos-2026-09',
     icon: <ShoppingBag size={16} />,

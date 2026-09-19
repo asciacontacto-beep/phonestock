@@ -436,7 +436,7 @@ export default function LoginPage() {
            izquierdo. En mobile no estaba y el formulario quedaba solo. */
         .lp-mobile-trust {
           display: none;
-          gap: 14px;
+          gap: 18px;
           justify-content: center;
           flex-wrap: wrap;
           padding: 18px 20px 26px;
@@ -451,14 +451,12 @@ export default function LoginPage() {
 
         /* ── Responsive ── */
         /* ── Mobile ──────────────────────────────────────────────────────
-           Antes era una banda negra corta arriba, el formulario pegado
-           debajo y media pantalla en blanco. La banda se cortaba de golpe y
-           todo el argumento de venta —que en escritorio vive en el panel
-           izquierdo— desaparecía.
-
-           Ahora la pantalla entera es oscura, como ese panel, y el
-           formulario va en una tarjeta clara centrada. Misma composición
-           que el escritorio, sin el corte, y sin espacio muerto. */
+           Todo oscuro, sin tarjeta. La primera versión ponía el formulario
+           en un bloque crema sobre el fondo negro: se leía como un papel
+           pegado encima, y los campos blancos adentro del crema quedaban
+           sucios. Acá los campos son oscuros con borde de un pelo, como en
+           la landing, y el único elemento claro es el botón — que es
+           justamente lo que hay que tocar. */
         @media (max-width: 900px) {
           .lp-root {
             flex-direction: column;
@@ -473,30 +471,52 @@ export default function LoginPage() {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 8px 18px 28px;
+            padding: 0 22px 24px;
             background: transparent;
           }
-          .lp-form-wrap { width: 100%; max-width: 440px; margin: 0 auto; }
+          .lp-form-wrap { width: 100%; max-width: 420px; margin: 0 auto; }
 
           .lp-form-card {
-            background: var(--hueso);
+            background: transparent;
             border: none;
-            border-radius: 20px;
-            padding: 24px 20px;
-            box-shadow: 0 30px 70px -30px rgba(0,0,0,0.9);
-          }
-          .lp-input {
-            padding: 14px 15px;
-            font-size: 16px; /* evita el zoom de iOS */
+            box-shadow: none;
+            padding: 0;
           }
 
-          /* El encabezado va sobre el fondo oscuro, fuera de la tarjeta:
-             tiene que ir en color claro o se pierde contra el negro. El
-             "¿no tenés cuenta?" va ADENTRO de la tarjeta clara, así que
-             conserva el color oscuro. */
-          .lp-form-head { text-align: center; margin-bottom: 18px; }
-          .lp-form-title { color: var(--hueso); font-size: 25px; }
+          .lp-form-head { text-align: center; margin-bottom: 26px; }
+          .lp-form-title { color: var(--hueso); font-size: 26px; letter-spacing: -0.035em; }
           .lp-form-sub { color: var(--hueso-dim); }
+
+          .lp-label { color: var(--hueso-dim); }
+          .lp-forgot { color: var(--hueso-dim2); }
+
+          .lp-input {
+            padding: 15px 16px;
+            font-size: 16px; /* evita el zoom de iOS */
+            background: var(--tinta-2);
+            border: 1px solid rgba(233,229,219,0.12);
+            border-radius: 13px;
+            color: var(--hueso);
+          }
+          .lp-input::placeholder { color: rgba(233,229,219,0.28); }
+          .lp-input:focus {
+            border-color: rgba(233,229,219,0.34);
+            background: #12151800;
+            box-shadow: none;
+          }
+
+          /* El único elemento claro de la pantalla es lo que hay que tocar. */
+          .lp-submit {
+            background: var(--hueso);
+            color: var(--tinta);
+            border-radius: 13px;
+            padding: 15px;
+            font-weight: 700;
+          }
+
+          .lp-toggle { color: var(--hueso-dim); margin-top: 22px; }
+          .lp-toggle button { color: var(--hueso); }
+          .lp-cta-note { color: var(--hueso-dim2); }
           .lp-mobile-trust { display: flex; }
         }
       `}</style>
@@ -667,7 +687,6 @@ export default function LoginPage() {
           <div className="lp-mobile-trust">
             <span><i /> 48 horas gratis</span>
             <span><i /> Sin tarjeta</span>
-            <span><i /> Tus datos, siempre tuyos</span>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { downloadBackup } from '@/utils/backup';
 import { CardPlansCard } from '@/components/CardPlansCard';
+import { CatalogoCard } from '@/components/CatalogoCard';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
@@ -57,7 +58,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
   /* Configuración tenía todo en una sola columna larga: los planes de
      tarjeta quedaban al fondo, debajo del recibo, y no los encontraba
      nadie. Cada tema pasa a ser una sección propia. */
-  const [seccion, setSeccion] = useState<'negocio' | 'tarjetas' | 'datos'>('negocio');
+  const [seccion, setSeccion] = useState<'negocio' | 'tarjetas' | 'catalogo' | 'datos'>('negocio');
   /* Link de referidos del negocio. Si la migración no está aplicada, la
      tarjeta simplemente no aparece. */
   const [referral, setReferral] = useState<{ code: string; invitados: number; pagos: number } | null>(null);
@@ -198,6 +199,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
           <div className="helper-text">
             {seccion === 'negocio' ? 'Personalizá la identidad de tu negocio y el diseño del recibo.'
               : seccion === 'tarjetas' ? 'Los planes con los que cobrás con tarjeta y su recargo.'
+              : seccion === 'catalogo' ? 'El link con tus equipos, para compartir con clientes.'
               : 'Respaldo, claves de acceso y tu link de invitación.'}
           </div>
         </div>
@@ -212,6 +214,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
         {([
           { v: 'negocio',  l: 'Negocio y recibo' },
           { v: 'tarjetas', l: 'Planes de tarjeta' },
+          { v: 'catalogo', l: 'Catálogo público' },
           { v: 'datos',    l: 'Datos y accesos' },
         ] as const).map(opt => (
           <button key={opt.v} className={`btn-pill ${seccion === opt.v ? 'active' : ''}`}
@@ -366,6 +369,10 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
           </>}
 
           {seccion === 'tarjetas' && <CardPlansCard />}
+
+          {seccion === 'catalogo' && (
+            <CatalogoCard orgId={profile?.org_id || null} shopName={form.shop_name} />
+          )}
 
           {seccion === 'datos' && <>
           {/* Invitá a otro local */}

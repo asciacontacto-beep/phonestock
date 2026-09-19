@@ -5,6 +5,7 @@ import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock, Plus }
 import { createClient } from '@/utils/supabase/client';
 import { mandarAReparar } from '@/utils/reparacionPropia';
 import { estadoDeLista } from '@/utils/listaVacia';
+import { Store } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -143,7 +144,8 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         condition: editItem.condition, deposit: editItem.deposit,
         imei: editItem.imei || null,
         battery: editItem.condition === 'used' ? (editItem.battery || null) : null,
-        notes: editItem.notes?.trim() || null
+        notes: editItem.notes?.trim() || null,
+        in_catalog: Boolean(editItem.in_catalog),
       };
       const { error } = await supabase.from('stock').update(updatedFields).eq('id', editItem.id);
       if (error) throw error;
@@ -160,6 +162,22 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       }
     }
     finally { setLoading(false); }
+  };
+
+  /* Publicar de a muchos. El catálogo se arma eligiendo equipo por equipo,
+     pero cargar veinte a mano es lo que hace que nadie lo use. */
+  const [publicando, setPublicando] = useState(false);
+  const cambiarCatalogo = async (publicar: boolean) => {
+    if (selectedItems.length === 0) return;
+    setPublicando(true);
+    const { error } = await supabase.from('stock').update({ in_catalog: publicar }).in('id', selectedItems);
+    setPublicando(false);
+    if (error) { toast.error(error.message); return; }
+    setStock(p => p.map(s => selectedItems.includes(s.id) ? { ...s, in_catalog: publicar } : s));
+    toast.success(publicar
+      ? `${selectedItems.length} ${selectedItems.length === 1 ? 'equipo publicado' : 'equipos publicados'} en el catálogo`
+      : `${selectedItems.length} ${selectedItems.length === 1 ? 'equipo sacado' : 'equipos sacados'} del catálogo`);
+    setSelectedItems([]);
   };
 
   const handleBulkTransfer = async () => {
@@ -467,6 +485,13 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           <button className="btn btn-dark btn-sm" disabled={!bulkDeposit || bulkTransferring} onClick={handleBulkTransfer}>
             {bulkTransferring ? 'Moviendo...' : 'Transferir Masivamente'}
           </button>
+          <div style={{ width: 1, height: 20, background: 'var(--border-md)' }} />
+          <button className="btn btn-outline btn-sm" disabled={publicando} onClick={() => cambiarCatalogo(true)}>
+            <Store size={14} /> Al catálogo
+          </button>
+          <button className="btn btn-ghost btn-sm" disabled={publicando} onClick={() => cambiarCatalogo(false)}>
+            Sacar
+          </button>
           <button className="btn-icon" onClick={() => setSelectedItems([])}><X size={16} /></button>
         </div>
       )}
@@ -552,6 +577,24 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 </div>
               </div>
               
+              <div style={{ borderTop: '1px dashed var(--border-md)', paddingTop: 12, marginTop: 4 }}>
+                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    style={{ marginTop: 3 }}
+                    checked={Boolean(editItem.in_catalog)}
+                    onChange={e => setEditItem({ ...editItem, in_catalog: e.target.checked })}
+                  />
+                  <span>
+                    <span style={{ fontWeight: 600, fontSize: 13 }}>Mostrar en el catálogo público</span>
+                    <span style={{ display: 'block', fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, marginTop: 3 }}>
+                      Se ven la marca, el modelo, la capacidad, el color, la condición y el precio.
+                      Nunca el IMEI ni lo que te costó.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
               {editItem.status === 'available' && (
                 <div style={{ borderTop: '1px dashed var(--border-md)', paddingTop: 12, marginTop: 4 }}>
                   <label className="lbl">Mandar a reparar</label>

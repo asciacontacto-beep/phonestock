@@ -19,11 +19,13 @@ export function AvisoDeCuenta({ orgId }: { orgId: string | null }) {
     if (!orgId) return
     const supabase = createClient()
     supabase.from('organizations')
-      .select('plan,trial_expires_at,paid_until')
+      .select('plan,trial_expires_at,paid_until,lifetime')
       .eq('id', orgId)
       .maybeSingle()
       .then(({ data }) => {
-        // Sin la columna `plan` (migración sin correr) no se molesta a nadie.
+        /* Si la migración todavía no se corrió, la consulta falla y `data`
+           viene en null: no se muestra nada. Ante la duda, no se le dice a
+           nadie que no puede trabajar. */
         if (data) setCuenta(estadoDeCuenta(data, new Date().toLocaleDateString('en-CA')))
       })
   }, [orgId])

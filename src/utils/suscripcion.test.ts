@@ -2,17 +2,43 @@ import { describe, it, expect } from 'vitest'
 import { estadoDeCuenta, DIAS_DE_GRACIA, type Cuenta } from './suscripcion'
 
 const cuenta = (o: Partial<Cuenta> = {}): Cuenta => ({
-  plan: 'trial', trial_expires_at: '2026-10-01T00:00:00Z', paid_until: null, ...o,
+  plan: 'free', trial_expires_at: '2026-10-01T00:00:00Z', paid_until: null, lifetime: false, ...o,
 })
 
 describe('estadoDeCuenta · licencia de por vida', () => {
   it('el que compro la licencia nunca vence', () => {
-    const r = estadoDeCuenta(cuenta({ plan: 'lifetime', trial_expires_at: '2020-01-01T00:00:00Z' }), '2030-01-01')
+    const r = estadoDeCuenta(cuenta({ lifetime: true, trial_expires_at: '2020-01-01T00:00:00Z' }), '2030-01-01')
     expect(r).toMatchObject({ estado: 'lifetime', puedeEscribir: true, avisar: false })
   })
 
   it('la licencia manda sobre cualquier fecha vencida', () => {
-    const r = estadoDeCuenta(cuenta({ plan: 'lifetime', paid_until: '2020-01-01' }), '2030-01-01')
+    const r = estadoDeCuenta(cuenta({ lifetime: true, paid_until: '2020-01-01' }), '2030-01-01')
+    expect(r.puedeEscribir).toBe(true)
+  })
+})
+
+describe('estadoDeCuenta · no asustar al que paga', () => {
+  it('un local que paga y no tiene fecha de vencimiento NUNCA se bloquea', () => {
+    // El vocabulario de `plan` es el que ya usaba el panel superadmin:
+    // 'active' es un local al dia. Antes este caso caia en el trial vencido
+    // y le mostraba "tu cuenta esta en solo lectura" a alguien que paga.
+    const r = estadoDeCuenta(
+      { plan: 'active', trial_expires_at: '2020-01-01T00:00:00Z', paid_until: null },
+      '2030-01-01',
+    )
+    expect(r).toMatchObject({ estado: 'activa', puedeEscribir: true, avisar: false })
+  })
+
+  it('el trial vencido de un local que paga no lo afecta', () => {
+    const r = estadoDeCuenta(
+      { plan: 'active', trial_expires_at: '2026-01-01T00:00:00Z', paid_until: '2026-12-01' },
+      '2026-09-20',
+    )
+    expect(r).toMatchObject({ estado: 'activa', puedeEscribir: true })
+  })
+
+  it('un valor de plan desconocido se trata como prueba, no como bloqueo', () => {
+    const r = estadoDeCuenta({ plan: 'loQueSea', trial_expires_at: null }, '2030-01-01')
     expect(r.puedeEscribir).toBe(true)
   })
 })
@@ -52,7 +78,7 @@ describe('estadoDeCuenta · prueba gratis', () => {
 })
 
 describe('estadoDeCuenta · suscripcion mensual', () => {
-  const mensual = (paid_until: string | null) => cuenta({ plan: 'monthly', paid_until, trial_expires_at: null })
+  const mensual = (paid_until: string | null) => cuenta({ plan: 'active', paid_until, trial_expires_at: null })
 
   it('al dia se puede trabajar', () => {
     const r = estadoDeCuenta(mensual('2026-10-15'), '2026-09-20')
@@ -81,17 +107,18 @@ describe('estadoDeCuenta · suscripcion mensual', () => {
     expect(r.estado).toBe('activa')
   })
 
-  it('el mensual usa paid_until y NO la fecha del trial', () => {
+  it('el que paga usa paid_until y NO la fecha del trial', () => {
     // Un trial vencido hace meses no tiene que bloquear a alguien que paga.
-    const r = estadoDeCuenta(cuenta({ plan: 'monthly', paid_until: '2026-12-01', trial_expires_at: '2026-01-01' }), '2026-09-20')
+    const r = estadoDeCuenta(cuenta({ plan: 'active', paid_until: '2026-12-01', trial_expires_at: '2026-01-01' }), '2026-09-20')
     expect(r).toMatchObject({ estado: 'activa', puedeEscribir: true })
   })
 
-  it('mensual sin fecha de pago se trata como vencido, no como libre', () => {
-    // Al reves que el trial: si alguien esta en plan mensual y no hay pago
-    // registrado, no se le regala acceso indefinido.
+  it('el que paga sin fecha cargada se deja trabajar, no se bloquea', () => {
+    // Son todos los locales de hoy: `plan = 'active'` y ninguna fecha nueva.
+    // Bloquearlos por una columna que todavia nadie completo seria romperles
+    // el dia a clientes que estan al dia.
     const r = estadoDeCuenta(mensual(null), '2026-09-20')
-    expect(r.estado).toBe('solo_lectura')
+    expect(r).toMatchObject({ estado: 'activa', puedeEscribir: true, avisar: false })
   })
 })
 
@@ -107,6 +134,6 @@ describe('estadoDeCuenta · lo que se muestra', () => {
   })
 
   it('con licencia de por vida no hay nada que mostrar', () => {
-    expect(estadoDeCuenta(cuenta({ plan: 'lifetime' }), '2030-01-01').mensaje).toBeNull()
+    expect(estadoDeCuenta(cuenta({ lifetime: true }), '2030-01-01').mensaje).toBeNull()
   })
 })

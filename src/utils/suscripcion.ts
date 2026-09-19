@@ -17,14 +17,29 @@
  *     esconden — son del local, no nuestros.
  */
 
-export type Plan = 'trial' | 'monthly' | 'lifetime'
-
+/**
+ * El vocabulario de `organizations.plan` es el que YA existía y del que
+ * depende todo el panel superadmin: `'active'` es un local que paga,
+ * cualquier otro valor es prueba. No se redefine — se extiende.
+ *
+ * Lo nuevo va en dos columnas aparte:
+ *   `paid_until` — hasta cuándo está paga la suscripción mensual.
+ *   `lifetime`   — compró la licencia para siempre.
+ *
+ * Al principio esto usaba `plan` con valores propios ('trial' | 'monthly' |
+ * 'lifetime'), y era un error grave: un local con `plan = 'active'` —o sea,
+ * uno que paga— y el trial vencido hace meses quedaba en "sólo lectura".
+ * Un cliente al día viendo un cartel diciéndole que no puede trabajar.
+ */
 export interface Cuenta {
-  plan?: Plan | string | null
+  /** `'active'` = paga. Cualquier otro valor = prueba. */
+  plan?: string | null
   /** Vencimiento de la prueba gratis. */
   trial_expires_at?: string | null
   /** Hasta cuándo está paga la suscripción mensual. */
   paid_until?: string | null
+  /** Licencia de por vida: no vence nunca. */
+  lifetime?: boolean | null
 }
 
 /** Días que sigue funcionando una cuenta vencida antes de pasar a sólo lectura. */
@@ -56,7 +71,7 @@ function diasEntre(desde: string, hasta: string): number {
 }
 
 export function estadoDeCuenta(cuenta: Cuenta, hoy: string): ResultadoCuenta {
-  if (cuenta.plan === 'lifetime') {
+  if (cuenta.lifetime) {
     return {
       estado: 'lifetime', puedeEscribir: true,
       diasRestantes: null, diasDeGraciaRestantes: null,
@@ -64,23 +79,19 @@ export function estadoDeCuenta(cuenta: Cuenta, hoy: string): ResultadoCuenta {
     }
   }
 
-  const esMensual = cuenta.plan === 'monthly'
-  const vencimiento = esMensual ? cuenta.paid_until : cuenta.trial_expires_at
+  const paga = cuenta.plan === 'active'
+  const vencimiento = paga ? cuenta.paid_until : cuenta.trial_expires_at
 
   if (!vencimiento) {
-    /* Sin fecha, el trial es una cuenta que el superadmin dejó abierta a
-       propósito y no se toca. El mensual es al revés: estar en plan pago
-       sin ningún pago registrado no da acceso indefinido. */
-    return esMensual
-      ? {
-          estado: 'solo_lectura', puedeEscribir: false,
-          diasRestantes: null, diasDeGraciaRestantes: 0, avisar: true,
-          mensaje: 'No hay ningún pago registrado en tu cuenta. Podés ver y exportar tus datos, pero no cargar operaciones nuevas.',
-        }
-      : {
-          estado: 'activa', puedeEscribir: true,
-          diasRestantes: null, diasDeGraciaRestantes: null, avisar: false, mensaje: null,
-        }
+    /* Sin fecha no se molesta a nadie, ni al que paga ni al que está de
+       prueba con el vencimiento sacado a propósito por el superadmin.
+
+       Esta es la regla que evita el peor error posible: decirle "no podés
+       trabajar" a un local que está al día. Ante la duda, se deja pasar. */
+    return {
+      estado: paga ? 'activa' : 'trial', puedeEscribir: true,
+      diasRestantes: null, diasDeGraciaRestantes: null, avisar: false, mensaje: null,
+    }
   }
 
   const restantes = diasEntre(hoy, vencimiento)
@@ -88,13 +99,13 @@ export function estadoDeCuenta(cuenta: Cuenta, hoy: string): ResultadoCuenta {
   if (restantes >= 0) {
     const avisar = restantes <= DIAS_DE_AVISO
     return {
-      estado: esMensual ? 'activa' : 'trial',
+      estado: paga ? 'activa' : 'trial',
       puedeEscribir: true,
       diasRestantes: restantes,
       diasDeGraciaRestantes: null,
       avisar,
       mensaje: avisar
-        ? esMensual
+        ? paga
           ? `Tu suscripción vence en ${restantes} ${restantes === 1 ? 'día' : 'días'}.`
           : `Te quedan ${restantes} ${restantes === 1 ? 'día' : 'días'} de prueba.`
         : null,

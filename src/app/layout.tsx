@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   // Sin esto Next las resuelve contra localhost y se rompen los previews.
   metadataBase: new URL(siteUrl),
   title: "Stackr — Software de Gestión para Locales de Celulares y Servicio Técnico",
-  description: "Gestioná stock, reparaciones, ventas y finanzas de tu local de tecnología en un solo lugar. Pago único de $400 USD, sin mensualidades. Probalo gratis 48hs.",
+  description: "Gestioná stock, reparaciones, ventas, cuenta corriente y caja de tu local de celulares en un solo lugar. $50.000 por mes sin permanencia, o licencia de por vida. Probalo gratis 48hs.",
   keywords: [
     "software gestión celulares",
     "sistema punto de venta celulares",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Stackr — Software de Gestión para Locales de Celulares",
-    description: "Stock, reparaciones, ventas y finanzas. Pago único, sin mensualidades. Probalo gratis 48hs.",
+    description: "Stock, ventas, reparaciones, cuenta corriente y caja. $50.000 por mes sin permanencia. Probalo gratis 48hs.",
     url: "https://stackrarg.vercel.app",
     siteName: "Stackr",
     images: [
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Stackr — Software de Gestión para Locales de Celulares",
-    description: "Stock, reparaciones, ventas y finanzas. Pago único, sin mensualidades.",
+    description: "Stock, ventas, reparaciones, cuenta corriente y caja. $50.000 por mes sin permanencia.",
     images: ["/og-image.jpg"],
   },
   icons: {
@@ -90,14 +90,26 @@ const jsonLd = {
   "operatingSystem": "Web, iOS, Android",
   "description": "Software de gestión para locales de celulares y servicio técnico. Gestión de stock, reparaciones, punto de venta y finanzas.",
   "url": "https://stackrarg.vercel.app",
-  "offers": {
-    "@type": "Offer",
-    "price": "400",
-    "priceCurrency": "USD",
-    "priceValidUntil": "2027-12-31",
-    "availability": "https://schema.org/InStock",
-    "description": "Licencia de por vida, pago único sin mensualidades",
-  },
+  /* Los dos planes. Si el precio cambia, se cambia acá y en
+     src/components/landing/precios.ts — son los dos únicos lugares. */
+  "offers": [
+    {
+      "@type": "Offer",
+      "price": "50000",
+      "priceCurrency": "ARS",
+      "priceValidUntil": "2027-12-31",
+      "availability": "https://schema.org/InStock",
+      "description": "Suscripción mensual, sin permanencia",
+    },
+    {
+      "@type": "Offer",
+      "price": "490000",
+      "priceCurrency": "ARS",
+      "priceValidUntil": "2027-12-31",
+      "availability": "https://schema.org/InStock",
+      "description": "Licencia de por vida, un solo pago",
+    },
+  ],
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "5",

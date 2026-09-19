@@ -1,6 +1,32 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search, Smartphone } from 'lucide-react';
+import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Smartphone } from 'lucide-react';
+
+/* Íconos propios para los dos controles que se ven siempre.
+   La lupa y el globito redondos de la librería son los que trae cualquier
+   plantilla: con la marca ya definida por barras redondeadas, estos siguen
+   esa forma — trazo grueso, puntas redondeadas, geometría simple. */
+function IconoBuscar({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M10.6 10.6 14 14" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function IconoSoporte({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      {/* Burbuja cuadrada con esquinas muy redondeadas y la cola abajo a la
+          izquierda: se distingue del globito circular de siempre. */}
+      <path
+        d="M3.4 2.2h9.2a1.2 1.2 0 0 1 1.2 1.2v6.3a1.2 1.2 0 0 1-1.2 1.2H6.5l-2.8 2.5v-2.5h-.3a1.2 1.2 0 0 1-1.2-1.2V3.4a1.2 1.2 0 0 1 1.2-1.2Z"
+        stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -131,34 +157,6 @@ const TITLES: Record<string, string> = {
   recibos: 'Recibo',
 }
 
-/* La barra de arriba tenía la izquierda vacía: 700px de aire y todos los
-   controles amontonados contra el borde derecho. Una barra que existe sólo
-   para sostener una botonera se ve como un error de maqueta. Poniéndole el
-   nombre de la pantalla, la barra tiene de qué hablar y el ojo entra por la
-   izquierda, como lee. */
-const TITULOS: Record<string, string> = {
-  dashboard: 'Resumen',
-  reports: 'Rentabilidad',
-  stock: 'Inventario',
-  accessories: 'Accesorios',
-  deposits: 'Depósitos',
-  scan: 'Carga por código',
-  sell: 'Nueva operación',
-  sales: 'Historial de ventas',
-  recibos: 'Recibos',
-  repairs: 'Servicio técnico',
-  turnos: 'Turnos',
-  cashiers: 'Cajas',
-  cashier_me: 'Mi caja',
-  expenses: 'Gastos',
-  customers: 'Clientes',
-  mayoristas: 'Mayoristas',
-  suppliers: 'Proveedores',
-  users: 'Usuarios',
-  settings: 'Configuración',
-  superadmin: 'Panel',
-}
-
 export function Topbar({ page, user, onLogout }: TopbarProps) {
   const [openPanel, setOpenPanel] = useState<'bell' | 'rate' | 'avatar' | 'help' | null>(null)
   const [read, setRead] = useState<string[]>([])
@@ -247,8 +245,6 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
       </div>
     )}
     <div className="topbar no-print">
-      <div className="tb-title">{TITULOS[page] || 'Stackr'}</div>
-
       <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', marginLeft: 'auto' }}>
 
         {/* Disparador visible de la command palette (⌘K) */}
@@ -257,7 +253,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           className="cmdk-trigger"
           title="Buscar o navegar (Ctrl/⌘ + K)"
         >
-          <Search size={14} />
+          <IconoBuscar />
           <span className="cmdk-trigger-label">Buscar</span>
           <kbd>⌘K</kbd>
         </button>
@@ -265,7 +261,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
         {/* Soporte: que nunca tengan que buscar el número para escribir */}
         <div style={{ position: 'relative' }}>
           <button onClick={() => toggle('help')} className="cmdk-trigger" title="Soporte">
-            <MessageCircle size={14} />
+            <IconoSoporte />
             <span className="cmdk-trigger-label">Soporte</span>
           </button>
 

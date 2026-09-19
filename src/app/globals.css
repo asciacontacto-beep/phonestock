@@ -159,17 +159,40 @@ input, select, textarea { outline: none; }
   background: var(--bg); min-width: 0;
 }
 
+/* Barra flotante, no pegada a los bordes.
+   Antes era una franja a todo el ancho con una línea abajo: separaba la
+   pantalla en dos y se sentía marco de ventana. Ahora es una píldora de
+   vidrio que flota sobre el contenido y lo deja pasar por debajo.
+
+   El `-webkit-backdrop-filter` no va al lado del otro: el compilador de CSS
+   descarta la propiedad sin prefijo cuando ve las dos juntas, y la barra
+   terminaba opaca. */
 .topbar {
-  padding: 12px 32px;
-  min-height: 56px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 12px;
-  background: rgba(255,255,255,0.9);
-  /* Sin el -webkit- al lado: el compilador de CSS descarta la propiedad sin
-     prefijo cuando ve las dos juntas, y la barra quedaba opaca. */
-  backdrop-filter: blur(12px) saturate(140%);
-  position: sticky; top: 0; z-index: 10;
-  gap: 12px;
+  padding: 9px 10px 9px 18px;
+  min-height: 52px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.7);
+  background: rgba(252,252,251,0.62);
+  backdrop-filter: blur(22px) saturate(180%);
+  box-shadow:
+    0 10px 30px -14px rgba(0,0,0,0.22),
+    0 1px 3px rgba(0,0,0,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+
+  position: sticky;
+  top: 12px;
+  z-index: 20;
+  /* La píldora abraza a los controles en vez de estirarse a todo el ancho:
+     una barra transparente de 1100px con cinco botones en la punta sigue
+     siendo una franja, aunque no se vea. */
+  width: fit-content;
+  margin: 12px 20px 0 auto;
+}
+
+@media (max-width: 640px) {
+  .topbar { margin: 10px 12px 0 auto; padding: 8px 8px 8px 14px; border-radius: 999px; }
 }
 
 .tb-title { font-size: 14.5px; font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
@@ -1250,12 +1273,16 @@ select.inp {
 /* Disparador de la command palette en el topbar */
 .cmdk-trigger {
   display: flex; align-items: center; gap: 7px;
-  padding: 6px 10px 6px 11px; border-radius: 20px;
-  background: var(--surface-2); border: 1px solid var(--border);
-  font-size: 12px; font-weight: 500; color: var(--text-3);
-  cursor: pointer; transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
+  padding: 7px 13px 7px 12px; border-radius: 999px;
+  background: rgba(255,255,255,0.55); border: 1px solid rgba(0,0,0,0.06);
+  font-size: 12.5px; font-weight: 500; color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
-.cmdk-trigger:hover { background: var(--surface-3); color: var(--text-2); border-color: var(--border-md); }
+.cmdk-trigger:hover {
+  background: #fff; color: var(--text); border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px -3px rgba(0,0,0,0.18);
+}
 .cmdk-trigger:active { transform: none; }
 .cmdk-trigger-label { }
 .cmdk-trigger kbd {

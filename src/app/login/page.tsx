@@ -408,8 +408,8 @@ export default function LoginPage() {
         /* ── Mobile header (hidden on desktop) ── */
         .lp-mobile-top {
           display: none;
-          background: #0a0a0a;
-          padding: 28px 24px 32px;
+          background: transparent;
+          padding: 34px 24px 4px;
           text-align: center;
         }
         .lp-mobile-brand {
@@ -420,36 +420,84 @@ export default function LoginPage() {
           margin-bottom: 10px;
         }
         .lp-mobile-name {
-          font-size: 22px;
-          font-weight: 800;
-          color: #fff;
-          letter-spacing: -0.03em;
+          font-size: 20px;
+          font-weight: 600;
+          color: var(--hueso);
+          letter-spacing: -0.035em;
         }
         .lp-mobile-tagline {
-          font-size: 13px;
-          color: rgba(255,255,255,0.4);
+          font-size: 14px;
+          color: var(--hueso-dim);
+          line-height: 1.5;
+          max-width: 300px;
+          margin: 0 auto;
+        }
+        /* La franja de confianza que en escritorio vive en el panel
+           izquierdo. En mobile no estaba y el formulario quedaba solo. */
+        .lp-mobile-trust {
+          display: none;
+          gap: 14px;
+          justify-content: center;
+          flex-wrap: wrap;
+          padding: 18px 20px 26px;
+          font-size: 12px;
+          color: var(--hueso-dim2);
+        }
+        .lp-mobile-trust span { display: flex; align-items: center; gap: 6px; }
+        .lp-mobile-trust i {
+          width: 4px; height: 4px; border-radius: 50%;
+          background: var(--verde); display: block;
         }
 
         /* ── Responsive ── */
+        /* ── Mobile ──────────────────────────────────────────────────────
+           Antes era una banda negra corta arriba, el formulario pegado
+           debajo y media pantalla en blanco. La banda se cortaba de golpe y
+           todo el argumento de venta —que en escritorio vive en el panel
+           izquierdo— desaparecía.
+
+           Ahora la pantalla entera es oscura, como ese panel, y el
+           formulario va en una tarjeta clara centrada. Misma composición
+           que el escritorio, sin el corte, y sin espacio muerto. */
         @media (max-width: 900px) {
-          .lp-root { flex-direction: column; }
+          .lp-root {
+            flex-direction: column;
+            background: var(--tinta);
+            min-height: 100svh;
+          }
           .lp-left { display: none; }
           .lp-mobile-top { display: block; }
+
           .lp-right {
-            flex: unset;
-            padding: 28px 20px 48px;
-            background: #fff;
-          }
-          .lp-form-card {
-            border: none;
-            box-shadow: none;
-            padding: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 8px 18px 28px;
             background: transparent;
+          }
+          .lp-form-wrap { width: 100%; max-width: 440px; margin: 0 auto; }
+
+          .lp-form-card {
+            background: var(--hueso);
+            border: none;
+            border-radius: 20px;
+            padding: 24px 20px;
+            box-shadow: 0 30px 70px -30px rgba(0,0,0,0.9);
           }
           .lp-input {
             padding: 14px 15px;
-            font-size: 16px; /* prevent iOS zoom */
+            font-size: 16px; /* evita el zoom de iOS */
           }
+
+          /* El encabezado va sobre el fondo oscuro, fuera de la tarjeta:
+             tiene que ir en color claro o se pierde contra el negro. El
+             "¿no tenés cuenta?" va ADENTRO de la tarjeta clara, así que
+             conserva el color oscuro. */
+          .lp-form-head { text-align: center; margin-bottom: 18px; }
+          .lp-form-title { color: var(--hueso); font-size: 25px; }
+          .lp-form-sub { color: var(--hueso-dim); }
+          .lp-mobile-trust { display: flex; }
         }
       `}</style>
 
@@ -614,6 +662,12 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="lp-mobile-trust">
+            <span><i /> 48 horas gratis</span>
+            <span><i /> Sin tarjeta</span>
+            <span><i /> Tus datos, siempre tuyos</span>
           </div>
         </div>
 

@@ -377,7 +377,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
               <div style={{ flex: 1, minWidth: 220 }}>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>Respaldo de tus datos</div>
                 <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5 }}>
-                  Descargá todo el negocio en un archivo (inventario, ventas, reparaciones, clientes y más). Se abre con Excel.
+                  Descargá todo el negocio en un archivo: inventario, ventas, cuenta corriente, mayoristas,
+                  reparaciones, turnos, caja, gastos, clientes y la configuración del local. Se abre con Excel.
                 </div>
               </div>
               <button className="btn btn-outline" onClick={handleBackup} disabled={backupLoading}>

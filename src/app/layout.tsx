@@ -107,7 +107,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -116,10 +116,18 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* El tema se aplica ANTES de pintar. Si esperara a que React
+            montara, la pantalla arrancaría en claro y saltaría a oscuro:
+            un flash blanco en la cara del que eligió oscuro. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('stackr-tema');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t}catch(e){}})()`,
+          }}
+        />
       </head>
       <body className={`${interVariable} ${jetbrainsVariable} antialiased`} suppressHydrationWarning>
         {children}
-        <Toaster theme="light" position="bottom-right" richColors />
+        <Toaster theme="system" position="bottom-right" richColors />
       </body>
     </html>
   );

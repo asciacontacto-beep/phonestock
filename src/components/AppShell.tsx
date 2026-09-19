@@ -5,7 +5,6 @@ import { Topbar } from './Topbar'
 import { BottomNav } from './BottomNav'
 import { CommandPalette } from './CommandPalette'
 import { AvisoDeCuenta } from '@/components/AvisoDeCuenta'
-import { Ambiente } from '@/components/Ambiente'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -52,7 +51,6 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
 
   return (
     <div className="app">
-      <Ambiente />
       <Sidebar
         user={mergedUser}
         page={page}

@@ -1,0 +1,107 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Stackr · fondos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#141414;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;padding:22px;
+  display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.wrap{border-radius:16px;overflow:hidden;border:1px solid #2a2a2a}
+.tag{background:#1c1c1c;color:#ccc;font-size:11.5px;padding:9px 14px;letter-spacing:.04em;
+  display:flex;justify-content:space-between}
+.tag b{color:#fff;font-weight:600}
+.esc{position:relative;height:360px;overflow:hidden;padding:26px}
+.capa{position:absolute;inset:0}
+.cont{position:relative;z-index:2}
+.hero{border-radius:16px;padding:18px 20px;margin-bottom:14px;color:#fff;
+  background:#0e1012;border:1px solid rgba(255,255,255,.07)}
+.hero .l{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.42)}
+.hero .v{font-family:ui-monospace,monospace;font-size:30px;font-weight:600;letter-spacing:-.05em;margin-top:4px}
+.fila{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.l1{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.v1{font-family:ui-monospace,monospace;font-size:20px;font-weight:600;letter-spacing:-.04em;margin-top:5px}
+.s1{font-size:10.5px;margin-top:4px}
+
+/* ── A · Papel con luz (lo que hay hoy) ── */
+.a .capa{background:linear-gradient(180deg,#f7f6f2,#efede8 42%,#e7e4dd)}
+.a .capa.g{background-image:linear-gradient(rgba(17,17,17,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(17,17,17,.05) 1px,transparent 1px);background-size:38px 38px}
+.a .capa.f{background:radial-gradient(58% 46% at 82% -8%,rgba(255,253,246,.95),transparent 62%),radial-gradient(70% 52% at 88% 0,rgba(217,164,65,.2),transparent 60%)}
+.a .capa.v{background:radial-gradient(118% 96% at 50% 38%,transparent 52%,rgba(39,34,26,.1))}
+.a .card{background:rgba(255,255,255,.62);backdrop-filter:blur(20px) saturate(170%);
+  border:1px solid rgba(255,255,255,.75);border-radius:16px;padding:14px 16px;
+  box-shadow:0 8px 24px -14px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.85)}
+.a .l1{color:#999}.a .v1{color:#111}.a .s1{color:#999}
+
+/* ── B · Blanco puro, sin efectos ── */
+.b .capa{background:#fbfbfa}
+.b .card{background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:14px;padding:14px 16px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 20px -16px rgba(0,0,0,.25)}
+.b .l1{color:#8b8b88}.b .v1{color:#0a0a0a}.b .s1{color:#a0a09d}
+
+/* ── C · Carbón: la app oscura ── */
+.c .capa{background:#0b0c0d}
+.c .capa.f{background:radial-gradient(62% 48% at 84% -6%,rgba(217,164,65,.16),transparent 62%),radial-gradient(52% 44% at 4% 104%,rgba(110,231,168,.08),transparent 62%)}
+.c .capa.g{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:38px 38px;
+  mask-image:radial-gradient(120% 100% at 50% 0,#000 32%,transparent 94%)}
+.c .hero{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.c .card{background:rgba(255,255,255,.045);backdrop-filter:blur(22px) saturate(160%);
+  border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.c .l1{color:rgba(233,229,219,.4)}.c .v1{color:#e9e5db}.c .s1{color:rgba(233,229,219,.35)}
+
+/* ── D · Lino: textura de tela, sin color ── */
+.d .capa{background:#f2f1ed}
+.d .capa.t{
+  background-image:
+    repeating-linear-gradient(0deg,rgba(0,0,0,.018) 0 1px,transparent 1px 3px),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.018) 0 1px,transparent 1px 3px);
+}
+.d .capa.v{background:radial-gradient(120% 100% at 50% 20%,transparent 46%,rgba(30,28,24,.13))}
+.d .card{background:rgba(255,255,255,.78);backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:14px 16px;
+  box-shadow:0 12px 30px -18px rgba(0,0,0,.3),inset 0 1px 0 #fff}
+.d .l1{color:#93918c}.d .v1{color:#1a1917}.d .s1{color:#a3a09a}
+</style></head><body>
+
+<div class="wrap"><div class="tag"><b>A · Papel con luz</b><span>lo que hay hoy</span></div>
+<div class="esc a"><div class="capa"></div><div class="capa f"></div><div class="capa g"></div><div class="capa v"></div>
+<div class="cont">
+  <div class="hero"><div class="l">Ganancia · este mes</div><div class="v">U$ 9.870</div></div>
+  <div class="fila">
+    <div class="card"><div class="l1">En stock</div><div class="v1">21</div><div class="s1">equipos sin vender</div></div>
+    <div class="card"><div class="l1">Capital</div><div class="v1">U$ 1.431</div><div class="s1">invertido</div></div>
+    <div class="card"><div class="l1">Ventas</div><div class="v1">41</div><div class="s1">este mes</div></div>
+  </div>
+</div></div></div>
+
+<div class="wrap"><div class="tag"><b>B · Blanco puro</b><span>sin efectos, sólo sombras</span></div>
+<div class="esc b"><div class="capa"></div>
+<div class="cont">
+  <div class="hero"><div class="l">Ganancia · este mes</div><div class="v">U$ 9.870</div></div>
+  <div class="fila">
+    <div class="card"><div class="l1">En stock</div><div class="v1">21</div><div class="s1">equipos sin vender</div></div>
+    <div class="card"><div class="l1">Capital</div><div class="v1">U$ 1.431</div><div class="s1">invertido</div></div>
+    <div class="card"><div class="l1">Ventas</div><div class="v1">41</div><div class="s1">este mes</div></div>
+  </div>
+</div></div></div>
+
+<div class="wrap"><div class="tag"><b>C · Carbón</b><span>la app en oscuro</span></div>
+<div class="esc c"><div class="capa"></div><div class="capa f"></div><div class="capa g"></div>
+<div class="cont">
+  <div class="hero"><div class="l">Ganancia · este mes</div><div class="v">U$ 9.870</div></div>
+  <div class="fila">
+    <div class="card"><div class="l1">En stock</div><div class="v1">21</div><div class="s1">equipos sin vender</div></div>
+    <div class="card"><div class="l1">Capital</div><div class="v1">U$ 1.431</div><div class="s1">invertido</div></div>
+    <div class="card"><div class="l1">Ventas</div><div class="v1">41</div><div class="s1">este mes</div></div>
+  </div>
+</div></div></div>
+
+<div class="wrap"><div class="tag"><b>D · Lino</b><span>textura de tela, sin color</span></div>
+<div class="esc d"><div class="capa"></div><div class="capa t"></div><div class="capa v"></div>
+<div class="cont">
+  <div class="hero"><div class="l">Ganancia · este mes</div><div class="v">U$ 9.870</div></div>
+  <div class="fila">
+    <div class="card"><div class="l1">En stock</div><div class="v1">21</div><div class="s1">equipos sin vender</div></div>
+    <div class="card"><div class="l1">Capital</div><div class="v1">U$ 1.431</div><div class="s1">invertido</div></div>
+    <div class="card"><div class="l1">Ventas</div><div class="v1">41</div><div class="s1">este mes</div></div>
+  </div>
+</div></div></div>
+
+</body></html>

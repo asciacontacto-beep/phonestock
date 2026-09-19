@@ -7,7 +7,7 @@
 
 :root {
   /* Backgrounds */
-  --bg:        #eeece7;
+  --bg:        #fbfbfa;
   --surface:   #ffffff;
   --surface-2: #f8f8f7;
   --surface-3: #f0f0ee;
@@ -47,6 +47,55 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
   --shadow:    0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04);
   --shadow-lg: 0 20px 40px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
+
+  /* Superficies con relieve propio: la elevación la dan la sombra y el
+     borde, no un fondo de color. */
+  --elev:      0 1px 2px rgba(0,0,0,0.04), 0 8px 20px -16px rgba(0,0,0,0.25);
+  --elev-alta: 0 1px 2px rgba(0,0,0,0.05), 0 18px 38px -22px rgba(0,0,0,0.32);
+  --panel-oscuro: #0e1012;
+  --panel-oscuro-txt: #ffffff;
+}
+
+/* ── Tema oscuro ─────────────────────────────────────────────────────────
+   Las mismas variables con otros valores: ninguna pantalla necesita saber
+   en qué tema está. Los colores semánticos se aclaran —el verde y el rojo
+   de un fondo blanco quedan ilegibles sobre negro— y las sombras se
+   reemplazan por bordes, porque en oscuro una sombra no se ve: lo que
+   separa una superficie de otra es la línea. */
+[data-theme="dark"] {
+  --bg:        #0b0c0d;
+  --surface:   #141618;
+  --surface-2: #1a1d1f;
+  --surface-3: #212527;
+
+  --border:    rgba(255,255,255,0.08);
+  --border-md: rgba(255,255,255,0.14);
+  --border-lg: rgba(255,255,255,0.24);
+
+  --text:      #ededeb;
+  --text-2:    #a3a3a0;
+  --text-3:    #6f6f6d;
+  --text-dim:  #6f6f6d;
+
+  --accent:    #ededeb;
+
+  --green:     #4ade80;
+  --green-dim: rgba(74,222,128,0.12);
+  --amber:     #fbbf24;
+  --amber-dim: rgba(251,191,36,0.12);
+  --red:       #f87171;
+  --red-dim:   rgba(248,113,113,0.12);
+  --blue:      #60a5fa;
+  --blue-dim:  rgba(96,165,250,0.12);
+
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow:    0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg: 0 24px 60px rgba(0,0,0,0.65);
+  --elev:      0 1px 0 rgba(255,255,255,0.03);
+  --elev-alta: 0 20px 50px -24px rgba(0,0,0,0.9);
+  --panel-oscuro: #1a1d1f;
+  --panel-oscuro-txt: #ededeb;
 }
 
 /* ── Reset ──────────────────────────────── */
@@ -73,106 +122,23 @@ input, select, textarea { outline: none; }
 ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 8px; }
 
 /* ── App Shell ──────────────────────────── */
-/* El lienzo no es un gris plano: va de claro arriba a más profundo abajo.
-   Una superficie pareja no tiene profundidad, y sin profundidad el vidrio
-   encima no tiene de dónde despegarse. */
+/* Sin capas de ambiente: ni retícula, ni manchas de color, ni viñeta.
+   El lienzo es un color y nada más. Lo premium acá sale de lo que se saca
+   —la sombra justa, el borde fino, el aire— y no de lo que se agrega: el
+   vidrio con manchas de colores es hoy el fondo de cualquier plantilla. */
 .app {
   display: flex; height: 100dvh; overflow: hidden; width: 100%;
-  background:
-    linear-gradient(180deg, #f7f6f2 0%, #efede8 42%, #e7e4dd 100%);
+  background: var(--bg);
   position: relative;
 }
 
-/* ── Ambiente: lo que el vidrio distorsiona ──────────────────────────────
-   Detrás de TODO, barra lateral incluida. Sin `mix-blend-mode` ni filtros
-   SVG: en la landing una capa así terminó pintándose encima del contenido.
-   Acá son degradados y `transform`, que el navegador compone sin sorpresas. */
-.ambiente {
-  position: fixed; inset: 0; z-index: 0;
-  pointer-events: none; overflow: hidden;
-}
 
-/* La retícula es lo que hace visible el desenfoque: detrás de una tarjeta
-   de vidrio las líneas se ven correrse, y ahí se lee como vidrio. */
-.ambiente-grilla {
-  position: absolute; inset: -2px;
-  background-image:
-    linear-gradient(rgba(17,17,17,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(17,17,17,0.05) 1px, transparent 1px);
-  background-size: 38px 38px;
-  mask-image: radial-gradient(130% 105% at 50% 0%, #000 34%, transparent 96%);
-}
-
-/* El foco: una luz que entra por arriba a la derecha, como si la pantalla
-   estuviera iluminada desde ahí. Es lo que separa "fondo con degradado" de
-   "escena con luz". */
-.ambiente-foco {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(58% 46% at 82% -8%, rgba(255,253,246,0.95) 0%, rgba(255,253,246,0) 62%),
-    radial-gradient(70% 52% at 88% 0%, rgba(217,164,65,0.20) 0%, rgba(217,164,65,0) 60%);
-}
-
-/* Viñeta: los bordes bajan apenas. El ojo lo lee como profundidad y es lo
-   que hace que una pantalla se vea fotografiada y no dibujada. */
-.ambiente-vineta {
-  position: absolute; inset: 0;
-  background: radial-gradient(118% 96% at 50% 38%, transparent 52%, rgba(39,34,26,0.10) 100%);
-}
-
-.ambiente-luz {
-  position: absolute;
-  border-radius: 50%;
-  will-change: transform;
-}
-.luz-calida {
-  top: -32vh; right: -16vw;
-  width: 76vw; height: 76vw;
-  background: radial-gradient(circle, rgba(217,164,65,0.34) 0%, rgba(217,164,65,0) 64%);
-  animation: derivaCalida 78s ease-in-out infinite alternate;
-}
-.luz-fria {
-  bottom: -36vh; left: -18vw;
-  width: 70vw; height: 70vw;
-  background: radial-gradient(circle, rgba(37,99,235,0.22) 0%, rgba(37,99,235,0) 64%);
-  animation: derivaFria 104s ease-in-out infinite alternate;
-}
-.luz-verde {
-  top: 24vh; left: 30vw;
-  width: 52vw; height: 52vw;
-  background: radial-gradient(circle, rgba(110,231,168,0.18) 0%, rgba(110,231,168,0) 68%);
-  animation: derivaVerde 92s ease-in-out infinite alternate;
-}
-
-@keyframes derivaCalida {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(-7vw, 6vh, 0) scale(1.12); }
-}
-@keyframes derivaFria {
-  from { transform: translate3d(0, 0, 0) scale(1.08); }
-  to   { transform: translate3d(9vw, -7vh, 0) scale(1); }
-}
-@keyframes derivaVerde {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(-10vw, -5vh, 0) scale(1.18); }
-}
-
-/* Si el sistema pide menos movimiento, el ambiente se queda quieto: sigue
-   dando de qué agarrarse al vidrio, sin desplazarse. */
-@media (prefers-reduced-motion: reduce) {
-  .ambiente-luz { animation: none; }
-}
-
-/* La barra lateral y el contenido van por encima del ambiente. */
-.sidebar, .main { position: relative; z-index: 1; }
 
 /* ── Sidebar ────────────────────────────── */
 .sidebar {
   width: 220px;
-  background: rgba(255,255,255,0.55);
-  backdrop-filter: blur(26px) saturate(180%);
-  border-right: 1px solid rgba(255,255,255,0.6);
-  box-shadow: 1px 0 0 rgba(0,0,0,0.035);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -224,12 +190,14 @@ input, select, textarea { outline: none; }
 
 /* El estado activo era un gris apenas más oscuro que el hover: no se
    distinguía cuál era la pantalla en la que estabas. Ahora invierte. */
+/* El activo invierte contra el lienzo, no contra el blanco: en tema oscuro
+   "#fff sobre var(--text)" es blanco sobre casi blanco. */
 .s-item.on {
-  background: var(--text); color: #fff; font-weight: 600;
+  background: var(--text); color: var(--bg); font-weight: 600;
   box-shadow: 0 1px 2px rgba(0,0,0,.16);
 }
-.s-item.on svg { color: rgba(255,255,255,.75); }
-.s-item.on:hover { background: var(--text); color: #fff; }
+.s-item.on svg { color: var(--bg); opacity: .75; }
+.s-item.on:hover { background: var(--text); color: var(--bg); }
 
 .u-row {
   display: flex; align-items: center; gap: 10px;
@@ -271,13 +239,9 @@ input, select, textarea { outline: none; }
   display: flex; align-items: center; justify-content: flex-end; gap: 10px;
 
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.7);
-  background: rgba(252,252,251,0.62);
-  backdrop-filter: blur(22px) saturate(180%);
-  box-shadow:
-    0 10px 30px -14px rgba(0,0,0,0.22),
-    0 1px 3px rgba(0,0,0,0.05),
-    inset 0 1px 0 rgba(255,255,255,0.9);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--elev);
 
   position: sticky;
   top: 12px;
@@ -327,7 +291,7 @@ input, select, textarea { outline: none; }
 .btn:active { transform: translateY(1px); }
 
 .btn-dark {
-  background: var(--text); color: #fff;
+  background: var(--text); color: var(--bg);
   box-shadow: 0 1px 2px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.1);
 }
 .btn-dark:hover { box-shadow: 0 4px 14px -4px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.14); }
@@ -364,7 +328,7 @@ input, select, textarea { outline: none; }
   box-shadow: var(--shadow-xs);
 }
 .btn-pill:hover { border-color: var(--border-lg); color: var(--text); }
-.btn-pill.active { background: var(--text); color: #fff; border-color: var(--text); box-shadow: var(--shadow-sm); }
+.btn-pill.active { background: var(--text); color: var(--bg); border-color: var(--text); box-shadow: var(--shadow-sm); }
 .sel-pill {
   display: inline-flex; align-items: center;
   padding: 6px 28px 6px 13px; border-radius: 20px;
@@ -378,7 +342,7 @@ input, select, textarea { outline: none; }
   height: auto; width: auto;
 }
 .sel-pill:hover { border-color: var(--border-lg); color: var(--text); }
-.sel-pill.active { background-color: var(--text); color: #fff; border-color: var(--text); }
+.sel-pill.active { background-color: var(--text); color: var(--bg); border-color: var(--text); }
 
 /* ── Form ───────────────────────────────── */
 .field { margin-bottom: 18px; }
@@ -433,38 +397,24 @@ select.inp {
 
 /* ── Cards ──────────────────────────────── */
 .card {
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.7);
-  border-radius: 18px; padding: 22px;
-  box-shadow:
-    0 8px 26px -16px rgba(0,0,0,0.20),
-    0 1px 2px rgba(0,0,0,0.035),
-    inset 0 1px 0 rgba(255,255,255,0.8);
-  box-sizing: border-box;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 22px;
+  box-shadow: var(--elev); box-sizing: border-box;
 }
 
 /* ── Stat cards ─────────────────────────── */
 .sg { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
 
 .sc {
-  background: rgba(255,255,255,0.62);
-  backdrop-filter: blur(20px) saturate(170%);
-  border: 1px solid rgba(255,255,255,0.75);
-  border-radius: 18px; padding: 20px 22px;
-  box-shadow:
-    0 8px 24px -14px rgba(0,0,0,0.20),
-    0 1px 2px rgba(0,0,0,0.035),
-    inset 0 1px 0 rgba(255,255,255,0.85);
-  transition: box-shadow 0.18s ease, transform 0.18s cubic-bezier(.22,1,.36,1), background 0.18s ease;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px 22px;
+  box-shadow: var(--elev);
+  transition: box-shadow 0.18s ease, transform 0.18s cubic-bezier(.22,1,.36,1), border-color 0.18s ease;
 }
 .sc:hover {
-  background: rgba(255,255,255,0.78);
   transform: translateY(-1px);
-  box-shadow:
-    0 16px 34px -16px rgba(0,0,0,0.26),
-    0 1px 2px rgba(0,0,0,0.04),
-    inset 0 1px 0 rgba(255,255,255,0.95);
+  border-color: var(--border-md);
+  box-shadow: var(--elev-alta);
 }
 .sc:hover { box-shadow: var(--shadow); border-color: var(--border-md); }
 
@@ -585,7 +535,7 @@ select.inp {
 /* ── Toast ──────────────────────────────── */
 .tw2 { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
 .toast {
-  background: var(--text); color: #fff;
+  background: var(--text); color: var(--bg);
   border-radius: var(--r); padding: 12px 20px;
   font-weight: 600; font-size: 13px;
   box-shadow: var(--shadow-lg);
@@ -1031,7 +981,7 @@ select.inp {
    equipos hay en stock". El negro del logo da el anclaje y hace que el
    verde de la ganancia salte de verdad. */
 .d-hero {
-  background: #0e1012;
+  background: var(--panel-oscuro);
   background-image:
     radial-gradient(120% 140% at 88% 8%, rgba(52,211,153,0.13) 0%, transparent 58%),
     radial-gradient(90% 120% at 4% 96%, rgba(255,255,255,0.05) 0%, transparent 55%);
@@ -1142,14 +1092,9 @@ select.inp {
 
 /* ── Panel genérico (alertas / reposición / actividad) ── */
 .panel {
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.7);
-  border-radius: 18px;
-  box-shadow:
-    0 8px 26px -16px rgba(0,0,0,0.20),
-    0 1px 2px rgba(0,0,0,0.035),
-    inset 0 1px 0 rgba(255,255,255,0.8);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--elev);
   overflow: hidden;
   margin-bottom: 12px;
 }
@@ -1358,7 +1303,7 @@ select.inp {
   width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
   background: var(--surface-2); color: var(--text-2);
 }
-.cmdk-item.active .cmdk-item-icon { background: var(--accent); color: #fff; }
+.cmdk-item.active .cmdk-item-icon { background: var(--accent); color: var(--bg); }
 .cmdk-item-label { font-weight: 600; color: var(--text); }
 .cmdk-item-hint { font-size: 12px; color: var(--text-3); }
 .cmdk-item-enter { margin-left: auto; color: var(--text-3); flex-shrink: 0; }
@@ -1379,14 +1324,13 @@ select.inp {
 .cmdk-trigger {
   display: flex; align-items: center; gap: 7px;
   padding: 7px 13px 7px 12px; border-radius: 999px;
-  background: rgba(255,255,255,0.55); border: 1px solid rgba(0,0,0,0.06);
+  background: var(--surface-2); border: 1px solid var(--border);
   font-size: 12.5px; font-weight: 500; color: var(--text-2);
   cursor: pointer;
   transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 .cmdk-trigger:hover {
-  background: #fff; color: var(--text); border-color: rgba(0,0,0,0.1);
-  box-shadow: 0 2px 8px -3px rgba(0,0,0,0.18);
+  background: var(--surface-3); color: var(--text); border-color: var(--border-md);
 }
 .cmdk-trigger:active { transform: none; }
 .cmdk-trigger-label { }

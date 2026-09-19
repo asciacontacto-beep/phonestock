@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
+import { BotonTema } from '@/components/BotonTema';
 import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Smartphone } from 'lucide-react';
 
 /* Íconos propios para los dos controles que se ven siempre.
@@ -257,6 +258,8 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           <span className="cmdk-trigger-label">Buscar</span>
           <kbd>⌘K</kbd>
         </button>
+
+        <BotonTema />
 
         {/* Soporte: que nunca tengan que buscar el número para escribir */}
         <div style={{ position: 'relative' }}>

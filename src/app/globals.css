@@ -7,7 +7,7 @@
 
 :root {
   /* Backgrounds */
-  --bg:        #f1f1ee;
+  --bg:        #eeece7;
   --surface:   #ffffff;
   --surface-2: #f8f8f7;
   --surface-3: #f0f0ee;
@@ -73,9 +73,13 @@ input, select, textarea { outline: none; }
 ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 8px; }
 
 /* ── App Shell ──────────────────────────── */
+/* El lienzo no es un gris plano: va de claro arriba a más profundo abajo.
+   Una superficie pareja no tiene profundidad, y sin profundidad el vidrio
+   encima no tiene de dónde despegarse. */
 .app {
   display: flex; height: 100dvh; overflow: hidden; width: 100%;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, #f7f6f2 0%, #efede8 42%, #e7e4dd 100%);
   position: relative;
 }
 
@@ -93,10 +97,27 @@ input, select, textarea { outline: none; }
 .ambiente-grilla {
   position: absolute; inset: -2px;
   background-image:
-    linear-gradient(rgba(17,17,17,0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(17,17,17,0.028) 1px, transparent 1px);
-  background-size: 34px 34px;
-  mask-image: radial-gradient(120% 100% at 50% 0%, #000 30%, transparent 92%);
+    linear-gradient(rgba(17,17,17,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17,17,17,0.05) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: radial-gradient(130% 105% at 50% 0%, #000 34%, transparent 96%);
+}
+
+/* El foco: una luz que entra por arriba a la derecha, como si la pantalla
+   estuviera iluminada desde ahí. Es lo que separa "fondo con degradado" de
+   "escena con luz". */
+.ambiente-foco {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(58% 46% at 82% -8%, rgba(255,253,246,0.95) 0%, rgba(255,253,246,0) 62%),
+    radial-gradient(70% 52% at 88% 0%, rgba(217,164,65,0.20) 0%, rgba(217,164,65,0) 60%);
+}
+
+/* Viñeta: los bordes bajan apenas. El ojo lo lee como profundidad y es lo
+   que hace que una pantalla se vea fotografiada y no dibujada. */
+.ambiente-vineta {
+  position: absolute; inset: 0;
+  background: radial-gradient(118% 96% at 50% 38%, transparent 52%, rgba(39,34,26,0.10) 100%);
 }
 
 .ambiente-luz {
@@ -105,21 +126,21 @@ input, select, textarea { outline: none; }
   will-change: transform;
 }
 .luz-calida {
-  top: -30vh; right: -18vw;
-  width: 72vw; height: 72vw;
-  background: radial-gradient(circle, rgba(217,164,65,0.20) 0%, rgba(217,164,65,0) 66%);
+  top: -32vh; right: -16vw;
+  width: 76vw; height: 76vw;
+  background: radial-gradient(circle, rgba(217,164,65,0.34) 0%, rgba(217,164,65,0) 64%);
   animation: derivaCalida 78s ease-in-out infinite alternate;
 }
 .luz-fria {
-  bottom: -34vh; left: -20vw;
-  width: 66vw; height: 66vw;
-  background: radial-gradient(circle, rgba(37,99,235,0.14) 0%, rgba(37,99,235,0) 66%);
+  bottom: -36vh; left: -18vw;
+  width: 70vw; height: 70vw;
+  background: radial-gradient(circle, rgba(37,99,235,0.22) 0%, rgba(37,99,235,0) 64%);
   animation: derivaFria 104s ease-in-out infinite alternate;
 }
 .luz-verde {
-  top: 28vh; left: 34vw;
-  width: 46vw; height: 46vw;
-  background: radial-gradient(circle, rgba(110,231,168,0.11) 0%, rgba(110,231,168,0) 70%);
+  top: 24vh; left: 30vw;
+  width: 52vw; height: 52vw;
+  background: radial-gradient(circle, rgba(110,231,168,0.18) 0%, rgba(110,231,168,0) 68%);
   animation: derivaVerde 92s ease-in-out infinite alternate;
 }
 

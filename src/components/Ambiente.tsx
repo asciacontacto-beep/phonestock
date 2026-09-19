@@ -20,10 +20,12 @@
 export function Ambiente() {
   return (
     <div className="ambiente" aria-hidden>
+      <div className="ambiente-foco" />
       <div className="ambiente-grilla" />
       <div className="ambiente-luz luz-calida" />
       <div className="ambiente-luz luz-fria" />
       <div className="ambiente-luz luz-verde" />
+      <div className="ambiente-vineta" />
     </div>
   )
 }

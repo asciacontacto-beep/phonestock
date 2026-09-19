@@ -54,6 +54,10 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [backupLoading, setBackupLoading] = useState(false);
+  /* Configuración tenía todo en una sola columna larga: los planes de
+     tarjeta quedaban al fondo, debajo del recibo, y no los encontraba
+     nadie. Cada tema pasa a ser una sección propia. */
+  const [seccion, setSeccion] = useState<'negocio' | 'tarjetas' | 'datos'>('negocio');
   /* Link de referidos del negocio. Si la migración no está aplicada, la
      tarjeta simplemente no aparece. */
   const [referral, setReferral] = useState<{ code: string; invitados: number; pagos: number } | null>(null);
@@ -188,20 +192,43 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
 
   return (
     <div className="page">
-      <div className="sh" style={{ marginBottom: 24 }}>
+      <div className="sh" style={{ marginBottom: 16 }}>
         <div>
           <div className="st">Configuración</div>
-          <div className="helper-text">Personalizá la identidad de tu negocio y el diseño del recibo.</div>
+          <div className="helper-text">
+            {seccion === 'negocio' ? 'Personalizá la identidad de tu negocio y el diseño del recibo.'
+              : seccion === 'tarjetas' ? 'Los planes con los que cobrás con tarjeta y su recargo.'
+              : 'Respaldo, claves de acceso y tu link de invitación.'}
+          </div>
         </div>
-        <button className="btn btn-dark" onClick={save} disabled={loading}>
-          {loading ? <Loader2 className="spin" size={18} /> : <><Save size={17} style={{ marginRight: 8 }} /> Guardar</>}
-        </button>
+        {seccion === 'negocio' && (
+          <button className="btn btn-dark" onClick={save} disabled={loading}>
+            {loading ? <Loader2 className="spin" size={18} /> : <><Save size={17} style={{ marginRight: 8 }} /> Guardar</>}
+          </button>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,380px)', gap: 20, alignItems: 'start' }} className="settings-grid">
+      <div className="filters-wrap no-print" style={{ marginBottom: 22 }}>
+        {([
+          { v: 'negocio',  l: 'Negocio y recibo' },
+          { v: 'tarjetas', l: 'Planes de tarjeta' },
+          { v: 'datos',    l: 'Datos y accesos' },
+        ] as const).map(opt => (
+          <button key={opt.v} className={`btn-pill ${seccion === opt.v ? 'active' : ''}`}
+            onClick={() => setSeccion(opt.v)}>{opt.l}</button>
+        ))}
+      </div>
+
+      <div
+        style={seccion === 'negocio'
+          ? { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,380px)', gap: 20, alignItems: 'start' }
+          : { display: 'block' }}
+        className={seccion === 'negocio' ? 'settings-grid' : ''}
+      >
         {/* ── Columna de edición ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
+          {seccion === 'negocio' && <>
           {/* Identidad */}
           <div className="card">
             <div className="lbl" style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -336,6 +363,11 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
             </div>
           </div>
 
+          </>}
+
+          {seccion === 'tarjetas' && <CardPlansCard />}
+
+          {seccion === 'datos' && <>
           {/* Invitá a otro local */}
           {referral?.code && (
             <div className="card" style={{ border: '1px solid var(--green)', background: 'var(--green-dim)' }}>
@@ -388,13 +420,15 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
             </div>
           </div>
 
-          <CardPlansCard />
-
           {/* Las claves dan acceso a costos y datos de clientes: sólo el dueño. */}
           {profile?.role === 'owner' && <ApiKeysCard />}
+          </>}
         </div>
 
-        {/* ── Vista previa en vivo ── */}
+        {/* ── Vista previa en vivo ──
+            Sólo en Negocio: en las otras secciones no hay nada que previsualizar
+            y sólo robaría el ancho que necesitan las tablas. */}
+        {seccion === 'negocio' && (
         <div className="settings-preview">
           <div className="lbl" style={{ marginBottom: 10 }}>Vista previa en vivo</div>
           <div style={{ background: '#e9e9e7', borderRadius: 16, padding: 18, border: '1px solid var(--border)', maxHeight: '75vh', overflow: 'auto' }}>
@@ -406,6 +440,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
             Los cambios se reflejan al instante. Acordate de <strong>Guardar</strong>.
           </p>
         </div>
+        )}
       </div>
     </div>
   );

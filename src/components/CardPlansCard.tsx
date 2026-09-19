@@ -79,6 +79,17 @@ export function CardPlansCard() {
         <Loader2 className="spin" size={16} />
       ) : (
         <>
+          {plans.length === 0 && (
+            <div style={{ background: 'var(--surface-2)', border: '1px dashed var(--border-md)', borderRadius: 10,
+              padding: 14, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.55, marginBottom: 14 }}>
+              Todavía no cargaste ningún plan. Hasta que haya uno, el medio de pago <strong>Tarjeta</strong> en
+              la pantalla de venta no se va a poder usar.
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8 }}>
+                Ejemplos típicos: Débito · 1 pago · 0% — Visa · 3 cuotas · 12% — Naranja · 6 cuotas · 25%
+              </div>
+            </div>
+          )}
+
           {plans.length > 0 && (
             <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse', marginBottom: 14 }}>
               <thead>

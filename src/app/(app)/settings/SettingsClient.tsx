@@ -5,6 +5,7 @@ import {
   DollarSign, Download, Hash, Image as ImageIcon, Palette, ReceiptText, Trash2, Copy,
 } from 'lucide-react';
 import { downloadBackup } from '@/utils/backup';
+import { CardPlansCard } from '@/components/CardPlansCard';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
@@ -386,6 +387,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
               </button>
             </div>
           </div>
+
+          <CardPlansCard />
 
           {/* Las claves dan acceso a costos y datos de clientes: sólo el dueño. */}
           {profile?.role === 'owner' && <ApiKeysCard />}

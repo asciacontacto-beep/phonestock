@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
 import { upsertCustomer, CLIENTE_ANONIMO } from '@/utils/customers';
 import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual } from '@/utils/cuotas';
+import { calcularPagoTarjeta, resumenPlan, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
 import { resolveSale } from '@/utils/saleTotals';
 
 export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null }) {
@@ -48,6 +49,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
   const [enCuotas, setEnCuotas] = useState(false);
   const [cantCuotas, setCantCuotas] = useState(3);
   const [interesPct, setInteresPct] = useState('0');
+  const [cardPlans, setCardPlans] = useState<PlanTarjeta[]>([]);
+  const [planTarjeta, setPlanTarjeta] = useState<string>('');
+  const [quienPaga, setQuienPaga] = useState<QuienPaga | null>(null);
   const [primerVenc, setPrimerVenc] = useState(() => vencimientoMensual(new Date().toLocaleDateString('en-CA'), 1));
   
   const [custSearch, setCustSearch] = useState('');
@@ -69,8 +73,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       supabase.from('stock').select('*').eq('status', 'available').order('created_at', { ascending: false }),
       supabase.from('deposits').select('*').order('name'),
       supabase.from('settings').select('*').maybeSingle(),
-      supabase.from('accessories').select('*').gt('stock', 0)
-    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }]: any) => {
+      supabase.from('accessories').select('*').gt('stock', 0),
+      supabase.from('card_plans').select('*').eq('active', true).order('card_name')
+    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }, { data: planesData }]: any) => {
       const u = session?.user
       if (u) {
         const isSuperAdmin = u.email === 'asciacontacto@gmail.com'
@@ -87,6 +92,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       if (finalDeposits.length > 0) setSelectedDeposit(String(finalDeposits[0].id));
       setSettings(settingsData);
       setAccessoriesList(accData || []);
+      setCardPlans(planesData || []);
 
       const preselectId = searchParams.get('item');
       if (preselectId && stockData) {
@@ -173,6 +179,33 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       amountInSaleCur = amt * rate;
     }
     
+    /* La tarjeta es el único medio donde lo que cubre de la venta y lo que
+       acredita en la caja no coinciden: el recargo se va o entra según quién
+       lo pague. Guardamos los dos números y con qué plan se hizo, para poder
+       auditar la venta después. */
+    if (sm === 'tarjeta') {
+      const plan = cardPlans.find(pl => pl.id === planTarjeta);
+      if (!plan) { toast.error('Elegí el plan de tarjeta'); return; }
+      const quien = quienPaga || plan.paid_by;
+      const calc = calcularPagoTarjeta({ precio: amt, plan, pagaEl: quien });
+      setPayments(p => [...p, {
+        id: sm,
+        label: `${plan.card_name} ${plan.installments}c`,
+        amount: sc === 'USD' ? calc.cubreDeLaVenta / rate : calc.cubreDeLaVenta,
+        original_amount: calc.entraACaja,
+        currency: 'ARS',
+        exchange_rate: sc === 'USD' ? rate : null,
+        card_plan_id: plan.id,
+        card_surcharge_pct: plan.surcharge_pct,
+        card_paid_by: quien,
+        card_charged: calc.cobradoAlCliente,
+      }]);
+      setMa('');
+      setSm(null);
+      setQuienPaga(null);
+      return;
+    }
+
     setPayments(p => [...p, { 
       id: sm, 
       label: m?.label, 
@@ -731,9 +764,79 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
                         <input className="inp" type="number" value={exchangeRate} onChange={e => setExchangeRate(e.target.value)} />
                       </div>
                     )}
+                    {sm === 'tarjeta' && (
+                      cardPlans.length === 0 ? (
+                        <div style={{ fontSize: 12, color: 'var(--amber)', lineHeight: 1.5 }}>
+                          No tenés planes de tarjeta cargados. Cargalos en Ajustes → Planes de tarjeta
+                          para que el recargo quede registrado en la venta.
+                        </div>
+                      ) : (() => {
+                        const plan = cardPlans.find(pl => pl.id === planTarjeta);
+                        const quien = quienPaga || plan?.paid_by || 'customer';
+                        const monto = parseFloat(ma) || 0;
+                        const res = plan ? resumenPlan({ precio: monto, costo: unitCostInSaleCurrency, plan, pagaEl: quien }) : null;
+                        return (
+                          <>
+                            <div className="field" style={{ margin: 0 }}>
+                              <label className="lbl">Plan de tarjeta</label>
+                              <select className="inp" value={planTarjeta} onChange={e => { setPlanTarjeta(e.target.value); setQuienPaga(null); }}>
+                                <option value="">Elegí un plan</option>
+                                {cardPlans.map(pl => (
+                                  <option key={pl.id} value={pl.id}>
+                                    {pl.card_name} · {pl.installments} {pl.installments === 1 ? 'pago' : 'cuotas'} · {pl.surcharge_pct}%
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            {plan && plan.surcharge_pct > 0 && (
+                              <div className="field" style={{ margin: 0 }}>
+                                <label className="lbl">¿Quién paga el recargo?</label>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <button className={`btn btn-sm ${quien === 'customer' ? 'btn-dark' : 'btn-outline'}`}
+                                    style={{ flex: 1 }} onClick={() => setQuienPaga('customer')}>El cliente</button>
+                                  <button className={`btn btn-sm ${quien === 'shop' ? 'btn-dark' : 'btn-outline'}`}
+                                    style={{ flex: 1 }} onClick={() => setQuienPaga('shop')}>Lo absorbe el local</button>
+                                </div>
+                              </div>
+                            )}
+                            {res && monto > 0 && (
+                              <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: 10, fontSize: 12 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: 'var(--text-3)' }}>Paga el cliente</span>
+                                  <span style={{ fontFamily: 'JetBrains Mono' }}>$ {res.cobradoAlCliente.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: 'var(--text-3)' }}>Entra a la caja</span>
+                                  <span style={{ fontFamily: 'JetBrains Mono', color: 'var(--green)' }}>$ {res.entraACaja.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                </div>
+                                {res.costoParaElLocal > 0 && (
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--red)' }}>
+                                    <span>Se lleva la tarjeta</span>
+                                    <span style={{ fontFamily: 'JetBrains Mono' }}>− $ {res.costoParaElLocal.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                )}
+                                {res.ganancia !== null && (
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: 4, color: res.daPerdida ? 'var(--red)' : 'var(--green)' }}>
+                                    <span>Ganancia de la venta</span>
+                                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {res.ganancia.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                )}
+                                {res.daPerdida && (
+                                  <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4, lineHeight: 1.5 }}>
+                                    Con este plan la venta da pérdida: el recargo que absorbés supera el margen.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()
+                    )}
                     <div className="row">
                       <div className="col field" style={{ margin: 0 }}>
-                        <label className="lbl">Monto a cobrar en {selectedPay?.cur}</label>
+                        <label className="lbl">
+                          {sm === 'tarjeta' ? 'Precio de lista a pasar por tarjeta (ARS)' : `Monto a cobrar en ${selectedPay?.cur}`}
+                        </label>
                         <input className="inp" type="number" value={ma} onChange={e => setMa(e.target.value)} placeholder="0.00" autoFocus onKeyDown={e => e.key === 'Enter' && addP()} />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'flex-end' }}>

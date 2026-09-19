@@ -211,6 +211,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
               title="Todavía no registraste ventas"
               description="Cuando hagas tu primera operación, la vas a ver acá con su detalle y ganancia."
               action={isOwner ? { label: 'Nueva venta', icon: <Plus size={17} style={{ marginRight: 8 }} />, onClick: () => router.push('/sell') } : undefined}
+              hint="Podés cobrar en efectivo, transferencia, tarjeta, con un equipo en parte de pago o en cuotas — y combinar varios medios en la misma venta."
             />
           ) : (
             <EmptyState

@@ -1,9 +1,11 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
 import { BRANDS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
-import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock } from 'lucide-react';
+import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock, Plus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { mandarAReparar } from '@/utils/reparacionPropia';
+import { estadoDeLista } from '@/utils/listaVacia';
+import { EmptyState } from '@/components/EmptyState';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
@@ -78,6 +80,17 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
     return r;
   }, [stock, filter]);
+
+  /* "Sin resultados, probá ajustando los filtros" con el inventario vacío
+     mandaba al usuario nuevo a tocar filtros, cuando lo único que tenía que
+     hacer era cargar su primer equipo. */
+  const hayFiltros = Boolean(
+    filter.q ||
+    filter.brand !== 'all' || filter.model !== 'all' || filter.storage !== 'all' ||
+    filter.condition !== 'all' || filter.deposit !== 'all' ||
+    filter.status !== 'available'
+  );
+  const vacio = estadoDeLista({ total: stock.length, visibles: rows.length, hayFiltros });
 
   /* Equipos que llevan mucho tiempo sin venderse: es capital inmovilizado. */
   const aged = useMemo(() => {
@@ -317,12 +330,24 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
             </div>
           ))}
         </div>
-      ) : rows.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-          <Package size={36} style={{ marginBottom: 14, opacity: 0.3 }} />
-          <div style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Sin resultados</div>
-          <div style={{ fontSize: 13 }}>Probá ajustando los filtros</div>
-        </div>
+      ) : vacio === 'vacio' ? (
+        <EmptyState
+          icon={<Package size={26} />}
+          title="Todavía no cargaste ningún equipo"
+          description="Cargá el primero y ya vas a poder venderlo, verlo en la caja y saber cuánto te deja."
+          action={{ label: 'Cargar mi primer equipo', onClick: () => setShowManual(true), icon: <Plus size={15} /> }}
+          hint="Cargá el costo además del precio de venta: es lo que le permite al sistema decirte la ganancia real de cada equipo, y no solo cuánto facturaste."
+        />
+      ) : vacio === 'sin-resultados' ? (
+        <EmptyState
+          icon={<Package size={26} />}
+          title="No hay equipos que coincidan"
+          description={`Tenés ${stock.length} ${stock.length === 1 ? 'equipo cargado' : 'equipos cargados'}, pero ninguno pasa los filtros que pusiste.`}
+          action={{
+            label: 'Limpiar filtros',
+            onClick: () => setFilter({ brand: 'all', model: 'all', storage: 'all', sortPrice: 'none', q: '', status: 'available', condition: 'all', deposit: 'all' }),
+          }}
+        />
       ) : (
         <>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>

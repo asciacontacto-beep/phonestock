@@ -9,6 +9,7 @@ import { Download, Package, AlertTriangle, Trash2, Box, Wallet, ShoppingCart, Tr
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { resumenGlobalDeVencimientos } from '@/utils/cuotas';
+import { PrimerosPasos } from '@/components/PrimerosPasos';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 
@@ -549,6 +550,13 @@ export function DashboardClient({
           );
         })()}
       </div>
+
+      {/* Un tablero en cero no se lee como "todavía no cargaste nada", se
+          lee como "esto no funciona". Desaparece solo cuando ya hay stock
+          y ventas. */}
+      {(stock.length === 0 || allSales.length === 0) && (
+        <PrimerosPasos tieneStock={stock.length > 0} tieneVentas={allSales.length > 0} />
+      )}
 
       {/* ── Estado del negocio ─────────────────────────────────── */}
       <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginBottom: 14 }}>

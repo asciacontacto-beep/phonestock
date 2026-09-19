@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Wrench, CheckCircle, PackageSearch, PackageOpen, XCircle, Printer, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { EmptyState } from '@/components/EmptyState';
 import { costoNuevoDelEquipo, cerrarReparacionPropia } from '@/utils/reparacionPropia';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -169,10 +170,16 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>Cargando reparaciones...</div>
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-              <PackageOpen size={36} style={{ marginBottom: 14, opacity: 0.3 }} />
-              <div style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>No hay reparaciones</div>
-            </div>
+            <EmptyState
+              icon={<PackageOpen size={26} />}
+              title={repairs.length === 0 ? 'Todavía no ingresaste reparaciones' : 'No hay reparaciones que coincidan'}
+              description={repairs.length === 0
+                ? 'Cargá el equipo, la falla y quién lo trajo. Después seguís el estado y cobrás la seña y el saldo desde acá.'
+                : 'Ninguna reparación coincide con el filtro que pusiste.'}
+              hint={repairs.length === 0
+                ? 'También podés mandar a reparar un equipo tuyo del inventario: lo que gastes en repuestos se le suma al costo, así el margen que ves al venderlo es el real.'
+                : undefined}
+            />
           ) : (
             <div className="tw">
               <table className="table">

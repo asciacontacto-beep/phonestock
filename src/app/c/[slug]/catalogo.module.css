@@ -1,0 +1,220 @@
+/*
+  La vidriera pública de un local.
+
+  Estilos propios, sin heredar los de la app: la abre gente sin cuenta,
+  casi siempre desde el teléfono y casi siempre desde Instagram. Tiene que
+  cargar rápido, leerse sola y parecer cara — es la cara del local.
+
+  Clara a propósito: se mira un producto, no se trabaja.
+*/
+
+.root {
+  --tinta:   #0f0f0e;
+  --tinta-2: #5c5b57;
+  --tinta-3: #94938c;
+  --papel:   #faf9f7;
+  --linea:   rgba(0,0,0,0.07);
+  --verde:   #128c7e; /* el de WhatsApp, que es el que la gente reconoce */
+
+  min-height: 100dvh;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ancho { width: 100%; max-width: 1140px; margin: 0 auto; padding: 0 22px; }
+
+/* ── Cabecera ────────────────────────────────────────────────────────────
+   El nombre del local ocupa la pantalla. Es su vidriera: lo primero que se
+   ve tiene que ser de quién es, no un encabezado genérico. */
+.cabecera {
+  padding: 72px 0 34px;
+  border-bottom: 1px solid var(--linea);
+  margin-bottom: 30px;
+  position: relative;
+  overflow: hidden;
+}
+.cabecera::after {
+  /* Una luz apenas insinuada arriba a la derecha. Le da profundidad a una
+     página que no tiene fotos. */
+  content: '';
+  position: absolute; top: -220px; right: -120px;
+  width: 520px; height: 520px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(17,17,17,0.035) 0%, rgba(17,17,17,0) 68%);
+  pointer-events: none;
+}
+.cabeceraDentro { position: relative; z-index: 1; }
+
+.nombre {
+  font-size: clamp(34px, 7.5vw, 62px);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+  margin: 0 0 16px;
+}
+
+.contacto {
+  display: flex; gap: 8px 20px; flex-wrap: wrap;
+  font-size: 14.5px; color: var(--tinta-2);
+}
+.contacto a {
+  color: var(--tinta-2); text-decoration: none;
+  border-bottom: 1px solid var(--linea);
+  transition: color .16s ease, border-color .16s ease;
+}
+.contacto a:hover { color: var(--tinta); border-color: var(--tinta); }
+
+.cantidad {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: var(--tinta-3);
+  margin-top: 20px;
+}
+.punto {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.16);
+}
+
+/* ── Filtros ──────────────────────────────────────────────────────────── */
+.filtros { display: flex; flex-direction: column; gap: 12px; margin-bottom: 26px; }
+.buscadorCaja { position: relative; }
+.buscador {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px; /* evita el zoom de iOS */
+  border: 1px solid var(--linea);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--tinta);
+  font-family: inherit;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.buscador::placeholder { color: var(--tinta-3); }
+.buscador:focus {
+  outline: none;
+  border-color: var(--tinta);
+  box-shadow: 0 0 0 4px rgba(15,15,14,.05);
+}
+
+.marcas { display: flex; gap: 7px; flex-wrap: wrap; }
+.chip {
+  padding: 8px 15px;
+  border-radius: 999px;
+  border: 1px solid var(--linea);
+  background: #fff;
+  color: var(--tinta-2);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .18s cubic-bezier(.22,1,.36,1),
+              color .18s ease, border-color .18s ease, transform .14s ease;
+}
+.chip:hover { border-color: rgba(0,0,0,.18); color: var(--tinta); }
+.chip:active { transform: scale(.96); }
+.chipOn { background: var(--tinta); color: #fff; border-color: var(--tinta); }
+
+/* ── Grilla ───────────────────────────────────────────────────────────── */
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  padding-bottom: 56px;
+}
+
+.tarjeta {
+  background: #fff;
+  border: 1px solid var(--linea);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  transition: box-shadow .26s cubic-bezier(.22,1,.36,1),
+              transform .26s cubic-bezier(.22,1,.36,1),
+              border-color .26s ease;
+  /* Entran escalonadas: el retraso lo pone el componente. */
+  animation: entrar .5s cubic-bezier(.22,1,.36,1) both;
+}
+.tarjeta:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0,0,0,.12);
+  box-shadow: 0 20px 40px -22px rgba(0,0,0,.34), 0 1px 3px rgba(0,0,0,.05);
+}
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.equipoTitulo {
+  font-size: 16.5px; font-weight: 650;
+  letter-spacing: -0.028em; line-height: 1.25;
+}
+
+.specs { display: flex; flex-wrap: wrap; gap: 6px; }
+.spec {
+  font-size: 11.5px;
+  color: var(--tinta-2);
+  background: #f3f2ef;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.specNuevo { background: #ecfdf3; color: #15803d; }
+
+.pie2 {
+  margin-top: auto; padding-top: 14px;
+  border-top: 1px solid var(--linea);
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+}
+.precio {
+  font-size: 25px; font-weight: 700; letter-spacing: -0.04em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  line-height: 1;
+}
+
+.consultar {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--verde); color: #fff;
+  padding: 12px; border-radius: 12px;
+  font-size: 13.5px; font-weight: 650;
+  text-decoration: none;
+  transition: filter .18s ease, transform .14s ease, box-shadow .2s ease;
+}
+.consultar:hover {
+  filter: brightness(1.07);
+  box-shadow: 0 10px 22px -12px rgba(18,140,126,.7);
+}
+.consultar:active { transform: scale(.98); }
+
+.sinContacto {
+  text-align: center; font-size: 12.5px; color: var(--tinta-3);
+  padding: 12px; border: 1px dashed var(--linea); border-radius: 12px;
+}
+
+.vacio {
+  text-align: center; color: var(--tinta-3);
+  font-size: 15.5px; padding: 100px 20px; line-height: 1.65;
+}
+
+/* ── Pie ──────────────────────────────────────────────────────────────── */
+.pie {
+  border-top: 1px solid var(--linea);
+  padding: 26px 0 44px;
+  font-size: 12px; color: var(--tinta-3);
+}
+.pie .ancho { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.marca { color: var(--tinta-3); text-decoration: none; }
+.marca:hover { color: var(--tinta-2); }
+
+@media (max-width: 560px) {
+  .cabecera { padding: 48px 0 26px; }
+  .grilla { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tarjeta { padding: 16px; border-radius: 16px; }
+  .precio { font-size: 21px; }
+  .equipoTitulo { font-size: 14.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta, .chip, .consultar { transition: none; animation: none; }
+}

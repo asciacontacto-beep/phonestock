@@ -1,8 +1,12 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
 import { BRANDS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
-import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock } from 'lucide-react';
+import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock, Plus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { mandarAReparar } from '@/utils/reparacionPropia';
+import { estadoDeLista } from '@/utils/listaVacia';
+import { Store } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
@@ -33,6 +37,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
   const [editItem, setEditItem] = useState<any>(null);
   const [detailItem, setDetailItem] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [fallaReparar, setFallaReparar] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [selectedDeposit, setSelectedDeposit] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -77,6 +82,17 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
     return r;
   }, [stock, filter]);
 
+  /* "Sin resultados, probá ajustando los filtros" con el inventario vacío
+     mandaba al usuario nuevo a tocar filtros, cuando lo único que tenía que
+     hacer era cargar su primer equipo. */
+  const hayFiltros = Boolean(
+    filter.q ||
+    filter.brand !== 'all' || filter.model !== 'all' || filter.storage !== 'all' ||
+    filter.condition !== 'all' || filter.deposit !== 'all' ||
+    filter.status !== 'available'
+  );
+  const vacio = estadoDeLista({ total: stock.length, visibles: rows.length, hayFiltros });
+
   /* Equipos que llevan mucho tiempo sin venderse: es capital inmovilizado. */
   const aged = useMemo(() => {
     const items = stock.filter(s => {
@@ -102,6 +118,19 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
     } catch (e: any) { alert(e.message); }
   };
 
+  /* Mandar un equipo propio al taller. Sale del stock disponible: mientras
+     está en reparación no tiene que aparecer para vender. */
+  const enviarAReparar = async (item: any) => {
+    setLoading(true);
+    const r = await mandarAReparar(supabase, item, { falla: fallaReparar });
+    setLoading(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success('Equipo enviado al taller — lo seguís desde Reparaciones');
+    setFallaReparar('');
+    setEditItem(null);
+    router.refresh();
+  };
+
   const handleUpdate = async () => {
     if (!editItem) return;
     try {
@@ -115,7 +144,8 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
         condition: editItem.condition, deposit: editItem.deposit,
         imei: editItem.imei || null,
         battery: editItem.condition === 'used' ? (editItem.battery || null) : null,
-        notes: editItem.notes?.trim() || null
+        notes: editItem.notes?.trim() || null,
+        in_catalog: Boolean(editItem.in_catalog),
       };
       const { error } = await supabase.from('stock').update(updatedFields).eq('id', editItem.id);
       if (error) throw error;
@@ -132,6 +162,22 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       }
     }
     finally { setLoading(false); }
+  };
+
+  /* Publicar de a muchos. El catálogo se arma eligiendo equipo por equipo,
+     pero cargar veinte a mano es lo que hace que nadie lo use. */
+  const [publicando, setPublicando] = useState(false);
+  const cambiarCatalogo = async (publicar: boolean) => {
+    if (selectedItems.length === 0) return;
+    setPublicando(true);
+    const { error } = await supabase.from('stock').update({ in_catalog: publicar }).in('id', selectedItems);
+    setPublicando(false);
+    if (error) { toast.error(error.message); return; }
+    setStock(p => p.map(s => selectedItems.includes(s.id) ? { ...s, in_catalog: publicar } : s));
+    toast.success(publicar
+      ? `${selectedItems.length} ${selectedItems.length === 1 ? 'equipo publicado' : 'equipos publicados'} en el catálogo`
+      : `${selectedItems.length} ${selectedItems.length === 1 ? 'equipo sacado' : 'equipos sacados'} del catálogo`);
+    setSelectedItems([]);
   };
 
   const handleBulkTransfer = async () => {
@@ -232,6 +278,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       <div className="filters-wrap no-print">
         {[
           { v: 'available', l: 'En Stock' },
+          { v: 'in_repair', l: 'En reparación' },
           { v: 'sold',      l: 'Vendidos' },
         ].map(opt => (
           <button key={opt.v} className={`btn-pill ${filter.status === opt.v ? 'active' : ''}`}
@@ -301,12 +348,24 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
             </div>
           ))}
         </div>
-      ) : rows.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-          <Package size={36} style={{ marginBottom: 14, opacity: 0.3 }} />
-          <div style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Sin resultados</div>
-          <div style={{ fontSize: 13 }}>Probá ajustando los filtros</div>
-        </div>
+      ) : vacio === 'vacio' ? (
+        <EmptyState
+          icon={<Package size={26} />}
+          title="Todavía no cargaste ningún equipo"
+          description="Cargá el primero y ya vas a poder venderlo, verlo en la caja y saber cuánto te deja."
+          action={{ label: 'Cargar mi primer equipo', onClick: () => setShowManual(true), icon: <Plus size={15} /> }}
+          hint="Cargá el costo además del precio de venta: es lo que le permite al sistema decirte la ganancia real de cada equipo, y no solo cuánto facturaste."
+        />
+      ) : vacio === 'sin-resultados' ? (
+        <EmptyState
+          icon={<Package size={26} />}
+          title="No hay equipos que coincidan"
+          description={`Tenés ${stock.length} ${stock.length === 1 ? 'equipo cargado' : 'equipos cargados'}, pero ninguno pasa los filtros que pusiste.`}
+          action={{
+            label: 'Limpiar filtros',
+            onClick: () => setFilter({ brand: 'all', model: 'all', storage: 'all', sortPrice: 'none', q: '', status: 'available', condition: 'all', deposit: 'all' }),
+          }}
+        />
       ) : (
         <>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
@@ -426,6 +485,13 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
           <button className="btn btn-dark btn-sm" disabled={!bulkDeposit || bulkTransferring} onClick={handleBulkTransfer}>
             {bulkTransferring ? 'Moviendo...' : 'Transferir Masivamente'}
           </button>
+          <div style={{ width: 1, height: 20, background: 'var(--border-md)' }} />
+          <button className="btn btn-outline btn-sm" disabled={publicando} onClick={() => cambiarCatalogo(true)}>
+            <Store size={14} /> Al catálogo
+          </button>
+          <button className="btn btn-ghost btn-sm" disabled={publicando} onClick={() => cambiarCatalogo(false)}>
+            Sacar
+          </button>
           <button className="btn-icon" onClick={() => setSelectedItems([])}><X size={16} /></button>
         </div>
       )}
@@ -511,6 +577,40 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 </div>
               </div>
               
+              <div style={{ borderTop: '1px dashed var(--border-md)', paddingTop: 12, marginTop: 4 }}>
+                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    style={{ marginTop: 3 }}
+                    checked={Boolean(editItem.in_catalog)}
+                    onChange={e => setEditItem({ ...editItem, in_catalog: e.target.checked })}
+                  />
+                  <span>
+                    <span style={{ fontWeight: 600, fontSize: 13 }}>Mostrar en el catálogo público</span>
+                    <span style={{ display: 'block', fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, marginTop: 3 }}>
+                      Se ven la marca, el modelo, la capacidad, el color, la condición y el precio.
+                      Nunca el IMEI ni lo que te costó.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              {editItem.status === 'available' && (
+                <div style={{ borderTop: '1px dashed var(--border-md)', paddingTop: 12, marginTop: 4 }}>
+                  <label className="lbl">Mandar a reparar</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="inp" style={{ flex: 1 }} placeholder="Qué hay que arreglar"
+                      value={fallaReparar} onChange={e => setFallaReparar(e.target.value)} />
+                    <button className="btn btn-outline" disabled={loading || !fallaReparar.trim()}
+                      onClick={() => enviarAReparar(editItem)}>Enviar</button>
+                  </div>
+                  <div className="helper-text" style={{ fontSize: 11 }}>
+                    Sale del stock disponible mientras está en el taller. Al cerrar la reparación, lo que
+                    se gastó en repuestos se suma al costo de este equipo.
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                 <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setEditItem(null)}>Cancelar</button>
                 <button className="btn btn-dark" style={{ flex: 1 }} onClick={handleUpdate} disabled={loading}>

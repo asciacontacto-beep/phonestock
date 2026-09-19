@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { ArrowRight, Plus, Printer, Search, AlertTriangle, FileText, X, MapPin, PackageOpen, CreditCard, ChevronRight, Receipt as ReceiptIcon, User as UserIcon, Loader2 } from 'lucide-react';
 import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
@@ -8,6 +8,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
 import { upsertCustomer, CLIENTE_ANONIMO } from '@/utils/customers';
+import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual } from '@/utils/cuotas';
+import { calcularPagoTarjeta, resumenPlan, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
 import { resolveSale } from '@/utils/saleTotals';
 
 export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null }) {
@@ -41,6 +43,16 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
   /* Qué hacer cuando lo entregado supera el precio. Pasa sobre todo con un
      canje tomado por más que la venta: el local le devuelve la diferencia. */
   const [overpay, setOverpay] = useState<'vuelto' | 'cobre_mas'>('vuelto');
+  /* Vender en cuotas es dejar un saldo CON fechas. Sin el plan, el sistema
+     sabe cuánto se debe pero no cuándo hay que cobrarlo, y no hay forma de
+     saber a quién llamar hoy. */
+  const [enCuotas, setEnCuotas] = useState(false);
+  const [cantCuotas, setCantCuotas] = useState(3);
+  const [interesPct, setInteresPct] = useState('0');
+  const [cardPlans, setCardPlans] = useState<PlanTarjeta[]>([]);
+  const [planTarjeta, setPlanTarjeta] = useState<string>('');
+  const [quienPaga, setQuienPaga] = useState<QuienPaga | null>(null);
+  const [primerVenc, setPrimerVenc] = useState(() => vencimientoMensual(new Date().toLocaleDateString('en-CA'), 1));
   
   const [custSearch, setCustSearch] = useState('');
   const [custSuggestions, setCustSuggestions] = useState<any[]>([]);
@@ -61,8 +73,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       supabase.from('stock').select('*').eq('status', 'available').order('created_at', { ascending: false }),
       supabase.from('deposits').select('*').order('name'),
       supabase.from('settings').select('*').maybeSingle(),
-      supabase.from('accessories').select('*').gt('stock', 0)
-    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }]: any) => {
+      supabase.from('accessories').select('*').gt('stock', 0),
+      supabase.from('card_plans').select('*').eq('active', true).order('card_name')
+    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }, { data: planesData }]: any) => {
       const u = session?.user
       if (u) {
         const isSuperAdmin = u.email === 'asciacontacto@gmail.com'
@@ -79,6 +92,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       if (finalDeposits.length > 0) setSelectedDeposit(String(finalDeposits[0].id));
       setSettings(settingsData);
       setAccessoriesList(accData || []);
+      setCardPlans(planesData || []);
 
       const preselectId = searchParams.get('item');
       if (preselectId && stockData) {
@@ -129,6 +143,26 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
     if (unit.currency === 'ARS' && sc === 'USD') return unit.cost_price / r;
     return unit.cost_price;
   })();
+  /* Vista previa del plan. Se recalcula solo: el vendedor tiene que ver las
+     cuotas ANTES de confirmar, no descubrirlas después. */
+  const planPreview = useMemo(() => {
+    if (!enCuotas || !(balanceDue > 0)) return null;
+    try {
+      return generarPlanCuotas({
+        precio: balanceDue, anticipo: 0, cantidad: cantCuotas,
+        primerVencimiento: primerVenc, moneda: sc === 'USD' ? 'USD' : 'ARS',
+        interesPct: parseFloat(interesPct) || 0,
+      });
+    } catch { return null; }
+  }, [enCuotas, balanceDue, cantCuotas, primerVenc, sc, interesPct]);
+
+  /* El interés de la financiación es ingreso del local: sube el precio de la
+     venta y el saldo que el cliente debe. Si sólo viviera en las cuotas, el
+     reporte de ganancia no lo vería nunca. */
+  const interesPlan = planPreview?.interes || 0;
+  const precioAGuardar = finalPrice + interesPlan;
+  const saldoAGuardar = balanceDue + interesPlan;
+
   const sellingBelowCost = unitCostInSaleCurrency != null && finalPrice > 0 && finalPrice < unitCostInSaleCurrency;
 
   const addP = () => {
@@ -145,6 +179,33 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       amountInSaleCur = amt * rate;
     }
     
+    /* La tarjeta es el único medio donde lo que cubre de la venta y lo que
+       acredita en la caja no coinciden: el recargo se va o entra según quién
+       lo pague. Guardamos los dos números y con qué plan se hizo, para poder
+       auditar la venta después. */
+    if (sm === 'tarjeta') {
+      const plan = cardPlans.find(pl => pl.id === planTarjeta);
+      if (!plan) { toast.error('Elegí el plan de tarjeta'); return; }
+      const quien = quienPaga || plan.paid_by;
+      const calc = calcularPagoTarjeta({ precio: amt, plan, pagaEl: quien });
+      setPayments(p => [...p, {
+        id: sm,
+        label: `${plan.card_name} ${plan.installments}c`,
+        amount: sc === 'USD' ? calc.cubreDeLaVenta / rate : calc.cubreDeLaVenta,
+        original_amount: calc.entraACaja,
+        currency: 'ARS',
+        exchange_rate: sc === 'USD' ? rate : null,
+        card_plan_id: plan.id,
+        card_surcharge_pct: plan.surcharge_pct,
+        card_paid_by: quien,
+        card_charged: calc.cobradoAlCliente,
+      }]);
+      setMa('');
+      setSm(null);
+      setQuienPaga(null);
+      return;
+    }
+
     setPayments(p => [...p, { 
       id: sm, 
       label: m?.label, 
@@ -215,8 +276,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
         storage: '-', color: '-',
         imei: `ACC-${Date.now()}`,
         cost_price: totalCost,
-        price: finalPrice,
-        balance_due: balanceDue || null,
+        price: precioAGuardar,
+        balance_due: saldoAGuardar || null,
         currency: 'ARS',
         payments: paymentsToSave(),
         customer: cust.name.trim() ? cust : { name: CLIENTE_ANONIMO },
@@ -274,8 +335,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
           if (unit.currency === 'ARS' && sc === 'USD') return unit.cost_price / rate;
           return unit.cost_price;
         })(),
-        price: finalPrice,
-        balance_due: balanceDue || null,
+        price: precioAGuardar,
+        balance_due: saldoAGuardar || null,
         currency: sc,
         payments: paymentsToSave(),
         // Misma forma que la venta de accesorios: sin cliente va el relleno,
@@ -323,12 +384,29 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
 
       setStock((p: any[]) => p.map((s: any) => s.id === unit.id ? { ...s, status: 'sold' } : s));
 
+      let customerId: string | null = null;
       if (cust.name) {
-        await upsertCustomer(supabase, cust);
+        customerId = await upsertCustomer(supabase, cust);
       }
-      
+
+      /* La venta ya existe: si el plan falla, queda como una deuda sin
+         fechas —como funcionaba antes— y hay que avisarlo, no tragarlo. */
+      if (planPreview && saleRow?.[0]?.id) {
+        const guardado = await guardarPlanCuotas(supabase, saleRow[0].id, planPreview);
+        if (!guardado.ok) {
+          toast.warning(`La venta se registró, pero no se pudo guardar el plan de cuotas: ${guardado.error}`, { duration: 9000 });
+        }
+      }
+
+      /* La ficha del cliente se resuelve recién acá (upsertCustomer puede
+         crearla). Sin este vínculo, la cuenta corriente tiene que adivinar
+         de quién es la deuda por nombre. */
+      if (customerId && saleRow?.[0]?.id) {
+        await supabase.from('sales').update({ customer_id: customerId }).eq('id', saleRow[0].id);
+      }
+
       setLastSale(saleRow[0]);
-      toast.success('Venta confirmada');
+      toast.success(planPreview ? `Venta confirmada · plan de ${planPreview.cuotas.length} cuotas` : 'Venta confirmada');
       if (stockWarnings.length > 0) {
         toast.warning(
           `No se pudo descontar el stock de: ${stockWarnings.join(', ')}. ` +
@@ -686,9 +764,79 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
                         <input className="inp" type="number" value={exchangeRate} onChange={e => setExchangeRate(e.target.value)} />
                       </div>
                     )}
+                    {sm === 'tarjeta' && (
+                      cardPlans.length === 0 ? (
+                        <div style={{ fontSize: 12, color: 'var(--amber)', lineHeight: 1.5 }}>
+                          No tenés planes de tarjeta cargados. Cargalos en Ajustes → Planes de tarjeta
+                          para que el recargo quede registrado en la venta.
+                        </div>
+                      ) : (() => {
+                        const plan = cardPlans.find(pl => pl.id === planTarjeta);
+                        const quien = quienPaga || plan?.paid_by || 'customer';
+                        const monto = parseFloat(ma) || 0;
+                        const res = plan ? resumenPlan({ precio: monto, costo: unitCostInSaleCurrency, plan, pagaEl: quien }) : null;
+                        return (
+                          <>
+                            <div className="field" style={{ margin: 0 }}>
+                              <label className="lbl">Plan de tarjeta</label>
+                              <select className="inp" value={planTarjeta} onChange={e => { setPlanTarjeta(e.target.value); setQuienPaga(null); }}>
+                                <option value="">Elegí un plan</option>
+                                {cardPlans.map(pl => (
+                                  <option key={pl.id} value={pl.id}>
+                                    {pl.card_name} · {pl.installments} {pl.installments === 1 ? 'pago' : 'cuotas'} · {pl.surcharge_pct}%
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            {plan && plan.surcharge_pct > 0 && (
+                              <div className="field" style={{ margin: 0 }}>
+                                <label className="lbl">¿Quién paga el recargo?</label>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <button className={`btn btn-sm ${quien === 'customer' ? 'btn-dark' : 'btn-outline'}`}
+                                    style={{ flex: 1 }} onClick={() => setQuienPaga('customer')}>El cliente</button>
+                                  <button className={`btn btn-sm ${quien === 'shop' ? 'btn-dark' : 'btn-outline'}`}
+                                    style={{ flex: 1 }} onClick={() => setQuienPaga('shop')}>Lo absorbe el local</button>
+                                </div>
+                              </div>
+                            )}
+                            {res && monto > 0 && (
+                              <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: 10, fontSize: 12 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: 'var(--text-3)' }}>Paga el cliente</span>
+                                  <span style={{ fontFamily: 'JetBrains Mono' }}>$ {res.cobradoAlCliente.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: 'var(--text-3)' }}>Entra a la caja</span>
+                                  <span style={{ fontFamily: 'JetBrains Mono', color: 'var(--green)' }}>$ {res.entraACaja.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                </div>
+                                {res.costoParaElLocal > 0 && (
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--red)' }}>
+                                    <span>Se lleva la tarjeta</span>
+                                    <span style={{ fontFamily: 'JetBrains Mono' }}>− $ {res.costoParaElLocal.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                )}
+                                {res.ganancia !== null && (
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: 4, color: res.daPerdida ? 'var(--red)' : 'var(--green)' }}>
+                                    <span>Ganancia de la venta</span>
+                                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {res.ganancia.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                )}
+                                {res.daPerdida && (
+                                  <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4, lineHeight: 1.5 }}>
+                                    Con este plan la venta da pérdida: el recargo que absorbés supera el margen.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()
+                    )}
                     <div className="row">
                       <div className="col field" style={{ margin: 0 }}>
-                        <label className="lbl">Monto a cobrar en {selectedPay?.cur}</label>
+                        <label className="lbl">
+                          {sm === 'tarjeta' ? 'Precio de lista a pasar por tarjeta (ARS)' : `Monto a cobrar en ${selectedPay?.cur}`}
+                        </label>
                         <input className="inp" type="number" value={ma} onChange={e => setMa(e.target.value)} placeholder="0.00" autoFocus onKeyDown={e => e.key === 'Enter' && addP()} />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -750,6 +898,75 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
                       ? `Se registra la venta por ${sc === 'USD' ? 'U$' : '$'} ${finalPrice.toLocaleString('es-AR', { maximumFractionDigits: 2 })}, que es lo que realmente cobraste.`
                       : `Se registra por el precio completo y queda un saldo pendiente de ${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString('es-AR', { maximumFractionDigits: 2 })}.`}
                   </div>
+
+                  {underpay === 'debe' && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border-md)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={enCuotas} onChange={e => setEnCuotas(e.target.checked)} />
+                        <span>Armar plan de cuotas con vencimientos</span>
+                      </label>
+
+                      {enCuotas && (
+                        <>
+                          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                            <div style={{ flex: 1 }}>
+                              <label className="lbl">Cuotas</label>
+                              <select className="inp" value={cantCuotas} onChange={e => setCantCuotas(parseInt(e.target.value))}>
+                                {[2, 3, 4, 5, 6, 9, 12].map(n => <option key={n} value={n}>{n}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <label className="lbl">Interés %</label>
+                              <input className="inp" type="number" min="0" step="0.5" value={interesPct}
+                                onChange={e => setInteresPct(e.target.value)} placeholder="0" />
+                            </div>
+                            <div style={{ flex: 1.2 }}>
+                              <label className="lbl">Primer vencimiento</label>
+                              <input className="inp" type="date" value={primerVenc} onChange={e => setPrimerVenc(e.target.value)} />
+                            </div>
+                          </div>
+
+                          {planPreview && (
+                            <div style={{ marginTop: 10, background: 'var(--surface-2)', borderRadius: 10, padding: 10 }}>
+                              {planPreview.interes > 0 && (
+                                <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 8, marginBottom: 8, fontSize: 12 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-3)' }}>
+                                    <span>Saldo a financiar</span>
+                                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {planPreview.aFinanciar.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--amber)' }}>
+                                    <span>Interés {interesPct}%</span>
+                                    <span style={{ fontFamily: 'JetBrains Mono' }}>+ {sc === 'USD' ? 'U$' : '$'} {planPreview.interes.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: 4 }}>
+                                    <span>Total en cuotas</span>
+                                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {planPreview.totalFinanciado.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {planPreview.cuotas.map(c => (
+                                <div key={c.number} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '3px 0' }}>
+                                  <span style={{ color: 'var(--text-3)' }}>
+                                    Cuota {c.number}/{planPreview.cuotas.length} · vence {c.due_date.split('-').reverse().join('/')}
+                                  </span>
+                                  <span style={{ fontFamily: 'JetBrains Mono' }}>
+                                    {sc === 'USD' ? 'U$' : '$'} {c.amount.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                              ))}
+                              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.5 }}>
+                                {planPreview.interes > 0
+                                  ? `La venta se registra por ${sc === 'USD' ? 'U$' : '$'} ${planPreview.precioConInteres.toLocaleString('es-AR', { maximumFractionDigits: 2 })} — el interés es ingreso tuyo y cuenta en la ganancia. `
+                                  : 'Sin interés. '}
+                                Lo que cobrás hoy entra a la caja ahora; cada cuota entra el día que la cobres,
+                                desde la ficha del cliente.
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -1,6 +1,33 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search, Smartphone } from 'lucide-react';
+import { BotonTema } from '@/components/BotonTema';
+import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Smartphone } from 'lucide-react';
+
+/* Íconos propios para los dos controles que se ven siempre.
+   La lupa y el globito redondos de la librería son los que trae cualquier
+   plantilla: con la marca ya definida por barras redondeadas, estos siguen
+   esa forma — trazo grueso, puntas redondeadas, geometría simple. */
+function IconoBuscar({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M10.6 10.6 14 14" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function IconoSoporte({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      {/* Burbuja cuadrada con esquinas muy redondeadas y la cola abajo a la
+          izquierda: se distingue del globito circular de siempre. */}
+      <path
+        d="M3.4 2.2h9.2a1.2 1.2 0 0 1 1.2 1.2v6.3a1.2 1.2 0 0 1-1.2 1.2H6.5l-2.8 2.5v-2.5h-.3a1.2 1.2 0 0 1-1.2-1.2V3.4a1.2 1.2 0 0 1 1.2-1.2Z"
+        stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -194,18 +221,21 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
       <div
         className="no-print"
         onClick={() => { setOpenPanel('bell'); setBannerDismissed(true); }}
+        /* Era una franja verde brillante a todo el ancho, arriba de todo:
+           lo primero que veía el usuario al entrar era un aviso nuestro, no
+           su negocio. Ahora es una línea neutra y discreta — sigue estando,
+           deja de gritar. */
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-          padding: '10px 18px', background: 'rgba(16,185,129,0.10)',
-          borderBottom: '1px solid rgba(16,185,129,0.25)', fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
+          padding: '7px 18px', background: 'var(--surface-2)',
+          borderBottom: '1px solid var(--border)', fontSize: 12.5,
         }}
       >
-        <Sparkles size={15} color="var(--green)" style={{ flexShrink: 0 }} />
-        <span style={{ color: 'var(--text-2)', flex: 1 }}>
-          <strong>Hay {unread.length} {unread.length === 1 ? 'novedad' : 'novedades'} en el sistema.</strong>{' '}
-          Mirá las notas de actualización para ver qué cambió.
+        <Sparkles size={13} color="var(--text-3)" style={{ flexShrink: 0 }} />
+        <span style={{ color: 'var(--text-3)', flex: 1 }}>
+          {unread.length} {unread.length === 1 ? 'novedad' : 'novedades'} en el sistema
         </span>
-        <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>Ver →</span>
+        <span style={{ color: 'var(--text-2)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' }}>Ver</span>
         <button
           onClick={e => { e.stopPropagation(); setBannerDismissed(true); }}
           title="Ocultar"
@@ -216,7 +246,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
       </div>
     )}
     <div className="topbar no-print">
-      <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+      <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', marginLeft: 'auto' }}>
 
         {/* Disparador visible de la command palette (⌘K) */}
         <button
@@ -224,20 +254,22 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           className="cmdk-trigger"
           title="Buscar o navegar (Ctrl/⌘ + K)"
         >
-          <Search size={14} />
+          <IconoBuscar />
           <span className="cmdk-trigger-label">Buscar</span>
           <kbd>⌘K</kbd>
         </button>
 
+        <BotonTema />
+
         {/* Soporte: que nunca tengan que buscar el número para escribir */}
         <div style={{ position: 'relative' }}>
           <button onClick={() => toggle('help')} className="cmdk-trigger" title="Soporte">
-            <MessageCircle size={14} />
+            <IconoSoporte />
             <span className="cmdk-trigger-label">Soporte</span>
           </button>
 
           {openPanel === 'help' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow-lg)', zIndex: 200,
@@ -292,7 +324,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'rate' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow)', zIndex: 200,
@@ -355,7 +387,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'bell' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 10px)', right: 0,
               width: 320, background: 'var(--surface)',
               border: '1px solid var(--border-md)', borderRadius: 14,
@@ -452,7 +484,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'avatar' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow)', zIndex: 200,

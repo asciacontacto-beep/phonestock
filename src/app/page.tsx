@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUser, getProfile } from "@/utils/supabase/server";
-import LandingPage from "@/components/LandingPage";
+import LandingPage from "@/components/landing/LandingPage";
 
 export default async function RootPage() {
   const user = await getUser();

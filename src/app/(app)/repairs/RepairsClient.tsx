@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Wrench, CheckCircle, PackageSearch, PackageOpen, XCircle, Printer, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { EmptyState } from '@/components/EmptyState';
+import { costoNuevoDelEquipo, cerrarReparacionPropia } from '@/utils/reparacionPropia';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { upsertCustomer } from '@/utils/customers';
@@ -168,10 +170,16 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>Cargando reparaciones...</div>
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>
-              <PackageOpen size={36} style={{ marginBottom: 14, opacity: 0.3 }} />
-              <div style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>No hay reparaciones</div>
-            </div>
+            <EmptyState
+              icon={<PackageOpen size={26} />}
+              title={repairs.length === 0 ? 'Todavía no ingresaste reparaciones' : 'No hay reparaciones que coincidan'}
+              description={repairs.length === 0
+                ? 'Cargá el equipo, la falla y quién lo trajo. Después seguís el estado y cobrás la seña y el saldo desde acá.'
+                : 'Ninguna reparación coincide con el filtro que pusiste.'}
+              hint={repairs.length === 0
+                ? 'También podés mandar a reparar un equipo tuyo del inventario: lo que gastes en repuestos se le suma al costo, así el margen que ves al venderlo es el real.'
+                : undefined}
+            />
           ) : (
             <div className="tw">
               <table className="table">
@@ -640,6 +648,11 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
   const [selectedQty, setSelectedQty] = useState(1);
   const [addingPart, setAddingPart] = useState(false);
   const [laborCost, setLaborCost] = useState<number>(repair.labor_cost || 0);
+  /* Reparación interna: el equipo es del inventario, no de un cliente. */
+  const [equipo, setEquipo] = useState<any>(null);
+  const [condFinal, setCondFinal] = useState('refurbished');
+  const [bateriaFinal, setBateriaFinal] = useState('');
+  const [cerrando, setCerrando] = useState(false);
 
   const supabase = createClient();
 
@@ -653,6 +666,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
     fetchRepairParts();
     fetchAvailableParts();
     fetchExchangeRate();
+    fetchEquipoPropio();
   }, []);
 
   const fetchRepairParts = async () => {
@@ -665,13 +679,51 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
     if (data) setAvailableParts(data);
   };
 
+  /* `settings` no es una tabla clave/valor: tiene una columna `exchange_rate`.
+     La consulta vieja (`select('value').eq('key', ...)`) no devolvía nunca
+     nada, así que la cotización se quedaba pegada en el default y todos los
+     costos de repuestos en dólares se convertían con un dólar inventado. */
   const fetchExchangeRate = async () => {
-    const { data } = await supabase.from('settings').select('value').eq('key', 'exchange_rate').single();
-    if (data?.value) setExchangeRate(parseFloat(data.value) || 1000);
+    const { data } = await supabase.from('settings').select('exchange_rate').maybeSingle();
+    if (data?.exchange_rate) setExchangeRate(parseFloat(String(data.exchange_rate)) || 1000);
+  };
+
+  const fetchEquipoPropio = async () => {
+    if (!repair.stock_id) return;
+    const { data } = await supabase.from('stock')
+      .select('id,brand,model,storage,color,imei,price,cost_price,currency,condition,battery,status')
+      .eq('id', repair.stock_id).maybeSingle();
+    if (data) setEquipo(data);
   };
 
   const totalPartsCostARS = calcCostARS(repairParts, exchangeRate);
   const totalCostARS = totalPartsCostARS + (laborCost || 0);
+
+  /* Lo que pasa a costar el equipo propio: el costo del arreglo se le suma.
+     La mano de obra se carga en pesos, igual que en el resto de la pantalla. */
+  const costoEquipo = equipo
+    ? costoNuevoDelEquipo({
+        equipo, repuestos: repairParts, manoDeObra: laborCost || 0,
+        monedaManoDeObra: 'ARS', cotizacion: exchangeRate, precioVenta: equipo.price,
+      })
+    : null;
+
+  const cerrarPropia = async (aplicarCosto: boolean) => {
+    if (!equipo || !costoEquipo) return;
+    setCerrando(true);
+    const r = await cerrarReparacionPropia(supabase, {
+      repairId: repair.id, stockId: equipo.id,
+      costoNuevo: costoEquipo.costoNuevo, aplicarCosto,
+      condicion: aplicarCosto ? condFinal : null,
+      bateria: bateriaFinal ? parseInt(bateriaFinal) : null,
+    });
+    setCerrando(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success(aplicarCosto
+      ? `Equipo devuelto al inventario · costo actualizado a ${equipo.currency === 'USD' ? 'U$' : '$'}${costoEquipo.costoNuevo.toLocaleString('es-AR')}`
+      : 'Reparación cancelada · el equipo vuelve al inventario sin cambios de costo');
+    onSave();
+  };
 
   const handleAddPart = async () => {
     if (!selectedPartId) return toast.error('Seleccioná un repuesto');
@@ -934,6 +986,69 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
               )}
             </div>
           </div>
+
+          {/* Reparación de un equipo propio: el costo del arreglo va al equipo */}
+          {equipo && costoEquipo && (
+            <div className="card" style={{ background: 'var(--surface-2)', padding: 14, borderRadius: 10, border: '1px solid var(--border)' }}>
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>Equipo propio del inventario</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>
+                {equipo.brand} {equipo.model} {equipo.storage} · IMEI {equipo.imei || '—'}
+              </div>
+
+              {(['costoAnterior', 'costoDelArreglo', 'costoNuevo'] as const).map(k => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '2px 0',
+                  fontWeight: k === 'costoNuevo' ? 700 : 400, color: k === 'costoDelArreglo' ? 'var(--red)' : 'var(--text-2)' }}>
+                  <span>{k === 'costoAnterior' ? 'Costo original del equipo' : k === 'costoDelArreglo' ? 'Repuestos + mano de obra' : 'Costo nuevo del equipo'}</span>
+                  <span style={{ fontFamily: 'JetBrains Mono' }}>
+                    {k === 'costoDelArreglo' ? '+ ' : ''}{equipo.currency === 'USD' ? 'U$' : '$'} {costoEquipo[k].toLocaleString('es-AR', { maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ))}
+              {costoEquipo.margen !== null && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 6, paddingTop: 6,
+                  borderTop: '1px solid var(--border)', fontWeight: 700, color: costoEquipo.daPerdida ? 'var(--red)' : 'var(--green)' }}>
+                  <span>Margen al venderlo a {equipo.currency === 'USD' ? 'U$' : '$'}{equipo.price?.toLocaleString('es-AR')}</span>
+                  <span style={{ fontFamily: 'JetBrains Mono' }}>
+                    {equipo.currency === 'USD' ? 'U$' : '$'} {costoEquipo.margen.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+              {costoEquipo.sinConvertir.length > 0 && (
+                <div style={{ fontSize: 11, color: 'var(--amber)', marginTop: 8, lineHeight: 1.5 }}>
+                  Sin cotización cargada no se pudo convertir: {costoEquipo.sinConvertir.join(', ')}. Ese costo
+                  no está sumado — cargá la cotización en Ajustes antes de cerrar.
+                </div>
+              )}
+
+              <div className="row" style={{ marginTop: 12 }}>
+                <div className="col field" style={{ marginBottom: 0 }}>
+                  <label className="lbl">Condición al salir</label>
+                  <select className="inp" value={condFinal} onChange={e => setCondFinal(e.target.value)}>
+                    <option value="refurbished">Reacondicionado</option>
+                    <option value="used">Usado</option>
+                    <option value="new">Nuevo</option>
+                  </select>
+                </div>
+                <div className="col field" style={{ marginBottom: 0 }}>
+                  <label className="lbl">Batería %</label>
+                  <input className="inp" type="number" value={bateriaFinal} placeholder="Ej: 100"
+                    onChange={e => setBateriaFinal(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button className="btn btn-outline" style={{ flex: 1 }} disabled={cerrando}
+                  onClick={() => cerrarPropia(false)}>Cancelar reparación</button>
+                <button className="btn btn-dark" style={{ flex: 1.4 }} disabled={cerrando}
+                  onClick={() => cerrarPropia(true)}>
+                  {cerrando ? 'Cerrando...' : 'Cerrar y devolver al inventario'}
+                </button>
+              </div>
+              <div className="helper-text" style={{ fontSize: 11 }}>
+                Cerrar sube el costo del equipo y lo devuelve a la venta. Cancelar lo devuelve sin tocar el costo.
+              </div>
+            </div>
+          )}
 
           {/* Cost breakdown */}
           {(repairParts.length > 0 || laborCost > 0) && (

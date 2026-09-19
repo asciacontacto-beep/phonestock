@@ -57,6 +57,11 @@ export async function updateSession(request: NextRequest) {
     // La documentación de la API la lee el programador de un cliente, que no
     // tiene cuenta en Stackr.
     !request.nextUrl.pathname.startsWith('/docs') &&
+    // El catálogo de cada local lo abre un comprador desde Instagram: no
+    // tiene cuenta y no la va a crear. Lo que se publica ahí sale de dos
+    // vistas con las columnas enumeradas —sin IMEI ni costo—, así que ser
+    // público no expone nada que el local no haya elegido mostrar.
+    !request.nextUrl.pathname.startsWith('/c/') &&
     request.nextUrl.pathname !== '/'
   ) {
     const url = request.nextUrl.clone()

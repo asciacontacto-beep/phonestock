@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, EAN_DB } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
+import { registrarCompra } from '@/utils/compras';
 import { ModelPicker } from './ModelPicker';
 import { limpiarImei, repetidosEnLote, buscarImeisEnStock, avisoDuplicado, esErrorImeiRepetido } from '@/utils/imei';
 import { Check, X, ChevronRight, ChevronLeft, Plus, Trash2 } from 'lucide-react';
@@ -38,6 +39,14 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const [depositsLoaded, setDepositsLoaded] = useState(false);
   const [sup, setSup] = useState<any>(null);
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  /* Registrar la compra es opcional: se puede seguir cargando un equipo con
+     sólo el costo, como siempre. Pero si no se registra, la plata que se
+     pagó no sale de ninguna caja y la ganancia queda inflada. */
+  const [registrarPago, setRegistrarPago] = useState(false);
+  const [metodoPago, setMetodoPago] = useState('usd_cash');
+  const [cajaPago, setCajaPago] = useState('');
+  const [fechaCompra, setFechaCompra] = useState(() => new Date().toLocaleDateString('en-CA'));
+  const [cotizacionCompra, setCotizacionCompra] = useState('');
   const [variants, setVariants] = useState([emptyVariant()]);
   const [loading, setLoading] = useState(false);
   const priceRef = useRef<HTMLInputElement>(null);
@@ -177,6 +186,24 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
       if (inserted) {
         const total = variants.reduce((a, v) => a + (Number(v.qty) || 0), 0);
         toast.success(`${total} equipo${total !== 1 ? 's' : ''} ingresado${total !== 1 ? 's' : ''}`);
+
+        /* El stock ya entró. Si la salida de caja falla, se avisa en vez de
+           tragarlo: el equipo está cargado pero la plata no salió. */
+        if (registrarPago) {
+          const r = await registrarCompra(supabase, {
+            equipos: units,
+            proveedorNombre: suppliers.find(x => String(x.id) === String(sup))?.name || null,
+            metodo: metodoPago,
+            depositId: cajaPago || null,
+            fecha: fechaCompra,
+            cotizacion: parseFloat(cotizacionCompra) || 0,
+          });
+          if (r.ok) {
+            toast.success(`Salieron ${r.moneda === 'USD' ? 'U$' : '$'}${r.total.toLocaleString('es-AR')} de la caja`);
+          } else {
+            toast.warning(`Los equipos se cargaron, pero no se registró la salida de caja: ${r.error}`, { duration: 9000 });
+          }
+        }
         setVariants([emptyVariant()]); setPrice(''); setCostPrice(''); setUpc('');
         if (onSuccess) onSuccess();
         onClose();
@@ -265,6 +292,58 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                 <div><label className="lbl">Depósito</label><select className="inp" value={dep !== null ? String(dep) : ''} onChange={e => setDep(e.target.value)}>{!depositsLoaded && <option value="">Cargando…</option>}{depositsLoaded && deposits.length === 0 && <option value="">Sin depósitos — creá uno primero</option>}{deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}</select></div>
                 {suppliers.length > 0 && (
                   <div><label className="lbl">Proveedor</label><select className="inp" value={sup !== null ? String(sup) : ''} onChange={e => setSup(e.target.value)}>{suppliers.map(s => <option key={s.id} value={String(s.id)}>{s.name}</option>)}</select></div>
+                )}
+              </div>
+
+              {/* Comprar mercadería no descontaba plata de ninguna caja: el
+                  stock aparecía pero la salida no se registraba en ningún
+                  lado. Se ofrece, no se obliga. */}
+              <div style={{
+                border: '1px solid var(--border)', borderRadius: 12, padding: 14,
+                background: registrarPago ? 'var(--surface-2)' : 'var(--blue-dim)',
+              }}>
+                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input type="checkbox" style={{ marginTop: 3 }} checked={registrarPago}
+                    onChange={e => setRegistrarPago(e.target.checked)} />
+                  <span>
+                    <span style={{ fontWeight: 600, fontSize: 13 }}>Registrar cómo pagaste esta compra</span>
+                    <span style={{ display: 'block', fontSize: 12, color: registrarPago ? 'var(--text-3)' : '#1e40af', lineHeight: 1.5, marginTop: 3 }}>
+                      Podés cargar los equipos con el costo nomás, como siempre. Pero si registrás la compra,
+                      la plata sale de la caja y el sistema puede decirte la ganancia real y cuánto tenés
+                      invertido. Sin esto, la caja y la ganancia quedan más altas de lo que son.
+                    </span>
+                  </span>
+                </label>
+
+                {registrarPago && (
+                  <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label className="lbl">Medio de pago</label>
+                      <select className="inp" value={metodoPago} onChange={e => setMetodoPago(e.target.value)}>
+                        <option value="usd_cash">Efectivo USD</option>
+                        <option value="ars_cash">Efectivo ARS</option>
+                        <option value="usd_transf">Transferencia USD</option>
+                        <option value="ars_transf">Transferencia ARS</option>
+                        <option value="usdt">USDT</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="lbl">Caja de donde sale</label>
+                      <select className="inp" value={cajaPago} onChange={e => setCajaPago(e.target.value)}>
+                        <option value="">Elegí una caja</option>
+                        {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="lbl">Fecha de la compra</label>
+                      <input className="inp" type="date" value={fechaCompra} onChange={e => setFechaCompra(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="lbl">Cotización (si mezclás monedas)</label>
+                      <input className="inp" type="number" value={cotizacionCompra} placeholder="Opcional"
+                        onChange={e => setCotizacionCompra(e.target.value)} />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

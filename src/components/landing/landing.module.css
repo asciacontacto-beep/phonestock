@@ -182,8 +182,7 @@
 
 @media (max-width: 900px) { .navLinks { display: none; } }
 @media (max-width: 520px) {
-  .nav { padding-left: 16px; gap: 4px; }
-  .navMarca span:last-child { display: none; }
+  .nav { padding-left: 18px; gap: 4px; }
   .navEntrar { padding: 8px 8px; }
   .navCta { padding: 10px 14px; }
 }

@@ -215,7 +215,13 @@ export default function LandingPage() {
       <div className={s.navWrap}>
         <nav className={`${s.nav} ${s.entra} ${scrolled ? s.navScrolled : ''}`}>
           <a href="#top" className={s.navMarca}>
-            <span className={s.navLogo}>S</span> <span>Stackr</span>
+            {/* Tres barras apiladas, de más ancha a más angosta. */}
+            <svg className={s.navGlifo} width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden>
+              <rect y="1.5" width="17" height="3" rx="1.5" fill="currentColor" />
+              <rect y="7" width="12" height="3" rx="1.5" fill="currentColor" opacity=".7" />
+              <rect y="12.5" width="7" height="3" rx="1.5" fill="currentColor" opacity=".45" />
+            </svg>
+            Stackr
           </a>
           <div className={s.navLinks}>
             <a href="#sistema" className={s.navLink}>El sistema</a>

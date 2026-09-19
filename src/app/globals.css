@@ -7,7 +7,7 @@
 
 :root {
   /* Backgrounds */
-  --bg:        #f5f5f3;
+  --bg:        #f1f1ee;
   --surface:   #ffffff;
   --surface-2: #f8f8f7;
   --surface-3: #f0f0ee;
@@ -73,13 +73,25 @@ input, select, textarea { outline: none; }
 ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 8px; }
 
 /* ── App Shell ──────────────────────────── */
-.app { display: flex; height: 100dvh; overflow: hidden; width: 100%; }
+/* El ambiente vive acá, detrás de TODO —barra lateral incluida—, para que
+   cada superficie de vidrio tenga algo que refractar. Sobre un gris plano,
+   translúcido y opaco se ven igual. */
+.app {
+  display: flex; height: 100dvh; overflow: hidden; width: 100%;
+  background: var(--bg);
+  background-image:
+    radial-gradient(64% 46% at 96% -4%, rgba(217,164,65,0.10) 0%, transparent 60%),
+    radial-gradient(52% 40% at 2% 104%, rgba(37,99,235,0.06) 0%, transparent 60%),
+    radial-gradient(40% 36% at 42% 50%, rgba(110,231,168,0.035) 0%, transparent 70%);
+}
 
 /* ── Sidebar ────────────────────────────── */
 .sidebar {
   width: 220px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(26px) saturate(180%);
+  border-right: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 1px 0 0 rgba(0,0,0,0.035);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -153,10 +165,15 @@ input, select, textarea { outline: none; }
 
 
 /* ── Main ───────────────────────────────── */
+/* El vidrio necesita algo atrás para refractar. Sobre un gris plano, una
+   superficie translúcida se ve igual que una opaca. Dos manchas muy suaves
+   —una cálida arriba a la derecha, una fría abajo a la izquierda— alcanzan
+   para que las tarjetas tengan de qué tomar color, sin que se lea como
+   "fondo con degradado". */
 .main {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   display: flex; flex-direction: column;
-  background: var(--bg); min-width: 0;
+  background: transparent; min-width: 0;
 }
 
 /* Barra flotante, no pegada a los bordes.
@@ -335,19 +352,38 @@ select.inp {
 
 /* ── Cards ──────────────────────────────── */
 .card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 22px;
-  box-shadow: var(--shadow-sm); box-sizing: border-box;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 18px; padding: 22px;
+  box-shadow:
+    0 8px 26px -16px rgba(0,0,0,0.20),
+    0 1px 2px rgba(0,0,0,0.035),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  box-sizing: border-box;
 }
 
 /* ── Stat cards ─────────────────────────── */
 .sg { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
 
 .sc {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 20px 22px;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  background: rgba(255,255,255,0.62);
+  backdrop-filter: blur(20px) saturate(170%);
+  border: 1px solid rgba(255,255,255,0.75);
+  border-radius: 18px; padding: 20px 22px;
+  box-shadow:
+    0 8px 24px -14px rgba(0,0,0,0.20),
+    0 1px 2px rgba(0,0,0,0.035),
+    inset 0 1px 0 rgba(255,255,255,0.85);
+  transition: box-shadow 0.18s ease, transform 0.18s cubic-bezier(.22,1,.36,1), background 0.18s ease;
+}
+.sc:hover {
+  background: rgba(255,255,255,0.78);
+  transform: translateY(-1px);
+  box-shadow:
+    0 16px 34px -16px rgba(0,0,0,0.26),
+    0 1px 2px rgba(0,0,0,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.95);
 }
 .sc:hover { box-shadow: var(--shadow); border-color: var(--border-md); }
 
@@ -1025,10 +1061,14 @@ select.inp {
 
 /* ── Panel genérico (alertas / reposición / actividad) ── */
 .panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 18px;
+  box-shadow:
+    0 8px 26px -16px rgba(0,0,0,0.20),
+    0 1px 2px rgba(0,0,0,0.035),
+    inset 0 1px 0 rgba(255,255,255,0.8);
   overflow: hidden;
   margin-bottom: 12px;
 }
@@ -1088,11 +1128,12 @@ select.inp {
 .page .sg .sc { padding: 15px 17px; position: relative; }
 .page .sg .sv { font-size: 22px; }
 
-.sc-icon {
-  position: absolute; top: 14px; right: 15px;
-  color: var(--text-3); opacity: 0.3;
-}
-.sc:hover .sc-icon { opacity: 0.5; }
+/* Los íconos de las tarjetas del resumen se ocultan.
+   Eran cuatro figuritas grises en la esquina que no agregaban nada: el
+   rótulo ya dice "En stock", "Capital", "Ventas". Un ícono que repite la
+   palabra de al lado es ruido, y cuatro seguidos son una fila de sellitos.
+   El dato manda; la tarjeta no necesita decoración. */
+.sc-icon { display: none; }
 
 /* ── Mobile ─────────────────────────────── */
 @media (max-width: 768px) {
@@ -1150,30 +1191,13 @@ select.inp {
   border-color: var(--border-md);
 }
 
-/* El ícono pasa de una marca de agua en la esquina a un chip con color */
-.dash .sc-icon {
-  position: absolute; top: 14px; right: 14px;
-  width: 32px; height: 32px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 1;
-  background: var(--surface-3);
-  color: var(--text-2);
-  transition: transform 0.16s ease;
-}
-.dash .sc:hover .sc-icon { opacity: 1; transform: scale(1.06); }
+/* Los chips de ícono del resumen se ocultan también acá: esta regla era la
+   que los pintaba y ganaba por especificidad. El rótulo ya dice "En stock",
+   "Capital", "Ventas" — un ícono que repite la palabra de al lado es ruido,
+   y cuatro seguidos son una fila de sellitos. */
+.dash .sc-icon { display: none; }
 
-/* Los cuatro íconos del tablero van en un solo tono.
-   Azul, verde, violeta y ámbar en cuatro tarjetas seguidas se leen como
-   semáforo: el ojo busca qué significa cada color y no significan nada.
-   El color queda reservado para cuando dice algo —rojo si algo está mal,
-   verde si está bien—, que es cuando sirve. */
-.dash .sc-i-blue,
-.dash .sc-i-green,
-.dash .sc-i-violet,
-.dash .sc-i-amber {
-  background: var(--surface-3);
-  color: var(--text-3);
-}
+
 
 .dash .sg .sl { margin-bottom: 8px; }
 .dash .sg .sv { font-size: 25px; }

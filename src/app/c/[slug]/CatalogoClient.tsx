@@ -51,7 +51,7 @@ export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: E
   return (
     <div className={s.root}>
       <header className={s.cabecera}>
-        <div className={s.ancho}>
+        <div className={`${s.ancho} ${s.cabeceraDentro}`}>
           <h1 className={s.nombre}>{tienda.nombre}</h1>
           <div className={s.contacto}>
             {tienda.direccion && <span>{tienda.direccion}</span>}
@@ -67,9 +67,10 @@ export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: E
             })()}
           </div>
           <div className={s.cantidad}>
+            {equipos.length > 0 && <span className={s.punto} />}
             {equipos.length === 0
               ? 'Sin equipos publicados por ahora'
-              : `${equipos.length} ${equipos.length === 1 ? 'equipo disponible' : 'equipos disponibles'}`}
+              : `${equipos.length} ${equipos.length === 1 ? 'equipo disponible ahora' : 'equipos disponibles ahora'}`}
           </div>
         </div>
       </header>
@@ -77,12 +78,14 @@ export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: E
       {equipos.length > 0 && (
         <div className={s.ancho}>
           <div className={s.filtros}>
-            <input
-              className={s.buscador}
-              placeholder="Buscar modelo, color…"
-              value={q}
-              onChange={e => setQ(e.target.value)}
-            />
+            <div className={s.buscadorCaja}>
+              <input
+                className={s.buscador}
+                placeholder="Buscar modelo, color…"
+                value={q}
+                onChange={e => setQ(e.target.value)}
+              />
+            </div>
             {marcas.length > 1 && (
               <div className={s.marcas}>
                 <button
@@ -111,10 +114,16 @@ export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: E
           </div>
         ) : (
           <div className={s.grilla}>
-            {visibles.map(e => {
+            {visibles.map((e, i) => {
               const wa = mensajeWhatsApp(tienda.telefono, e)
               return (
-                <article className={s.tarjeta} key={String(e.id)}>
+                <article
+                  className={s.tarjeta}
+                  key={String(e.id)}
+                  /* Escalonadas, y con tope: con cincuenta equipos, el
+                     último no puede tardar cinco segundos en aparecer. */
+                  style={{ animationDelay: `${Math.min(i, 12) * 0.035}s` }}
+                >
                   <div className={s.equipoTitulo}>
                     {[e.brand, e.model].filter(Boolean).join(' ')}
                   </div>
@@ -122,15 +131,24 @@ export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: E
                   <div className={s.specs}>
                     {e.storage && <span className={s.spec}>{e.storage}</span>}
                     {e.color && <span className={s.spec}>{e.color}</span>}
-                    {e.condition && <span className={s.spec}>{CONDICION[e.condition] || e.condition}</span>}
+                    {e.condition && (
+                      <span className={`${s.spec} ${e.condition === 'new' ? s.specNuevo : ''}`}>
+                        {CONDICION[e.condition] || e.condition}
+                      </span>
+                    )}
                     {e.battery && <span className={s.spec}>Batería {String(e.battery).replace('%', '')}%</span>}
                   </div>
 
-                  <div className={s.precio}>{money(e.price ?? null, e.currency ?? null)}</div>
+                  <div className={s.pie2}>
+                    <div className={s.precio}>{money(e.price ?? null, e.currency ?? null)}</div>
+                  </div>
 
                   {wa ? (
                     <a className={s.consultar} href={wa} target="_blank" rel="noreferrer">
-                      Consultar por WhatsApp
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+                        <path d="M8 .9a7 7 0 0 0-6 10.6L1 15.1l3.7-1a7 7 0 1 0 3.3-13.2Zm0 12.7a5.7 5.7 0 0 1-2.9-.8l-.2-.1-2.2.6.6-2.1-.1-.2a5.7 5.7 0 1 1 4.8 2.6Zm3.2-4.2c-.2-.1-1-.5-1.2-.6-.2 0-.3-.1-.4.1l-.6.7c-.1.1-.2.1-.4 0a4.7 4.7 0 0 1-2.3-2c-.2-.3.2-.3.5-1 0-.1 0-.2-.1-.3L6.2 5c-.1-.3-.3-.3-.4-.3h-.4a.7.7 0 0 0-.5.3 2 2 0 0 0-.7 1.6 3.6 3.6 0 0 0 .8 1.9 8.2 8.2 0 0 0 3.1 2.7c1.2.5 1.6.5 2.2.4a1.8 1.8 0 0 0 1.2-.8 1.5 1.5 0 0 0 .1-.9l-.4-.2Z"/>
+                      </svg>
+                      Consultar
                     </a>
                   ) : (
                     <div className={s.sinContacto}>Consultá en el local</div>

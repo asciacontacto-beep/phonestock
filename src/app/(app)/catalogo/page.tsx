@@ -1,0 +1,32 @@
+import { createClient, getUser, getProfile } from "@/utils/supabase/server"
+import { redirect } from "next/navigation"
+import { CatalogoAdminClient } from "./CatalogoAdminClient"
+
+export const dynamic = 'force-dynamic'
+
+export default async function CatalogoPage() {
+  const user = await getUser()
+  if (!user) redirect("/login")
+
+  const profile = await getProfile(user.id)
+  const supabase = await createClient()
+
+  const [{ data: org }, { data: stock }, { data: settings }] = await Promise.all([
+    profile?.org_id
+      ? supabase.from('organizations').select('id,name,catalog_slug,catalog_enabled').eq('id', profile.org_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from('stock')
+      .select('id,brand,model,storage,color,condition,battery,price,currency,status,in_catalog')
+      .eq('status', 'available')
+      .order('created_at', { ascending: false }),
+    supabase.from('settings').select('shop_name').maybeSingle(),
+  ])
+
+  return (
+    <CatalogoAdminClient
+      org={org || null}
+      stockInicial={stock || []}
+      nombreLocal={settings?.shop_name || org?.name || ''}
+    />
+  )
+}

@@ -9,10 +9,12 @@
 
 export const PRECIO_MENSUAL = 50000
 
-/** Licencia de por vida. Equivale a unos diez meses de suscripción. */
-export const PRECIO_LIFETIME = 490000
+/** Licencia de por vida. Equivale a seis meses de suscripción. */
+export const PRECIO_LIFETIME = 300000
 
-export const WHATSAPP = '5492494000000'
+/* Formato internacional, como lo pide wa.me: 54 (país) + 9 (celular) +
+   número sin el 15. Es el mismo que usa el botón de soporte de la app. */
+export const WHATSAPP = '5492262559559'
 
 export const money = (n: number) => `$${n.toLocaleString('es-AR')}`
 

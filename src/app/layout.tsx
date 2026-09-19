@@ -103,7 +103,7 @@ const jsonLd = {
     },
     {
       "@type": "Offer",
-      "price": "490000",
+      "price": "300000",
       "priceCurrency": "ARS",
       "priceValidUntil": "2027-12-31",
       "availability": "https://schema.org/InStock",

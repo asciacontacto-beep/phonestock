@@ -73,17 +73,77 @@ input, select, textarea { outline: none; }
 ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 8px; }
 
 /* ── App Shell ──────────────────────────── */
-/* El ambiente vive acá, detrás de TODO —barra lateral incluida—, para que
-   cada superficie de vidrio tenga algo que refractar. Sobre un gris plano,
-   translúcido y opaco se ven igual. */
 .app {
   display: flex; height: 100dvh; overflow: hidden; width: 100%;
   background: var(--bg);
-  background-image:
-    radial-gradient(64% 46% at 96% -4%, rgba(217,164,65,0.10) 0%, transparent 60%),
-    radial-gradient(52% 40% at 2% 104%, rgba(37,99,235,0.06) 0%, transparent 60%),
-    radial-gradient(40% 36% at 42% 50%, rgba(110,231,168,0.035) 0%, transparent 70%);
+  position: relative;
 }
+
+/* ── Ambiente: lo que el vidrio distorsiona ──────────────────────────────
+   Detrás de TODO, barra lateral incluida. Sin `mix-blend-mode` ni filtros
+   SVG: en la landing una capa así terminó pintándose encima del contenido.
+   Acá son degradados y `transform`, que el navegador compone sin sorpresas. */
+.ambiente {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; overflow: hidden;
+}
+
+/* La retícula es lo que hace visible el desenfoque: detrás de una tarjeta
+   de vidrio las líneas se ven correrse, y ahí se lee como vidrio. */
+.ambiente-grilla {
+  position: absolute; inset: -2px;
+  background-image:
+    linear-gradient(rgba(17,17,17,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17,17,17,0.028) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(120% 100% at 50% 0%, #000 30%, transparent 92%);
+}
+
+.ambiente-luz {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+.luz-calida {
+  top: -30vh; right: -18vw;
+  width: 72vw; height: 72vw;
+  background: radial-gradient(circle, rgba(217,164,65,0.20) 0%, rgba(217,164,65,0) 66%);
+  animation: derivaCalida 78s ease-in-out infinite alternate;
+}
+.luz-fria {
+  bottom: -34vh; left: -20vw;
+  width: 66vw; height: 66vw;
+  background: radial-gradient(circle, rgba(37,99,235,0.14) 0%, rgba(37,99,235,0) 66%);
+  animation: derivaFria 104s ease-in-out infinite alternate;
+}
+.luz-verde {
+  top: 28vh; left: 34vw;
+  width: 46vw; height: 46vw;
+  background: radial-gradient(circle, rgba(110,231,168,0.11) 0%, rgba(110,231,168,0) 70%);
+  animation: derivaVerde 92s ease-in-out infinite alternate;
+}
+
+@keyframes derivaCalida {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(-7vw, 6vh, 0) scale(1.12); }
+}
+@keyframes derivaFria {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to   { transform: translate3d(9vw, -7vh, 0) scale(1); }
+}
+@keyframes derivaVerde {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(-10vw, -5vh, 0) scale(1.18); }
+}
+
+/* Si el sistema pide menos movimiento, el ambiente se queda quieto: sigue
+   dando de qué agarrarse al vidrio, sin desplazarse. */
+@media (prefers-reduced-motion: reduce) {
+  .ambiente-luz { animation: none; }
+}
+
+/* La barra lateral y el contenido van por encima del ambiente. */
+.sidebar, .main { position: relative; z-index: 1; }
 
 /* ── Sidebar ────────────────────────────── */
 .sidebar {

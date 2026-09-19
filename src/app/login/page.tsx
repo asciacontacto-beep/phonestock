@@ -9,7 +9,6 @@ import { confirmUserEmail } from "@/app/actions";
 import { authErrorMessage, isNetworkError } from "@/utils/authErrors";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import Image from "next/image";
 
 const FEATURES = [
   { icon: <Package size={15} />, label: "Stock y ventas en tiempo real", color: "c-blue" },
@@ -110,7 +109,17 @@ export default function LoginPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* Los mismos tokens que la landing. El login es el puente entre las
+           dos: el que acaba de leer la promesa entra por acá, y si le habla
+           con otra voz y otros colores siente que entró a otro producto. */
         .lp-root {
+          --tinta:     #08090a;
+          --tinta-2:   #0e1012;
+          --hueso:     #e9e5db;
+          --hueso-dim: rgba(233, 229, 219, 0.55);
+          --hueso-dim2:rgba(233, 229, 219, 0.35);
+          --oro:       #d9a441;
+          --verde:     #6ee7a8;
           display: flex;
           min-height: 100vh;
           font-family: 'Inter', system-ui, sans-serif;
@@ -120,7 +129,7 @@ export default function LoginPage() {
         /* ── Left panel ── */
         .lp-left {
           flex: 1;
-          background: #0a0a0a;
+          background: var(--tinta);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
@@ -132,16 +141,29 @@ export default function LoginPage() {
         .lp-left-bg {
           position: absolute;
           inset: 0;
+          /* Oro y verde, como la landing. El azul y el violeta de antes eran
+             de otra identidad. */
           background:
-            radial-gradient(ellipse 70% 50% at 20% 20%, rgba(59,130,246,0.07) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(139,92,246,0.06) 0%, transparent 60%),
-            linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-          background-size: auto, auto, 40px 40px, 40px 40px;
+            radial-gradient(ellipse 70% 50% at 18% 18%, rgba(217,164,65,0.10) 0%, transparent 62%),
+            radial-gradient(ellipse 60% 45% at 85% 85%, rgba(110,231,168,0.055) 0%, transparent 65%);
+          background-size: auto, auto;
           pointer-events: none;
         }
 
         .lp-left-inner { position: relative; z-index: 1; }
+
+        /* La entrada va por CSS y no por JavaScript. Con la animación por JS
+           el contenido arranca en opacidad 0 y la sube el script: el DOM
+           queda bien pero el compositor no siempre repinta, y la pantalla
+           puede quedarse en blanco. Ya pasó en la landing. */
+        @keyframes lpSubir {
+          from { opacity: 0; transform: translateY(22px); }
+          to   { opacity: 1; transform: none; }
+        }
+        .lp-entra { animation: lpSubir .75s cubic-bezier(.22,1,.36,1) both; }
+        .lp-d1 { animation-delay: .06s; }
+        .lp-d2 { animation-delay: .14s; }
+        @media (prefers-reduced-motion: reduce) { .lp-entra { animation: none; } }
 
         .lp-brand {
           display: flex;
@@ -151,25 +173,26 @@ export default function LoginPage() {
           text-decoration: none;
         }
         .lp-brand-name {
-          font-size: 22px;
-          font-weight: 800;
-          color: #fff;
-          letter-spacing: -0.03em;
+          font-size: 19px;
+          font-weight: 600;
+          color: var(--hueso);
+          letter-spacing: -0.035em;
         }
+        .lp-glifo { display: block; flex-shrink: 0; color: var(--hueso); opacity: .92; }
 
         .lp-headline {
-          font-size: clamp(28px, 3vw, 42px);
-          font-weight: 900;
-          color: #fff;
-          letter-spacing: -0.03em;
-          line-height: 1.1;
-          margin-bottom: 18px;
+          font-size: clamp(30px, 3.2vw, 46px);
+          font-weight: 700;
+          color: var(--hueso);
+          letter-spacing: -0.042em;
+          line-height: 1.02;
+          margin-bottom: 20px;
         }
-        .lp-headline span { color: rgba(255,255,255,0.4); }
+        .lp-headline span { color: var(--hueso-dim2); }
 
         .lp-sub {
-          font-size: 15px;
-          color: rgba(255,255,255,0.45);
+          font-size: 15.5px;
+          color: var(--hueso-dim);
           line-height: 1.7;
           margin-bottom: 48px;
           max-width: 400px;
@@ -212,10 +235,16 @@ export default function LoginPage() {
           z-index: 2;
         }
 
-        .lp-feature-icon.c-blue   { background: rgba(59,130,246,0.14);  border-color: rgba(59,130,246,0.25);  color: #93c5fd; }
-        .lp-feature-icon.c-violet { background: rgba(139,92,246,0.14);  border-color: rgba(139,92,246,0.25);  color: #c4b5fd; }
-        .lp-feature-icon.c-green  { background: rgba(52,211,153,0.14);  border-color: rgba(52,211,153,0.25);  color: #6ee7b7; }
-        .lp-feature-icon.c-amber  { background: rgba(245,158,11,0.14);  border-color: rgba(245,158,11,0.25);  color: #fcd34d; }
+        /* Un solo color para los cuatro. Cuatro colores distintos en cuatro
+           íconos seguidos se leen como semáforo, no como marca. */
+        .lp-feature-icon.c-blue,
+        .lp-feature-icon.c-violet,
+        .lp-feature-icon.c-green,
+        .lp-feature-icon.c-amber {
+          background: rgba(233,229,219,0.05);
+          border-color: rgba(233,229,219,0.12);
+          color: var(--hueso-dim);
+        }
 
         .lp-testimonial {
           margin-top: 40px;
@@ -225,15 +254,15 @@ export default function LoginPage() {
           border-radius: 14px;
           max-width: 400px;
         }
-        .lp-testimonial-quote { font-size: 14px; color: rgba(255,255,255,0.78); line-height: 1.6; }
+        .lp-testimonial-quote { font-size: 14px; color: rgba(233,229,219,0.8); line-height: 1.65; }
         .lp-testimonial-author { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 10px; font-weight: 500; }
 
         .lp-trust-row {
           display: flex; gap: 20px; flex-wrap: wrap;
           margin-top: 26px;
         }
-        .lp-trust-item { display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,0.5); font-size: 12.5px; font-weight: 500; }
-        .lp-trust-dot { width: 5px; height: 5px; border-radius: 50%; background: #34d399; }
+        .lp-trust-item { display: flex; align-items: center; gap: 7px; color: var(--hueso-dim); font-size: 12.5px; font-weight: 500; }
+        .lp-trust-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--verde); }
 
         .lp-cta-note {
           text-align: center; margin-top: 14px;
@@ -429,10 +458,14 @@ export default function LoginPage() {
         {/* Mobile top bar */}
         <div className="lp-mobile-top">
           <div className="lp-mobile-brand">
-            <Image src="/logo.png" alt="Stackr" width={28} height={28} style={{ borderRadius: 7 }} />
+            <svg className="lp-glifo" width="16" height="16" viewBox="0 0 17 17" fill="none" aria-hidden>
+              <rect y="1.5" width="17" height="3" rx="1.5" fill="currentColor" />
+              <rect y="7" width="12" height="3" rx="1.5" fill="currentColor" opacity=".7" />
+              <rect y="12.5" width="7" height="3" rx="1.5" fill="currentColor" opacity=".45" />
+            </svg>
             <span className="lp-mobile-name">Stackr</span>
           </div>
-          <div className="lp-mobile-tagline">El sistema para tu local de celulares</div>
+          <div className="lp-mobile-tagline">Sabé exactamente cuánto ganás con cada equipo</div>
         </div>
 
         {/* Left panel */}
@@ -441,35 +474,30 @@ export default function LoginPage() {
 
           <div className="lp-left-inner">
             <Link href="/" className="lp-brand">
-              <Image src="/logo.png" alt="Stackr" width={36} height={36} style={{ borderRadius: 9 }} />
+              <svg className="lp-glifo" width="19" height="19" viewBox="0 0 17 17" fill="none" aria-hidden>
+                <rect y="1.5" width="17" height="3" rx="1.5" fill="currentColor" />
+                <rect y="7" width="12" height="3" rx="1.5" fill="currentColor" opacity=".7" />
+                <rect y="12.5" width="7" height="3" rx="1.5" fill="currentColor" opacity=".45" />
+              </svg>
               <span className="lp-brand-name">Stackr</span>
             </Link>
 
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            >
+            <div className="lp-entra lp-d1">
               <h1 className="lp-headline">
-                Tu local de celulares,<br />
-                <span>organizado de una vez.</span>
+                Sabé exactamente<br />cuánto ganás<br />
+                <span>con cada equipo.</span>
               </h1>
               <p className="lp-sub">
-                Stock, ventas, reparaciones, turnos y mayoristas — todo en un panel diseñado para locales de celulares en Argentina.
+                Stock, ventas, reparaciones, cuenta corriente y caja. El sistema para locales
+                de celulares que te dice el número real, no el que parece.
               </p>
 
               <div className="lp-features">
-                {FEATURES.map((f, i) => (
-                  <motion.div
-                    key={f.label}
-                    className="lp-feature"
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
-                  >
+                {FEATURES.map(f => (
+                  <div key={f.label} className="lp-feature">
                     <div className={`lp-feature-icon ${f.color}`}>{f.icon}</div>
                     {f.label}
-                  </motion.div>
+                  </div>
                 ))}
               </div>
 
@@ -479,11 +507,11 @@ export default function LoginPage() {
               </div>
 
               <div className="lp-trust-row">
-                <div className="lp-trust-item"><span className="lp-trust-dot" /> Pago único, sin mensualidades</div>
+                <div className="lp-trust-item"><span className="lp-trust-dot" /> $50.000 por mes, sin permanencia</div>
                 <div className="lp-trust-item"><span className="lp-trust-dot" /> Tus datos, siempre tuyos</div>
                 <div className="lp-trust-item"><span className="lp-trust-dot" /> Soporte en español</div>
               </div>
-            </motion.div>
+            </div>
           </div>
 
           <div className="lp-left-footer">Stackr · Hecho en Argentina 🇦🇷</div>
@@ -491,12 +519,7 @@ export default function LoginPage() {
 
         {/* Right panel */}
         <div className="lp-right">
-          <motion.div
-            className="lp-form-wrap"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <div className="lp-form-wrap lp-entra lp-d2">
             <div className="lp-form-head">
               <div className="lp-form-title">
                 {isLogin ? "Bienvenido de nuevo" : "Creá tu cuenta"}
@@ -591,7 +614,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
       </div>

@@ -13,6 +13,25 @@ import { useEffect, useState } from 'react'
  */
 export const CLAVE_TEMA = 'stackr-tema'
 
+/** Los mismos valores que `--bg` en cada tema. */
+const COLOR_BARRA = { light: '#fbfbfa', dark: '#0b0c0d' } as const
+
+/**
+ * La barra del navegador del celular tiene que seguir al tema elegido.
+ * Las etiquetas que pone Next responden a la preferencia del SISTEMA; si el
+ * usuario eligió a mano lo contrario, queda una franja clara arriba de una
+ * app oscura. Se escribe una etiqueta sin `media`, que gana sobre las otras.
+ */
+function pintarBarraDelNavegador(tema: 'light' | 'dark') {
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]:not([media])')
+  if (!meta) {
+    meta = document.createElement('meta')
+    meta.name = 'theme-color'
+    document.head.appendChild(meta)
+  }
+  meta.content = COLOR_BARRA[tema]
+}
+
 export function BotonTema() {
   const [oscuro, setOscuro] = useState(false)
 
@@ -22,9 +41,11 @@ export function BotonTema() {
 
   const alternar = () => {
     const nuevo = !oscuro
+    const tema = nuevo ? 'dark' : 'light'
     setOscuro(nuevo)
-    document.documentElement.dataset.theme = nuevo ? 'dark' : 'light'
-    try { localStorage.setItem(CLAVE_TEMA, nuevo ? 'dark' : 'light') } catch {}
+    document.documentElement.dataset.theme = tema
+    pintarBarraDelNavegador(tema)
+    try { localStorage.setItem(CLAVE_TEMA, tema) } catch {}
   }
 
   return (

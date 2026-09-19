@@ -8,9 +8,17 @@ const interVariable = "font-sans";
 const jetbrainsVariable = "font-mono";
 
 export const viewport: Viewport = {
-  // Coincide con el fondo claro de la app (--bg) para que la barra del
-  // navegador en mobile no quede negra sobre una UI clara.
-  themeColor: "#f5f5f3",
+  /* La barra del navegador en el celular tiene que acompañar al tema, si no
+     queda una franja clara arriba de una app oscura. Los dos valores son los
+     de `--bg` en cada tema.
+
+     Esto cubre la preferencia del sistema; cuando el usuario elige el tema a
+     mano con el botón, `BotonTema` reescribe la etiqueta, porque esa
+     elección manda sobre la del sistema. */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0c0d" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -121,7 +129,7 @@ export default function RootLayout({
             un flash blanco en la cara del que eligió oscuro. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('stackr-tema');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('stackr-tema');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t;var c=t==='dark'?'#0b0c0d':'#fbfbfa';var m=document.querySelector('meta[name="theme-color"]:not([media])');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m)}m.setAttribute('content',c)}catch(e){}})()`,
           }}
         />
       </head>

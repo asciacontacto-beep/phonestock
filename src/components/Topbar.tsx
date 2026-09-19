@@ -131,6 +131,34 @@ const TITLES: Record<string, string> = {
   recibos: 'Recibo',
 }
 
+/* La barra de arriba tenía la izquierda vacía: 700px de aire y todos los
+   controles amontonados contra el borde derecho. Una barra que existe sólo
+   para sostener una botonera se ve como un error de maqueta. Poniéndole el
+   nombre de la pantalla, la barra tiene de qué hablar y el ojo entra por la
+   izquierda, como lee. */
+const TITULOS: Record<string, string> = {
+  dashboard: 'Resumen',
+  reports: 'Rentabilidad',
+  stock: 'Inventario',
+  accessories: 'Accesorios',
+  deposits: 'Depósitos',
+  scan: 'Carga por código',
+  sell: 'Nueva operación',
+  sales: 'Historial de ventas',
+  recibos: 'Recibos',
+  repairs: 'Servicio técnico',
+  turnos: 'Turnos',
+  cashiers: 'Cajas',
+  cashier_me: 'Mi caja',
+  expenses: 'Gastos',
+  customers: 'Clientes',
+  mayoristas: 'Mayoristas',
+  suppliers: 'Proveedores',
+  users: 'Usuarios',
+  settings: 'Configuración',
+  superadmin: 'Panel',
+}
+
 export function Topbar({ page, user, onLogout }: TopbarProps) {
   const [openPanel, setOpenPanel] = useState<'bell' | 'rate' | 'avatar' | 'help' | null>(null)
   const [read, setRead] = useState<string[]>([])
@@ -219,7 +247,9 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
       </div>
     )}
     <div className="topbar no-print">
-      <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+      <div className="tb-title">{TITULOS[page] || 'Stackr'}</div>
+
+      <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', marginLeft: 'auto' }}>
 
         {/* Disparador visible de la command palette (⌘K) */}
         <button

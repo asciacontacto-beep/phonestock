@@ -415,9 +415,6 @@ export function DashboardClient({
   if (isEmpty) {
     return (
       <div className="page dash">
-        <div className="sh" style={{ marginBottom: 20 }}>
-          <h1 className="st">Resumen</h1>
-        </div>
         <div className="panel" style={{ padding: '48px 24px', textAlign: 'center' }}>
           <div className="d-empty-icon" style={{ width: 56, height: 56 }}>
             <Package size={24} />
@@ -442,8 +439,7 @@ export function DashboardClient({
     <div className="page dash">
 
       {/* Header */}
-      <div className="sh" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <h1 className="st">Resumen</h1>
+      <div className="sh" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12, justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="filters-wrap" style={{ margin: 0 }}>
             {(Object.keys(RANGE_LABELS) as Range[]).map(r => (

@@ -1,0 +1,94 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<title>Login mobile · 3 caminos</title>
+<style>
+:root{--tinta:#08090a;--tinta2:#0e1012;--hueso:#e9e5db;--dim:rgba(233,229,219,.55);--dim2:rgba(233,229,219,.3);--oro:#d9a441;--verde:#6ee7a8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a1a;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;padding:26px;display:flex;gap:26px;justify-content:center;flex-wrap:wrap}
+.wrap{text-align:center}
+.tag{color:#888;font-size:12px;margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.name{color:#fff;font-size:15px;margin-bottom:12px;font-weight:600}
+.phone{width:340px;height:700px;border-radius:34px;overflow:hidden;border:1px solid #333;position:relative;text-align:left}
+.glifo{display:block;flex-shrink:0}
+
+/* ── A · Claro editorial ── */
+.a{background:#fff;height:100%;display:flex;flex-direction:column;padding:56px 28px 32px}
+.a .brand{display:flex;align-items:center;gap:9px;color:#111;font-weight:600;font-size:17px;letter-spacing:-.03em;margin-bottom:auto}
+.a h1{font-size:34px;line-height:1.04;letter-spacing:-.045em;color:#111;font-weight:700;margin-bottom:10px}
+.a h1 em{font-style:normal;color:#b4b4b0}
+.a p{font-size:14.5px;color:#777;line-height:1.55;margin-bottom:28px}
+.a label{display:block;font-size:12px;color:#888;font-weight:600;margin-bottom:7px}
+.a .f{width:100%;border:none;border-bottom:1.5px solid #e2e2de;padding:11px 0 12px;font-size:16px;color:#111;margin-bottom:20px;background:none}
+.a .f::placeholder{color:#c4c4c0}
+.a .btn{width:100%;background:#111;color:#fff;border:none;border-radius:999px;padding:16px;font-size:15px;font-weight:650;margin-top:6px}
+.a .foot{text-align:center;font-size:13px;color:#999;margin-top:16px}
+.a .foot b{color:#111}
+
+/* ── B · Oscuro, campos sin caja ── */
+.b{background:var(--tinta);height:100%;display:flex;flex-direction:column;padding:56px 28px 32px;position:relative;overflow:hidden}
+.b .glow{position:absolute;top:-180px;left:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(217,164,65,.14),transparent 68%)}
+.b .in{position:relative;display:flex;flex-direction:column;height:100%}
+.b .brand{display:flex;align-items:center;gap:9px;color:var(--hueso);font-weight:600;font-size:17px;letter-spacing:-.03em;margin-bottom:auto}
+.b h1{font-size:34px;line-height:1.04;letter-spacing:-.045em;color:var(--hueso);font-weight:700;margin-bottom:10px}
+.b h1 em{font-style:normal;color:var(--dim2)}
+.b p{font-size:14.5px;color:var(--dim);line-height:1.55;margin-bottom:30px}
+.b label{display:block;font-size:12px;color:var(--dim2);font-weight:600;margin-bottom:7px}
+.b .f{width:100%;border:none;border-bottom:1px solid rgba(233,229,219,.16);padding:11px 0 12px;font-size:16px;color:var(--hueso);margin-bottom:22px;background:none}
+.b .f::placeholder{color:rgba(233,229,219,.25)}
+.b .btn{width:100%;background:var(--hueso);color:var(--tinta);border:none;border-radius:999px;padding:16px;font-size:15px;font-weight:700;margin-top:6px}
+.b .foot{text-align:center;font-size:13px;color:var(--dim2);margin-top:16px}
+.b .foot b{color:var(--hueso)}
+
+/* ── C · Hoja que sube ── */
+.c{background:var(--tinta);height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.c .glow{position:absolute;top:-160px;right:-140px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(217,164,65,.16),transparent 68%)}
+.c .top{position:relative;padding:54px 28px 0;flex:1}
+.c .brand{display:flex;align-items:center;gap:9px;color:var(--hueso);font-weight:600;font-size:17px;letter-spacing:-.03em;margin-bottom:30px}
+.c h1{font-size:31px;line-height:1.06;letter-spacing:-.045em;color:var(--hueso);font-weight:700}
+.c h1 em{font-style:normal;color:var(--dim2)}
+.c .sheet{background:#fff;border-radius:26px 26px 0 0;padding:28px 26px 30px;position:relative}
+.c .grip{width:38px;height:4px;border-radius:99px;background:#e4e4e0;margin:0 auto 20px}
+.c label{display:block;font-size:12px;color:#888;font-weight:600;margin-bottom:7px}
+.c .f{width:100%;border:1px solid #e8e8e4;background:#fafaf8;border-radius:13px;padding:14px 15px;font-size:16px;color:#111;margin-bottom:16px}
+.c .f::placeholder{color:#c4c4c0}
+.c .btn{width:100%;background:#111;color:#fff;border:none;border-radius:13px;padding:16px;font-size:15px;font-weight:650;margin-top:4px}
+.c .foot{text-align:center;font-size:13px;color:#999;margin-top:14px}
+.c .foot b{color:#111}
+</style></head><body>
+
+<div class="wrap"><div class="tag">Opción A</div><div class="name">Claro editorial</div>
+<div class="phone"><div class="a">
+  <div class="brand"><svg class="glifo" width="17" height="17" viewBox="0 0 17 17"><rect y="1.5" width="17" height="3" rx="1.5" fill="#111"/><rect y="7" width="12" height="3" rx="1.5" fill="#111" opacity=".7"/><rect y="12.5" width="7" height="3" rx="1.5" fill="#111" opacity=".45"/></svg>Stackr</div>
+  <h1>Bienvenido<br><em>de nuevo.</em></h1>
+  <p>Entrá y seguí donde quedaste.</p>
+  <label>Email</label><input class="f" placeholder="nombre@empresa.com">
+  <label>Contraseña</label><input class="f" type="password" placeholder="Mínimo 6 caracteres">
+  <button class="btn">Ingresar</button>
+  <div class="foot">¿No tenés cuenta? <b>Registrate gratis</b></div>
+</div></div></div>
+
+<div class="wrap"><div class="tag">Opción B</div><div class="name">Oscuro, campos sin caja</div>
+<div class="phone"><div class="b"><div class="glow"></div><div class="in">
+  <div class="brand"><svg class="glifo" width="17" height="17" viewBox="0 0 17 17"><rect y="1.5" width="17" height="3" rx="1.5" fill="#e9e5db"/><rect y="7" width="12" height="3" rx="1.5" fill="#e9e5db" opacity=".7"/><rect y="12.5" width="7" height="3" rx="1.5" fill="#e9e5db" opacity=".45"/></svg>Stackr</div>
+  <h1>Bienvenido<br><em>de nuevo.</em></h1>
+  <p>Entrá y seguí donde quedaste.</p>
+  <label>Email</label><input class="f" placeholder="nombre@empresa.com">
+  <label>Contraseña</label><input class="f" type="password" placeholder="Mínimo 6 caracteres">
+  <button class="btn">Ingresar</button>
+  <div class="foot">¿No tenés cuenta? <b>Registrate gratis</b></div>
+</div></div></div></div>
+
+<div class="wrap"><div class="tag">Opción C</div><div class="name">Hoja que sube</div>
+<div class="phone"><div class="c"><div class="glow"></div>
+  <div class="top">
+    <div class="brand"><svg class="glifo" width="17" height="17" viewBox="0 0 17 17"><rect y="1.5" width="17" height="3" rx="1.5" fill="#e9e5db"/><rect y="7" width="12" height="3" rx="1.5" fill="#e9e5db" opacity=".7"/><rect y="12.5" width="7" height="3" rx="1.5" fill="#e9e5db" opacity=".45"/></svg>Stackr</div>
+    <h1>Sabé exactamente<br>cuánto ganás<br><em>con cada equipo.</em></h1>
+  </div>
+  <div class="sheet"><div class="grip"></div>
+    <label>Email</label><input class="f" placeholder="nombre@empresa.com">
+    <label>Contraseña</label><input class="f" type="password" placeholder="Mínimo 6 caracteres">
+    <button class="btn">Ingresar</button>
+    <div class="foot">¿No tenés cuenta? <b>Registrate gratis</b></div>
+  </div>
+</div></div></div>
+
+</body></html>

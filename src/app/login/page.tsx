@@ -451,73 +451,79 @@ export default function LoginPage() {
 
         /* ── Responsive ── */
         /* ── Mobile ──────────────────────────────────────────────────────
-           Todo oscuro, sin tarjeta. La primera versión ponía el formulario
-           en un bloque crema sobre el fondo negro: se leía como un papel
-           pegado encima, y los campos blancos adentro del crema quedaban
-           sucios. Acá los campos son oscuros con borde de un pelo, como en
-           la landing, y el único elemento claro es el botón — que es
-           justamente lo que hay que tocar. */
+           Claro y editorial, no oscuro. En el teléfono el login es el paso
+           previo a la app —que es clara—, así que el salto se siente mejor
+           entrando en claro. Y en una pantalla chica el fondo negro con
+           cajas encima se ensucia enseguida.
+
+           Los campos no tienen caja: una sola línea abajo. Lo único sólido
+           de la pantalla es el botón, que es lo que hay que tocar. */
         @media (max-width: 900px) {
           .lp-root {
             flex-direction: column;
-            background: var(--tinta);
+            background: #fff;
             min-height: 100svh;
           }
           .lp-left { display: none; }
-          .lp-mobile-top { display: block; }
+          .lp-mobile-top {
+            display: block;
+            background: transparent;
+            text-align: left;
+            padding: 52px 26px 0;
+          }
+          .lp-mobile-brand { justify-content: flex-start; margin-bottom: 0; }
+          .lp-mobile-name { color: #111; font-size: 17px; font-weight: 600; letter-spacing: -0.03em; }
+          .lp-mobile-top .lp-glifo { color: #111; }
+          /* El argumento de venta no va acá: la pantalla tiene que ser el
+             título y dos campos, nada más. */
+          .lp-mobile-tagline { display: none; }
 
           .lp-right {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 0 22px 24px;
+            padding: 0 26px 26px;
             background: transparent;
           }
           .lp-form-wrap { width: 100%; max-width: 420px; margin: 0 auto; }
+          .lp-form-card { background: transparent; border: none; box-shadow: none; padding: 0; }
 
-          .lp-form-card {
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            padding: 0;
-          }
+          .lp-form-head { margin-bottom: 26px; }
+          .lp-form-title { font-size: 30px; letter-spacing: -0.04em; line-height: 1.06; color: #111; }
+          .lp-form-sub { font-size: 14.5px; color: #777; margin-top: 8px; }
 
-          .lp-form-head { text-align: center; margin-bottom: 26px; }
-          .lp-form-title { color: var(--hueso); font-size: 26px; letter-spacing: -0.035em; }
-          .lp-form-sub { color: var(--hueso-dim); }
+          .lp-label { color: #888; font-size: 12px; }
+          .lp-forgot { color: #999; }
 
-          .lp-label { color: var(--hueso-dim); }
-          .lp-forgot { color: var(--hueso-dim2); }
-
+          /* Campo sin caja: sólo la línea de abajo. */
           .lp-input {
-            padding: 15px 16px;
+            border: none;
+            border-bottom: 1.5px solid #e4e4e0;
+            border-radius: 0;
+            background: none;
+            padding: 11px 0 12px;
             font-size: 16px; /* evita el zoom de iOS */
-            background: var(--tinta-2);
-            border: 1px solid rgba(233,229,219,0.12);
-            border-radius: 13px;
-            color: var(--hueso);
+            color: #111;
           }
-          .lp-input::placeholder { color: rgba(233,229,219,0.28); }
+          .lp-input::placeholder { color: #c4c4c0; }
           .lp-input:focus {
-            border-color: rgba(233,229,219,0.34);
-            background: #12151800;
+            border-bottom-color: #111;
+            background: none;
             box-shadow: none;
           }
 
-          /* El único elemento claro de la pantalla es lo que hay que tocar. */
           .lp-submit {
-            background: var(--hueso);
-            color: var(--tinta);
-            border-radius: 13px;
-            padding: 15px;
-            font-weight: 700;
+            border-radius: 999px;
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 650;
+            margin-top: 10px;
           }
 
-          .lp-toggle { color: var(--hueso-dim); margin-top: 22px; }
-          .lp-toggle button { color: var(--hueso); }
-          .lp-cta-note { color: var(--hueso-dim2); }
-          .lp-mobile-trust { display: flex; }
+          .lp-toggle { margin-top: 16px; text-align: center; }
+          .lp-mobile-trust { display: flex; color: #aaa; padding-bottom: 30px; }
+          .lp-mobile-trust i { background: #34a870; }
         }
       `}</style>
 

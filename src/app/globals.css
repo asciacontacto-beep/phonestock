@@ -54,6 +54,20 @@
   --elev-alta: 0 1px 2px rgba(0,0,0,0.05), 0 18px 38px -22px rgba(0,0,0,0.32);
   --panel-oscuro: #0e1012;
   --panel-oscuro-txt: #ffffff;
+
+  /* ── Movimiento ──────────────────────────────────────────────────────
+     Una sola curva para toda la app. Que todo frene igual es lo que hace
+     que se sienta una pieza y no pantallas pegadas: el ojo reconoce el
+     ritmo antes que cualquier detalle visual.
+
+     La curva arranca rápido y frena largo, que es como se mueven las cosas
+     con peso. Las duraciones son cortas a propósito: una interfaz de
+     trabajo tiene que responder, no lucirse. */
+  --ease:        cubic-bezier(.22, 1, .36, 1);
+  --ease-salida: cubic-bezier(.4, 0, 1, 1);
+  --dur-rapida:  .14s;
+  --dur-media:   .22s;
+  --dur-lenta:   .34s;
 }
 
 /* ── Tema oscuro ─────────────────────────────────────────────────────────
@@ -181,9 +195,12 @@ input, select, textarea { outline: none; }
   padding: 9px 11px; border-radius: 9px;
   color: var(--text-2); font-size: 13.5px; font-weight: 500;
   margin-bottom: 2px; width: 100%; text-align: left;
-  transition: background 0.14s ease, color 0.14s ease;
+  transition: background var(--dur-rapida) var(--ease),
+              color var(--dur-rapida) var(--ease),
+              transform var(--dur-rapida) var(--ease);
   text-decoration: none;
 }
+.s-item:active { transform: scale(.985); }
 .s-item svg { color: var(--text-3); transition: color .14s ease; flex-shrink: 0; }
 .s-item:hover { background: var(--surface-2); color: var(--text); }
 .s-item:hover svg { color: var(--text-2); }
@@ -507,10 +524,31 @@ select.inp {
   display: flex; align-items: center; justify-content: center; padding: 32px;
   background: rgba(8,9,10,0.46);
   backdrop-filter: blur(8px) saturate(120%);
-  animation: moIn 0.18s ease-out;
+  animation: moIn var(--dur-media) var(--ease);
 }
 @keyframes moIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── El gesto de aparecer ────────────────────────────────────────────────
+   Todo lo que se despliega —menús, avisos, paneles— usa este mismo
+   movimiento: entra desde arriba, apenas encogido, y frena. Antes los
+   menús del encabezado aparecían de golpe, que es lo que hace que una app
+   se sienta hecha a las apuradas. */
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(-6px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes aparecerAbajo {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.pop {
+  animation: aparecer var(--dur-media) var(--ease) both;
+  transform-origin: top right;
+}
+.pop-izq { transform-origin: top left; }
+.sube    { animation: aparecerAbajo var(--dur-media) var(--ease) both; }
 
 .mb {
   background: var(--surface); border: 1px solid var(--border);
@@ -518,10 +556,10 @@ select.inp {
   max-height: 90dvh; display: flex; flex-direction: column;
   position: relative;
   box-shadow: 0 40px 90px -30px rgba(0,0,0,0.42), 0 2px 8px rgba(0,0,0,0.06);
-  animation: mbIn 0.26s cubic-bezier(0.22,1,0.36,1);
+  animation: mbIn var(--dur-lenta) var(--ease);
   overflow: hidden;
 }
-@keyframes mbIn { from { opacity:0; transform: scale(0.97) translateY(6px); } to { opacity:1; transform:none; } }
+@keyframes mbIn { from { opacity:0; transform: scale(0.965) translateY(10px); } to { opacity:1; transform:none; } }
 
 .mh {
   padding: 20px 24px 18px; border-bottom: 1px solid var(--border);
@@ -540,9 +578,49 @@ select.inp {
   font-weight: 600; font-size: 13px;
   box-shadow: var(--shadow-lg);
   display: flex; align-items: center; gap: 10px;
-  animation: toastIn 0.22s cubic-bezier(0.16,1,0.3,1);
+  animation: toastIn var(--dur-media) var(--ease);
 }
 @keyframes toastIn { from { opacity:0; transform: translateX(16px); } to { opacity:1; transform:none; } }
+
+/* ── Reacciones ──────────────────────────────────────────────────────────
+   Lo que se puede tocar tiene que acusar el toque. Sin esto la app se
+   siente una foto: hacés click y no pasa nada hasta que cambia la pantalla,
+   y ese hueco de medio segundo es lo que se lee como "lento". */
+
+.panel-row,
+.inv-row,
+.btn-icon,
+.btn-pill,
+.sel-pill,
+.badge {
+  transition:
+    background var(--dur-rapida) var(--ease),
+    color var(--dur-rapida) var(--ease),
+    border-color var(--dur-rapida) var(--ease),
+    transform var(--dur-rapida) var(--ease),
+    box-shadow var(--dur-media) var(--ease);
+}
+.panel-row.is-link:hover { background: var(--surface-2); }
+.btn-icon:active, .btn-pill:active, .sel-pill:active { transform: scale(.94); }
+
+/* Las tarjetas y paneles entran cuando aparecen, en vez de saltar. */
+.card, .panel, .sc { animation: aparecerAbajo var(--dur-lenta) var(--ease) both; }
+
+/* Los avisos del encabezado bajan, no aparecen de golpe. */
+.topbar { animation: aparecer var(--dur-lenta) var(--ease) both; }
+
+/* ── Menos movimiento ────────────────────────────────────────────────────
+   Si el sistema lo pide, se apaga TODO: animaciones y transiciones. Hay
+   gente a la que el movimiento le da náuseas o le dispara migrañas, y una
+   app de trabajo se usa ocho horas por día. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* ── Layout helpers ─────────────────────── */
 .row { display: flex; gap: 16px; }

@@ -269,7 +269,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'help' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow-lg)', zIndex: 200,
@@ -324,7 +324,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'rate' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow)', zIndex: 200,
@@ -387,7 +387,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'bell' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 10px)', right: 0,
               width: 320, background: 'var(--surface)',
               border: '1px solid var(--border-md)', borderRadius: 14,
@@ -484,7 +484,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'avatar' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow)', zIndex: 200,

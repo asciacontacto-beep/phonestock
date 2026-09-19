@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { BRANDS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
 import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { mandarAReparar } from '@/utils/reparacionPropia';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
@@ -33,6 +34,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
   const [editItem, setEditItem] = useState<any>(null);
   const [detailItem, setDetailItem] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [fallaReparar, setFallaReparar] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [selectedDeposit, setSelectedDeposit] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -100,6 +102,19 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       setDetailItem(null);
       router.refresh();
     } catch (e: any) { alert(e.message); }
+  };
+
+  /* Mandar un equipo propio al taller. Sale del stock disponible: mientras
+     está en reparación no tiene que aparecer para vender. */
+  const enviarAReparar = async (item: any) => {
+    setLoading(true);
+    const r = await mandarAReparar(supabase, item, { falla: fallaReparar });
+    setLoading(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success('Equipo enviado al taller — lo seguís desde Reparaciones');
+    setFallaReparar('');
+    setEditItem(null);
+    router.refresh();
   };
 
   const handleUpdate = async () => {
@@ -232,6 +247,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       <div className="filters-wrap no-print">
         {[
           { v: 'available', l: 'En Stock' },
+          { v: 'in_repair', l: 'En reparación' },
           { v: 'sold',      l: 'Vendidos' },
         ].map(opt => (
           <button key={opt.v} className={`btn-pill ${filter.status === opt.v ? 'active' : ''}`}
@@ -511,6 +527,22 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 </div>
               </div>
               
+              {editItem.status === 'available' && (
+                <div style={{ borderTop: '1px dashed var(--border-md)', paddingTop: 12, marginTop: 4 }}>
+                  <label className="lbl">Mandar a reparar</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="inp" style={{ flex: 1 }} placeholder="Qué hay que arreglar"
+                      value={fallaReparar} onChange={e => setFallaReparar(e.target.value)} />
+                    <button className="btn btn-outline" disabled={loading || !fallaReparar.trim()}
+                      onClick={() => enviarAReparar(editItem)}>Enviar</button>
+                  </div>
+                  <div className="helper-text" style={{ fontSize: 11 }}>
+                    Sale del stock disponible mientras está en el taller. Al cerrar la reparación, lo que
+                    se gastó en repuestos se suma al costo de este equipo.
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                 <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setEditItem(null)}>Cancelar</button>
                 <button className="btn btn-dark" style={{ flex: 1 }} onClick={handleUpdate} disabled={loading}>

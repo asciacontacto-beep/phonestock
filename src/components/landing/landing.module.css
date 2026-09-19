@@ -30,6 +30,11 @@
   background: var(--tinta);
   color: var(--hueso);
   min-height: 100vh;
+  /* El grano usa mix-blend-mode, que crea contexto de apilado y hacía que
+     toda la capa de atmósfera se pintara ENCIMA del contenido: la página se
+     veía negra entera. Aislando la raíz, el orden de pintado vuelve a ser el
+     que dice el z-index. */
+  isolation: isolate;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -45,6 +50,8 @@
   inset: 0;
   z-index: 0;
   overflow: hidden;
+  /* Contiene el mix-blend-mode del grano acá adentro. */
+  isolation: isolate;
 }
 .glowOro, .glowFrio {
   position: absolute;
@@ -60,16 +67,14 @@
   width: 820px; height: 820px;
   background: radial-gradient(circle, rgba(110,231,168,0.055) 0%, rgba(110,231,168,0) 70%);
 }
-.grano {
-  position: absolute;
-  inset: 0;
-  opacity: 0.032;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-  background-size: 180px 180px;
-}
+/* El grano de textura se sacó a propósito.
+   Era un SVG con feTurbulence como fondo de una capa fija. En el navegador
+   embebido se pintaba OPACO sobre toda la página —la landing se veía negra
+   entera— incluso con opacidad 0.05 y sin mezcla. Ni aislar el contenedor ni
+   subir el z-index del contenido lo corregían; lo único que lo arreglaba era
+   no dibujarlo. Los dos glows ya dan la atmósfera. */
 
-.capa { position: relative; z-index: 1; }
+.capa { position: relative; z-index: 5; }
 
 .ancho {
   width: 100%;
@@ -97,20 +102,28 @@
   gap: 8px;
   width: 100%;
   max-width: 880px;
-  padding: 9px 9px 9px 20px;
+  padding: 10px 10px 10px 22px;
   border-radius: 999px;
-  border: 1px solid var(--linea);
-  background: rgba(14, 16, 18, 0.72);
+  border: 1px solid rgba(233, 229, 219, 0.14);
+  background: linear-gradient(180deg, rgba(31, 35, 39, 0.92), rgba(14, 16, 18, 0.88));
   /* Sin el prefijo -webkit- al lado: el compilador de CSS de Next descarta
      la propiedad sin prefijo cuando ve las dos juntas, y el nav quedaba
      opaco en vez de esmerilado. */
-  backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: 0 18px 50px -20px rgba(0,0,0,0.8);
+  backdrop-filter: blur(22px) saturate(165%);
+  /* El inset de arriba es lo que le da material: simula la luz pegando en el
+     borde superior de la pildora. Sin eso flota sin peso. */
+  box-shadow:
+    0 1px 0 rgba(233, 229, 219, 0.10) inset,
+    0 24px 60px -24px rgba(0, 0, 0, 0.95),
+    0 2px 10px -4px rgba(0, 0, 0, 0.55);
   transition: max-width .45s cubic-bezier(.22,1,.36,1), background .35s ease, padding .35s ease;
 }
 .navScrolled {
   max-width: 660px;
-  background: rgba(14, 16, 18, 0.9);
+  background: linear-gradient(180deg, rgba(27, 31, 35, 0.96), rgba(12, 14, 16, 0.94));
+  box-shadow:
+    0 1px 0 rgba(233, 229, 219, 0.12) inset,
+    0 20px 50px -20px rgba(0, 0, 0, 1);
 }
 .navMarca {
   display: flex; align-items: center; gap: 9px;
@@ -120,7 +133,7 @@
   text-decoration: none;
 }
 .navLogo {
-  width: 24px; height: 24px; border-radius: 7px;
+  width: 26px; height: 26px; border-radius: 8px;
   background: var(--hueso); color: var(--tinta);
   display: grid; place-items: center;
   font-size: 13px; font-weight: 800;
@@ -135,21 +148,73 @@
   transition: color .2s ease, background .2s ease;
 }
 .navLink:hover { color: var(--hueso); background: rgba(233,229,219,0.06); }
-.navCta {
-  padding: 8px 16px;
+/* Entrar queda como texto: el que ya es cliente lo busca igual. El botón
+   lleno es para el que todavía no probó, que es a quien hay que convencer. */
+.navEntrar {
+  padding: 8px 13px;
   border-radius: 999px;
-  background: var(--hueso);
-  color: var(--tinta);
-  font-size: 13.5px; font-weight: 650;
+  font-size: 13.5px; font-weight: 550;
+  color: var(--hueso-dim);
   text-decoration: none;
   white-space: nowrap;
-  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease;
+  transition: color .2s ease;
 }
-.navCta:hover { transform: translateY(-1px); box-shadow: 0 8px 22px -8px rgba(233,229,219,.5); }
+.navEntrar:hover { color: var(--hueso); }
 
-@media (max-width: 760px) {
-  .navLinks { display: none; }
-  .nav { max-width: 100%; padding-left: 16px; }
+.navCta {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #fffdf8, #ddd7c8);
+  color: var(--tinta);
+  font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px -10px rgba(233,229,219,0.55), inset 0 1px 0 rgba(255,255,255,0.7);
+  transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .25s ease;
+}
+.navCta:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 14px 34px -10px rgba(233,229,219,0.7), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.navCta svg { transition: transform .25s cubic-bezier(.22,1,.36,1); }
+.navCta:hover svg { transform: translateX(3px); }
+
+@media (max-width: 900px) { .navLinks { display: none; } }
+@media (max-width: 520px) {
+  .nav { padding-left: 16px; gap: 4px; }
+  .navMarca span:last-child { display: none; }
+  .navEntrar { padding: 8px 8px; }
+  .navCta { padding: 10px 14px; }
+}
+
+/* ── Entrada del hero ──────────────────────────────────────────────────
+   En CSS y no con JavaScript a propósito. Con la animación por JS, el
+   contenido arranca en opacidad 0 y la sube el script: el DOM queda bien
+   pero el compositor no siempre repinta, y la página se veía NEGRA hasta
+   que algo forzaba el repintado. Con keyframes de CSS lo dibuja el
+   navegador solo, sin depender de que corra nada. */
+@keyframes subir {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+.entra {
+  animation: subir .85s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* Lo mismo para lo que aparece al scrollear: el observador sólo agrega la
+   clase, y la animación la corre el navegador. */
+.revelar { opacity: 0; }
+.revelarVisible { animation: subir .8s cubic-bezier(.22,1,.36,1) both; }
+.d1 { animation-delay: .10s; }
+.d2 { animation-delay: .18s; }
+.d3 { animation-delay: .28s; }
+.d4 { animation-delay: .38s; }
+.d5 { animation-delay: .48s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .entra, .revelarVisible { animation: none; }
+  .revelar { opacity: 1; }
 }
 
 /* ── Hero ──────────────────────────────────────────────────────────────── */
@@ -246,14 +311,16 @@
 .kpis {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--linea);
-  border: 1px solid var(--linea);
-  border-radius: 14px;
-  overflow: hidden;
+  gap: 10px;
   margin-bottom: 22px;
 }
-.kpi { background: var(--tinta-2); padding: 18px 20px; }
+/* Antes el gap de 1px sobre un fondo claro dibujaba lineas entre las celdas.
+   Ahora cada KPI es su propio bloque y la separacion es aire. */
+.kpi {
+  background: rgba(233, 229, 219, 0.028);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
 .kpiLabel {
   font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
   color: var(--hueso-dim2); font-weight: 600; margin-bottom: 7px;
@@ -272,12 +339,14 @@
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr 0.9fr;
   gap: 12px;
-  padding: 13px 4px;
-  border-bottom: 1px solid var(--linea);
+  padding: 13px 10px;
+  border-radius: 9px;
   font-size: 13px;
   align-items: center;
 }
-.fila:last-child { border-bottom: none; }
+/* Sin hairlines: las filas se leen por el ritmo del zebrado, mas suave. */
+.fila:nth-child(even) { background: rgba(233, 229, 219, 0.022); }
+.filaCab:nth-child(even) { background: none; }
 .filaCab {
   font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--hueso-dim2); font-weight: 600;
@@ -298,9 +367,7 @@
 
 /* ── Marquesina ────────────────────────────────────────────────────────── */
 .marquesina {
-  border-top: 1px solid var(--linea);
-  border-bottom: 1px solid var(--linea);
-  padding: 22px 0;
+  padding: 30px 0;
   overflow: hidden;
   margin: 100px 0;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
@@ -320,7 +387,6 @@
   letter-spacing: -0.01em;
 }
 .marquesinaItem b { color: var(--hueso); font-weight: 600; }
-.marquesinaSep { color: var(--oro); }
 @keyframes correr {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -356,8 +422,7 @@
   grid-template-columns: 78px 1fr 1fr;
   gap: 40px;
   align-items: start;
-  padding: 52px 0;
-  border-top: 1px solid var(--linea);
+  padding: 58px 0;
 }
 .editorialNumero {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -388,9 +453,7 @@
 /* ── Sección del número grande ─────────────────────────────────────────── */
 .foco {
   text-align: center;
-  padding: 120px 0;
-  border-top: 1px solid var(--linea);
-  border-bottom: 1px solid var(--linea);
+  padding: 130px 0;
 }
 .focoNumero {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -467,8 +530,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px 28px;
-  padding: 28px 0;
-  border-top: 1px solid var(--linea);
+  padding: 30px 0;
   margin-bottom: 30px;
 }
 .incluyeItem {
@@ -483,9 +545,13 @@
 }
 
 /* ── Preguntas ─────────────────────────────────────────────────────────── */
+/* Sin hairline entre preguntas: la separacion la dan el aire y el fondo que
+   aparece al pasar por encima o al abrir. */
 .pregunta {
-  border-bottom: 1px solid var(--linea);
+  border-radius: 14px;
+  transition: background .25s ease;
 }
+.pregunta:hover { background: rgba(233, 229, 219, 0.025); }
 .preguntaBtn {
   width: 100%;
   display: flex; align-items: center; justify-content: space-between; gap: 20px;
@@ -510,8 +576,7 @@
 /* ── Cierre ────────────────────────────────────────────────────────────── */
 .cierre { padding: 130px 0; text-align: center; }
 .pie {
-  border-top: 1px solid var(--linea);
-  padding: 34px 0;
+  padding: 44px 0;
   display: flex; justify-content: space-between; align-items: center; gap: 16px;
   flex-wrap: wrap;
   font-size: 13px;

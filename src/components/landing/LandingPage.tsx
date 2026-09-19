@@ -6,22 +6,34 @@ import { ArrowRight, Plus, Check, MessageCircle } from 'lucide-react'
 import s from './landing.module.css'
 import { PRECIO_MENSUAL, PRECIO_LIFETIME, money, mesesDeAhorro, linkWhatsApp } from './precios'
 
-/* ── Animación base ──────────────────────────────────────────────────────
-   Un solo gesto para toda la página: entrar desde abajo, corto y con una
-   curva que frena. Repetirlo en todos lados es lo que hace que se sienta
-   una pieza y no seis secciones pegadas. */
-const entrada = {
-  initial: { opacity: 0, y: 26 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-80px' },
-  transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] as const },
-}
-
+/* ── Animación de entrada ────────────────────────────────────────────────
+   En CSS y no con JavaScript. Con la animación por JS el contenido arranca
+   en opacidad 0 y la sube el script: el DOM queda correcto pero el
+   compositor no siempre repinta, y las secciones quedaban en negro. El
+   observador sólo agrega una clase; la animación la corre el navegador. */
 function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { rootMargin: '-60px' },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <motion.div {...entrada} transition={{ ...entrada.transition, delay }}>
+    <div
+      ref={ref}
+      className={`${s.revelar} ${visible ? s.revelarVisible : ''}`}
+      style={visible && delay ? { animationDelay: `${delay}s` } : undefined}
+    >
       {children}
-    </motion.div>
+    </div>
   )
 }
 
@@ -198,81 +210,54 @@ export default function LandingPage() {
       <div className={s.atmosfera} aria-hidden>
         <div className={s.glowOro} />
         <div className={s.glowFrio} />
-        <div className={s.grano} />
       </div>
 
       <div className={s.navWrap}>
-        <motion.nav
-          className={`${s.nav} ${scrolled ? s.navScrolled : ''}`}
-          initial={{ y: -70, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-        >
+        <nav className={`${s.nav} ${s.entra} ${scrolled ? s.navScrolled : ''}`}>
           <a href="#top" className={s.navMarca}>
-            <span className={s.navLogo}>S</span> Stackr
+            <span className={s.navLogo}>S</span> <span>Stackr</span>
           </a>
           <div className={s.navLinks}>
             <a href="#sistema" className={s.navLink}>El sistema</a>
             <a href="#precio" className={s.navLink}>Precio</a>
             <a href="#preguntas" className={s.navLink}>Preguntas</a>
           </div>
-          <Link href="/login" className={s.navCta}>Entrar</Link>
-        </motion.nav>
+          <Link href="/login" className={s.navEntrar}>Entrar</Link>
+          <Link href="/login" className={s.navCta}>
+            Probar gratis <ArrowRight size={15} />
+          </Link>
+        </nav>
       </div>
 
       <div className={s.capa}>
         {/* ── Hero ─────────────────────────────────────────────────── */}
         <header className={s.hero} id="top" ref={heroRef}>
           <div className={s.ancho}>
-            <motion.div
-              className={s.chip}
-              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <div className={`${s.chip} ${s.entra} ${s.d1}`}>
               <span className={s.chipPunto} /> 48 horas de prueba · sin tarjeta
-            </motion.div>
+            </div>
 
-            <motion.h1
-              className={s.h1}
-              initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <h1 className={`${s.h1} ${s.entra} ${s.d2}`}>
               Sabé exactamente<br />cuánto ganás<br /><em>con cada equipo.</em>
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              className={s.heroTexto}
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.42, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <p className={`${s.heroTexto} ${s.entra} ${s.d3}`}>
               Stock, ventas, reparaciones, cuenta corriente y caja. El sistema para locales
               de celulares que te dice el número real, no el que parece.
-            </motion.p>
+            </p>
 
-            <motion.div
-              className={s.heroCtas}
-              initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.52, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <div className={`${s.heroCtas} ${s.entra} ${s.d4}`}>
               <Link href="/login" className={s.btnPrimario}>
                 Empezar la prueba <ArrowRight size={17} />
               </Link>
               <a href="#sistema" className={s.btnSecundario}>Ver cómo funciona</a>
-            </motion.div>
+            </div>
 
-            <motion.div
-              className={s.heroNota}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ duration: 0.9, delay: 0.66 }}
-            >
+            <div className={`${s.heroNota} ${s.entra} ${s.d5}`}>
               {money(PRECIO_MENSUAL)} por mes, sin permanencia · o una licencia para siempre
-            </motion.div>
+            </div>
 
-            <motion.div
-              className={s.ventanaWrap}
-              initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <div className={`${s.ventanaWrap} ${s.entra} ${s.d5}`}>
               <motion.div className={s.ventana} style={{ rotateX: rotarX, scale: escala }}>
                 <div className={s.ventanaBarra}>
                   <span className={s.punto} /><span className={s.punto} /><span className={s.punto} />
@@ -316,7 +301,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </motion.div>
-            </motion.div>
+            </div>
           </div>
         </header>
 
@@ -334,7 +319,7 @@ export default function LandingPage() {
                   ['Multi sucursal', 'sin costo extra'],
                 ].map(([a, b], i) => (
                   <span className={s.marquesinaItem} key={i}>
-                    <b>{a}</b><span className={s.marquesinaSep}>/</span>{b}
+                    <b>{a}</b>{b}
                   </span>
                 ))}
               </div>

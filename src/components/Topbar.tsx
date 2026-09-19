@@ -194,18 +194,21 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
       <div
         className="no-print"
         onClick={() => { setOpenPanel('bell'); setBannerDismissed(true); }}
+        /* Era una franja verde brillante a todo el ancho, arriba de todo:
+           lo primero que veía el usuario al entrar era un aviso nuestro, no
+           su negocio. Ahora es una línea neutra y discreta — sigue estando,
+           deja de gritar. */
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-          padding: '10px 18px', background: 'rgba(16,185,129,0.10)',
-          borderBottom: '1px solid rgba(16,185,129,0.25)', fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
+          padding: '7px 18px', background: 'var(--surface-2)',
+          borderBottom: '1px solid var(--border)', fontSize: 12.5,
         }}
       >
-        <Sparkles size={15} color="var(--green)" style={{ flexShrink: 0 }} />
-        <span style={{ color: 'var(--text-2)', flex: 1 }}>
-          <strong>Hay {unread.length} {unread.length === 1 ? 'novedad' : 'novedades'} en el sistema.</strong>{' '}
-          Mirá las notas de actualización para ver qué cambió.
+        <Sparkles size={13} color="var(--text-3)" style={{ flexShrink: 0 }} />
+        <span style={{ color: 'var(--text-3)', flex: 1 }}>
+          {unread.length} {unread.length === 1 ? 'novedad' : 'novedades'} en el sistema
         </span>
-        <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>Ver →</span>
+        <span style={{ color: 'var(--text-2)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' }}>Ver</span>
         <button
           onClick={e => { e.stopPropagation(); setBannerDismissed(true); }}
           title="Ocultar"

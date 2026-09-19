@@ -102,7 +102,7 @@ input, select, textarea { outline: none; }
   flex-shrink: 0;
 }
 
-.s-name { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+.s-name { font-size: 16px; font-weight: 600; letter-spacing: -0.035em; color: var(--text); }
 .s-ver  { font-size: 10px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
 
 .s-nav { padding: 10px 8px; flex: 1; overflow-y: auto; }
@@ -1097,10 +1097,18 @@ select.inp {
 }
 .dash .sc:hover .sc-icon { opacity: 1; transform: scale(1.06); }
 
-.dash .sc-i-blue   { background: var(--blue-dim);  color: var(--blue); }
-.dash .sc-i-green  { background: var(--green-dim); color: var(--green); }
-.dash .sc-i-violet { background: #f5f3ff;          color: #7c3aed; }
-.dash .sc-i-amber  { background: var(--amber-dim); color: var(--amber); }
+/* Los cuatro íconos del tablero van en un solo tono.
+   Azul, verde, violeta y ámbar en cuatro tarjetas seguidas se leen como
+   semáforo: el ojo busca qué significa cada color y no significan nada.
+   El color queda reservado para cuando dice algo —rojo si algo está mal,
+   verde si está bien—, que es cuando sirve. */
+.dash .sc-i-blue,
+.dash .sc-i-green,
+.dash .sc-i-violet,
+.dash .sc-i-amber {
+  background: var(--surface-3);
+  color: var(--text-3);
+}
 
 .dash .sg .sl { margin-bottom: 8px; }
 .dash .sg .sv { font-size: 25px; }

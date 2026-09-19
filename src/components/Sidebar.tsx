@@ -64,10 +64,16 @@ export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarPr
 
   return (
     <div className={`sidebar no-print ${isOpen ? 'open' : ''}`}>
-      <div className="s-brand" style={{ justifyContent: 'center', padding: '16px' }}>
-        <div style={{ width: 120, height: 120, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto' }}>
-          <img src="/logo.png?v=2" alt="Stackr Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.5)' }} />
-        </div>
+      {/* La misma marca que la landing y el login: el glifo de tres barras y
+          el nombre escrito. Antes era un bloque de 120px con la "S" que se
+          comía el alto de la barra y no se parecía a nada del resto. */}
+      <div className="s-brand">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden style={{ flexShrink: 0, color: 'var(--text)' }}>
+          <rect y="1.5" width="17" height="3" rx="1.5" fill="currentColor" />
+          <rect y="7" width="12" height="3" rx="1.5" fill="currentColor" opacity=".7" />
+          <rect y="12.5" width="7" height="3" rx="1.5" fill="currentColor" opacity=".45" />
+        </svg>
+        <span className="s-name">Stackr</span>
       </div>
       <div className="s-nav">
         {nav.map((it: any, i) => it.g ?

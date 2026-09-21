@@ -20,7 +20,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const BUCKET_FOTOS = 'catalogo'
-export const MAX_FOTOS = 4
+export const MAX_FOTOS = 3
 
 const GRANDE = { lado: 1600, calidad: 0.82 }
 const MINI = { lado: 480, calidad: 0.74 }

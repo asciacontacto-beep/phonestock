@@ -1,6 +1,6 @@
 "use client"
 import { useRef, useState } from 'react'
-import { Camera, X, Loader2 } from 'lucide-react'
+import { Camera, X, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 import { MAX_FOTOS, subirFoto, borrarFotos, urlFoto } from '@/utils/fotos'
@@ -118,18 +118,37 @@ export function FotosEquipo({
         </div>
       ))}
 
-      {fotos.length + subiendo < MAX_FOTOS && (
+      {/* Sin fotos, el botón dice qué hace y cuántas entran: un ícono de
+          cámara solo no se entiende como "podés subir tres". */}
+      {fotos.length === 0 && subiendo === 0 ? (
         <button
           onClick={() => input.current?.click()}
-          disabled={subiendo > 0}
-          title="Agregar fotos"
-          style={{
-            ...caja, display: 'grid', placeItems: 'center', cursor: 'pointer',
-            background: 'transparent', border: '1px dashed var(--border-lg)', color: 'var(--text-3)',
-          }}
+          className="btn btn-outline btn-sm"
+          style={{ borderStyle: 'dashed', height: 44, gap: 7 }}
         >
-          <Camera size={16} />
+          <Camera size={15} /> Agregar fotos
+          <span style={{ color: 'var(--text-3)', fontWeight: 500 }}>· 0/{MAX_FOTOS}</span>
         </button>
+      ) : (
+        <>
+          {fotos.length + subiendo < MAX_FOTOS && (
+            <button
+              onClick={() => input.current?.click()}
+              disabled={subiendo > 0}
+              title={`Agregar fotos (hasta ${MAX_FOTOS})`}
+              aria-label="Agregar fotos"
+              style={{
+                ...caja, display: 'grid', placeItems: 'center', cursor: 'pointer',
+                background: 'transparent', border: '1px dashed var(--border-lg)', color: 'var(--text-3)',
+              }}
+            >
+              <Plus size={17} />
+            </button>
+          )}
+          <span style={{ fontSize: 11.5, color: 'var(--text-3)', fontFamily: 'JetBrains Mono, monospace', marginLeft: 2 }}>
+            {fotos.length + subiendo}/{MAX_FOTOS}
+          </span>
+        </>
       )}
 
       <input

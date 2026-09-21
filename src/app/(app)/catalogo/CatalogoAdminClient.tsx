@@ -1,11 +1,13 @@
 "use client"
-import { useEffect, useMemo, useState } from 'react'
-import { Store, Copy, ExternalLink, Search, Check } from 'lucide-react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { Store, Copy, ExternalLink, Search, Check, Camera } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 import { aSlug, slugDisponible, nombreEquipo, type EquipoStock } from '@/utils/catalogo'
-import { borrarFotos } from '@/utils/fotos'
+import { borrarFotos, MAX_FOTOS } from '@/utils/fotos'
 import { FotosEquipo } from './FotosEquipo'
+
+const sinCambios = () => () => {}
 
 type Org = { id: string; name: string; catalog_slug: string | null; catalog_enabled: boolean } | null
 
@@ -72,7 +74,10 @@ export function CatalogoAdminClient({
     })
   }, [stock, q, soloPublicados])
 
-  const url = typeof window !== 'undefined' ? `${window.location.origin}/c/${slug}` : `/c/${slug}`
+  // El dominio se conoce recién en el navegador. Leerlo durante el render
+  // hacía que el servidor y el navegador pintaran links distintos.
+  const origen = useSyncExternalStore(sinCambios, () => window.location.origin, () => '')
+  const url = `${origen}/c/${slug}`
 
   const alternarEquipo = async (e: EquipoStock) => {
     const nuevo = !e.in_catalog
@@ -195,6 +200,18 @@ export function CatalogoAdminClient({
           <Store size={14} /> Publicar los {visibles.length} de la lista
         </button>
         <button className="btn btn-ghost btn-sm" onClick={() => todos(false)}>Sacar todos</button>
+      </div>
+
+      <div style={{
+        display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14,
+        padding: '11px 14px', borderRadius: 10, background: 'var(--surface-2)',
+        border: '1px solid var(--border)', fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5,
+      }}>
+        <Camera size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+        <span>
+          Cada equipo puede llevar <strong>hasta {MAX_FOTOS} fotos</strong>. La primera es la portada: tocá otra
+          para ponerla primera. Se achican solas antes de subirse, así el catálogo carga rápido.
+        </span>
       </div>
 
       {visibles.length === 0 ? (

@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient, getProfile } from '@/utils/supabase/server'
 import { SalesClient } from './SalesClient'
 
 export const dynamic = 'force-dynamic'
@@ -8,6 +8,15 @@ export default async function SalesPage() {
 
   // Fetch all necessary data. getUser() valida el JWT (server-side).
   const { data: { user } } = await supabase.auth.getUser()
+  const orgId = user ? (await getProfile(user.id))?.org_id : null
+
+  // Los vendedores se filtran por negocio acá además de en la base. Esta
+  // consulta pedía todos los perfiles con rol vendedor y dependía sólo de
+  // la política RLS; si esa política se abre, la lista muestra empleados de
+  // otros negocios. Sin negocio conocido, la lista va vacía.
+  const vendedores = orgId
+    ? supabase.from('profiles').select('*').eq('role', 'seller').eq('org_id', orgId)
+    : Promise.resolve({ data: [] as any[] })
 
   const [
     { data: sales },
@@ -18,7 +27,7 @@ export default async function SalesPage() {
   ] = await Promise.all([
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
     supabase.from('deposits').select('*').order('name'),
-    supabase.from('profiles').select('*').eq('role', 'seller'),
+    vendedores,
     supabase.from('profiles').select('*').eq('id', user?.id).single(),
     supabase.from('settings').select('*').single()
   ])

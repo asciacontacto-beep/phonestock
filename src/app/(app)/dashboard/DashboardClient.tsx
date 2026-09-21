@@ -433,13 +433,18 @@ export function DashboardClient({
               </button>
             ))}
           </div>
-          <button className="btn btn-outline btn-sm" onClick={exportCSV}>
-            <Download size={13} /> Exportar
-          </button>
+          {userRole !== 'seller' && (
+            <button className="btn btn-outline btn-sm" onClick={exportCSV}>
+              <Download size={13} /> Exportar
+            </button>
+          )}
         </div>
       </div>
 
       {/* ── Lo primero: cuánto ganaste y de dónde salió ────────── */}
+      {/* Ganancia, facturación, margen y capital son del dueño: un vendedor
+          no los ve (y el servidor tampoco le manda los costos). */}
+      {userRole !== 'seller' && (
       <div className="d-hero">
         <div className="d-hero-grid">
           <div>
@@ -527,6 +532,7 @@ export function DashboardClient({
           );
         })()}
       </div>
+      )}
 
       {/* ── Estado del negocio ─────────────────────────────────── */}
       <div className="sg" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginBottom: 14 }}>
@@ -548,10 +554,14 @@ export function DashboardClient({
 
         <div className="sc">
           <ShoppingCart size={16} className="sc-icon sc-i-violet" />
-          <div className="sl">Ventas</div>
+          {/* Al vendedor el servidor sólo le manda sus propias ventas, así
+              que este número es el suyo, no el total del negocio. */}
+          <div className="sl">{userRole === 'seller' ? 'Tus ventas' : 'Ventas'}</div>
           <div className="sv">{filteredSales.length}</div>
           <div className="sc-sub">
-            {topSeller ? `mejor: ${topSeller.name.split(' ')[0]}` : RANGE_LABELS[range].toLowerCase()}
+            {userRole !== 'seller' && topSeller
+              ? `mejor: ${topSeller.name.split(' ')[0]}`
+              : RANGE_LABELS[range].toLowerCase()}
           </div>
         </div>
 

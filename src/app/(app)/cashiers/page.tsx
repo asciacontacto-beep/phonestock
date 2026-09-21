@@ -8,6 +8,12 @@ export default async function CashiersPage() {
 
   const user = await getUser()
   const profileData = user ? await getProfile(user.id) : null
+  const orgId = profileData?.org_id
+
+  // Filtrado por negocio acá además de en la base: ver sales/page.tsx.
+  const vendedores = orgId
+    ? supabase.from('profiles').select('*').eq('role', 'seller').eq('org_id', orgId)
+    : Promise.resolve({ data: [] as any[] })
 
   const [
     { data: salesData },
@@ -17,7 +23,7 @@ export default async function CashiersPage() {
     { data: movementsData },
   ] = await Promise.all([
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
-    supabase.from('profiles').select('*').eq('role', 'seller'),
+    vendedores,
     supabase.from('deposits').select('*').order('name'),
     supabase.from('cash_transfers').select('*').order('created_at', { ascending: false }),
     supabase.from('cash_movements').select('*').order('created_at', { ascending: false }),

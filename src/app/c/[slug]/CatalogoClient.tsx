@@ -1,7 +1,10 @@
 "use client"
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { mensajeWhatsApp, nombreEquipo, type EquipoStock } from '@/utils/catalogo'
+import { urlFoto } from '@/utils/fotos'
 import s from './catalogo.module.css'
+
+export type EquipoVidriera = EquipoStock & { fotos?: string[] | null }
 
 type Tienda = {
   slug: string
@@ -30,9 +33,80 @@ const money = (n: number | null, moneda: string | null) =>
  * servidor: un catálogo tiene decenas de equipos, no miles, y que filtre al
  * instante es lo que hace que se recorra en vez de abandonarse.
  */
-export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: EquipoStock[] }) {
+/**
+ * Las fotos de una tarjeta: se deslizan con el dedo, y tocarlas abre la
+ * grande. Carga la miniatura; la grande sólo si la abren.
+ */
+function Fotos({ fotos, nombre, onAbrir }: { fotos: string[]; nombre: string; onAbrir: (i: number) => void }) {
+  const [actual, setActual] = useState(0)
+  return (
+    <div className={s.fotos}>
+      <div
+        className={s.fotosTira}
+        onScroll={e => {
+          const t = e.currentTarget
+          setActual(Math.round(t.scrollLeft / t.clientWidth))
+        }}
+      >
+        {fotos.map((ruta, i) => (
+          <button key={ruta} className={s.fotoBoton} onClick={() => onAbrir(i)} aria-label={`Ver foto ${i + 1} de ${nombre}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={urlFoto(ruta, true)} alt={i === 0 ? nombre : ''} loading={i === 0 ? 'eager' : 'lazy'} className={s.foto} />
+          </button>
+        ))}
+      </div>
+      {fotos.length > 1 && (
+        <div className={s.puntos} aria-hidden>
+          {fotos.map((r, i) => <span key={r} className={`${s.puntoFoto} ${i === actual ? s.puntoFotoOn : ''}`} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Visor({ fotos, inicio, nombre, onCerrar }: { fotos: string[]; inicio: number; nombre: string; onCerrar: () => void }) {
+  const [actual, setActual] = useState(inicio)
+
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar() }
+    window.addEventListener('keydown', tecla)
+    const antes = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', tecla); document.body.style.overflow = antes }
+  }, [onCerrar])
+
+  return (
+    <div className={s.visor} role="dialog" aria-modal="true" aria-label={nombre} onClick={onCerrar}>
+      <div className={s.visorArriba}>
+        <span>{nombre}</span>
+        <span>{fotos.length > 1 ? `${actual + 1} / ${fotos.length}` : ''}</span>
+      </div>
+      <div
+        className={s.visorTira}
+        ref={el => { if (el && el.dataset.listo !== '1') { el.scrollLeft = inicio * el.clientWidth; el.dataset.listo = '1' } }}
+        onScroll={e => { const t = e.currentTarget; setActual(Math.round(t.scrollLeft / t.clientWidth)) }}
+      >
+        {fotos.map((ruta, i) => (
+          <div key={ruta} className={s.visorPagina}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={urlFoto(ruta)} alt={`${nombre}, foto ${i + 1}`} className={s.visorFoto} onClick={e => e.stopPropagation()} />
+          </div>
+        ))}
+      </div>
+      <button className={s.visorCerrar} onClick={onCerrar} aria-label="Cerrar">✕</button>
+    </div>
+  )
+}
+
+export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: EquipoVidriera[] }) {
   const [q, setQ] = useState('')
   const [marca, setMarca] = useState('todas')
+  const [visor, setVisor] = useState<{ fotos: string[]; inicio: number; nombre: string } | null>(null)
+
+  /* Si ningún equipo tiene fotos, las tarjetas quedan como antes. Si
+     algunos sí, los que no llevan un lugar vacío para que la grilla no
+     quede despareja. */
+  const hayFotos = equipos.some(e => (e.fotos || []).length > 0)
 
   const marcas = useMemo(
     () => [...new Set(equipos.map(e => e.brand).filter(Boolean))] as string[],
@@ -124,6 +198,20 @@ export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: E
                      último no puede tardar cinco segundos en aparecer. */
                   style={{ animationDelay: `${Math.min(i, 12) * 0.035}s` }}
                 >
+                  {hayFotos && ((e.fotos || []).length > 0 ? (
+                    <Fotos
+                      fotos={e.fotos || []}
+                      nombre={nombreEquipo(e)}
+                      onAbrir={i => setVisor({ fotos: e.fotos || [], inicio: i, nombre: nombreEquipo(e) })}
+                    />
+                  ) : (
+                    <div className={`${s.fotos} ${s.sinFoto}`} aria-hidden>
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+                        <rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" />
+                      </svg>
+                    </div>
+                  ))}
+
                   <div className={s.equipoTitulo}>
                     {[e.brand, e.model].filter(Boolean).join(' ')}
                   </div>
@@ -159,6 +247,8 @@ export function CatalogoClient({ tienda, equipos }: { tienda: Tienda; equipos: E
           </div>
         )}
       </main>
+
+      {visor && <Visor {...visor} onCerrar={() => setVisor(null)} />}
 
       <footer className={s.pie}>
         <div className={s.ancho}>

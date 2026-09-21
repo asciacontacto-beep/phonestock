@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { supabaseEnv } from '@/utils/supabase/env'
-import { CatalogoClient } from './CatalogoClient'
+import { CatalogoClient, type EquipoVidriera } from './CatalogoClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,17 +52,23 @@ export default async function CatalogoPage(
   const { slug } = await params
   const sb = clienteAnonimo()
 
-  const [tienda, { data: equipos }] = await Promise.all([
+  const COLS = 'id,brand,model,storage,color,condition,battery,price,currency,created_at'
+  const traerEquipos = (cols: string) => sb.from('catalogo_equipos')
+    .select(cols)
+    .eq('slug', slug)
+    .order('created_at', { ascending: false })
+
+  const [tienda, primero] = await Promise.all([
     traerTienda(slug),
-    sb.from('catalogo_equipos')
-      .select('id,brand,model,storage,color,condition,battery,price,currency,created_at')
-      .eq('slug', slug)
-      .order('created_at', { ascending: false }),
+    traerEquipos(`${COLS},fotos`),
   ])
+  // Si la vista todavía no tiene fotos (migración sin correr), la vidriera
+  // sale igual, sin fotos.
+  const { data: equipos } = primero.error ? await traerEquipos(COLS) : primero
 
   /* Sin tienda, 404 de verdad. Un catálogo apagado no debe decir "existe
      pero está apagado": eso confirma que el local usa el sistema. */
   if (!tienda) notFound()
 
-  return <CatalogoClient tienda={tienda} equipos={equipos || []} />
+  return <CatalogoClient tienda={tienda} equipos={(equipos || []) as unknown as EquipoVidriera[]} />
 }

@@ -1,9 +1,11 @@
 "use client"
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Store, Copy, ExternalLink, Search, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 import { aSlug, slugDisponible, nombreEquipo, type EquipoStock } from '@/utils/catalogo'
+import { borrarFotos } from '@/utils/fotos'
+import { FotosEquipo } from './FotosEquipo'
 
 type Org = { id: string; name: string; catalog_slug: string | null; catalog_enabled: boolean } | null
 
@@ -35,6 +37,31 @@ export function CatalogoAdminClient({
   const [soloPublicados, setSoloPublicados] = useState(false)
 
   const publicados = stock.filter(e => e.in_catalog).length
+
+  // Un equipo vendido no vuelve a la vidriera: sus fotos sólo ocupan lugar.
+  // Se limpian al entrar acá, sin esperar ni avisar.
+  useEffect(() => {
+    let cancelado = false
+    ;(async () => {
+      const { data } = await supabase.from('stock')
+        .select('id,photos')
+        .neq('status', 'available')
+        .neq('photos', '{}')
+        .limit(50)
+      for (const e of data || []) {
+        if (cancelado) return
+        const fotos = (e.photos || []) as string[]
+        if (fotos.length === 0) continue
+        const { error } = await supabase.from('stock').update({ photos: [] }).eq('id', e.id)
+        if (!error) await borrarFotos(supabase, fotos).catch(() => {})
+      }
+    })()
+    return () => { cancelado = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const cambiarFotos = (id: EquipoStock['id'], fotos: string[]) =>
+    setStock(p => p.map(x => x.id === id ? { ...x, photos: fotos } : x))
 
   const visibles = useMemo(() => {
     const t = q.trim().toLowerCase()
@@ -179,13 +206,19 @@ export function CatalogoAdminClient({
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {visibles.map((e, i) => (
-            <button
+            <div
               key={String(e.id)}
+              style={{
+                borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+                padding: '12px 18px',
+                display: 'flex', alignItems: 'center', gap: '10px 14px', flexWrap: 'wrap',
+              }}
+            >
+            <button
               onClick={() => alternarEquipo(e)}
               style={{
-                width: '100%', textAlign: 'left', background: 'transparent',
-                border: 'none', borderTop: i > 0 ? '1px solid var(--border)' : 'none',
-                padding: '14px 18px', cursor: 'pointer',
+                flex: '1 1 220px', minWidth: 0, textAlign: 'left', background: 'transparent',
+                border: 'none', padding: 0, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 14,
               }}
             >
@@ -213,6 +246,15 @@ export function CatalogoAdminClient({
                 {money(e.price, e.currency)}
               </span>
             </button>
+            {org && e.id != null && (
+              <FotosEquipo
+                orgId={org.id}
+                stockId={e.id}
+                fotos={(e.photos as string[] | undefined) || []}
+                onChange={f => cambiarFotos(e.id, f)}
+              />
+            )}
+            </div>
           ))}
         </div>
       )}

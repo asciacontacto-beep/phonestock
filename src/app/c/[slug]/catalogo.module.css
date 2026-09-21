@@ -207,10 +207,90 @@
 .marca { color: var(--tinta-3); text-decoration: none; }
 .marca:hover { color: var(--tinta-2); }
 
+/* ── Fotos ────────────────────────────────────────────────────────────────
+   Pegadas a los bordes de la tarjeta, arriba. Se deslizan con el dedo como
+   en Instagram, que es de donde viene la gente. */
+.fotos {
+  position: relative;
+  margin: -20px -20px 2px;
+  aspect-ratio: 1 / 1;
+  border-radius: 17px 17px 0 0;
+  overflow: hidden;
+  background: #f3f2ef;
+}
+.fotosTira {
+  display: flex; height: 100%;
+  overflow-x: auto; scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.fotosTira::-webkit-scrollbar { display: none; }
+.fotoBoton {
+  flex: 0 0 100%; height: 100%;
+  scroll-snap-align: start;
+  padding: 0; border: 0; background: none; cursor: zoom-in;
+}
+.foto { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.puntos {
+  position: absolute; left: 0; right: 0; bottom: 10px;
+  display: flex; justify-content: center; gap: 5px;
+  pointer-events: none;
+}
+.puntoFoto {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,.55);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+  transition: background .2s ease, transform .2s ease;
+}
+.puntoFotoOn { background: #fff; transform: scale(1.2); }
+
+.sinFoto {
+  display: grid; place-items: center;
+  color: #c9c7c0;
+}
+
+/* ── Visor: la foto grande ────────────────────────────────────────────── */
+.visor {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(10,10,9,.94);
+  display: flex; flex-direction: column;
+  animation: aparecerVisor .2s ease both;
+}
+@keyframes aparecerVisor { from { opacity: 0; } to { opacity: 1; } }
+.visorArriba {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 18px 64px 10px 22px;
+  color: rgba(255,255,255,.8); font-size: 13.5px;
+}
+.visorTira {
+  flex: 1; display: flex;
+  overflow-x: auto; scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.visorTira::-webkit-scrollbar { display: none; }
+.visorPagina {
+  flex: 0 0 100%; scroll-snap-align: start;
+  display: grid; place-items: center;
+  padding: 10px 14px 30px;
+}
+.visorFoto {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; border-radius: 10px;
+}
+.visorCerrar {
+  position: absolute; top: 10px; right: 12px;
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 0; background: rgba(255,255,255,.12); color: #fff;
+  font-size: 17px; cursor: pointer;
+}
+.visorCerrar:hover { background: rgba(255,255,255,.2); }
+
 @media (max-width: 560px) {
   .cabecera { padding: 48px 0 26px; }
   .grilla { grid-template-columns: 1fr 1fr; gap: 12px; }
   .tarjeta { padding: 16px; border-radius: 16px; }
+  .fotos { margin: -16px -16px 2px; border-radius: 15px 15px 0 0; }
   .precio { font-size: 21px; }
   .equipoTitulo { font-size: 14.5px; }
 }

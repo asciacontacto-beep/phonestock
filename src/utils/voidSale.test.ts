@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { voidSale, voidSaleSummary } from './voidSale'
+import { voidSale, voidSaleSummary, pedidoMayoristaDe } from './voidSale'
 
 /** Supabase falso: registra las llamadas para poder afirmar sobre ellas. */
 function fakeSupabase(opts: { stockMatch?: any; failIncrement?: boolean; failDelete?: boolean } = {}) {
@@ -119,7 +119,7 @@ describe('voidSale — camino atómico (RPC void_sale)', () => {
       from: () => { throw new Error('no debería usar el camino secuencial') },
     }
     const r = await voidSale(sb, deviceSale)
-    expect(r).toEqual({ deviceRestored: true, accessoriesRestored: 3, tradeInsRemoved: 1, warnings: ['ojo'] })
+    expect(r).toEqual({ deviceRestored: true, accessoriesRestored: 3, tradeInsRemoved: 1, pedidoMayoristaRevertido: false, warnings: ['ojo'] })
     expect(calls).toContainEqual({ type: 'rpc', fn: 'void_sale', args: { p_sale_id: '1' } })
   })
 
@@ -135,9 +135,90 @@ describe('voidSale — camino atómico (RPC void_sale)', () => {
 
 describe('voidSaleSummary', () => {
   it('resume solo lo que efectivamente se revirtio', () => {
-    expect(voidSaleSummary({ deviceRestored: true, accessoriesRestored: 2, tradeInsRemoved: 0, warnings: [] }))
+    expect(voidSaleSummary({ deviceRestored: true, accessoriesRestored: 2, tradeInsRemoved: 0, pedidoMayoristaRevertido: false, warnings: [] }))
       .toBe('Venta anulada: equipo devuelto al stock, 2 accesorios devueltos.')
-    expect(voidSaleSummary({ deviceRestored: false, accessoriesRestored: 0, tradeInsRemoved: 0, warnings: [] }))
+    expect(voidSaleSummary({ deviceRestored: false, accessoriesRestored: 0, tradeInsRemoved: 0, pedidoMayoristaRevertido: false, warnings: [] }))
       .toBe('Venta anulada.')
+  })
+})
+
+describe('pedido mayorista', () => {
+  it('reconoce de qué pedido vino la venta', () => {
+    expect(pedidoMayoristaDe({ notes: 'Pedido mayorista #458c24de' })).toBe('458c24de')
+  })
+
+  it('no confunde una venta comun', () => {
+    expect(pedidoMayoristaDe({ notes: 'Garantía 30 días' })).toBeNull()
+    expect(pedidoMayoristaDe({ notes: null })).toBeNull()
+    expect(pedidoMayoristaDe({})).toBeNull()
+  })
+
+  it('ignora una referencia que no parece un id', () => {
+    expect(pedidoMayoristaDe({ notes: 'Pedido mayorista #xx' })).toBeNull()
+  })
+})
+
+describe('voidSale · ventas que vienen de un pedido mayorista', () => {
+  /** Supabase falso con la tabla de pedidos, para este caso puntual. */
+  function fakeConPedidos(pedidos: { id: string; status: string }[]) {
+    const calls: any[] = []
+    const api: any = {
+      calls,
+      rpc: async () => ({ error: { message: 'sin funcion' } }),
+      from: (table: string) => {
+        const chain: any = {
+          select: () => chain,
+          eq: (col: string, val: any) => {
+            if (table === 'wholesale_orders') {
+              chain._data = pedidos.filter(p => p.status === val)
+              return Promise.resolve({ data: chain._data, error: null })
+            }
+            chain._filtros = { ...(chain._filtros || {}), [col]: val }
+            return chain
+          },
+          limit: () => chain,
+          maybeSingle: async () => ({ data: { id: 7 } }),
+          update: (payload: any) => ({
+            eq: async (col: string, val: any) => {
+              calls.push({ type: 'update', table, payload, col, val })
+              return { error: null }
+            },
+          }),
+          delete: () => ({ eq: async () => ({ error: null }) }),
+        }
+        return chain
+      },
+    }
+    return api
+  }
+
+  const ventaMayorista = {
+    id: '9', brand: 'Apple', model: 'iPhone 13 Pro', imei: '351', storage: '128GB', color: 'Azul',
+    notes: 'Pedido mayorista #458c24de',
+  }
+
+  it('devuelve el pedido a confirmado', async () => {
+    const sb = fakeConPedidos([{ id: '458c24de-1111-2222-3333-444444444444', status: 'delivered' }])
+    const r = await voidSale(sb, ventaMayorista)
+
+    const upd = sb.calls.find((c: any) => c.table === 'wholesale_orders')
+    expect(upd.payload).toEqual({ status: 'confirmed' })
+    expect(upd.val).toBe('458c24de-1111-2222-3333-444444444444')
+    expect(r.pedidoMayoristaRevertido).toBe(true)
+  })
+
+  it('no toca ningun pedido si la venta no vino de uno', async () => {
+    const sb = fakeConPedidos([{ id: '458c24de-1111-2222-3333-444444444444', status: 'delivered' }])
+    const r = await voidSale(sb, { ...ventaMayorista, notes: 'Garantía 30 días' })
+    expect(sb.calls.find((c: any) => c.table === 'wholesale_orders')).toBeUndefined()
+    expect(r.pedidoMayoristaRevertido).toBe(false)
+  })
+
+  it('si el pedido ya no esta entregado, no lo cambia', async () => {
+    // Puede haberse cancelado o re-entregado entre medio.
+    const sb = fakeConPedidos([{ id: '458c24de-1111-2222-3333-444444444444', status: 'cancelled' }])
+    const r = await voidSale(sb, ventaMayorista)
+    expect(sb.calls.find((c: any) => c.table === 'wholesale_orders')).toBeUndefined()
+    expect(r.pedidoMayoristaRevertido).toBe(false)
   })
 })

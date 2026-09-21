@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign, ShoppingCart } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
+import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign, ShoppingCart, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { MODELS } from '@/constants/data';
 import { SellAccessoriesModal } from './SellAccessoriesModal';
@@ -173,7 +174,14 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>No hay accesorios cargados.</td></tr>
+              <tr><td colSpan={8} style={{ padding: 0 }}>
+                <EmptyState
+                  icon={<Package size={26} />}
+                  title="Todavía no cargaste accesorios"
+                  description="Fundas, vidrios, cables, cargadores. Se descuentan solos del stock cuando los vendés, sueltos o junto a un equipo."
+                  hint="Cargá el costo además del precio: los accesorios suelen dejar mejor margen que los equipos, y sin el costo no hay forma de saberlo."
+                />
+              </td></tr>
             )}
           </tbody>
         </table>

@@ -1,6 +1,33 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Search, Smartphone } from 'lucide-react';
+import { BotonTema } from '@/components/BotonTema';
+import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Smartphone, Store, Wallet, CreditCard, Wrench } from 'lucide-react';
+
+/* Íconos propios para los dos controles que se ven siempre.
+   La lupa y el globito redondos de la librería son los que trae cualquier
+   plantilla: con la marca ya definida por barras redondeadas, estos siguen
+   esa forma — trazo grueso, puntas redondeadas, geometría simple. */
+function IconoBuscar({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M10.6 10.6 14 14" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function IconoSoporte({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      {/* Burbuja cuadrada con esquinas muy redondeadas y la cola abajo a la
+          izquierda: se distingue del globito circular de siempre. */}
+      <path
+        d="M3.4 2.2h9.2a1.2 1.2 0 0 1 1.2 1.2v6.3a1.2 1.2 0 0 1-1.2 1.2H6.5l-2.8 2.5v-2.5h-.3a1.2 1.2 0 0 1-1.2-1.2V3.4a1.2 1.2 0 0 1 1.2-1.2Z"
+        stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 import Link from 'next/link';
 
 interface TopbarProps {
@@ -10,6 +37,78 @@ interface TopbarProps {
 }
 
 const NOTIFICATIONS = [
+  {
+    id: 'catalogo-2026-09-19',
+    icon: <Store size={16} />,
+    color: '#0f766e',
+    title: 'Nuevo: tu catálogo público',
+    body: 'Ya tenés un link propio con los equipos que vos elijas, para poner en la bio de Instagram o mandar por WhatsApp. El cliente ve el equipo, el precio y un botón que te escribe con la consulta ya redactada. Nunca ve el IMEI ni lo que te costó, y un equipo vendido desaparece solo. Se arma desde la sección Catálogo: prendés el link y marcás los equipos.',
+    href: '/catalogo',
+    cta: 'Armar mi catálogo',
+  },
+  {
+    id: 'cuenta-corriente-2026-09-19',
+    icon: <Wallet size={16} />,
+    color: '#7c3aed',
+    title: 'Ya podés cobrar lo que te deben',
+    body: 'Antes una venta podía quedar debiendo, pero no había forma de cobrar ese saldo después. Ahora en la ficha del cliente tenés su cuenta corriente: cuánto debe, desde cuándo, y un botón para registrar el cobro. La plata entra a la caja con la fecha real en que cobraste, así el arqueo del día cierra bien.',
+    href: '/customers',
+    cta: 'Ver clientes',
+  },
+  {
+    id: 'cuotas-2026-09-19',
+    icon: <CalendarDays size={16} />,
+    color: '#2563eb',
+    title: 'Ventas en cuotas, con vencimientos',
+    body: 'Cuando cobrás menos y marcás "queda debiendo", ahora podés armar un plan de cuotas con fechas. Ves las cuotas antes de confirmar la venta, con o sin interés — el interés se calcula sobre lo que se financia, no sobre el precio, y suma a tu ganancia. El tablero te avisa quién tiene cuotas vencidas.',
+    href: '/sell',
+    cta: 'Ir a vender',
+  },
+  {
+    id: 'tarjeta-recargo-2026-09-19',
+    icon: <CreditCard size={16} />,
+    color: '#b45309',
+    title: 'Tarjeta con recargo, por plan',
+    body: 'Cargá una vez tus planes (Visa 3 cuotas 12%, Naranja 6 cuotas 25%…) en Configuración y después en la venta elegís cuál. Podés decidir si el recargo lo paga el cliente o lo absorbés vos, y la pantalla te muestra en el momento cuánto entra a la caja y cuánto te queda. Si el plan te come el margen, te avisa en rojo antes de confirmar.',
+    href: '/settings',
+    cta: 'Cargar mis planes',
+  },
+  {
+    id: 'reparacion-propia-2026-09-19',
+    icon: <Wrench size={16} />,
+    color: '#dc2626',
+    title: 'Arreglá tus propios equipos sin perder el margen',
+    body: 'Desde Inventario podés mandar un equipo tuyo al taller. Sale del stock disponible mientras está en reparación, y al cerrarla lo que gastaste en repuestos y mano de obra se suma al costo de ese equipo. Antes ese gasto no se sumaba a ningún lado y el margen te salía inflado por lo que te costó el arreglo.',
+    href: '/stock',
+    cta: 'Ver inventario',
+  },
+  {
+    id: 'compras-caja-2026-09-19',
+    icon: <ShoppingBag size={16} />,
+    color: '#0891b2',
+    title: 'Ahora comprar mercadería descuenta de la caja',
+    body: 'Al ingresar equipos podés registrar con qué pagaste y de qué caja sale. Es opcional: podés seguir cargando con el costo nomás, como siempre. Pero si no lo registrás, la plata que pagaste no sale de ningún lado y tanto la caja como la ganancia te quedan más altas de lo que son.',
+    href: '/stock',
+    cta: 'Cargar equipos',
+  },
+  {
+    id: 'respaldo-completo-2026-09-19',
+    icon: <ShieldCheck size={16} />,
+    color: '#16a34a',
+    title: 'El respaldo ahora sí baja todo',
+    body: 'Bajaba ocho tablas y dejaba afuera mayoristas, turnos, movimientos de caja, proveedores y la configuración del local. Ahora son veintiuna: todo tu negocio en un archivo que abrís con Excel. Las claves de API quedan afuera a propósito, porque un respaldo es un archivo que viaja por mail.',
+    href: '/settings',
+    cta: 'Descargar respaldo',
+  },
+  {
+    id: 'tema-oscuro-2026-09-19',
+    icon: <Sparkles size={16} />,
+    color: '#5f5f5c',
+    title: 'Modo oscuro y una app más prolija',
+    body: 'Arriba, al lado del buscador, tenés el botón para pasar de claro a oscuro. Queda guardado en ese aparato: podés usarlo oscuro en la notebook y claro en el mostrador. Además se repasaron las tablas, los formularios, los menús y las animaciones de toda la app.',
+    href: '/dashboard',
+    cta: 'Ver el tablero',
+  },
   {
     id: 'referidos-2026-09',
     icon: <ShoppingBag size={16} />,
@@ -194,18 +293,21 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
       <div
         className="no-print"
         onClick={() => { setOpenPanel('bell'); setBannerDismissed(true); }}
+        /* Era una franja verde brillante a todo el ancho, arriba de todo:
+           lo primero que veía el usuario al entrar era un aviso nuestro, no
+           su negocio. Ahora es una línea neutra y discreta — sigue estando,
+           deja de gritar. */
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-          padding: '10px 18px', background: 'rgba(16,185,129,0.10)',
-          borderBottom: '1px solid rgba(16,185,129,0.25)', fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
+          padding: '7px 18px', background: 'var(--surface-2)',
+          borderBottom: '1px solid var(--border)', fontSize: 12.5,
         }}
       >
-        <Sparkles size={15} color="var(--green)" style={{ flexShrink: 0 }} />
-        <span style={{ color: 'var(--text-2)', flex: 1 }}>
-          <strong>Hay {unread.length} {unread.length === 1 ? 'novedad' : 'novedades'} en el sistema.</strong>{' '}
-          Mirá las notas de actualización para ver qué cambió.
+        <Sparkles size={13} color="var(--text-3)" style={{ flexShrink: 0 }} />
+        <span style={{ color: 'var(--text-3)', flex: 1 }}>
+          {unread.length} {unread.length === 1 ? 'novedad' : 'novedades'} en el sistema
         </span>
-        <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>Ver →</span>
+        <span style={{ color: 'var(--text-2)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' }}>Ver</span>
         <button
           onClick={e => { e.stopPropagation(); setBannerDismissed(true); }}
           title="Ocultar"
@@ -216,7 +318,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
       </div>
     )}
     <div className="topbar no-print">
-      <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+      <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', marginLeft: 'auto' }}>
 
         {/* Disparador visible de la command palette (⌘K) */}
         <button
@@ -224,20 +326,22 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           className="cmdk-trigger"
           title="Buscar o navegar (Ctrl/⌘ + K)"
         >
-          <Search size={14} />
+          <IconoBuscar />
           <span className="cmdk-trigger-label">Buscar</span>
           <kbd>⌘K</kbd>
         </button>
 
+        <BotonTema />
+
         {/* Soporte: que nunca tengan que buscar el número para escribir */}
         <div style={{ position: 'relative' }}>
           <button onClick={() => toggle('help')} className="cmdk-trigger" title="Soporte">
-            <MessageCircle size={14} />
+            <IconoSoporte />
             <span className="cmdk-trigger-label">Soporte</span>
           </button>
 
           {openPanel === 'help' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow-lg)', zIndex: 200,
@@ -292,7 +396,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'rate' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow)', zIndex: 200,
@@ -355,7 +459,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'bell' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 10px)', right: 0,
               width: 320, background: 'var(--surface)',
               border: '1px solid var(--border-md)', borderRadius: 14,
@@ -452,7 +556,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
           </button>
 
           {openPanel === 'avatar' && (
-            <div style={{
+            <div className="pop" style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: 'var(--surface)', border: '1px solid var(--border-md)',
               borderRadius: 14, boxShadow: 'var(--shadow)', zIndex: 200,

@@ -7,8 +7,20 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 import { EmptyState } from '@/components/EmptyState';
+import { CuentaCorriente } from './CuentaCorriente';
+import { saldoPorMoneda, type Cobro } from '@/utils/cuentaCorriente';
 
-export function CustomersClient({ initialCustomers, initialSales }: { initialCustomers: any[], initialSales: any[] }) {
+export function CustomersClient({
+  initialCustomers, initialSales, initialPayments, installments, deposits, exchangeRate, userId,
+}: {
+  initialCustomers: any[]
+  initialSales: any[]
+  initialPayments: Cobro[]
+  installments: any[]
+  deposits: any[]
+  exchangeRate: number
+  userId: string
+}) {
   const { confirm, ConfirmDialog } = useConfirm();
   const [customers, setCustomers] = useState(initialCustomers);
   const [sales, setSales] = useState(initialSales);
@@ -34,6 +46,10 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
       if (s.currency === 'USD') return a + s.price;
       return a;
     }, 0);
+
+  /* Lo que debe cada cliente, para poder verlo en la lista sin entrar a la
+     ficha: la deuda es lo primero que uno busca cuando abre esta pantalla. */
+  const deuda = (c: any) => saldoPorMoneda(custSales(c), initialPayments.filter(p => (p as any).customer_id === c.id));
 
   const lastSale = (c: any) => {
     const sl = custSales(c);
@@ -150,6 +166,7 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
                 <th>Compras</th>
                 <th>Última compra</th>
                 <th>Total USD</th>
+                <th>Debe</th>
                 <th></th>
               </tr>
             </thead>
@@ -158,6 +175,7 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
                 const sl = custSales(c);
                 const ls = lastSale(c);
                 const ts = totalSpent(c);
+                const d = deuda(c);
                 return (
                   <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(c)}>
                     <td>
@@ -193,6 +211,16 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
                     </td>
                     <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>
                       {ts > 0 ? `U$ ${ts.toLocaleString()}` : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                    </td>
+                    <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, fontSize: 12 }}>
+                      {d.USD <= 0 && d.ARS <= 0 ? (
+                        <span style={{ color: 'var(--text-3)' }}>—</span>
+                      ) : (
+                        <div style={{ color: 'var(--red)' }}>
+                          {d.USD > 0 && <div>U$ {d.USD.toLocaleString('es-AR')}</div>}
+                          {d.ARS > 0 && <div>$ {d.ARS.toLocaleString('es-AR')}</div>}
+                        </div>
+                      )}
                     </td>
                     <td><ChevronRight size={16} color="var(--text-3)" /></td>
                   </tr>
@@ -292,7 +320,17 @@ export function CustomersClient({ initialCustomers, initialSales }: { initialCus
                 </div>
               )}
 
-              <div className="sl" style={{ marginBottom: 12, fontSize: 12 }}>
+              <CuentaCorriente
+                customer={selected}
+                sales={custSales(selected)}
+                payments={initialPayments}
+                installments={installments}
+                deposits={deposits}
+                exchangeRate={exchangeRate}
+                userId={userId}
+              />
+
+              <div className="sl" style={{ marginBottom: 12, fontSize: 12, marginTop: 24 }}>
                 <ShoppingBag size={13} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
                 HISTORIAL DE COMPRAS ({custSales(selected).length})
               </div>

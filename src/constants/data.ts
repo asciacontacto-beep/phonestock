@@ -410,6 +410,10 @@ export const PAY = [
   { id: 'ars_transf', label: 'Transf. ARS', cur: 'ARS' },
   { id: 'usd_transf', label: 'Transf. USD', cur: 'USD' },
   { id: 'usdt', label: 'USDT', cur: 'USD' },
+  /* La tarjeta cobra en pesos. El recargo del plan se resuelve aparte: lo
+     que cubre de la venta y lo que acredita en la caja no son el mismo
+     número. Ver src/utils/tarjetas.ts. */
+  { id: 'tarjeta', label: 'Tarjeta', cur: 'ARS' },
   { id: 'tradein', label: 'Parte de Pago', cur: 'ANY' }
 ];
 

@@ -8,6 +8,8 @@ import { logAudit } from '@/utils/audit';
 import { Download, Package, AlertTriangle, Trash2, Box, Wallet, ShoppingCart, TrendingUp } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { resumenGlobalDeVencimientos } from '@/utils/cuotas';
+import { PrimerosPasos } from '@/components/PrimerosPasos';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 
@@ -56,9 +58,10 @@ function daysInStock(createdAt?: string | null): number | null {
 }
 
 export function DashboardClient({
-  stock, sales, exchangeRate, userRole, repairs = [],
+  stock, sales, exchangeRate, userRole, repairs = [], installments = [], payments = [],
 }: {
   stock: any[]; sales: any[]; exchangeRate: number; userRole?: string; repairs?: any[];
+  installments?: any[]; payments?: any[];
 }) {
   const router   = useRouter();
   const supabase = createClient();
@@ -192,6 +195,12 @@ export function DashboardClient({
     return { count: rows.length, usd };
   }, [allSales, exchangeRate]);
 
+  /* ── Cuotas: la pregunta no es cuánto me deben, sino a quién llamar hoy ── */
+  const vencimientos = useMemo(
+    () => resumenGlobalDeVencimientos(installments, payments, new Date().toLocaleDateString('en-CA')),
+    [installments, payments],
+  );
+
   /* ── Todo lo que pide atención, en una sola lista priorizada ──
      Antes cada aviso era un cartel suelto en distinto lugar de la página. */
   const alerts = useMemo(() => {
@@ -202,6 +211,20 @@ export function DashboardClient({
       tone: 'amber',
       text: `${debts.count} ${debts.count === 1 ? 'cliente debe' : 'clientes deben'} U$ ${Math.round(debts.usd).toLocaleString('es-AR')}`,
       onClick: () => router.push('/sales'),
+    });
+
+    if (vencimientos.vencido > 0) list.push({
+      key: 'cuotas-vencidas',
+      tone: 'red',
+      text: `${vencimientos.ventasVencidas} ${vencimientos.ventasVencidas === 1 ? 'venta tiene' : 'ventas tienen'} cuotas vencidas sin cobrar`,
+      onClick: () => router.push('/customers'),
+    });
+
+    if (vencimientos.proximos7 > 0) list.push({
+      key: 'cuotas-semana',
+      tone: 'amber',
+      text: 'Hay cuotas que vencen en los próximos 7 días',
+      onClick: () => router.push('/customers'),
     });
 
     if (agedStock.count > 0) list.push({
@@ -227,7 +250,7 @@ export function DashboardClient({
     });
 
     return list;
-  }, [debts, agedStock, totals.missingCost, lowStock, router]);
+  }, [debts, vencimientos, agedStock, totals.missingCost, lowStock, router, setDetailCat]);
 
   /* ── Ganancia día a día de las últimas 4 semanas ──────────────
      El número grande dice cuánto ganaste; esto dice si venís subiendo o
@@ -392,9 +415,6 @@ export function DashboardClient({
   if (isEmpty) {
     return (
       <div className="page dash">
-        <div className="sh" style={{ marginBottom: 20 }}>
-          <h1 className="st">Resumen</h1>
-        </div>
         <div className="panel" style={{ padding: '48px 24px', textAlign: 'center' }}>
           <div className="d-empty-icon" style={{ width: 56, height: 56 }}>
             <Package size={24} />
@@ -419,8 +439,7 @@ export function DashboardClient({
     <div className="page dash">
 
       {/* Header */}
-      <div className="sh" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <h1 className="st">Resumen</h1>
+      <div className="sh" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12, justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="filters-wrap" style={{ margin: 0 }}>
             {(Object.keys(RANGE_LABELS) as Range[]).map(r => (
@@ -532,6 +551,13 @@ export function DashboardClient({
           );
         })()}
       </div>
+      )}
+
+      {/* Un tablero en cero no se lee como "todavía no cargaste nada", se
+          lee como "esto no funciona". Desaparece solo cuando ya hay stock
+          y ventas. */}
+      {(stock.length === 0 || allSales.length === 0) && (
+        <PrimerosPasos tieneStock={stock.length > 0} tieneVentas={allSales.length > 0} />
       )}
 
       {/* ── Estado del negocio ─────────────────────────────────── */}

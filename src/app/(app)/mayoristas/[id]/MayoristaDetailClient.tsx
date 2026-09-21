@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
+import { buildWholesaleSaleItems } from '@/utils/wholesaleSale'
 
 type Item = { id: string; stock_id: number | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean; received?: boolean }
 type Order = { id: string; status: string; currency: string; notes: string | null; created_at: string; items: Item[]; total: number; paid: number; balance: number }
@@ -17,12 +18,13 @@ const STATUS_CLASS: Record<string, string> = { draft: 'b-neu', confirmed: 'b-blu
 const METHOD_LABEL: Record<string, string> = { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta' }
 
 export function MayoristaDetailClient({
-  wholesaler: initialWholesaler, initialOrders, initialPayments, availableStock, totalOwed
+  wholesaler: initialWholesaler, initialOrders, initialPayments, availableStock, totalOwed, exchangeRate
 }: {
   wholesaler: Wholesaler
   initialOrders: Order[]
   initialPayments: Payment[]
   availableStock: StockItem[]
+  exchangeRate: number
   totalOwed: { USD: number; ARS: number }
 }) {
   const [wholesaler, setWholesaler] = useState(initialWholesaler)
@@ -58,16 +60,22 @@ export function MayoristaDetailClient({
         if (sErr) throw sErr
       }
 
-      const saleItems = order.items
-        .filter(i => !i.is_backorder && i.stock_id)
-        .map(i => ({
-          brand: i.brand, model: i.model, storage: i.storage, color: i.color,
-          imei: null, price: i.unit_price * i.qty, cost_price: null,
-          currency: order.currency, seller_id: null, seller_name: 'Mayorista',
-          customer: { name: wholesaler.name, phone: wholesaler.phone },
-          payments: [{ id: 'wholesale', amount: i.unit_price * i.qty, label: 'Mayorista' }],
-          notes: `Pedido mayorista #${order.id.slice(0, 8)}`
-        }))
+      /* El costo y el IMEI viven en la fila de stock, no en el pedido. Sin
+         leerlos, la venta al revendedor entraba facturando sin costo
+         (ganancia inflada por el precio completo) y sin identificar qué
+         aparato salió (anularla devolvía al stock una unidad cualquiera
+         del mismo modelo). */
+      const { data: costRows, error: cErr } = stockIds.length > 0
+        ? await supabase.from('stock').select('id,imei,cost_price,currency').in('id', stockIds)
+        : { data: [], error: null }
+      if (cErr) throw cErr
+      const stockById = new Map((costRows || []).map(r => [r.id as number, r]))
+
+      const saleItems = buildWholesaleSaleItems({
+        order, wholesaler, stockById, rate: exchangeRate,
+      })
+
+      const sinCosto = saleItems.filter(r => r.cost_price === null).length
 
       if (saleItems.length > 0) {
         const { error: salErr } = await supabase.from('sales').insert(saleItems)
@@ -76,6 +84,9 @@ export function MayoristaDetailClient({
 
       setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'delivered' } : o))
       toast.success('Pedido entregado — stock y ventas actualizados')
+      if (sinCosto > 0) {
+        toast.warning(`${sinCosto} equipo${sinCosto === 1 ? '' : 's'} sin costo cargado: la ganancia de esta venta va a salir inflada.`, { duration: 8000 })
+      }
       router.refresh()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error al entregar pedido')

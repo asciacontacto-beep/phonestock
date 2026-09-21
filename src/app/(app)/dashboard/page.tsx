@@ -5,7 +5,7 @@ import { DashboardClient } from "./DashboardClient"
 export const dynamic = 'force-dynamic'
 
 const COLS_STOCK = 'id,brand,model,storage,color,imei,price,currency,status,condition,deposit,created_at'
-const COLS_VENTAS = 'id,brand,model,storage,color,imei,price,currency,created_at,seller_id,seller_name,customer,payments,notes,accessories'
+const COLS_VENTAS = 'id,brand,model,storage,color,imei,price,currency,balance_due,created_at,seller_id,seller_name,customer,payments,notes,accessories'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -24,7 +24,9 @@ export default async function DashboardPage() {
     { data: stockData },
     { data: salesData },
     { data: settingsData },
-    { data: repairsData }
+    { data: repairsData },
+    { data: installmentsData },
+    { data: paymentsData }
   ] = await Promise.all([
     supabase.from('stock')
       .select(esVendedor ? COLS_STOCK : `${COLS_STOCK},cost_price`)
@@ -38,6 +40,13 @@ export default async function DashboardPage() {
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
       : supabase.from('repairs').select('id, cost, created_at, updated_at'),
+    // Cuotas y cobros sólo alimentan alertas que el vendedor no ve.
+    esVendedor
+      ? Promise.resolve({ data: [] as any[] })
+      : supabase.from('sale_installments').select('id,sale_id,number,due_date,amount,currency'),
+    esVendedor
+      ? Promise.resolve({ data: [] as any[] })
+      : supabase.from('customer_payments').select('installment_id,amount,currency,exchange_rate,paid_at'),
   ])
 
   return (
@@ -47,6 +56,8 @@ export default async function DashboardPage() {
       exchangeRate={settingsData?.exchange_rate || 1200}
       userRole={userRole}
       repairs={repairsData || []}
+      installments={installmentsData || []}
+      payments={paymentsData || []}
     />
   )
 }

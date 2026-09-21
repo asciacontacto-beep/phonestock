@@ -8,9 +8,17 @@ const interVariable = "font-sans";
 const jetbrainsVariable = "font-mono";
 
 export const viewport: Viewport = {
-  // Coincide con el fondo claro de la app (--bg) para que la barra del
-  // navegador en mobile no quede negra sobre una UI clara.
-  themeColor: "#f5f5f3",
+  /* La barra del navegador en el celular tiene que acompañar al tema, si no
+     queda una franja clara arriba de una app oscura. Los dos valores son los
+     de `--bg` en cada tema.
+
+     Esto cubre la preferencia del sistema; cuando el usuario elige el tema a
+     mano con el botón, `BotonTema` reescribe la etiqueta, porque esa
+     elección manda sobre la del sistema. */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0c0d" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -22,7 +30,7 @@ export const metadata: Metadata = {
   // Sin esto Next las resuelve contra localhost y se rompen los previews.
   metadataBase: new URL(siteUrl),
   title: "Stackr — Software de Gestión para Locales de Celulares y Servicio Técnico",
-  description: "Gestioná stock, reparaciones, ventas y finanzas de tu local de tecnología en un solo lugar. Pago único de $400 USD, sin mensualidades. Probalo gratis 48hs.",
+  description: "Gestioná stock, reparaciones, ventas, cuenta corriente y caja de tu local de celulares en un solo lugar. $50.000 por mes sin permanencia, o licencia de por vida. Probalo gratis 48hs.",
   keywords: [
     "software gestión celulares",
     "sistema punto de venta celulares",
@@ -41,7 +49,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Stackr — Software de Gestión para Locales de Celulares",
-    description: "Stock, reparaciones, ventas y finanzas. Pago único, sin mensualidades. Probalo gratis 48hs.",
+    description: "Stock, ventas, reparaciones, cuenta corriente y caja. $50.000 por mes sin permanencia. Probalo gratis 48hs.",
     url: "https://stackrarg.vercel.app",
     siteName: "Stackr",
     images: [
@@ -58,7 +66,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Stackr — Software de Gestión para Locales de Celulares",
-    description: "Stock, reparaciones, ventas y finanzas. Pago único, sin mensualidades.",
+    description: "Stock, ventas, reparaciones, cuenta corriente y caja. $50.000 por mes sin permanencia.",
     images: ["/og-image.jpg"],
   },
   icons: {
@@ -82,14 +90,26 @@ const jsonLd = {
   "operatingSystem": "Web, iOS, Android",
   "description": "Software de gestión para locales de celulares y servicio técnico. Gestión de stock, reparaciones, punto de venta y finanzas.",
   "url": "https://stackrarg.vercel.app",
-  "offers": {
-    "@type": "Offer",
-    "price": "400",
-    "priceCurrency": "USD",
-    "priceValidUntil": "2027-12-31",
-    "availability": "https://schema.org/InStock",
-    "description": "Licencia de por vida, pago único sin mensualidades",
-  },
+  /* Los dos planes. Si el precio cambia, se cambia acá y en
+     src/components/landing/precios.ts — son los dos únicos lugares. */
+  "offers": [
+    {
+      "@type": "Offer",
+      "price": "50000",
+      "priceCurrency": "ARS",
+      "priceValidUntil": "2027-12-31",
+      "availability": "https://schema.org/InStock",
+      "description": "Suscripción mensual, sin permanencia",
+    },
+    {
+      "@type": "Offer",
+      "price": "300000",
+      "priceCurrency": "ARS",
+      "priceValidUntil": "2027-12-31",
+      "availability": "https://schema.org/InStock",
+      "description": "Licencia de por vida, un solo pago",
+    },
+  ],
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "5",
@@ -107,7 +127,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -116,10 +136,18 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* El tema se aplica ANTES de pintar. Si esperara a que React
+            montara, la pantalla arrancaría en claro y saltaría a oscuro:
+            un flash blanco en la cara del que eligió oscuro. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('stackr-tema');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t;var c=t==='dark'?'#0b0c0d':'#fbfbfa';var m=document.querySelector('meta[name="theme-color"]:not([media])');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m)}m.setAttribute('content',c)}catch(e){}})()`,
+          }}
+        />
       </head>
       <body className={`${interVariable} ${jetbrainsVariable} antialiased`} suppressHydrationWarning>
         {children}
-        <Toaster theme="light" position="bottom-right" richColors />
+        <Toaster theme="system" position="bottom-right" richColors />
       </body>
     </html>
   );

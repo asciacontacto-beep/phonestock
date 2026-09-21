@@ -25,6 +25,7 @@ export const BRANDS = [
  */
 export const MODELS: Record<string, string[]> = {
   Apple: [
+    'iPhone 18 Pro Max', 'iPhone 18 Pro', 'iPhone Duo',
     'iPhone 17 Pro Max', 'iPhone 17 Pro', 'iPhone 17 Air', 'iPhone 17',
     'iPhone 16 Pro Max', 'iPhone 16 Pro', 'iPhone 16 Plus', 'iPhone 16', 'iPhone 16e',
     'iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15 Plus', 'iPhone 15',
@@ -131,6 +132,9 @@ export const MODELS: Record<string, string[]> = {
 export const STORAGES = ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB'];
 
 export const MODEL_STORAGES: Record<string, string[]> = {
+  'iPhone 18 Pro Max': ['256GB', '512GB', '1TB', '2TB'],
+  'iPhone 18 Pro': ['256GB', '512GB', '1TB', '2TB'],
+  'iPhone Duo': ['256GB', '512GB', '1TB', '2TB'],
   'iPhone 17 Pro Max': ['256GB', '512GB', '1TB', '2TB'],
   'iPhone 17 Pro': ['256GB', '512GB', '1TB'],
   'iPhone 17 Air': ['256GB', '512GB'],
@@ -180,6 +184,9 @@ export const MODEL_STORAGES: Record<string, string[]> = {
 };
 
 export const COLORS: Record<string, string[]> = {
+  'iPhone 18 Pro Max': ['Negro', 'Plata', 'Glaciar', 'Bordó'],
+  'iPhone 18 Pro': ['Negro', 'Plata', 'Glaciar', 'Bordó'],
+  'iPhone Duo': ['Blanco Estelar', 'Cielo Nocturno'],
   'iPhone 17 Pro Max': ['Titanio Plata', 'Titanio Blanco', 'Azul Oscuro', 'Gris Titanio', 'Orange / Cosmic Orange'],
   'iPhone 17 Pro': ['Titanio Plata', 'Titanio Blanco', 'Azul Oscuro', 'Gris Titanio', 'Orange / Cosmic Orange'],
   'iPhone 17 Air': ['Negro', 'Blanco / Plata', 'Azul Claro', 'Dorado Claro'],

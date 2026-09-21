@@ -15,6 +15,14 @@ describe('catálogo de modelos', () => {
     expect(MODELS.Samsung).toContain('Galaxy S26 Ultra')
   })
 
+  it('incluye la línea presentada en septiembre de 2026', () => {
+    expect(MODELS.Apple).toContain('iPhone 18 Pro')
+    expect(MODELS.Apple).toContain('iPhone 18 Pro Max')
+    expect(MODELS.Apple).toContain('iPhone Duo')
+    // Sale en 2027: hasta entonces no se ofrece.
+    expect(MODELS.Apple).not.toContain('iPhone 18')
+  })
+
   it('cada marca del selector tiene su lista', () => {
     for (const marca of BRANDS) {
       expect(MODELS[marca], `falta la lista de ${marca}`).toBeDefined()

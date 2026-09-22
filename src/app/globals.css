@@ -1597,3 +1597,40 @@ select.inp {
   }
   .inv-meta { flex-wrap: wrap; row-gap: 2px; font-size: 12px; margin-top: 3px; }
 }
+
+/* ── Campanita: avisos del negocio + novedades ──────────────────────
+   Antes eran dieciocho anuncios iguales, sin fecha y con un color por
+   cada uno. Ahora el color significa algo: sólo lo accionable lleva
+   ámbar o rojo, las novedades son neutras. */
+.notif-sec {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-3);
+  padding: 12px 16px 6px; background: var(--surface);
+  position: sticky; top: 0; z-index: 1;
+}
+
+.notif-aviso {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; border-bottom: 1px solid var(--border);
+  font-size: 12.5px; color: var(--text); text-decoration: none;
+  transition: background 0.12s ease;
+}
+.notif-aviso:hover { background: var(--surface-2); }
+.notif-flecha { color: var(--text-3); font-size: 17px; line-height: 1; }
+
+.notif-punto { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.notif-punto.rojo  { background: var(--red); }
+.notif-punto.ambar { background: var(--amber); }
+.notif-punto.neutro,
+.notif-punto.nuevo { background: var(--accent); }
+
+.notif-nov { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.notif-nov[data-leida="true"] { opacity: 0.62; }
+
+/* Dos líneas y corta: el detalle completo se abre con "ver más". */
+.notif-cuerpo {
+  font-size: 12px; color: var(--text-3); line-height: 1.45; margin-top: 4px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.notif-cuerpo.abierta { -webkit-line-clamp: unset; display: block; }

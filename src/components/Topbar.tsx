@@ -1,6 +1,8 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
 import { BotonTema } from '@/components/BotonTema';
+import { createClient } from '@/utils/supabase/client';
+import { contarAvisos, avisosDelNegocio, fechaDeAviso, etiquetaFecha, type Aviso } from '@/utils/avisos';
 import { Bell, ShoppingBag, MessageCircle, X, CalendarDays, DollarSign, LogOut, TrendingUp, TrendingDown, RefreshCw, Calculator, Receipt, ShieldCheck, Sparkles, Smartphone, Store, Wallet, CreditCard, Wrench } from 'lucide-react';
 
 /* Íconos propios para los dos controles que se ven siempre.
@@ -236,6 +238,11 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [blueRate, setBlueRate] = useState<{ compra: number; venta: number; updatedAt: string } | null>(null)
   const [rateLoading, setRateLoading] = useState(false)
+  /* Avisos del negocio (deudas, equipos parados, reparaciones listas). Son lo
+     único accionable de la campanita; las novedades son informativas. */
+  const [avisos, setAvisos] = useState<Aviso[]>([])
+  const [verTodas, setVerTodas] = useState(false)
+  const [expandida, setExpandida] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -264,11 +271,29 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
 
   useEffect(() => { fetchBlue() }, [])
 
+  /* Tres conteos baratos (sin traer filas), una sola vez al abrir la app. Si
+     alguno falla, ese aviso no aparece y listo: la campanita no puede romper
+     la pantalla. */
+  useEffect(() => {
+    let vigente = true
+    contarAvisos(createClient())
+      .then(c => { if (vigente) setAvisos(avisosDelNegocio(c)) })
+      .catch(() => {})
+    return () => { vigente = false }
+  }, [])
+
   const toggle = (panel: 'bell' | 'rate' | 'avatar' | 'help') =>
     setOpenPanel(v => v === panel ? null : panel)
 
   const unread = NOTIFICATIONS.filter(n => !read.includes(n.id))
   const hasUnread = unread.length > 0
+
+  /* Las novedades viejas se guardan plegadas: eran dieciocho en una caja de
+     320px, todas con el mismo peso visual. Se muestran las no leídas y las
+     tres últimas; el resto queda detrás de "ver anteriores". */
+  const novedadesVisibles = verTodas
+    ? NOTIFICATIONS
+    : NOTIFICATIONS.filter((n, i) => !read.includes(n.id) || i < 3)
 
   const dismiss = (id: string) => {
     const next = [...read, id]
@@ -448,11 +473,22 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
             aria-label="Notificaciones"
           >
             <Bell size={20} />
-            {hasUnread && (
+            {/* El número cuenta lo accionable; si sólo hay novedades para
+                leer, alcanza un punto. Un "18" en rojo por anuncios nuestros
+                enseña a ignorar la campanita. */}
+            {avisos.length > 0 ? (
+              <span style={{
+                position: 'absolute', top: 1, right: 0,
+                minWidth: 16, height: 16, padding: '0 4px', borderRadius: 8,
+                background: 'var(--amber)', color: '#fff',
+                fontSize: 10, fontWeight: 700, lineHeight: '16px', textAlign: 'center',
+                border: '2px solid var(--surface)', pointerEvents: 'none',
+              }}>{avisos.length}</span>
+            ) : hasUnread && (
               <span style={{
                 position: 'absolute', top: 4, right: 4,
                 width: 8, height: 8, borderRadius: '50%',
-                background: 'var(--red)', border: '2px solid var(--surface)',
+                background: 'var(--accent)', border: '2px solid var(--surface)',
                 pointerEvents: 'none',
               }} />
             )}
@@ -470,70 +506,89 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '14px 16px 10px', borderBottom: '1px solid var(--border)', flexShrink: 0,
               }}>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>Novedades</span>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>Notificaciones</span>
                 {hasUnread && (
                   <button
                     onClick={dismissAll}
                     style={{ fontSize: 11, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer' }}
                   >
-                    Marcar todas como leídas
+                    Marcar como leídas
                   </button>
                 )}
               </div>
 
-              {NOTIFICATIONS.length === 0 ? (
-                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-                  Sin novedades
-                </div>
-              ) : (
-                <div style={{ overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
-                  {NOTIFICATIONS.map(n => {
-                    const isRead = read.includes(n.id)
-                    return (
-                      <div key={n.id} style={{
-                        padding: '14px 16px',
-                        borderBottom: '1px solid var(--border)',
-                        background: isRead ? 'transparent' : 'var(--surface-2)',
-                      }}>
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                          <div style={{
-                            width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                            background: n.color + '18', color: n.color,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            {n.icon}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 3 }}>{n.title}</div>
-                            <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.4 }}>{n.body}</div>
-                            {n.href && (
-                              <Link
-                                href={n.href}
-                                onClick={() => { dismiss(n.id); setOpenPanel(null) }}
-                                style={{
-                                  display: 'inline-block', marginTop: 8, fontSize: 12,
-                                  fontWeight: 600, color: n.color, textDecoration: 'none',
-                                }}
-                              >
-                                {n.cta} →
-                              </Link>
-                            )}
-                          </div>
-                          {!isRead && (
-                            <button
-                              className="btn-icon"
-                              onClick={() => dismiss(n.id)}
-                              style={{ flexShrink: 0, color: 'var(--text-3)' }}
-                            >
-                              <X size={14} />
-                            </button>
-                          )}
-                        </div>
+              <div style={{ overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
+
+                {/* ── Lo del negocio: lo único accionable ── */}
+                <div className="notif-sec">Para vos</div>
+                {avisos.length === 0 ? (
+                  <div style={{ padding: '14px 16px', fontSize: 12.5, color: 'var(--text-3)' }}>
+                    Todo al día. No hay nada pendiente.
+                  </div>
+                ) : (
+                  avisos.map(a => (
+                    <Link
+                      key={a.id}
+                      href={a.href}
+                      onClick={() => setOpenPanel(null)}
+                      className="notif-aviso"
+                    >
+                      <span className={`notif-punto ${a.tono}`} />
+                      <span style={{ flex: 1 }}>{a.texto}</span>
+                      <span className="notif-flecha">›</span>
+                    </Link>
+                  ))
+                )}
+
+                {/* ── Novedades del sistema: informativas, con fecha ── */}
+                <div className="notif-sec" style={{ marginTop: 4 }}>Novedades</div>
+                {novedadesVisibles.map(n => {
+                  const leida = read.includes(n.id)
+                  const abierta = expandida === n.id
+                  return (
+                    <div key={n.id} className="notif-nov" data-leida={leida}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                        {!leida && <span className="notif-punto nuevo" style={{ alignSelf: 'center' }} />}
+                        <span style={{ fontWeight: 600, fontSize: 12.5, flex: 1 }}>{n.title}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                          {etiquetaFecha(fechaDeAviso(n.id))}
+                        </span>
                       </div>
-                    )
-                  })}
-                </div>
-              )}
+                      <div className={`notif-cuerpo${abierta ? ' abierta' : ''}`}>{n.body}</div>
+                      <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
+                        <button
+                          onClick={() => setExpandida(abierta ? null : n.id)}
+                          style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          {abierta ? 'Ver menos' : 'Ver más'}
+                        </button>
+                        {n.href && (
+                          <Link
+                            href={n.href}
+                            onClick={() => { dismiss(n.id); setOpenPanel(null) }}
+                            style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text)', textDecoration: 'none' }}
+                          >
+                            {n.cta} →
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {NOTIFICATIONS.length > novedadesVisibles.length && (
+                  <button
+                    onClick={() => setVerTodas(true)}
+                    style={{
+                      width: '100%', padding: '12px 16px', background: 'none', border: 'none',
+                      borderTop: '1px solid var(--border)', cursor: 'pointer',
+                      fontSize: 12, fontWeight: 600, color: 'var(--text-3)',
+                    }}
+                  >
+                    Ver novedades anteriores ({NOTIFICATIONS.length - novedadesVisibles.length})
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

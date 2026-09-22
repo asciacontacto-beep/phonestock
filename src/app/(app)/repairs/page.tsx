@@ -13,7 +13,8 @@ export default async function RepairsPage() {
   const isOwner = isSuperAdmin || profile?.role === 'owner'
 
   const supabase = await createClient()
-  const { data: settings } = await supabase.from('settings').select('*').single()
+  // maybeSingle: sin esto la orden de reparación perdía la marca del local.
+  const { data: settings } = await supabase.from('settings').select('*').limit(1).maybeSingle()
 
   return <RepairsClient isOwner={isOwner} user={{ id: user.id, name: profile?.name || user.email }} shop={settings || {}} />
 }

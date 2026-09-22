@@ -29,7 +29,8 @@ export default async function SalesPage() {
     supabase.from('deposits').select('*').order('name'),
     vendedores,
     supabase.from('profiles').select('*').eq('id', user?.id).single(),
-    supabase.from('settings').select('*').single()
+    // maybeSingle: sin esto el comprobante perdía la marca del local.
+    supabase.from('settings').select('*').limit(1).maybeSingle()
   ])
 
   return (

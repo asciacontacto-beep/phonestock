@@ -748,6 +748,20 @@ select.inp {
   .receipt-scaler { transform: none !important; width: 100% !important; }
   .receipt-scaler-outer { height: auto !important; display: block !important; }
   .receipt-scaler-outer .receipt-view { box-shadow: none !important; }
+
+  /* ── Imprimir sólo el comprobante ──────────────────────────────────
+     Sin esto se imprime toda la página: el recibo está en un modal y
+     detrás queda la lista de ventas o el inventario, que salían por la
+     impresora (un local recibió tres hojas de stock en vez del ticket).
+     Se oculta todo y se deja ver únicamente la hoja marcada. */
+  body.imprimiendo * { visibility: hidden !important; }
+  body.imprimiendo .hoja-impresa,
+  body.imprimiendo .hoja-impresa * { visibility: visible !important; }
+  body.imprimiendo .hoja-impresa {
+    position: absolute !important;
+    left: 0 !important; top: 0 !important;
+    width: 100% !important; margin: 0 !important;
+  }
 }
 
 /* ═══════════════════════════════════════════

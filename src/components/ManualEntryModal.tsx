@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, EAN_DB } from '@/constants/data';
+import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, EAN_DB, almacenamientosDe } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
 import { registrarCompra } from '@/utils/compras';
 import { ModelPicker } from './ModelPicker';
@@ -82,7 +82,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
         setBrand(found.brand);
         setModel(found.model);
         const colors = COLORS[found.model] || COLORS[found.brand] || ['Negro'];
-        const storages = MODEL_STORAGES[found.model] || STORAGES;
+        const storages = almacenamientosDe(found.model);
         const finalColor = found.color && colors.includes(found.color) ? found.color : colors[0];
         const finalStorage = found.storage && storages.includes(found.storage) ? found.storage : storages[0];
         if (found.price) {
@@ -105,7 +105,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
     setVariants(vs => vs.map((v: any) => ({
       ...v,
       color: (COLORS[m] || COLORS[b] || ['Negro'])[0],
-      storage: (MODEL_STORAGES[m] || STORAGES)[0],
+      storage: almacenamientosDe(m)[0],
       condition: isOldPro(m) ? 'used' : 'new'
     })));
   };
@@ -121,7 +121,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
     setVariants(vs => vs.map((v: any) => ({
       ...v,
       color: (COLORS[m] || COLORS[brand] || ['Negro'])[0],
-      storage: (MODEL_STORAGES[m] || STORAGES)[0],
+      storage: almacenamientosDe(m)[0],
       condition: isOldPro(m) ? 'used' : 'new'
     })));
   };
@@ -221,7 +221,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
 
   const totalUnits = variants.reduce((a, v) => a + (Number(v.qty) || 0), 0);
   const colors = COLORS[model] || COLORS[brand] || ['Negro'];
-  const storages = MODEL_STORAGES[model] || STORAGES;
+  const storages = almacenamientosDe(model);
   const isStep1Valid = !!model && !!price && !!costPrice && !!dep && (suppliers.length === 0 || !!sup);
 
   const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 6, display: 'block' };

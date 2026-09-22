@@ -1,5 +1,5 @@
 "use client"
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Search, ShoppingCart, Plus, Building2, User as UserIcon, Printer, X, Trash2, Loader2, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ import { logAudit, describeChanges } from '@/utils/audit';
 import { useConfirm } from '@/hooks/useConfirm';
 import { EmptyState } from '@/components/EmptyState';
 import { PAY } from '@/constants/data';
+import { imprimirDocumento } from '@/utils/imprimir';
 
 interface Props {
   sales: any[];
@@ -34,6 +35,8 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
   /* Alta de un pago que faltaba (típico: el canje que no se pudo cargar en el
      momento). Si es canje, al guardar el equipo entra al inventario. */
   const [newPay, setNewPay] = useState<any>(null);
+  /** Nodo del comprobante: se imprime sólo esto, no la pantalla de atrás. */
+  const comprobanteRef = useRef<HTMLDivElement>(null);
   const [editLoading, setEditLoading] = useState(false);
 
   const router = useRouter();
@@ -641,7 +644,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                 </div>
               ) : (
                 <>
-                  <Receipt sale={selectedSale} shop={shop} />
+                  <div ref={comprobanteRef}><Receipt sale={selectedSale} shop={shop} /></div>
                   
                   {isOwner && (
                     <div className="no-print" style={{ marginTop: 20, textAlign: 'center' }}>
@@ -654,7 +657,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
                   <div className="no-print" style={{ marginTop: 16, display: 'flex', gap: 12 }}>
                     <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setSelectedSale(null)}>Cerrar</button>
-                    <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => window.print()}>
+                    <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => imprimirDocumento(comprobanteRef.current)}>
                       <Printer size={18} style={{ marginRight: 8 }} /> Imprimir Comprobante
                     </button>
                   </div>

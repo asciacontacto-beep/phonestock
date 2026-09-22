@@ -4,6 +4,7 @@ import { X, Printer, Share2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { RepairOrderDocument, type RepairOrderData } from '@/components/RepairOrderDocument';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
+import { imprimirDocumento } from '@/utils/imprimir';
 import type { ShopSettings, ReceiptConfig, ReceiptFormat } from '@/types/receipt';
 
 /**
@@ -80,7 +81,7 @@ export function RepairOrderModal({ shop, config }: { shop: ShopSettings; config:
             </ReceiptPreview>
           </div>
           <div className="receipt-editor-actions no-print">
-            <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => window.print()}>
+            <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => imprimirDocumento(ref.current)}>
               <Printer size={14} /> Imprimir
             </button>
             <button className="btn btn-dark" style={{ flex: 1 }} onClick={sharePdf} disabled={generating}>

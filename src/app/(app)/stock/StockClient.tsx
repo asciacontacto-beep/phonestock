@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
-import { BRANDS, STORAGES, COLORS, MODEL_STORAGES } from '@/constants/data';
+import { BRANDS, STORAGES, COLORS, MODEL_STORAGES, almacenamientosDe } from '@/constants/data';
 import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock, Plus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { mandarAReparar } from '@/utils/reparacionPropia';
@@ -513,7 +513,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
                 <div>
                   <label className="lbl">Almacenamiento</label>
                   <select className="inp" value={editItem.storage} onChange={e => setEditItem({...editItem, storage: e.target.value})}>
-                    {(MODEL_STORAGES[editItem.model] || STORAGES).map((s: string) => <option key={s} value={s}>{s}</option>)}
+                    {almacenamientosDe(editItem.model).map((s: string) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>

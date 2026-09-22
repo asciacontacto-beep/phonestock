@@ -4,6 +4,8 @@ import { Search, Printer, X, Receipt as ReceiptIcon, Share2, Loader2, Plus, Tras
 import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
+import { imprimirDocumento } from '@/utils/imprimir';
+import { tieneAlmacenamiento } from '@/constants/data';
 import {
   type ShopSettings, type ReceiptConfig, type ReceiptLine, type ReceiptExtraField,
   type ReceiptFormat, normalizeReceiptConfig,
@@ -25,7 +27,7 @@ function saleToLines(sale: Sale): ReceiptLine[] {
   }
   return [
     { id: genId(), description: `${sale.brand || ''} ${sale.model || ''}`.trim() || 'Producto',
-      detail: [sale.storage, sale.color].filter(Boolean).join(' · ') || undefined,
+      detail: [tieneAlmacenamiento(sale.storage) ? sale.storage : null, sale.color].filter(Boolean).join(' · ') || undefined,
       qty: 1, amount: Number(sale.price) || 0 },
     ...accessories.map(a => ({
       id: genId(), description: String(a.name || 'Accesorio'),
@@ -320,7 +322,7 @@ export function RecibosClient({ sales, shop }: { sales: Sale[]; shop: ShopSettin
                   </ReceiptPreview>
                 </div>
                 <div className="receipt-editor-actions no-print">
-                  <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => window.print()}>
+                  <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => imprimirDocumento(receiptRef.current)}>
                     <Printer size={14} /> Imprimir
                   </button>
                   <button className="btn btn-dark" style={{ flex: 1 }} onClick={sharePdf} disabled={generating}>

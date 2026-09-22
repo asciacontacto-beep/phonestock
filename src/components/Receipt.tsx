@@ -1,5 +1,6 @@
 import type { ReceiptConfig, ReceiptLine, ReceiptExtraField, ShopSettings } from '@/types/receipt';
 import { DEFAULT_RECEIPT_CONFIG, normalizeReceiptConfig } from '@/types/receipt';
+import { tieneAlmacenamiento } from '@/constants/data';
 
 /* ── helpers ─────────────────────────────────────────── */
 const money = (n: number, currency?: string) =>
@@ -274,7 +275,9 @@ export function Receipt({ sale, shop }: { sale: Record<string, unknown>; shop: R
         qty: Number(a.qty) || 1, amount: a.is_gift ? 0 : (Number(a.price) || 0) * (Number(a.qty) || 1),
       }))
     : [
-        { id: 'main', description: `${s.brand || ''} ${s.model || ''}`.trim(), detail: [s.storage, s.color].filter(Boolean).join(' · ') || undefined, qty: 1, amount: Number(s.price) || 0 },
+        /* El almacenamiento sólo se imprime si el producto realmente tiene:
+           unos AirPods salían con "32GB" en el ticket del cliente. */
+        { id: 'main', description: `${s.brand || ''} ${s.model || ''}`.trim(), detail: [tieneAlmacenamiento(s.storage as string) ? s.storage : null, s.color].filter(Boolean).join(' · ') || undefined, qty: 1, amount: Number(s.price) || 0 },
         ...accessories.map((a, i) => ({ id: `acc-${i}`, description: String(a.name || 'Accesorio'), detail: a.is_gift ? 'regalo' : undefined, qty: Number(a.qty) || 1, amount: a.is_gift ? 0 : (Number(a.price) || 0) * (Number(a.qty) || 1) })),
       ];
 

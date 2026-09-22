@@ -11,6 +11,7 @@ import { upsertCustomer, CLIENTE_ANONIMO } from '@/utils/customers';
 import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual } from '@/utils/cuotas';
 import { calcularPagoTarjeta, resumenPlan, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
 import { resolveSale } from '@/utils/saleTotals';
+import { imprimirDocumento } from '@/utils/imprimir';
 
 export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null }) {
   const [stock, setStock] = useState<any[]>([]);
@@ -64,6 +65,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
   const [accQty, setAccQty] = useState(1);
   const [accType, setAccType] = useState<'venta' | 'regalo'>('venta');
   const accSearchRef = useRef<HTMLDivElement>(null);
+  /** Nodo del comprobante: se imprime sólo esto, no la pantalla de atrás. */
+  const comprobanteRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -1043,9 +1046,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       {lastSale && (
         <div className="mo" style={{ zIndex: 1000 }}>
           <div className="mb" style={{ maxWidth: 450 }}>
-            <div className="mh"><div className="mh-title">Comprobante</div><button className="btn btn-outline btn-sm no-print" onClick={() => window.print()}><Printer size={14} /> Imprimir</button></div>
+            <div className="mh"><div className="mh-title">Comprobante</div><button className="btn btn-outline btn-sm no-print" onClick={() => imprimirDocumento(comprobanteRef.current)}><Printer size={14} /> Imprimir</button></div>
             <div className="mbd" style={{ background: '#fff' }}>
-              <Receipt sale={lastSale} shop={shop} />
+              <div ref={comprobanteRef}><Receipt sale={lastSale} shop={shop} /></div>
             </div>
             <div className="mh no-print"><button className="btn btn-dark" style={{ width: '100%' }} onClick={() => setLastSale(null)}>Listo / Nueva Venta</button></div>
           </div>

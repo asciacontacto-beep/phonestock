@@ -131,6 +131,35 @@ export const MODELS: Record<string, string[]> = {
 
 export const STORAGES = ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB'];
 
+/**
+ * Valor para lo que no tiene almacenamiento (auriculares, parlantes, fundas).
+ *
+ * Sin esto, unos AirPods entraban al inventario con "32GB" —el primer valor de
+ * la lista— y después salía impreso en el ticket del cliente. Un local lo
+ * reportó: vendió AirPods y el comprobante decía 32GB.
+ */
+export const SIN_ALMACENAMIENTO = '—';
+
+/** Productos que no tienen capacidad: no se les pregunta. */
+const SIN_CAPACIDAD = /airpods|beats|homepod|magic (mouse|keyboard|trackpad)|apple pencil|pencil|funda|cargador|auricular|parlante|smartwatch band/i;
+
+/** ¿Ese valor de almacenamiento es real, o el marcador de "no tiene"? */
+export function tieneAlmacenamiento(valor?: string | null): boolean {
+  const v = (valor || '').trim();
+  return v !== '' && v !== SIN_ALMACENAMIENTO && v !== '-' && v !== 'N/A';
+}
+
+/**
+ * Capacidades que corresponden a un modelo. Los relojes usan medidas y los
+ * auriculares no usan nada; el resto, la lista general.
+ */
+export function almacenamientosDe(model?: string | null): string[] {
+  const m = (model || '').trim();
+  if (MODEL_STORAGES[m]) return MODEL_STORAGES[m];
+  if (SIN_CAPACIDAD.test(m)) return [SIN_ALMACENAMIENTO];
+  return STORAGES;
+}
+
 export const MODEL_STORAGES: Record<string, string[]> = {
   'iPhone 18 Pro Max': ['256GB', '512GB', '1TB', '2TB'],
   'iPhone 18 Pro': ['256GB', '512GB', '1TB', '2TB'],

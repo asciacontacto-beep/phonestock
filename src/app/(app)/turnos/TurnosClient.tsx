@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { ModelPicker } from '@/components/ModelPicker';
 import { toast } from 'sonner';
 import { BRANDS, MODELS, STORAGES, COLORS, PAY } from '@/constants/data';
+import { paraInputFechaHora } from '@/utils/fechas';
 
 type Appointment = {
   id: string;
@@ -648,7 +649,10 @@ function AppointmentModal({ appt, stockPhones, onClose, onSave, supabase }: any)
     customer_name: appt?.customer_name || '',
     customer_phone: appt?.customer_phone || '',
     customer_instagram: appt?.customer_instagram || '',
-    scheduled_at: appt?.scheduled_at ? new Date(appt.scheduled_at).toISOString().slice(0, 16) : '',
+    /* En hora local: el input datetime-local no entiende UTC, y cargarlo en
+       UTC mostraba el turno tres horas más tarde —y al guardar sin tocar la
+       hora lo corría de nuevo, cada vez. */
+    scheduled_at: paraInputFechaHora(appt?.scheduled_at),
     notes: appt?.notes || '',
     phone_id: appt?.phone_id ? String(appt.phone_id) : '',
     trade_in_active: !!(appt?.trade_in_brand),

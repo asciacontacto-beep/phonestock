@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, DollarSign, Users, Smartphone, Warehouse, Cal
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area, Legend } from 'recharts';
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
+import { diaLocal } from '@/utils/fechas';
 
 type Period = '7d' | '30d' | '90d' | 'all';
 
@@ -147,8 +148,10 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
   filteredSales.forEach(s => {
     const key = `${s.brand} ${s.model}`;
     if (!modelProfit[key]) modelProfit[key] = { model: key, revenue: 0, cost: 0, count: 0 };
-    const rev = s.currency === 'USD' ? (s.price || 0) : ((s.price || 0) / exchangeRate);
-    const cost = s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate);
+    // Cotización del día de la venta, como en el resto del informe.
+    const rate = saleExchangeRate(s, exchangeRate);
+    const rev = toUSD(s.price || 0, s.currency, rate);
+    const cost = toUSD(s.cost_price || 0, s.currency, rate);
     modelProfit[key].revenue += rev;
     modelProfit[key].cost += cost;
     modelProfit[key].count++;
@@ -163,8 +166,9 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
   filteredSales.forEach(s => {
     const key = s.seller_id || s.seller_name || 'Desconocido';
     if (!sellerProfit[key]) sellerProfit[key] = { name: s.seller_name || 'Sin nombre', revenue: 0, cost: 0, count: 0 };
-    const rev = s.currency === 'USD' ? (s.price || 0) : ((s.price || 0) / exchangeRate);
-    const cost = s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate);
+    const rate = saleExchangeRate(s, exchangeRate);
+    const rev = toUSD(s.price || 0, s.currency, rate);
+    const cost = toUSD(s.cost_price || 0, s.currency, rate);
     sellerProfit[key].revenue += rev;
     sellerProfit[key].cost += cost;
     sellerProfit[key].count++;
@@ -205,20 +209,26 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
     endDate.setDate(today.getDate() - i * trendStep);
     const startDate = new Date(endDate);
     startDate.setDate(endDate.getDate() - trendStep + 1);
-    const endStr = endDate.toISOString().slice(0, 10);
-    const startStr = startDate.toISOString().slice(0, 10);
+    /* Los días se arman con la hora del local, no con UTC: `created_at` viene
+       en UTC y recortarlo a diez caracteres mandaba toda venta posterior a
+       las 21:00 al día siguiente del gráfico. */
+    const endStr = diaLocal(endDate);
+    const startStr = diaLocal(startDate);
 
     const daySales = filteredSales.filter(s => {
-      const d = s.created_at?.slice(0, 10);
+      const d = diaLocal(s.created_at);
       return d >= startStr && d <= endStr;
     });
     const dayExpenses = filteredExpenses.filter(e => {
-      const d = e.created_at?.slice(0, 10);
+      const d = diaLocal(e.created_at);
       return d >= startStr && d <= endStr;
     });
 
-    const rev = daySales.reduce((a, s) => a + (s.currency === 'USD' ? (s.price || 0) : ((s.price || 0) / exchangeRate)), 0);
-    const cost = daySales.reduce((a, s) => a + (s.currency === 'USD' ? (s.cost_price || 0) : ((s.cost_price || 0) / exchangeRate)), 0);
+    /* Con la cotización del día de la venta, igual que el resto del informe.
+       Con la de hoy, una venta vieja en pesos cambiaba de valor sola cada vez
+       que se actualizaba el dólar. */
+    const rev = daySales.reduce((a, s) => a + toUSD(s.price || 0, s.currency, saleExchangeRate(s, exchangeRate)), 0);
+    const cost = daySales.reduce((a, s) => a + toUSD(s.cost_price || 0, s.currency, saleExchangeRate(s, exchangeRate)), 0);
     const exp = dayExpenses.reduce((a, e) => a + (e.currency === 'USD' ? e.amount : e.amount / exchangeRate), 0);
 
     return {

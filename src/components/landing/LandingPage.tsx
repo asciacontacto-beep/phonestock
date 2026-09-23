@@ -244,7 +244,7 @@ export default function LandingPage() {
         <header className={s.hero} id="top" ref={heroRef}>
           <div className={s.ancho}>
             <div className={`${s.chip} ${s.entra} ${s.d1}`}>
-              <span className={s.chipPunto} /> 48 horas de prueba · sin tarjeta
+              <span className={s.chipPunto} /> 7 días de prueba · sin tarjeta
             </div>
 
             <h1 className={`${s.h1} ${s.entra} ${s.d2}`}>
@@ -455,7 +455,7 @@ export default function LandingPage() {
 
                 <div className={s.heroCtas} style={{ justifyContent: 'flex-start', marginBottom: 0 }}>
                   <Link href="/login" className={s.btnPrimario}>
-                    Probar 48 horas gratis <ArrowRight size={17} />
+                    Probar 7 días gratis <ArrowRight size={17} />
                   </Link>
                   <a
                     className={s.btnSecundario}
@@ -526,7 +526,7 @@ export default function LandingPage() {
                 </Link>
               </div>
               <div className={s.heroNota} style={{ marginTop: 16 }}>
-                48 horas, sin tarjeta. Después decidís.
+                7 días, sin tarjeta. Después decidís.
               </div>
             </Reveal>
           </div>
@@ -551,7 +551,7 @@ export default function LandingPage() {
           cambio que más registros suma en una landing de una sola columna. */}
       <div className={`${s.ctaFijo} ${scrolled ? s.ctaFijoVisible : ''}`}>
         <div className={s.ctaFijoTexto}>
-          <strong>48 horas gratis</strong>
+          <strong>7 días gratis</strong>
           <span>Sin tarjeta</span>
         </div>
         <Link href="/login" className={s.ctaFijoBoton} onClick={() => medirInicioDeAlta()}>

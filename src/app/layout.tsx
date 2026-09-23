@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   // Sin esto Next las resuelve contra localhost y se rompen los previews.
   metadataBase: new URL(siteUrl),
   title: "Stackr — Software de Gestión para Locales de Celulares y Servicio Técnico",
-  description: "Gestioná stock, reparaciones, ventas, cuenta corriente y caja de tu local de celulares en un solo lugar. $50.000 por mes sin permanencia, o licencia de por vida. Probalo gratis 48hs.",
+  description: "Gestioná stock, reparaciones, ventas, cuenta corriente y caja de tu local de celulares en un solo lugar. $50.000 por mes sin permanencia, o licencia de por vida. Probalo gratis 7 días.",
   keywords: [
     "software gestión celulares",
     "sistema punto de venta celulares",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Stackr — Software de Gestión para Locales de Celulares",
-    description: "Stock, ventas, reparaciones, cuenta corriente y caja. $50.000 por mes sin permanencia. Probalo gratis 48hs.",
+    description: "Stock, ventas, reparaciones, cuenta corriente y caja. $50.000 por mes sin permanencia. Probalo gratis 7 días.",
     url: "https://stackrarg.vercel.app",
     siteName: "Stackr",
     images: [

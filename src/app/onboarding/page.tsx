@@ -257,7 +257,7 @@ export default function OnboardingPage() {
                   onClick={handleSubmit}
                   disabled={!isStepValid() || loading}
                 >
-                  {loading ? <Loader2 className="spin" size={20} /> : <>Comenzar prueba gratis de 48hs <ArrowRight size={20} /></>}
+                  {loading ? <Loader2 className="spin" size={20} /> : <>Comenzar prueba gratis de 7 días <ArrowRight size={20} /></>}
                 </button>
               )}
             </div>

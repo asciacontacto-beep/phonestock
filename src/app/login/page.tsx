@@ -681,7 +681,7 @@ export default function LoginPage() {
                 </button>
 
                 {!isLogin && (
-                  <div className="lp-cta-note">48 horas gratis · Sin tarjeta · Configurás en minutos</div>
+                  <div className="lp-cta-note">7 días gratis · Sin tarjeta · Configurás en minutos</div>
                 )}
               </form>
 
@@ -699,7 +699,7 @@ export default function LoginPage() {
           </div>
 
           <div className="lp-mobile-trust">
-            <span><i /> 48 horas gratis</span>
+            <span><i /> 7 días gratis</span>
             <span><i /> Sin tarjeta</span>
           </div>
         </div>

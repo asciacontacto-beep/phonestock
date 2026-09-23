@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { confirmUserEmail } from "@/app/actions";
 import { authErrorMessage, isNetworkError } from "@/utils/authErrors";
+import { medirRegistro, medirInicioDeAlta } from "@/utils/pixel";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -74,6 +75,9 @@ export default function LoginPage() {
             }
           } catch { /* noop */ }
 
+          /* La conversión que se paga en el anuncio: sin este evento Meta
+             sólo sabe quién hizo clic, no quién terminó abriendo su cuenta. */
+          medirRegistro();
           router.push("/dashboard");
         }
       } else {
@@ -683,7 +687,11 @@ export default function LoginPage() {
 
               <div className="lp-toggle">
                 {isLogin ? "¿No tenés cuenta? " : "¿Ya tenés cuenta? "}
-                <button onClick={() => { setIsLogin(!isLogin); setError(""); }}>
+                <button onClick={() => {
+                  // Pasó de "entrar" a "crear cuenta": el paso previo al alta.
+                  if (isLogin) medirInicioDeAlta();
+                  setIsLogin(!isLogin); setError("");
+                }}>
                   {isLogin ? "Registrate gratis" : "Ingresá acá"}
                 </button>
               </div>

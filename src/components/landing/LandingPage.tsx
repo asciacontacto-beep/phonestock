@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useInView, useScroll, useTransform, useReduced
 import { ArrowRight, Plus, Check, MessageCircle } from 'lucide-react'
 import s from './landing.module.css'
 import { PRECIO_MENSUAL, PRECIO_LIFETIME, money, mesesDeAhorro, linkWhatsApp } from './precios'
+import { medirInicioDeAlta, medirContacto } from '@/utils/pixel'
 
 /* ── Animación de entrada ────────────────────────────────────────────────
    En CSS y no con JavaScript. Con la animación por JS el contenido arranca
@@ -215,11 +216,14 @@ export default function LandingPage() {
       <div className={s.navWrap}>
         <nav className={`${s.nav} ${s.entra} ${scrolled ? s.navScrolled : ''}`}>
           <a href="#top" className={s.navMarca}>
-            {/* Tres barras apiladas, de más ancha a más angosta. */}
+            {/* Barras de pie, como un gráfico que sube. Apiladas y con la
+                más ancha arriba eran idénticas a un menú hamburguesa: en el
+                celular, donde el menú va justo ahí, la gente las tocaba
+                esperando que se abriera algo. */}
             <svg className={s.navGlifo} width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden>
-              <rect y="1.5" width="17" height="3" rx="1.5" fill="currentColor" />
-              <rect y="7" width="12" height="3" rx="1.5" fill="currentColor" opacity=".7" />
-              <rect y="12.5" width="7" height="3" rx="1.5" fill="currentColor" opacity=".45" />
+              <rect x="1.5" y="9.5" width="3" height="6" rx="1.5" fill="currentColor" opacity=".45" />
+              <rect x="7" y="5.5" width="3" height="10" rx="1.5" fill="currentColor" opacity=".7" />
+              <rect x="12.5" y="1.5" width="3" height="14" rx="1.5" fill="currentColor" />
             </svg>
             Stackr
           </a>
@@ -457,6 +461,7 @@ export default function LandingPage() {
                     className={s.btnSecundario}
                     href={linkWhatsApp(plan)}
                     target="_blank" rel="noopener noreferrer"
+                    onClick={() => medirContacto(`whatsapp ${plan}`)}
                   >
                     <MessageCircle size={16} /> Hablar antes de decidir
                   </a>
@@ -537,6 +542,21 @@ export default function LandingPage() {
             </span>
           </div>
         </footer>
+      </div>
+
+      {/* Barra fija de celular: aparece al pasar el hero.
+          En el teléfono el botón de arriba se pierde apenas se baja, y el que
+          llega de un anuncio decide en cualquier punto de la página —no
+          necesariamente al final—. Dejar la acción siempre a mano es el
+          cambio que más registros suma en una landing de una sola columna. */}
+      <div className={`${s.ctaFijo} ${scrolled ? s.ctaFijoVisible : ''}`}>
+        <div className={s.ctaFijoTexto}>
+          <strong>48 horas gratis</strong>
+          <span>Sin tarjeta</span>
+        </div>
+        <Link href="/login" className={s.ctaFijoBoton} onClick={() => medirInicioDeAlta()}>
+          Probar gratis <ArrowRight size={15} />
+        </Link>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { MetaPixel } from "@/components/MetaPixel";
 
 // Deshabilitamos next/font/google por problemas de red durante el build
 // Usaremos variables de entorno y fallback a fuentes del sistema
@@ -148,6 +149,7 @@ export default function RootLayout({
       <body className={`${interVariable} ${jetbrainsVariable} antialiased`} suppressHydrationWarning>
         {children}
         <Toaster theme="system" position="bottom-right" richColors />
+        <MetaPixel />
       </body>
     </html>
   );

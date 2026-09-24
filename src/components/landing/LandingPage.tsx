@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { motion, AnimatePresence, useInView, useScroll, useTransform, useReducedMotion } from 'framer-motion'
 import { ArrowRight, Plus, Check, MessageCircle } from 'lucide-react'
 import s from './landing.module.css'
+import { MetaPixel } from '@/components/MetaPixel'
+import { eventoMeta } from '@/utils/metaPixel'
 import { PRECIO_MENSUAL, PRECIO_LIFETIME, money, mesesDeAhorro, linkWhatsApp } from './precios'
 
 /* ── Animación de entrada ────────────────────────────────────────────────
@@ -64,6 +66,13 @@ function NumeroQueSube({ hasta, prefijo = '', sufijo = '' }: { hasta: number; pr
   const valor = reducido ? hasta : n
   return <span ref={ref}>{prefijo}{valor.toLocaleString('es-AR')}{sufijo}</span>
 }
+
+/* El que toca "Probar gratis" no tiene cuenta: el login abre directo en el
+   alta. Y cada toque se cuenta en el píxel, para que Meta sepa qué anuncio
+   trajo gente con intención y no sólo clics. */
+const REGISTRO = '/login?registro'
+const alProbar = () => eventoMeta('Lead')
+const alEscribir = () => eventoMeta('Contact')
 
 const MODULOS = [
   {
@@ -138,6 +147,37 @@ const MODULOS = [
   },
   {
     n: '04',
+    t: 'Tu vidriera para Instagram, con fotos',
+    d: 'Un link con los equipos que elijas, con fotos, precio y un botón de WhatsApp. Lo ponés en la bio y el cliente te escribe con el equipo ya elegido. Lo vendido desaparece solo.',
+    visual: (
+      <>
+        <div className={s.filaCab} style={{ marginBottom: 12 }}>stackrarg.vercel.app/c/tu-local</div>
+        <div className={s.vidriera}>
+          {[
+            ['iPhone 15 Pro', '256GB · Titanio', 'U$ 980'],
+            ['iPhone 14', '128GB · Azul', 'U$ 610'],
+          ].map(([m, d, p]) => (
+            <div key={m} className={s.vidrieraCard}>
+              <div className={s.vidrieraFoto}>
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden>
+                  <rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" />
+                </svg>
+                <span className={s.vidrieraPuntos}><i /><i /><i /></span>
+              </div>
+              <div className={s.vidrieraNombre}>{m}</div>
+              <div className={s.vidrieraDato}>{d}</div>
+              <div className={s.vidrieraPie}>
+                <span className={s.mono}>{p}</span>
+                <span className={s.vidrieraWa}>Consultar</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    ),
+  },
+  {
+    n: '05',
     t: 'La caja cierra o te dice por qué',
     d: 'Arqueo por turno y por vendedor. Cada peso que entra tiene un motivo y una fecha: una venta, un cobro, un gasto, una transferencia entre locales.',
     visual: (
@@ -204,9 +244,18 @@ export default function LandingPage() {
   }, [])
 
   const esMensual = plan === 'mensual'
+  /* En el celular, pasado el primer botón, el de probar queda fijo abajo:
+     el que viene de un anuncio decide scrolleando, no volviendo arriba. */
+  const [barraAbajo, setBarraAbajo] = useState(false)
+  useEffect(() => {
+    const alScroll = () => setBarraAbajo(window.scrollY > 640)
+    window.addEventListener('scroll', alScroll, { passive: true })
+    return () => window.removeEventListener('scroll', alScroll)
+  }, [])
 
   return (
     <div className={s.root}>
+      <MetaPixel />
       <div className={s.atmosfera} aria-hidden>
         <div className={s.glowOro} />
         <div className={s.glowFrio} />
@@ -215,12 +264,13 @@ export default function LandingPage() {
       <div className={s.navWrap}>
         <nav className={`${s.nav} ${s.entra} ${scrolled ? s.navScrolled : ''}`}>
           <a href="#top" className={s.navMarca}>
-            {/* Tres barras apiladas, de más ancha a más angosta. */}
-            <svg className={s.navGlifo} width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden>
-              <rect y="1.5" width="17" height="3" rx="1.5" fill="currentColor" />
-              <rect y="7" width="12" height="3" rx="1.5" fill="currentColor" opacity=".7" />
-              <rect y="12.5" width="7" height="3" rx="1.5" fill="currentColor" opacity=".45" />
-            </svg>
+            {/* El logo real. Las tres rayitas de antes se leían como el
+                botón de un menú: en el celular la gente lo tocaba esperando
+                que se abriera algo. */}
+            <span className={s.navLogo}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-marca.png" alt="" width={18} height={18} />
+            </span>
             Stackr
           </a>
           <div className={s.navLinks}>
@@ -229,7 +279,7 @@ export default function LandingPage() {
             <a href="#preguntas" className={s.navLink}>Preguntas</a>
           </div>
           <Link href="/login" className={s.navEntrar}>Entrar</Link>
-          <Link href="/login" className={s.navCta}>
+          <Link href={REGISTRO} className={s.navCta} onClick={alProbar}>
             Probar gratis <ArrowRight size={15} />
           </Link>
         </nav>
@@ -253,10 +303,15 @@ export default function LandingPage() {
             </p>
 
             <div className={`${s.heroCtas} ${s.entra} ${s.d4}`}>
-              <Link href="/login" className={s.btnPrimario}>
-                Empezar la prueba <ArrowRight size={17} />
+              <Link href={REGISTRO} className={s.btnPrimario} onClick={alProbar}>
+                Probar gratis <ArrowRight size={17} />
               </Link>
-              <a href="#sistema" className={s.btnSecundario}>Ver cómo funciona</a>
+              {/* Al dueño de un local le cuesta registrarse en algo que no
+                  conoce; preguntarle a una persona, no. */}
+              <a href={linkWhatsApp('mensual')} className={s.btnSecundario}
+                target="_blank" rel="noopener noreferrer" onClick={alEscribir}>
+                <MessageCircle size={16} /> Consultar por WhatsApp
+              </a>
             </div>
 
             <div className={`${s.heroNota} ${s.entra} ${s.d5}`}>
@@ -318,6 +373,7 @@ export default function LandingPage() {
               <div key={vuelta} style={{ display: 'flex', gap: 54 }} aria-hidden={vuelta === 1}>
                 {[
                   ['Inventario con IMEI', 'cada aparato, uno'],
+                  ['Catálogo con fotos', 'tu vidriera en Instagram'],
                   ['Cuenta corriente', 'quién debe y desde cuándo'],
                   ['Reparaciones', 'propias y de clientes'],
                   ['Mayoristas', 'pedidos y saldos'],
@@ -340,7 +396,7 @@ export default function LandingPage() {
               <div className={s.seccionCabecera}>
                 <span className={s.etiqueta}>El sistema</span>
                 <h2 className={s.h2}>
-                  Cuatro cosas que ningún cuaderno<br /><em>te va a poder decir.</em>
+                  Cinco cosas que ningún cuaderno<br /><em>te va a poder hacer.</em>
                 </h2>
               </div>
             </Reveal>
@@ -450,13 +506,14 @@ export default function LandingPage() {
                 </div>
 
                 <div className={s.heroCtas} style={{ justifyContent: 'flex-start', marginBottom: 0 }}>
-                  <Link href="/login" className={s.btnPrimario}>
+                  <Link href={REGISTRO} className={s.btnPrimario} onClick={alProbar}>
                     Probar 48 horas gratis <ArrowRight size={17} />
                   </Link>
                   <a
                     className={s.btnSecundario}
                     href={linkWhatsApp(plan)}
                     target="_blank" rel="noopener noreferrer"
+                    onClick={alEscribir}
                   >
                     <MessageCircle size={16} /> Hablar antes de decidir
                   </a>
@@ -516,8 +573,8 @@ export default function LandingPage() {
                 Entrá hoy y esta noche<br /><em>cerrás la caja con el número real.</em>
               </h2>
               <div className={s.heroCtas}>
-                <Link href="/login" className={s.btnPrimario}>
-                  Empezar la prueba <ArrowRight size={17} />
+                <Link href={REGISTRO} className={s.btnPrimario} onClick={alProbar}>
+                  Probar gratis <ArrowRight size={17} />
                 </Link>
               </div>
               <div className={s.heroNota} style={{ marginTop: 16 }}>
@@ -526,6 +583,16 @@ export default function LandingPage() {
             </Reveal>
           </div>
         </section>
+
+        <div className={`${s.barraMovil} ${barraAbajo ? s.barraMovilVisible : ''}`} aria-hidden={!barraAbajo}>
+          <Link href={REGISTRO} className={s.barraMovilCta} onClick={alProbar} tabIndex={barraAbajo ? 0 : -1}>
+            Probar gratis <ArrowRight size={16} />
+          </Link>
+          <a href={linkWhatsApp('mensual')} className={s.barraMovilWa} target="_blank" rel="noopener noreferrer"
+            onClick={alEscribir} aria-label="Consultar por WhatsApp" tabIndex={barraAbajo ? 0 : -1}>
+            <MessageCircle size={19} />
+          </a>
+        </div>
 
         <footer className={s.ancho}>
           <div className={s.pie}>

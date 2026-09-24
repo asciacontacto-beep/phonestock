@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { Loader2, Package, CalendarDays, Users, TrendingUp } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,8 @@ import { confirmUserEmail } from "@/app/actions";
 import { authErrorMessage, isNetworkError } from "@/utils/authErrors";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { MetaPixel } from "@/components/MetaPixel";
+import { eventoMeta } from "@/utils/metaPixel";
 
 const FEATURES = [
   { icon: <Package size={15} />, label: "Stock y ventas en tiempo real", color: "c-blue" },
@@ -17,8 +19,11 @@ const FEATURES = [
   { icon: <TrendingUp size={15} />, label: "Rentabilidad por equipo y vendedor", color: "c-amber" },
 ];
 
-export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
+export default function LoginPage({ searchParams }: { searchParams: Promise<{ registro?: string }> }) {
+  /* Los botones "Probar gratis" de la landing y de los anuncios traen
+     ?registro: el que llega por ahí no tiene cuenta, así que abre directo en
+     el alta en vez de "Bienvenido de nuevo". */
+  const [isLogin, setIsLogin] = useState(use(searchParams).registro === undefined);
   const [name, setName] = useState("");
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
@@ -74,6 +79,8 @@ export default function LoginPage() {
             }
           } catch { /* noop */ }
 
+          // Es el evento con el que Meta aprende a quién mostrarle los anuncios.
+          eventoMeta("CompleteRegistration", { content_name: "prueba_gratis" });
           router.push("/dashboard");
         }
       } else {
@@ -106,6 +113,7 @@ export default function LoginPage() {
 
   return (
     <>
+      <MetaPixel />
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

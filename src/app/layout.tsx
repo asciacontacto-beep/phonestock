@@ -103,8 +103,8 @@ const jsonLd = {
     },
     {
       "@type": "Offer",
-      "price": "300000",
-      "priceCurrency": "ARS",
+      "price": "250",
+      "priceCurrency": "USD",
       "priceValidUntil": "2027-12-31",
       "availability": "https://schema.org/InStock",
       "description": "Licencia de por vida, un solo pago",

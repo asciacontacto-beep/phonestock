@@ -124,10 +124,13 @@
     0 1px 0 rgba(233, 229, 219, 0.12) inset,
     0 20px 50px -20px rgba(0, 0, 0, 1);
 }
+/* Tres columnas: marca | secciones | acciones. Las dos de los costados
+   crecen igual, así las secciones quedan en el centro exacto de la barra
+   y no corridas hacia donde haya más espacio. */
 .navMarca {
+  flex: 1 1 0;
   display: flex; align-items: center; gap: 9px;
   font-weight: 700; font-size: 15px; letter-spacing: -0.02em;
-  margin-right: auto;
   color: var(--hueso);
   text-decoration: none;
 }
@@ -139,7 +142,11 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
 }
 .navLogo img { display: block; width: 18px; height: 18px; }
-.navLinks { display: flex; gap: 4px; }
+.navLinks { display: flex; gap: 4px; justify-content: center; }
+.navAcciones {
+  flex: 1 1 0;
+  display: flex; align-items: center; justify-content: flex-end; gap: 2px;
+}
 .navLink {
   padding: 7px 13px;
   border-radius: 999px;
@@ -489,7 +496,8 @@
   box-shadow: 0 60px 130px -60px rgba(0,0,0,0.9);
 }
 .toggle {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
   padding: 4px;
   border-radius: 999px;
   border: 1px solid var(--linea);
@@ -659,4 +667,20 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .barraMovil { transition: none; }
+}
+
+/* Sello del plan de por vida: colgado arriba de su mitad del selector. */
+.toggleSello {
+  position: absolute;
+  top: -11px; left: 25%;
+  transform: translateX(-50%);
+  z-index: 2;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--oro);
+  color: var(--tinta);
+  font-size: 10px; font-weight: 750;
+  letter-spacing: .02em;
+  box-shadow: 0 4px 12px -4px rgba(217,164,65,.6);
 }

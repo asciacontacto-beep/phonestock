@@ -6,7 +6,7 @@ import { ArrowRight, Plus, Check, MessageCircle } from 'lucide-react'
 import s from './landing.module.css'
 import { MetaPixel } from '@/components/MetaPixel'
 import { eventoMeta } from '@/utils/metaPixel'
-import { PRECIO_MENSUAL, PRECIO_LIFETIME, money, mesesDeAhorro, linkWhatsApp } from './precios'
+import { PRECIO_MENSUAL, PRECIO_LIFETIME_USD, money, usd, linkWhatsApp } from './precios'
 
 /* ── Animación de entrada ────────────────────────────────────────────────
    En CSS y no con JavaScript. Con la animación por JS el contenido arranca
@@ -209,7 +209,7 @@ const PREGUNTAS = [
   },
   {
     q: '¿Qué diferencia hay entre el mensual y la licencia?',
-    a: `El sistema es exactamente el mismo, con todo incluido en los dos. La diferencia es cómo lo pagás: ${money(PRECIO_MENSUAL)} por mes sin permanencia, o ${money(PRECIO_LIFETIME)} una sola vez y no pagás nunca más. La licencia se paga sola en ${mesesDeAhorro} meses.`,
+    a: `El sistema es exactamente el mismo, con todo incluido en los dos. La diferencia es cómo lo pagás: ${usd(PRECIO_LIFETIME_USD)} una sola vez y es tuyo para siempre, con las actualizaciones incluidas, o ${money(PRECIO_MENSUAL)} por mes sin permanencia.`,
   },
   {
     q: '¿Sirve si tengo más de un local?',
@@ -227,7 +227,7 @@ const PREGUNTAS = [
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
-  const [plan, setPlan] = useState<'mensual' | 'lifetime'>('mensual')
+  const [plan, setPlan] = useState<'mensual' | 'lifetime'>('lifetime')
   const [abierta, setAbierta] = useState<number | null>(0)
 
   const heroRef = useRef<HTMLDivElement>(null)
@@ -278,10 +278,12 @@ export default function LandingPage() {
             <a href="#precio" className={s.navLink}>Precio</a>
             <a href="#preguntas" className={s.navLink}>Preguntas</a>
           </div>
-          <Link href="/login" className={s.navEntrar}>Entrar</Link>
-          <Link href={REGISTRO} className={s.navCta} onClick={alProbar}>
-            Probar gratis <ArrowRight size={15} />
-          </Link>
+          <div className={s.navAcciones}>
+            <Link href="/login" className={s.navEntrar}>Entrar</Link>
+            <Link href={REGISTRO} className={s.navCta} onClick={alProbar}>
+              Probar gratis <ArrowRight size={15} />
+            </Link>
+          </div>
         </nav>
       </div>
 
@@ -315,7 +317,7 @@ export default function LandingPage() {
             </div>
 
             <div className={`${s.heroNota} ${s.entra} ${s.d5}`}>
-              {money(PRECIO_MENSUAL)} por mes, sin permanencia · o una licencia para siempre
+              {usd(PRECIO_LIFETIME_USD)} una sola vez y es tuyo para siempre · o {money(PRECIO_MENSUAL)} por mes
             </div>
 
             <div className={`${s.ventanaWrap} ${s.entra} ${s.d5}`}>
@@ -437,10 +439,10 @@ export default function LandingPage() {
             <Reveal>
               <div className={s.seccionCabecera}>
                 <span className={s.etiqueta}>Precio</span>
-                <h2 className={s.h2}>Un solo sistema.<br /><em>Vos elegís cómo pagarlo.</em></h2>
+                <h2 className={s.h2}>Pagás una vez.<br /><em>Es tuyo para siempre.</em></h2>
                 <p className={s.parrafo}>
-                  Todo incluido en los dos: sucursales, usuarios, módulos y actualizaciones.
-                  No hay plan chico al que le falten cosas.
+                  Sin cuotas mensuales que se acumulan. Sucursales, usuarios, módulos y
+                  actualizaciones incluidos. Si preferís ir mes a mes, también se puede.
                 </p>
               </div>
             </Reveal>
@@ -448,20 +450,23 @@ export default function LandingPage() {
             <Reveal delay={0.08}>
               <div className={s.precioPanel}>
                 <div className={s.toggle}>
+                  {/* Fuera del botón: adentro ensanchaba una mitad y la
+                      píldora, que asume dos mitades iguales, no la cubría. */}
+                  <span className={s.toggleSello}>Recomendado</span>
                   <motion.span
                     className={s.togglePildora}
                     initial={false}
-                    animate={{ left: esMensual ? 4 : '50%', right: esMensual ? '50%' : 4 }}
+                    animate={{ left: esMensual ? '50%' : 4, right: esMensual ? 4 : '50%' }}
                     transition={{ type: 'spring', stiffness: 420, damping: 36 }}
                   />
-                  <button
-                    className={`${s.toggleBtn} ${esMensual ? s.toggleBtnOn : ''}`}
-                    onClick={() => setPlan('mensual')}
-                  >Mensual</button>
                   <button
                     className={`${s.toggleBtn} ${!esMensual ? s.toggleBtnOn : ''}`}
                     onClick={() => setPlan('lifetime')}
                   >De por vida</button>
+                  <button
+                    className={`${s.toggleBtn} ${esMensual ? s.toggleBtnOn : ''}`}
+                    onClick={() => setPlan('mensual')}
+                  >Mensual</button>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -474,14 +479,14 @@ export default function LandingPage() {
                   >
                     <div className={s.precioFila}>
                       <span className={s.precioNumero}>
-                        {money(esMensual ? PRECIO_MENSUAL : PRECIO_LIFETIME)}
+                        {esMensual ? money(PRECIO_MENSUAL) : usd(PRECIO_LIFETIME_USD)}
                       </span>
                       <span className={s.precioUnidad}>{esMensual ? 'por mes' : 'un solo pago'}</span>
                     </div>
                     <p className={s.precioNota}>
                       {esMensual
                         ? <>Sin permanencia y sin contrato. Te das de baja cuando querés y <b>te llevás todos tus datos</b>.</>
-                        : <>Pagás una vez y no pagás nunca más. Se paga sola en <b>{mesesDeAhorro} meses</b> y las actualizaciones futuras van incluidas.</>}
+                        : <>Pagás una vez y <b>no pagás nunca más</b>. Las actualizaciones y las funciones nuevas van incluidas, y el soporte por WhatsApp también.</>}
                     </p>
                   </motion.div>
                 </AnimatePresence>

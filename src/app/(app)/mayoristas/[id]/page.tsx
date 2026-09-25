@@ -1,6 +1,7 @@
-import { createClient, getUser } from "@/utils/supabase/server"
+import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect, notFound } from "next/navigation"
 import { MayoristaDetailClient } from "./MayoristaDetailClient"
+import { configuracionDelLocal } from '@/utils/configuracion'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +29,7 @@ export default async function MayoristaDetailPage({ params }: { params: Promise<
       : Promise.resolve({ data: [] }),
     supabase.from('wholesale_payments').select('*').eq('wholesaler_id', id).order('created_at', { ascending: false }),
     supabase.from('stock').select('id,brand,model,storage,color,status,price,currency').eq('status', 'available'),
-    supabase.from('settings').select('exchange_rate').maybeSingle(),
+    configuracionDelLocal(supabase, (await getProfile(user.id))?.org_id, 'exchange_rate'),
   ])
 
   const paymentsByOrder: Record<string, number> = {}

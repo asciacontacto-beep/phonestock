@@ -1,5 +1,6 @@
 import { createClient, getProfile } from '@/utils/supabase/server'
 import { SalesClient } from './SalesClient'
+import { configuracionDelLocal } from '@/utils/configuracion'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,8 +30,8 @@ export default async function SalesPage() {
     supabase.from('deposits').select('*').order('name'),
     vendedores,
     supabase.from('profiles').select('*').eq('id', user?.id).single(),
-    // maybeSingle: sin esto el comprobante perdía la marca del local.
-    supabase.from('settings').select('*').limit(1).maybeSingle()
+    // La del local, por org_id: "la primera fila" era la de otro negocio.
+    configuracionDelLocal(supabase, orgId)
   ])
 
   return (

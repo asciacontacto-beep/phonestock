@@ -12,5 +12,5 @@ export default async function StockPage() {
   const profile = await getProfile(user.id)
   const isOwner = isSuperAdmin || profile?.role === 'owner'
 
-  return <StockClient isOwner={isOwner} />
+  return <StockClient isOwner={isOwner} orgId={profile?.org_id || null} />
 }

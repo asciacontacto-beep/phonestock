@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { BRANDS, STORAGES, COLORS, MODEL_STORAGES, almacenamientosDe } from '@/constants/data';
 import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock, Plus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { configuracionDelLocal } from '@/utils/configuracion';
 import { mandarAReparar } from '@/utils/reparacionPropia';
 import { estadoDeLista } from '@/utils/listaVacia';
 import { Store } from 'lucide-react';
@@ -27,7 +28,7 @@ function agingColor(days: number): string | null {
   return null;
 }
 
-export function StockClient({ isOwner }: { isOwner?: boolean }) {
+export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: string | null }) {
   const { confirm, ConfirmDialog } = useConfirm();
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
@@ -54,7 +55,7 @@ export function StockClient({ isOwner }: { isOwner?: boolean }) {
       const [{ data: stockData }, { data: depositsData }, { data: settingsData }] = await Promise.all([
         supabase.from('stock').select(STOCK_FIELDS).order('created_at', { ascending: false }),
         supabase.from('deposits').select('id,name,color').order('name'),
-        supabase.from('settings').select('exchange_rate').limit(1).maybeSingle(),
+        configuracionDelLocal(supabase, orgId, 'exchange_rate'),
       ]);
       setStock(stockData || []);
       setDeposits(depositsData || []);

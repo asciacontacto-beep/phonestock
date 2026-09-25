@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Wrench, CheckCircle, PackageSearch, PackageOpen, XCircle, Printer, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { configuracionDelLocal } from '@/utils/configuracion';
 import { EmptyState } from '@/components/EmptyState';
 import { costoNuevoDelEquipo, cerrarReparacionPropia } from '@/utils/reparacionPropia';
 import { useRouter } from 'next/navigation';
@@ -684,7 +685,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
      nada, así que la cotización se quedaba pegada en el default y todos los
      costos de repuestos en dólares se convertían con un dólar inventado. */
   const fetchExchangeRate = async () => {
-    const { data } = await supabase.from('settings').select('exchange_rate').maybeSingle();
+    const { data } = await configuracionDelLocal(supabase, user?.org_id, 'exchange_rate');
     if (data?.exchange_rate) setExchangeRate(parseFloat(String(data.exchange_rate)) || 1000);
   };
 

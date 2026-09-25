@@ -1,6 +1,7 @@
 import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { ReportsClient } from "./ReportsClient"
+import { configuracionDelLocal } from '@/utils/configuracion'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +23,7 @@ export default async function ReportsPage() {
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
     supabase.from('expenses').select('*').order('created_at', { ascending: false }),
     supabase.from('deposits').select('*').order('name'),
-    supabase.from('settings').select('*').maybeSingle(),
+    configuracionDelLocal(supabase, profile?.org_id),
     supabase.from('repairs').select('id, cost, created_at, updated_at')
   ])
 

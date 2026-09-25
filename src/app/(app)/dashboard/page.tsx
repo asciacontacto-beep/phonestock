@@ -1,4 +1,5 @@
 import { createClient, getUser, getProfile } from "@/utils/supabase/server"
+import { configuracionDelLocal } from '@/utils/configuracion'
 import { redirect } from "next/navigation"
 import { DashboardClient } from "./DashboardClient"
 
@@ -36,7 +37,7 @@ export default async function DashboardPage() {
           .order('created_at', { ascending: false }).limit(500)
       : supabase.from('sales').select(`${COLS_VENTAS},cost_price`)
           .order('created_at', { ascending: false }).limit(500),
-    supabase.from('settings').select('exchange_rate').maybeSingle(),
+    configuracionDelLocal(supabase, profile?.org_id, 'exchange_rate'),
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
       : supabase.from('repairs').select('id, cost, created_at, updated_at'),

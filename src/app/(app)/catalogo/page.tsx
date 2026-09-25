@@ -1,6 +1,7 @@
 import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { CatalogoAdminClient } from "./CatalogoAdminClient"
+import { configuracionDelLocal } from '@/utils/configuracion'
 import type { EquipoStock } from "@/utils/catalogo"
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +21,7 @@ export default async function CatalogoPage() {
       .select('id,brand,model,storage,color,condition,battery,price,currency,status,in_catalog,photos')
       .eq('status', 'available')
       .order('created_at', { ascending: false }),
-    supabase.from('settings').select('shop_name').maybeSingle(),
+    configuracionDelLocal(supabase, profile?.org_id, 'shop_name'),
   ])
 
   return (

@@ -12,8 +12,9 @@ import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual } from '@/util
 import { calcularPagoTarjeta, resumenPlan, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
 import { resolveSale } from '@/utils/saleTotals';
 import { imprimirDocumento } from '@/utils/imprimir';
+import { configuracionDelLocal } from '@/utils/configuracion';
 
-export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null }) {
+export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null, orgId?: string | null }) {
   const [stock, setStock] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
@@ -75,7 +76,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName }: { isO
       supabase.auth.getSession(),
       supabase.from('stock').select('*').eq('status', 'available').order('created_at', { ascending: false }),
       supabase.from('deposits').select('*').order('name'),
-      supabase.from('settings').select('*').maybeSingle(),
+      configuracionDelLocal(supabase, orgId),
       supabase.from('accessories').select('*').gt('stock', 0),
       supabase.from('card_plans').select('*').eq('active', true).order('card_name')
     ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }, { data: planesData }]: any) => {

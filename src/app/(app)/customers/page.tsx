@@ -1,6 +1,7 @@
-import { createClient, getUser } from "@/utils/supabase/server"
+import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { CustomersClient } from "./CustomersClient"
+import { configuracionDelLocal } from '@/utils/configuracion'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,6 +10,7 @@ export default async function CustomersPage() {
   if (!user) redirect("/login")
 
   const supabase = await createClient()
+  const orgId = (await getProfile(user.id))?.org_id
 
   const [
     { data: customersData },
@@ -24,7 +26,7 @@ export default async function CustomersPage() {
     // con error y data null: la pantalla sigue funcionando sin los cobros.
     supabase.from('customer_payments').select('*').order('paid_at', { ascending: false }),
     supabase.from('deposits').select('*').order('name'),
-    supabase.from('settings').select('exchange_rate').maybeSingle(),
+    configuracionDelLocal(supabase, orgId, 'exchange_rate'),
     supabase.from('sale_installments').select('*').order('due_date'),
   ])
 

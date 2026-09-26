@@ -82,7 +82,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
     try {
       const sessionData = await supabase.auth.getSession()
       // El vendedor no baja el costo del catálogo.
-      const { data } = await supabase.from('product_catalog').select((isOwner ? '*' : 'upc,brand,model') as string).eq('upc', code).single();
+      const { data } = await supabase.from('product_catalog').select((isOwner ? '*' : 'upc,brand,model,storage,color') as string).eq('upc', code).single();
       let found: any = data;
       if (!found && EAN_DB[code]) found = EAN_DB[code];
       if (found) {

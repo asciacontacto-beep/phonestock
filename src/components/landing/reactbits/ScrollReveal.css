@@ -1,0 +1,19 @@
+/*
+ * React Bits — https://reactbits.dev
+ * Copyright (c) 2026 David Haz. MIT + Commons Clause License Condition v1.0.
+ * Copiado del registro oficial (variante TS-CSS) sin cambios de lógica.
+ */
+.scroll-reveal {
+  margin: 20px 0;
+}
+
+.scroll-reveal-text {
+  display: block;
+  font-size: clamp(1.6rem, 4vw, 3rem);
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.word {
+  display: inline-block;
+}

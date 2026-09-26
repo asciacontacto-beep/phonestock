@@ -1,10 +1,12 @@
 import { createClient, getUser, getProfile } from '@/utils/supabase/server'
 import { RecibosClient } from './RecibosClient'
 import { configuracionDelLocal } from '@/utils/configuracion'
+import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function RecibosPage() {
+  await soloDueno()
   const supabase = await createClient()
   const user = await getUser()
   const orgId = user ? (await getProfile(user.id))?.org_id : null

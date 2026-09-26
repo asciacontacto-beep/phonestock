@@ -8,7 +8,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
 import { upsertCustomer, CLIENTE_ANONIMO } from '@/utils/customers';
-import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual } from '@/utils/cuotas';
+import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual, interesPctDesdeCuota } from '@/utils/cuotas';
+import { STOCK_SIN_COSTO, ACCESORIOS_SIN_COSTO } from '@/utils/sinCostos';
 import { calcularPagoTarjeta, resumenPlan, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
 import { resolveSale } from '@/utils/saleTotals';
 import { imprimirDocumento } from '@/utils/imprimir';
@@ -51,6 +52,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   const [enCuotas, setEnCuotas] = useState(false);
   const [cantCuotas, setCantCuotas] = useState(3);
   const [interesPct, setInteresPct] = useState('0');
+  const [valorCuota, setValorCuota] = useState('');
+  const [modoInteres, setModoInteres] = useState<'pct' | 'cuota'>('pct');
   const [cardPlans, setCardPlans] = useState<PlanTarjeta[]>([]);
   const [planTarjeta, setPlanTarjeta] = useState<string>('');
   const [quienPaga, setQuienPaga] = useState<QuienPaga | null>(null);
@@ -74,10 +77,13 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
     // Fetch user session + all data in parallel — all client-side, no server wait
     Promise.all([
       supabase.auth.getSession(),
-      supabase.from('stock').select('*').eq('status', 'available').order('created_at', { ascending: false }),
+      /* Al vendedor el costo no le llega: ni en pantalla ni en los datos (lo
+         que se manda al navegador se puede leer con sus herramientas). El
+         costo de la venta lo completa la base (completar_costo_venta). */
+      supabase.from('stock').select(isOwner ? '*' : STOCK_SIN_COSTO).eq('status', 'available').order('created_at', { ascending: false }),
       supabase.from('deposits').select('*').order('name'),
       configuracionDelLocal(supabase, orgId),
-      supabase.from('accessories').select('*').gt('stock', 0),
+      supabase.from('accessories').select(isOwner ? '*' : ACCESORIOS_SIN_COSTO).gt('stock', 0),
       supabase.from('card_plans').select('*').eq('active', true).order('card_name')
     ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }, { data: planesData }]: any) => {
       const u = session?.user
@@ -126,8 +132,12 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   const rem = price - paid;
   /* Las reglas de plata viven en utils/saleTotals para poder testearlas:
      qué precio se registra, qué queda debiendo y qué se devolvió. */
+  /* Sin ningún pago cargado la venta sólo puede ser "queda debiendo" todo:
+     es la venta 100% en cuotas. "Le hice precio" registraría una venta de $0. */
+  const sinPagos = payments.length === 0;
+  const modoFaltante = sinPagos ? 'debe' : underpay;
   const { finalPrice, balanceDue, changeGiven, isUnderpaid, isOverpaid } =
-    resolveSale(price, paid, underpay, overpay);
+    resolveSale(price, paid, modoFaltante, overpay);
   const overAmount = changeGiven || (isOverpaid ? -rem : 0);
 
   /* Si se devolvió la diferencia, queda asentada como un movimiento más: así
@@ -155,10 +165,22 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       return generarPlanCuotas({
         precio: balanceDue, anticipo: 0, cantidad: cantCuotas,
         primerVencimiento: primerVenc, moneda: sc === 'USD' ? 'USD' : 'ARS',
-        interesPct: parseFloat(interesPct) || 0,
+        interesPct: modoInteres === 'pct' ? parseFloat(interesPct) || 0 : 0,
+        valorCuota: modoInteres === 'cuota' ? parseFloat(valorCuota) || undefined : undefined,
       });
     } catch { return null; }
-  }, [enCuotas, balanceDue, cantCuotas, primerVenc, sc, interesPct]);
+  }, [enCuotas, balanceDue, cantCuotas, primerVenc, sc, interesPct, valorCuota, modoInteres]);
+
+  /* Los dos campos se completan entre sí: el que escribió el vendedor manda
+     y el otro muestra su equivalente. */
+  const pctMostrado = modoInteres === 'pct'
+    ? interesPct
+    : String(interesPctDesdeCuota({ aFinanciar: balanceDue, cantidad: cantCuotas, valorCuota: parseFloat(valorCuota) || 0 }) ?? '');
+  const cuotaMostrada = modoInteres === 'cuota'
+    ? valorCuota
+    : planPreview ? String(planPreview.cuotas[0].amount) : '';
+  const cuotaNoAlcanza = enCuotas && modoInteres === 'cuota' && (parseFloat(valorCuota) || 0) > 0
+    && (parseFloat(valorCuota) || 0) * cantCuotas < balanceDue;
 
   /* El interés de la financiación es ingreso del local: sube el precio de la
      venta y el saldo que el cliente debe. Si sólo viviera en las cuotas, el
@@ -265,11 +287,15 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 
   const confirmAccessoryOnly = async () => {
     if (selectedAccessories.length === 0) { toast.error('Agregá al menos un accesorio'); return; }
-    if (!price || !payments.length) { toast.error('Datos incompletos'); return; }
+    if (!price) { toast.error('Datos incompletos'); return; }
+    // Sin pagos queda todo debiendo: la deuda tiene que tener a quién.
+    if (sinPagos && !cust.name.trim()) { toast.error('Para dejar el saldo pendiente cargá el cliente'); return; }
+    if (cuotaNoAlcanza || (enCuotas && modoFaltante === 'debe' && !planPreview)) { toast.error('Revisá el plan de cuotas'); return; }
     try {
       setLoading(true);
       const stockWarnings: string[] = [];
-      const totalCost = selectedAccessories.reduce((acc, a) => acc + (a.cost_price || 0) * a.qty, 0);
+      // Sin costos (vendedor) va vacío y lo completa la base.
+      const totalCost = isOwner ? selectedAccessories.reduce((acc, a) => acc + (a.cost_price || 0) * a.qty, 0) : null;
       const resumen = selectedAccessories.map(a => `${a.qty}x ${a.name}`).join(' · ');
       const saleData = {
         seller_id: user.id,
@@ -306,7 +332,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           { duration: 10000 }
         );
       }
-      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto');
+      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto'); setValorCuota(''); setModoInteres('pct');
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
     } catch (e: any) {
@@ -318,7 +344,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 
   const confirm = async () => {
     if (accessoryOnly) { await confirmAccessoryOnly(); return; }
-    if (!unit || !price || !payments.length || !cust.name) { toast.error('Datos incompletos'); return; }
+    if (!unit || !price || !cust.name) { toast.error('Datos incompletos'); return; }
+    if (cuotaNoAlcanza || (enCuotas && modoFaltante === 'debe' && !planPreview)) { toast.error('Revisá el plan de cuotas'); return; }
     
     try {
       setLoading(true);
@@ -418,7 +445,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           { duration: 10000 }
         );
       }
-      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto');
+      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto'); setValorCuota(''); setModoInteres('pct');
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
     } catch (e: any) {
@@ -852,8 +879,14 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
               })()}
             </div>
           )}
-          {payments.length > 0 && (
+          {(payments.length > 0 || price > 0) && (
             <div className="card" style={{ background: 'var(--surface-2)', padding: 16, marginBottom: 16 }}>
+              {sinPagos && (
+                <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.5 }}>
+                  Todavía no cargaste ningún pago. Si el cliente se lleva el equipo y paga todo en cuotas,
+                  armá el plan acá abajo; si paga algo hoy, cargalo arriba como anticipo.
+                </div>
+              )}
               {payments.map((p, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -878,32 +911,36 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 
               {isUnderpaid && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border-md)' }}>
-                  <div style={{ fontSize: 13, marginBottom: 8 }}>
-                    Estás cobrando <strong>{sc === 'USD' ? 'U$' : '$'} {rem.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong> menos que el precio marcado.
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      className={`btn btn-sm ${underpay === 'descuento' ? 'btn-dark' : 'btn-outline'}`}
-                      style={{ flex: 1 }}
-                      onClick={() => setUnderpay('descuento')}
-                    >
-                      Le hice precio
-                    </button>
-                    <button
-                      className={`btn btn-sm ${underpay === 'debe' ? 'btn-dark' : 'btn-outline'}`}
-                      style={{ flex: 1 }}
-                      onClick={() => setUnderpay('debe')}
-                    >
-                      Queda debiendo
-                    </button>
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5 }}>
-                    {underpay === 'descuento'
+                  {!sinPagos && (
+                    <>
+                      <div style={{ fontSize: 13, marginBottom: 8 }}>
+                        Estás cobrando <strong>{sc === 'USD' ? 'U$' : '$'} {rem.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</strong> menos que el precio marcado.
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          className={`btn btn-sm ${underpay === 'descuento' ? 'btn-dark' : 'btn-outline'}`}
+                          style={{ flex: 1 }}
+                          onClick={() => setUnderpay('descuento')}
+                        >
+                          Le hice precio
+                        </button>
+                        <button
+                          className={`btn btn-sm ${underpay === 'debe' ? 'btn-dark' : 'btn-outline'}`}
+                          style={{ flex: 1 }}
+                          onClick={() => setUnderpay('debe')}
+                        >
+                          Queda debiendo
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: sinPagos ? 0 : 8, lineHeight: 1.5 }}>
+                    {modoFaltante === 'descuento'
                       ? `Se registra la venta por ${sc === 'USD' ? 'U$' : '$'} ${finalPrice.toLocaleString('es-AR', { maximumFractionDigits: 2 })}, que es lo que realmente cobraste.`
                       : `Se registra por el precio completo y queda un saldo pendiente de ${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString('es-AR', { maximumFractionDigits: 2 })}.`}
                   </div>
 
-                  {underpay === 'debe' && (
+                  {modoFaltante === 'debe' && (
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border-md)' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
                         <input type="checkbox" checked={enCuotas} onChange={e => setEnCuotas(e.target.checked)} />
@@ -921,14 +958,28 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                             </div>
                             <div style={{ flex: 1 }}>
                               <label className="lbl">Interés %</label>
-                              <input className="inp" type="number" min="0" step="0.5" value={interesPct}
-                                onChange={e => setInteresPct(e.target.value)} placeholder="0" />
+                              <input className="inp" type="number" min="0" step="0.5" value={pctMostrado}
+                                onChange={e => { setModoInteres('pct'); setInteresPct(e.target.value); }} placeholder="0" />
                             </div>
+                            {/* "Son 3 de 100 mil": el vendedor carga la cuota
+                                y el interés se calcula solo. */}
                             <div style={{ flex: 1.2 }}>
-                              <label className="lbl">Primer vencimiento</label>
-                              <input className="inp" type="date" value={primerVenc} onChange={e => setPrimerVenc(e.target.value)} />
+                              <label className="lbl">Valor de cada cuota</label>
+                              <input className="inp" type="number" min="0" step="any" value={cuotaMostrada}
+                                onChange={e => { setModoInteres('cuota'); setValorCuota(e.target.value); }}
+                                placeholder={sc === 'USD' ? 'U$' : '$'} />
                             </div>
                           </div>
+                          <div style={{ marginTop: 10 }}>
+                            <label className="lbl">Primer vencimiento</label>
+                            <input className="inp" type="date" value={primerVenc} onChange={e => setPrimerVenc(e.target.value)} />
+                          </div>
+                          {cuotaNoAlcanza && (
+                            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--red)' }}>
+                              {cantCuotas} cuotas de {sc === 'USD' ? 'U$' : '$'} {(parseFloat(valorCuota) || 0).toLocaleString('es-AR')} no cubren
+                              los {sc === 'USD' ? 'U$' : '$'} {balanceDue.toLocaleString('es-AR', { maximumFractionDigits: 2 })} que quedan. Subí la cuota o hacé el descuento en el precio.
+                            </div>
+                          )}
 
                           {planPreview && (
                             <div style={{ marginTop: 10, background: 'var(--surface-2)', borderRadius: 10, padding: 10 }}>
@@ -939,7 +990,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                                     <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {planPreview.aFinanciar.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
                                   </div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--amber)' }}>
-                                    <span>Interés {interesPct}%</span>
+                                    <span>Interés {pctMostrado}%</span>
                                     <span style={{ fontFamily: 'JetBrains Mono' }}>+ {sc === 'USD' ? 'U$' : '$'} {planPreview.interes.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
                                   </div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: 4 }}>
@@ -1026,7 +1077,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             {/* Antes se bloqueaba si no cerraba exacto: no se podía registrar
                 ni un saldo pendiente ni un canje tomado por más que la venta.
                 Ahora cada caso tiene su resolución explícita arriba. */}
-            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || !payments.length || loading} onClick={confirm}>
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!price || loading || cuotaNoAlcanza} onClick={confirm}>
               {loading ? 'Procesando...' : 'Finalizar Operación'}
             </button>
           </div>

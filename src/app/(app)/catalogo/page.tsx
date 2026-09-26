@@ -3,10 +3,12 @@ import { redirect } from "next/navigation"
 import { CatalogoAdminClient } from "./CatalogoAdminClient"
 import { configuracionDelLocal } from '@/utils/configuracion'
 import type { EquipoStock } from "@/utils/catalogo"
+import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function CatalogoPage() {
+  await soloDueno()
   const user = await getUser()
   if (!user) redirect("/login")
 

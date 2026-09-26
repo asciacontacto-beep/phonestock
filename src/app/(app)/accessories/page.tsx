@@ -1,10 +1,12 @@
 import { createClient, getUser, getProfile } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import AccessoriesClient from './AccessoriesClient';
+import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function AccessoriesPage() {
+  await soloDueno()
   const user = await getUser();
   if (!user) redirect('/login');
 

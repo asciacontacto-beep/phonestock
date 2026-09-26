@@ -1,9 +1,11 @@
 import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { CashiersClient } from "./CashiersClient"
+import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function CashiersPage() {
+  await soloDueno()
   const supabase = await createClient()
 
   const user = await getUser()

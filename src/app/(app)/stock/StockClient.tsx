@@ -10,6 +10,7 @@ import { Store } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { STOCK_SIN_COSTO } from '@/utils/sinCostos';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
 import { useConfirm } from '@/hooks/useConfirm';
 
@@ -53,7 +54,8 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
   useEffect(() => {
     (async () => {
       const [{ data: stockData }, { data: depositsData }, { data: settingsData }] = await Promise.all([
-        supabase.from('stock').select(STOCK_FIELDS).order('created_at', { ascending: false }),
+        // Al vendedor el costo no le llega ni en los datos.
+        supabase.from('stock').select((isOwner ? STOCK_FIELDS : STOCK_SIN_COSTO) as string).order('created_at', { ascending: false }),
         supabase.from('deposits').select('id,name,color').order('name'),
         configuracionDelLocal(supabase, orgId, 'exchange_rate'),
       ]);
@@ -140,7 +142,8 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
         brand: editItem.brand, model: editItem.model,
         storage: editItem.storage, color: editItem.color,
         price: parseFloat(editItem.price), 
-        cost_price: editItem.cost_price ? parseFloat(editItem.cost_price) : null,
+        // El vendedor no tiene el costo cargado: mandarlo lo borraría.
+        ...(isOwner ? { cost_price: editItem.cost_price ? parseFloat(editItem.cost_price) : null } : {}),
         currency: editItem.currency,
         condition: editItem.condition, deposit: editItem.deposit,
         imei: editItem.imei || null,

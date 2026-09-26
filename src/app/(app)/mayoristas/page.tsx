@@ -1,10 +1,12 @@
 import { createClient, getUser } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { MayoristasClient } from "./MayoristasClient"
+import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function MayoristasPage() {
+  await soloDueno()
   const user = await getUser()
   if (!user) redirect("/login")
 

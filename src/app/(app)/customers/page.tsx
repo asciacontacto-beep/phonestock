@@ -2,10 +2,12 @@ import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { CustomersClient } from "./CustomersClient"
 import { configuracionDelLocal } from '@/utils/configuracion'
+import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function CustomersPage() {
+  await soloDueno()
   const user = await getUser()
   if (!user) redirect("/login")
 

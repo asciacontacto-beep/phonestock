@@ -1,10 +1,12 @@
 import { createClient, getProfile } from '@/utils/supabase/server'
 import { SalesClient } from './SalesClient'
 import { configuracionDelLocal } from '@/utils/configuracion'
+import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function SalesPage() {
+  await soloDueno()
   const supabase = await createClient()
 
   // Fetch all necessary data. getUser() valida el JWT (server-side).

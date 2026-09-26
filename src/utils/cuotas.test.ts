@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  interesPctDesdeCuota,
   guardarPlanCuotas,
   generarPlanCuotas,
   vencimientoMensual,
@@ -316,5 +317,57 @@ describe('resumenGlobalDeVencimientos', () => {
     expect(resumenGlobalDeVencimientos([], [], '2026-11-14')).toEqual({
       vencido: 0, proximos7: 0, aVencer: 0, total: 0, ventasVencidas: 0,
     })
+  })
+})
+
+/* El vendedor muchas veces arregla con el cliente "son 3 cuotas de 100 mil"
+   y no un porcentaje: tiene que poder cargar la cuota y que el interés
+   salga solo. */
+describe('generarPlanCuotas con el valor de la cuota', () => {
+  const base = { precio: 250000, anticipo: 0, cantidad: 3, primerVencimiento: '2026-10-01', moneda: 'ARS' as const }
+
+  it('todas las cuotas valen lo que se cargó y el interés es la diferencia', () => {
+    const plan = generarPlanCuotas({ ...base, valorCuota: 100000 })
+    expect(plan.cuotas.map(c => c.amount)).toEqual([100000, 100000, 100000])
+    expect(plan.totalFinanciado).toBe(300000)
+    expect(plan.interes).toBe(50000)
+    expect(plan.precioConInteres).toBe(300000)
+  })
+
+  it('una cuota que justo cubre el saldo es sin interés', () => {
+    const plan = generarPlanCuotas({ ...base, precio: 300000, valorCuota: 100000 })
+    expect(plan.interes).toBe(0)
+  })
+
+  it('si las cuotas no cubren el saldo, avisa en vez de regalar la diferencia', () => {
+    expect(() => generarPlanCuotas({ ...base, valorCuota: 80000 })).toThrow(/no alcanza/)
+  })
+
+  it('en dólares respeta los centavos', () => {
+    const plan = generarPlanCuotas({ ...base, precio: 600, moneda: 'USD', valorCuota: 216.67 })
+    expect(plan.cuotas.map(c => c.amount)).toEqual([216.67, 216.67, 216.67])
+    expect(plan.interes).toBe(50.01)
+  })
+
+  it('el valor de la cuota manda sobre el porcentaje si vienen los dos', () => {
+    const plan = generarPlanCuotas({ ...base, interesPct: 10, valorCuota: 100000 })
+    expect(plan.interes).toBe(50000)
+  })
+})
+
+describe('interesPctDesdeCuota', () => {
+  it('traduce la cuota al porcentaje equivalente sobre el saldo', () => {
+    expect(interesPctDesdeCuota({ aFinanciar: 250000, cantidad: 3, valorCuota: 100000 })).toBe(20)
+  })
+
+  it('redondea a dos decimales', () => {
+    expect(interesPctDesdeCuota({ aFinanciar: 900, cantidad: 3, valorCuota: 333 })).toBe(11)
+    expect(interesPctDesdeCuota({ aFinanciar: 1000, cantidad: 3, valorCuota: 400 })).toBe(20)
+    expect(interesPctDesdeCuota({ aFinanciar: 1000, cantidad: 7, valorCuota: 150 })).toBe(5)
+  })
+
+  it('sin datos válidos devuelve null', () => {
+    expect(interesPctDesdeCuota({ aFinanciar: 0, cantidad: 3, valorCuota: 100 })).toBeNull()
+    expect(interesPctDesdeCuota({ aFinanciar: 1000, cantidad: 3, valorCuota: 0 })).toBeNull()
   })
 })

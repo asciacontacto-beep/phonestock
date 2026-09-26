@@ -64,7 +64,7 @@ export interface PlanCuotas {
 }
 
 export function generarPlanCuotas({
-  precio, anticipo, cantidad, primerVencimiento, moneda = 'ARS', interesPct = 0,
+  precio, anticipo, cantidad, primerVencimiento, moneda = 'ARS', interesPct = 0, valorCuota,
 }: {
   precio: number
   anticipo: number
@@ -73,6 +73,12 @@ export function generarPlanCuotas({
   moneda?: Moneda
   /** Recargo total sobre el saldo financiado, en porcentaje. 0 = sin interés. */
   interesPct?: number
+  /**
+   * Lo que vale cada cuota, cuando se arregló así con el cliente ("3 de 100
+   * mil"). Si viene, manda sobre el porcentaje: todas las cuotas valen esto
+   * y el interés es lo que suman de más sobre el saldo.
+   */
+  valorCuota?: number
 }): PlanCuotas {
   if (!Number.isInteger(cantidad) || cantidad < 1) {
     throw new Error('La cantidad de cuotas tiene que ser un número entero mayor a cero.')
@@ -91,8 +97,15 @@ export function generarPlanCuotas({
   const factor = Math.pow(10, decimales(moneda))
   /* El interés se redondea a la unidad de la moneda ANTES de repartir: si se
      repartiera el número con decimales, la suma de las cuotas no coincidiría
-     con el total que se le muestra al cliente. */
-  const totalMin = Math.round(aFinanciar * (1 + interesPct / 100) * factor)
+     con el total que se le muestra al cliente. Con el valor de la cuota
+     cargado, el total es exactamente esa cuota por la cantidad. */
+  const cuotaMin = valorCuota && valorCuota > 0 ? Math.round(valorCuota * factor) : null
+  if (cuotaMin !== null && cuotaMin * cantidad < Math.round(aFinanciar * factor)) {
+    throw new Error('La cuota no alcanza para cubrir el saldo: sería un descuento, y va en el precio.')
+  }
+  const totalMin = cuotaMin !== null
+    ? cuotaMin * cantidad
+    : Math.round(aFinanciar * (1 + interesPct / 100) * factor)
   const interes = totalMin / factor - aFinanciar
   const baseMin = Math.floor(totalMin / cantidad)
   const ultimaMin = totalMin - baseMin * (cantidad - 1)
@@ -113,6 +126,20 @@ export function generarPlanCuotas({
     anticipo,
     cuotas,
   }
+}
+
+/**
+ * El porcentaje de interés que equivale a una cuota dada, para mostrarlo al
+ * lado cuando el vendedor carga la cuota directamente. Dos decimales.
+ */
+export function interesPctDesdeCuota({ aFinanciar, cantidad, valorCuota }: {
+  aFinanciar: number
+  cantidad: number
+  valorCuota: number
+}): number | null {
+  if (!(aFinanciar > 0) || !(cantidad > 0) || !(valorCuota > 0)) return null
+  const pct = ((valorCuota * cantidad) / aFinanciar - 1) * 100
+  return Math.round(pct * 100) / 100
 }
 
 export interface EstadoCuota {

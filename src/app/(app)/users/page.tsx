@@ -1,10 +1,12 @@
 import { createClient } from "@/utils/supabase/server"
 import { UsersClient } from "./UsersClient"
 import { redirect } from "next/navigation"
+import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function UsersPage() {
+  await soloDueno()
   const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()

@@ -3,18 +3,20 @@ import s from './landing.module.css'
 import { MetaPixel } from '@/components/MetaPixel'
 import { Barra } from './secciones/Barra'
 import { Portada } from './secciones/Portada'
-import { MarcasYFrase } from './secciones/MarcasYFrase'
-import { Bento } from './secciones/Bento'
+import { Marcas } from './secciones/Marcas'
+import { Funciones } from './secciones/Funciones'
+import { Sistema } from './secciones/Sistema'
+import { Sucursales } from './secciones/Sucursales'
 import { Vidriera } from './secciones/Vidriera'
 import { Pasos } from './secciones/Pasos'
-import { Precio } from './secciones/Precio'
+import { Precios } from './secciones/Precios'
 import { Preguntas } from './secciones/Preguntas'
 import { BarraMovil } from './secciones/BarraMovil'
 
 /**
- * La landing de Stackr (26/9/2026): estilo Apple, base clara, acento verde.
- * Cada sección vive en `secciones/`; acá sólo se ordenan.
- * Spec: docs/superpowers/specs/2026-09-26-landing-stackr-design.md
+ * La landing de Stackr, estilo "fintech moderna": blanco azulado, tinta azul
+ * marino y un degradado esmeralda → cian → violeta. Cada sección vive en
+ * `secciones/`; acá sólo se ordenan.
  */
 export default function LandingPage() {
   return (
@@ -24,11 +26,13 @@ export default function LandingPage() {
       <Barra />
       <main id="contenido">
         <Portada />
-        <MarcasYFrase />
-        <Bento />
+        <Marcas />
+        <Funciones />
+        <Sistema />
+        <Sucursales />
         <Vidriera />
         <Pasos />
-        <Precio />
+        <Precios />
         <Preguntas />
       </main>
       <BarraMovil />

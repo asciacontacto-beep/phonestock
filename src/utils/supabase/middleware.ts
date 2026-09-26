@@ -62,6 +62,10 @@ export async function updateSession(request: NextRequest) {
     // vistas con las columnas enumeradas —sin IMEI ni costo—, así que ser
     // público no expone nada que el local no haya elegido mostrar.
     !request.nextUrl.pathname.startsWith('/c/') &&
+    // Privacidad y términos los tiene que poder leer cualquiera antes de
+    // crear una cuenta (y Meta los pide para los anuncios).
+    request.nextUrl.pathname !== '/privacidad' &&
+    request.nextUrl.pathname !== '/terminos' &&
     request.nextUrl.pathname !== '/'
   ) {
     const url = request.nextUrl.clone()

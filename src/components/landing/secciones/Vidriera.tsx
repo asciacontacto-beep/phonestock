@@ -5,9 +5,8 @@ import CardSwap, { Card } from '../reactbits/CardSwap'
 import { useMenosMovimiento } from '../preferencias'
 import { REGISTRO, alProbar } from '../acciones'
 
-/* El diferencial frente a la competencia: ninguno muestra una vidriera.
-   Las fichas son las del catálogo público real (foto, modelo, precio y el
-   botón para escribir), y pasan una detrás de otra como un mazo. */
+/* El diferencial: ningún competidor muestra una vidriera. Las fichas son las
+   del catálogo público real y pasan una detrás de otra como un mazo. */
 const FICHAS = [
   { modelo: 'iPhone 15 Pro', detalle: '256GB · Titanio natural · Usado', precio: 'U$ 980', fondo: 'linear-gradient(150deg, #d9d6cf, #a8a39a)' },
   { modelo: 'Galaxy S24', detalle: '256GB · Negro · Nuevo', precio: 'U$ 780', fondo: 'linear-gradient(150deg, #4a4d55, #1d1f24)' },
@@ -27,10 +26,10 @@ export function Vidriera() {
 
   return (
     <section className={s.seccion} id="catalogo">
-      <div className={`${s.ancho} ${s.vidriera}`}>
+      <div className={`${s.ancho} ${s.dosColumnas}`}>
         <div>
-          <span className={s.etiqueta}>Catálogo</span>
-          <h2 className={s.h2}>Tu vidriera,<br />en la bio de <em>Instagram.</em></h2>
+          <span className={s.etiqueta}>Catálogo online</span>
+          <h2 className={s.h2}>Tu vidriera, en la bio de <em>Instagram.</em></h2>
           <p className={s.parrafo}>
             Elegís los equipos, subís las fotos y compartís un link. El cliente ve precio y estado,
             y te escribe por WhatsApp con el equipo ya elegido.
@@ -40,10 +39,11 @@ export function Vidriera() {
               <li key={t}><span className={s.checkIcono}><Check size={14} strokeWidth={3} /></span>{t}</li>
             ))}
           </ul>
-          <a href={REGISTRO} className={s.linkVerde} onClick={alProbar} style={{ paddingLeft: 0 }}>Armá la tuya gratis ›</a>
+          <p style={{ marginTop: 28 }}><a href={REGISTRO} className={s.linkVerde} onClick={alProbar}>Armá la tuya gratis →</a></p>
         </div>
 
         <div className={s.mazo} aria-hidden>
+          <div className={s.mazoFondo} />
           <CardSwap width={300} height={420} cardDistance={46} verticalDistance={52} delay={quieto ? 99999999 : 4200} pauseOnHover skewAmount={4}>
             {FICHAS.map(f => (
               <Card key={f.modelo} customClass={s.ficha}>

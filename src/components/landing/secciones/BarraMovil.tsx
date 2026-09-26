@@ -19,7 +19,7 @@ export function BarraMovil() {
 
   return (
     <div className={`${s.barraMovil} ${visible ? s.barraMovilVisible : ''}`} aria-hidden={!visible}>
-      <Link href={REGISTRO} className={s.barraMovilCta} onClick={alProbar} tabIndex={visible ? 0 : -1}>
+      <Link href={REGISTRO} className={`${s.btn} ${s.btnPrincipal} ${s.barraMovilCta}`} onClick={alProbar} tabIndex={visible ? 0 : -1}>
         Probar gratis
       </Link>
       <a href={linkWhatsApp('mensual')} className={s.barraMovilWa} target="_blank" rel="noopener noreferrer"

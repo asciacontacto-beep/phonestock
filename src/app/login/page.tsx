@@ -99,7 +99,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
       if (raw.includes("User already registered")) { setIsLogin(true); msg = "Este email ya tiene una cuenta. Ingresá tu contraseña para continuar."; }
       else if (raw.toLowerCase().includes("email not confirmed")) {
         try {
-          const result = await confirmUserEmail(cleanEmail);
+          const result = await confirmUserEmail(cleanEmail, cleanPassword);
           if (result.success) {
             const { data, error: retryErr } = await supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPassword });
             if (retryErr) throw retryErr;

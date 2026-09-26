@@ -49,6 +49,11 @@ function fbq(): Fbq | null {
     if (!window._fbq) window._fbq = n
   }
   if (!iniciado) {
+    // Sin esto, el píxel sigue vivo después del ingreso (la navegación es
+    // sin recarga) y le manda a Meta cada dirección interna del sistema.
+    // Las visitas se cuentan a mano, sólo en las páginas públicas.
+    ;(window.fbq as Fbq & { disablePushState?: boolean }).disablePushState = true
+    window.fbq('set', 'autoConfig', false, META_PIXEL_ID)
     window.fbq('init', META_PIXEL_ID)
     iniciado = true
   }

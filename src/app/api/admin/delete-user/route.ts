@@ -44,12 +44,14 @@ export async function POST(req: NextRequest) {
     if (!callerProfile || !['owner', 'admin'].includes(callerProfile.role)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
-    // Owners can delete any user in their org (or with null org_id)
-    // Admins must verify same org
-    if (callerProfile.role !== 'owner' && targetProfile) {
-      if (targetProfile.org_id !== callerProfile.org_id) {
-        return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
-      }
+    // Sólo usuarios del propio negocio. Antes el dueño se salteaba esta
+    // comparación: cualquier dueño (una prueba gratis alcanzaba) podía
+    // borrar usuarios de otros negocios con sólo conocer su id.
+    if (userId === callerId) {
+      return NextResponse.json({ error: 'No podés borrarte a vos mismo' }, { status: 403 });
+    }
+    if (!targetProfile || !callerProfile.org_id || targetProfile.org_id !== callerProfile.org_id) {
+      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
     // Nobody can delete another owner unless they're also owner
     if (targetProfile?.role === 'owner' && callerProfile.role !== 'owner') {

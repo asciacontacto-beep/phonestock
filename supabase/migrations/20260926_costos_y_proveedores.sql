@@ -26,29 +26,48 @@ RETURNS NUMERIC LANGUAGE sql IMMUTABLE AS $$
   END
 $$;
 
--- Venta de ACCESORIOS sin costo: suma el costo de cada accesorio vendido.
+-- Accesorios vendidos por un vendedor: llegan sin costo. Los reportes leen
+-- el costo de cada accesorio del detalle de la venta, así que se completa
+-- ahí, accesorio por accesorio, en cualquier venta (sueltos o junto a un
+-- equipo). Y en la venta de ACCESORIOS sueltos, también el total.
 -- (Suma directa, como hace la pantalla de venta del dueño.)
 CREATE OR REPLACE FUNCTION public.completar_costo_venta()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  org UUID := COALESCE(NEW.org_id, public.current_user_org_id());
+  -- El negocio de quien vende, no el que venga en la fila: si no, se
+  -- podrían leer costos de accesorios de otro negocio.
+  org UUID := COALESCE(public.current_user_org_id(), NEW.org_id);
   item JSONB;
   costo NUMERIC;
+  items JSONB := '[]'::jsonb;
   total NUMERIC := 0;
   hubo BOOLEAN := false;
 BEGIN
-  IF NEW.cost_price IS NOT NULL OR NEW.brand IS DISTINCT FROM 'ACCESORIOS' THEN
+  IF NEW.accessories IS NULL OR jsonb_typeof(NEW.accessories) <> 'array'
+     OR jsonb_array_length(NEW.accessories) = 0 THEN
     RETURN NEW;
   END IF;
-  FOR item IN SELECT * FROM jsonb_array_elements(COALESCE(NEW.accessories, '[]'::jsonb)) LOOP
+  FOR item IN SELECT * FROM jsonb_array_elements(NEW.accessories) LOOP
+    -- El costo sale de la base, no de lo que mande la pantalla. Si el
+    -- accesorio ya no existe, queda el que venía.
+    costo := NULL;
     SELECT a.cost_price INTO costo FROM public.accessories a
      WHERE a.id::text = item->>'id' AND a.org_id = org;
+    IF costo IS NOT NULL THEN
+      item := item || jsonb_build_object('cost_price', costo);
+    ELSE
+      costo := NULLIF(item->>'cost_price', '')::numeric;
+    END IF;
     IF costo IS NOT NULL THEN
       total := total + costo * COALESCE(NULLIF(item->>'qty', '')::numeric, 1);
       hubo := true;
     END IF;
+    items := items || jsonb_build_array(item);
   END LOOP;
-  IF hubo THEN NEW.cost_price := round(total, 2); END IF;
+  NEW.accessories := items;
+  IF NEW.cost_price IS NULL AND NEW.brand = 'ACCESORIOS' AND hubo THEN
+    NEW.cost_price := round(total, 2);
+  END IF;
   RETURN NEW;
 END $$;
 
@@ -68,11 +87,20 @@ DECLARE
   costo NUMERIC; moneda_equipo TEXT; moneda_venta TEXT; cot NUMERIC;
 BEGIN
   IF org IS NULL THEN RETURN; END IF;
+  -- Sólo la venta que acaba de hacer quien llama, del mismo equipo que se
+  -- vendió: así nadie puede escribirle un costo cualquiera a otra venta.
   SELECT s.cost_price, s.currency INTO costo, moneda_equipo
-    FROM public.stock s WHERE s.id::text = p_stock_id AND s.org_id = org;
+    FROM public.stock s
+   WHERE s.id::text = p_stock_id AND s.org_id = org AND s.status = 'sold';
   IF costo IS NULL THEN RETURN; END IF;
   SELECT v.currency INTO moneda_venta
-    FROM public.sales v WHERE v.id::text = p_sale_id AND v.org_id = org AND v.cost_price IS NULL;
+    FROM public.sales v, public.stock s
+   WHERE v.id::text = p_sale_id AND v.org_id = org AND v.cost_price IS NULL
+     AND v.seller_id = auth.uid()
+     AND v.created_at > now() - interval '15 minutes'
+     AND s.id::text = p_stock_id
+     AND v.brand IS NOT DISTINCT FROM s.brand AND v.model IS NOT DISTINCT FROM s.model
+     AND v.imei IS NOT DISTINCT FROM s.imei;
   IF NOT FOUND THEN RETURN; END IF;
   SELECT exchange_rate INTO cot FROM public.settings WHERE org_id = org LIMIT 1;
   UPDATE public.sales
@@ -80,6 +108,7 @@ BEGIN
    WHERE id::text = p_sale_id AND org_id = org AND cost_price IS NULL;
 END $$;
 
+REVOKE EXECUTE ON FUNCTION public.fijar_costo_venta(TEXT, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.fijar_costo_venta(TEXT, TEXT) TO authenticated;
 
 

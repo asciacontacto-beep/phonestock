@@ -149,7 +149,8 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
         imei: editItem.imei || null,
         battery: editItem.condition === 'used' ? (editItem.battery || null) : null,
         notes: editItem.notes?.trim() || null,
-        in_catalog: Boolean(editItem.in_catalog),
+        // in_catalog no va: esta pantalla no lo trae ni lo edita, y mandarlo
+        // en false sacaba el equipo del catálogo público en cada edición.
       };
       const { error } = await supabase.from('stock').update(updatedFields).eq('id', editItem.id);
       if (error) throw error;

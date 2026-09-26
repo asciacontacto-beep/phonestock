@@ -12,9 +12,12 @@
 export const STOCK_SIN_COSTO =
   'id,created_at,brand,model,storage,color,imei,status,price,currency,deposit,condition,battery,notes,upc,supplier_id'
 
-/** Lo que se le devuelve al vendedor de la venta que acaba de registrar. */
+/**
+ * Lo que se le devuelve al vendedor de la venta que acaba de registrar.
+ * Sin `accessories`: la base le completa el costo a cada accesorio.
+ */
 export const VENTA_SIN_COSTO =
-  'id,created_at,brand,model,storage,color,imei,price,currency,payments,customer,seller_id,seller_name,notes,accessories,balance_due,deposit_id'
+  'id,created_at,brand,model,storage,color,imei,price,currency,payments,customer,seller_id,seller_name,notes,balance_due,deposit_id'
 
 export const ACCESORIOS_SIN_COSTO =
   'id,created_at,deposit_id,category,compatible_model,color,stock,sale_price,currency'

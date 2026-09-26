@@ -323,7 +323,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         if (ok === false) stockWarnings.push(acc.name);
       }
 
-      setLastSale(saleRow[0]);
+      // Al vendedor no vuelven los accesorios (la base les completa el costo):
+      // el ticket se arma con lo que ya tiene la pantalla.
+      setLastSale(isOwner ? saleRow[0] : { ...saleData, ...saleRow[0] });
       toast.success('Venta de accesorios confirmada');
       if (stockWarnings.length > 0) {
         toast.warning(
@@ -379,11 +381,23 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         accessories: selectedAccessories
       };
 
-      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select((isOwner ? '*' : VENTA_SIN_COSTO) as string) as unknown as { data: any[]; error: any };
-      if (sErr) throw sErr;
-
-      const { error: uErr } = await supabase.from('stock').update({ status: 'sold' }).eq('id', unit.id);
+      /* Primero se toma el equipo, y sólo si sigue disponible. Antes se
+         registraba la venta y después se marcaba vendido sin mirar el
+         estado: dos vendedores podían vender el mismo equipo, y reintentar
+         tras un error a mitad de camino duplicaba la venta. */
+      const { data: tomado, error: uErr } = await supabase.from('stock')
+        .update({ status: 'sold' }).eq('id', unit.id).eq('status', 'available').select('id');
       if (uErr) throw uErr;
+      if (!tomado || tomado.length === 0) {
+        throw new Error('Este equipo ya no está disponible: se vendió o se movió. Actualizá la pantalla.');
+      }
+
+      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select((isOwner ? '*' : VENTA_SIN_COSTO) as string) as unknown as { data: any[]; error: any };
+      if (sErr) {
+        // La venta no se registró: el equipo vuelve a estar disponible.
+        await supabase.from('stock').update({ status: 'available' }).eq('id', unit.id).eq('status', 'sold');
+        throw sErr;
+      }
 
       /* Venta de un vendedor: el costo lo copia la base desde el equipo, sin
          pasar por este navegador. Si falla, la venta queda igual y el dueño
@@ -444,7 +458,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         await supabase.from('sales').update({ customer_id: customerId }).eq('id', saleRow[0].id);
       }
 
-      setLastSale(saleRow[0]);
+      // Al vendedor no vuelven los accesorios (la base les completa el costo):
+      // el ticket se arma con lo que ya tiene la pantalla.
+      setLastSale(isOwner ? saleRow[0] : { ...saleData, ...saleRow[0] });
       toast.success(planPreview ? `Venta confirmada · plan de ${planPreview.cuotas.length} cuotas` : 'Venta confirmada');
       if (stockWarnings.length > 0) {
         toast.warning(

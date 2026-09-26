@@ -50,10 +50,21 @@ export default async function DashboardPage() {
       : supabase.from('customer_payments').select('installment_id,amount,currency,exchange_rate,paid_at'),
   ])
 
+  // Los accesorios de cada venta llevan su costo adentro (lo completa la
+  // base para los reportes del dueño). Al vendedor se le manda sin él.
+  const ventas = esVendedor
+    ? (salesData || []).map((s: any) => ({
+        ...s,
+        accessories: Array.isArray(s.accessories)
+          ? s.accessories.map(({ cost_price: _c, ...a }: any) => a)
+          : s.accessories,
+      }))
+    : (salesData || [])
+
   return (
     <DashboardClient
       stock={stockData || []}
-      sales={salesData || []}
+      sales={ventas}
       exchangeRate={settingsData?.exchange_rate || 1200}
       userRole={userRole}
       repairs={repairsData || []}

@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
 import { upsertCustomer, CLIENTE_ANONIMO } from '@/utils/customers';
 import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual, interesPctDesdeCuota } from '@/utils/cuotas';
-import { STOCK_SIN_COSTO, ACCESORIOS_SIN_COSTO } from '@/utils/sinCostos';
+import { STOCK_SIN_COSTO, ACCESORIOS_SIN_COSTO, VENTA_SIN_COSTO } from '@/utils/sinCostos';
 import { calcularPagoTarjeta, resumenPlan, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
 import { resolveSale } from '@/utils/saleTotals';
 import { imprimirDocumento } from '@/utils/imprimir';
@@ -314,7 +314,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         notes: notes.trim() || null,
         accessories: selectedAccessories,
       };
-      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select();
+      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select((isOwner ? '*' : VENTA_SIN_COSTO) as string) as unknown as { data: any[]; error: any };
       if (sErr) throw sErr;
 
       for (const acc of selectedAccessories) {
@@ -360,7 +360,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         color: unit.color,
         imei: unit.imei,
         cost_price: (() => {
-          if (!unit.cost_price) return null;
+          // El vendedor no tiene el costo: lo copia la base (fijar_costo_venta).
+          if (!isOwner || !unit.cost_price) return null;
           const rate = parseFloat(exchangeRate) || 1;
           if (unit.currency === 'USD' && sc === 'ARS') return unit.cost_price * rate;
           if (unit.currency === 'ARS' && sc === 'USD') return unit.cost_price / rate;
@@ -378,11 +379,18 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         accessories: selectedAccessories
       };
 
-      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select();
+      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select((isOwner ? '*' : VENTA_SIN_COSTO) as string) as unknown as { data: any[]; error: any };
       if (sErr) throw sErr;
 
       const { error: uErr } = await supabase.from('stock').update({ status: 'sold' }).eq('id', unit.id);
       if (uErr) throw uErr;
+
+      /* Venta de un vendedor: el costo lo copia la base desde el equipo, sin
+         pasar por este navegador. Si falla, la venta queda igual y el dueño
+         la ve "sin costo". */
+      if (!isOwner && saleRow?.[0]?.id) {
+        await supabase.rpc('fijar_costo_venta', { p_sale_id: String(saleRow[0].id), p_stock_id: String(unit.id) });
+      }
 
       if (selectedAccessories.length > 0) {
         for (const acc of selectedAccessories) {

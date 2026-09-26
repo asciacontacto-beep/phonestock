@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, EAN_DB, almacenamientosDe } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
 import { registrarCompra } from '@/utils/compras';
+import { crearPedido, totalDelPedido } from '@/utils/proveedores';
 import { ModelPicker } from './ModelPicker';
 import { limpiarImei, repetidosEnLote, buscarImeisEnStock, avisoDuplicado, esErrorImeiRepetido } from '@/utils/imei';
 import { Check, X, ChevronRight, ChevronLeft, Plus, Trash2 } from 'lucide-react';
@@ -14,6 +15,8 @@ interface ManualEntryModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** El vendedor carga equipos sin ver ni escribir costos. */
+  isOwner?: boolean;
 }
 
 const isOldPro = (m: string) => {
@@ -25,7 +28,7 @@ function emptyVariant() {
   return { storage: '128GB', color: 'Negro', condition: 'new' as 'new' | 'used', battery: '100%', imei: '', qty: 1, price: '', costPrice: '', notes: '' };
 }
 
-export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalProps) {
+export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: ManualEntryModalProps) {
   const [step, setStep] = useState(1);
   const [upc, setUpc] = useState('');
   const [brand, setBrand] = useState('Apple');
@@ -41,8 +44,11 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const [suppliers, setSuppliers] = useState<any[]>([]);
   /* Registrar la compra es opcional: se puede seguir cargando un equipo con
      sólo el costo, como siempre. Pero si no se registra, la plata que se
-     pagó no sale de ninguna caja y la ganancia queda inflada. */
-  const [registrarPago, setRegistrarPago] = useState(false);
+     pagó no sale de ninguna caja y la ganancia queda inflada.
+     'cuenta': no se pagó todavía; queda como pedido en la cuenta corriente
+     del proveedor. */
+  const [pagoCompra, setPagoCompra] = useState<'no' | 'caja' | 'cuenta'>('no');
+  const registrarPago = pagoCompra === 'caja';
   const [metodoPago, setMetodoPago] = useState('usd_cash');
   const [cajaPago, setCajaPago] = useState('');
   const [fechaCompra, setFechaCompra] = useState(() => new Date().toLocaleDateString('en-CA'));
@@ -75,8 +81,9 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
     if (code.length < 8) return;
     try {
       const sessionData = await supabase.auth.getSession()
-      const { data } = await supabase.from('product_catalog').select('*').eq('upc', code).single();
-      let found = data;
+      // El vendedor no baja el costo del catálogo.
+      const { data } = await supabase.from('product_catalog').select((isOwner ? '*' : 'upc,brand,model') as string).eq('upc', code).single();
+      let found: any = data;
       if (!found && EAN_DB[code]) found = EAN_DB[code];
       if (found) {
         setBrand(found.brand);
@@ -87,7 +94,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
         const finalStorage = found.storage && storages.includes(found.storage) ? found.storage : storages[0];
         if (found.price) {
           setPrice(found.price.toString());
-          if (found.cost_price) setCostPrice(found.cost_price.toString());
+          if (isOwner && found.cost_price) setCostPrice(found.cost_price.toString());
         }
         setVariants(vs => vs.map((v: any) => ({ ...v, color: finalColor, storage: finalStorage, condition: isOldPro(found.model) ? 'used' : 'new' })));
         toast.success(`✓ ${found.brand} ${found.model}`);
@@ -136,7 +143,8 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
     setVariants(vs => vs.filter((_, idx) => idx !== i));
 
   const handleSubmit = async () => {
-    if (!model || !price || !costPrice || !dep) { toast.error('Completá todos los campos'); return; }
+    if (!model || !price || (isOwner && !costPrice) || !dep) { toast.error('Completá todos los campos'); return; }
+    if (pagoCompra === 'cuenta' && !sup) { toast.error('Elegí el proveedor al que le debés el pedido'); return; }
     setLoading(true);
     try {
       if (upc.length > 5) {
@@ -174,14 +182,15 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
             battery: v.condition === 'used' ? v.battery : null,
             imei: qty === 1 && limpiarImei(v.imei) ? limpiarImei(v.imei) : null,
             price: v.price ? parseFloat(v.price) : parseFloat(price), 
-            cost_price: v.costPrice ? parseFloat(v.costPrice) : parseFloat(costPrice),
+            cost_price: !isOwner ? null : v.costPrice ? parseFloat(v.costPrice) : parseFloat(costPrice),
             currency: cur,
             deposit: dep, supplier_id: sup, status: 'available', upc: upc || null,
             notes: v.notes?.trim() || null
           });
         });
       });
-      const { data: inserted, error } = await supabase.from('stock').insert(units).select();
+      // Sólo el id: lo que vuelve lo ve el navegador, y el costo no hace falta.
+      const { data: inserted, error } = await supabase.from('stock').insert(units).select('id');
       if (error) throw error;
       if (inserted) {
         const total = variants.reduce((a, v) => a + (Number(v.qty) || 0), 0);
@@ -204,7 +213,23 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
             toast.warning(`Los equipos se cargaron, pero no se registró la salida de caja: ${r.error}`, { duration: 9000 });
           }
         }
-        setVariants([emptyVariant()]); setPrice(''); setCostPrice(''); setUpc('');
+        if (pagoCompra === 'cuenta') {
+          const moneda = cur === 'ARS' ? 'ARS' : 'USD';
+          const t = totalDelPedido(units, moneda);
+          const r = t.ok
+            ? await crearPedido(supabase, {
+                supplierId: sup, moneda, total: t.total,
+                fecha: fechaCompra, stockIds: inserted.map((x: any) => x.id),
+              })
+            : t;
+          if (r.ok && t.ok) {
+            const quien = suppliers.find(x => String(x.id) === String(sup))?.name || 'el proveedor';
+            toast.success(`Pedido anotado: le debés ${moneda === 'ARS' ? '$' : 'U$'}${t.total.toLocaleString('es-AR')} a ${quien}`);
+          } else if (!r.ok) {
+            toast.warning(`Los equipos se cargaron, pero no se anotó la deuda con el proveedor: ${r.error}`, { duration: 9000 });
+          }
+        }
+        setVariants([emptyVariant()]); setPrice(''); setCostPrice(''); setUpc(''); setPagoCompra('no');
         if (onSuccess) onSuccess();
         onClose();
       }
@@ -222,7 +247,7 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
   const totalUnits = variants.reduce((a, v) => a + (Number(v.qty) || 0), 0);
   const colors = COLORS[model] || COLORS[brand] || ['Negro'];
   const storages = almacenamientosDe(model);
-  const isStep1Valid = !!model && !!price && !!costPrice && !!dep && (suppliers.length === 0 || !!sup);
+  const isStep1Valid = !!model && !!price && (!isOwner || !!costPrice) && !!dep && (suppliers.length === 0 || !!sup);
 
   const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 6, display: 'block' };
 
@@ -283,9 +308,9 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                     : (MODELS[brand] || [])}
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isOwner ? '1fr 1fr 100px' : '1fr 100px', gap: 12 }}>
                 <div><label className="lbl">Precio Venta</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
-                <div><label className="lbl">Precio Costo</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
+                {isOwner && <div><label className="lbl">Precio Costo</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>}
                 <div><label className="lbl">Moneda</label><select className="inp" value={cur} onChange={e => setCur(e.target.value)}><option value="USD">USD $</option><option value="ARS">ARS $</option></select></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -297,23 +322,31 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
 
               {/* Comprar mercadería no descontaba plata de ninguna caja: el
                   stock aparecía pero la salida no se registraba en ningún
-                  lado. Se ofrece, no se obliga. */}
+                  lado. Se ofrece, no se obliga. Sólo el dueño: son costos. */}
+              {isOwner && (
               <div style={{
                 border: '1px solid var(--border)', borderRadius: 12, padding: 14,
-                background: registrarPago ? 'var(--surface-2)' : 'var(--blue-dim)',
+                background: pagoCompra !== 'no' ? 'var(--surface-2)' : 'var(--blue-dim)',
               }}>
-                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
-                  <input type="checkbox" style={{ marginTop: 3 }} checked={registrarPago}
-                    onChange={e => setRegistrarPago(e.target.checked)} />
-                  <span>
-                    <span style={{ fontWeight: 600, fontSize: 13 }}>Registrar cómo pagaste esta compra</span>
-                    <span style={{ display: 'block', fontSize: 12, color: registrarPago ? 'var(--text-3)' : '#1e40af', lineHeight: 1.5, marginTop: 3 }}>
-                      Podés cargar los equipos con el costo nomás, como siempre. Pero si registrás la compra,
-                      la plata sale de la caja y el sistema puede decirte la ganancia real y cuánto tenés
-                      invertido. Sin esto, la caja y la ganancia quedan más altas de lo que son.
-                    </span>
-                  </span>
-                </label>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>¿Cómo pagaste esta compra?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                  {([
+                    ['no', 'No registrar'],
+                    ['caja', 'Pagué de una caja'],
+                    ['cuenta', 'Se lo debo al proveedor'],
+                  ] as const).map(([k, l]) => (
+                    <button key={k} type="button"
+                      className={`btn btn-sm ${pagoCompra === k ? 'btn-dark' : 'btn-outline'}`}
+                      disabled={k === 'cuenta' && suppliers.length === 0}
+                      title={k === 'cuenta' && suppliers.length === 0 ? 'Cargá un proveedor primero, en Proveedores' : undefined}
+                      onClick={() => setPagoCompra(k)}>{l}</button>
+                  ))}
+                </div>
+                <span style={{ display: 'block', fontSize: 12, color: pagoCompra !== 'no' ? 'var(--text-3)' : '#1e40af', lineHeight: 1.5, marginTop: 8 }}>
+                  {pagoCompra === 'cuenta'
+                    ? 'Queda como un pedido en la cuenta corriente del proveedor, por el costo total de estos equipos. Los pagos se anotan después, en Proveedores.'
+                    : 'Podés cargar los equipos con el costo nomás, como siempre. Pero si registrás la compra, la plata sale de la caja y el sistema puede decirte la ganancia real y cuánto tenés invertido. Sin esto, la caja y la ganancia quedan más altas de lo que son.'}
+                </span>
 
                 {registrarPago && (
                   <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -345,7 +378,14 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                     </div>
                   </div>
                 )}
+                {pagoCompra === 'cuenta' && (
+                  <div style={{ marginTop: 12 }}>
+                    <label className="lbl">Fecha del pedido</label>
+                    <input className="inp" type="date" value={fechaCompra} onChange={e => setFechaCompra(e.target.value)} />
+                  </div>
+                )}
               </div>
+              )}
             </div>
           )}
 
@@ -397,15 +437,17 @@ export function ManualEntryModal({ open, onClose, onSuccess }: ManualEntryModalP
                       <input className="inp" list="battery-options" placeholder="Ej: 87%" value={v.battery} onChange={e => updV(i, 'battery', e.target.value)} />
                     </div>
                   )}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isOwner ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 12 }}>
                     <div>
                       <label className="lbl">Precio Venta (opcional)</label>
                       <input className="inp" type="text" inputMode="decimal" placeholder={`Base: $${price || '0'}`} value={v.price || ''} onChange={e => updV(i, 'price', e.target.value.replace(/[^0-9.]/g, ''))} />
                     </div>
+                    {isOwner && (
                     <div>
                       <label className="lbl">Precio Costo (opcional)</label>
                       <input className="inp" type="text" inputMode="decimal" placeholder={`Base: $${costPrice || '0'}`} value={v.costPrice || ''} onChange={e => updV(i, 'costPrice', e.target.value.replace(/[^0-9.]/g, ''))} />
                     </div>
+                    )}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                     <div><label className="lbl">Cantidad</label><input className="inp" type="text" inputMode="numeric" value={v.qty} onChange={e => { const val = e.target.value.replace(/\D/g, ''); updV(i, 'qty', val === '' ? '' : parseInt(val, 10)); }} /></div>

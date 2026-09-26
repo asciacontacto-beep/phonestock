@@ -13,7 +13,7 @@ const isOldPro = (m: string) => {
   return m.includes('Pro') && (m.includes('14') || m.includes('13') || m.includes('12') || m.includes('11') || m.includes('XS'));
 };
 
-export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
+export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposits: any[]; isOwner?: boolean }) {
   const [code, setCode] = useState('');
   const [mode, setMode] = useState<'idle' | 'confirm'>('idle');
   const [det, setDet] = useState<any>(null);
@@ -244,6 +244,7 @@ export function ScanClient({ initialDeposits }: { initialDeposits: any[] }) {
 
       <ManualEntryModal 
         open={showManual} 
+        isOwner={isOwner}
         onClose={() => setShowManual(false)} 
         onSuccess={() => toast.success('Equipo ingresado.')} 
       />

@@ -74,7 +74,7 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
               <Plus size={16} /> Nuevo Ingreso
             </button>
           )}
-          {activeTab === 'parts' && (
+          {activeTab === 'parts' && isOwner && (
             <button className="btn btn-dark" onClick={() => {/* handled inside SparePartsTab */}}>
               <Plus size={16} /> Nuevo Repuesto
             </button>
@@ -103,7 +103,7 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
         >
           Reparaciones
         </button>
-        <button
+        {isOwner && <button
           onClick={() => setActiveTab('parts')}
           style={{
             padding: '8px 16px',
@@ -121,10 +121,10 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
           }}
         >
           Repuestos
-        </button>
+        </button>}
       </div>
 
-      {activeTab === 'parts' ? (
+      {activeTab === 'parts' && isOwner ? (
         <SparePartsTab />
       ) : (
         <>
@@ -905,14 +905,14 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
                       <span style={{ fontWeight: 600 }}>{rp.spare_part_name}</span>
                       <span style={{ color: 'var(--text-3)', marginLeft: 6 }}>x{rp.qty}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'JetBrains Mono' }}>
+                    {isOwner && <div style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'JetBrains Mono' }}>
                       {rp.currency === 'USD' ? 'USD ' : '$'}{rp.cost_price} × {rp.qty}
                       {rp.currency === 'USD' && (
                         <span style={{ color: 'var(--text-3)', marginLeft: 4 }}>
                           (≈ ${(rp.cost_price * exchangeRate * rp.qty).toLocaleString()})
                         </span>
                       )}
-                    </div>
+                    </div>}
                     <button
                       className="btn-icon"
                       style={{ color: 'var(--red)' }}
@@ -938,7 +938,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
                   <option value="">Seleccionar...</option>
                   {availableParts.map(p => (
                     <option key={p.id} value={p.id} disabled={p.stock === 0}>
-                      {p.name} — Stock: {p.stock} ({p.currency === 'USD' ? 'USD ' : '$'}{p.cost_price})
+                      {p.name} — Stock: {p.stock}{isOwner ? ` (${p.currency === 'USD' ? 'USD ' : '$'}${p.cost_price})` : ''}
                     </option>
                   ))}
                 </select>
@@ -996,7 +996,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
                 {equipo.brand} {equipo.model} {equipo.storage} · IMEI {equipo.imei || '—'}
               </div>
 
-              {(['costoAnterior', 'costoDelArreglo', 'costoNuevo'] as const).map(k => (
+              {isOwner && (['costoAnterior', 'costoDelArreglo', 'costoNuevo'] as const).map(k => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '2px 0',
                   fontWeight: k === 'costoNuevo' ? 700 : 400, color: k === 'costoDelArreglo' ? 'var(--red)' : 'var(--text-2)' }}>
                   <span>{k === 'costoAnterior' ? 'Costo original del equipo' : k === 'costoDelArreglo' ? 'Repuestos + mano de obra' : 'Costo nuevo del equipo'}</span>
@@ -1005,7 +1005,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
                   </span>
                 </div>
               ))}
-              {costoEquipo.margen !== null && (
+              {isOwner && costoEquipo.margen !== null && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 6, paddingTop: 6,
                   borderTop: '1px solid var(--border)', fontWeight: 700, color: costoEquipo.daPerdida ? 'var(--red)' : 'var(--green)' }}>
                   <span>Margen al venderlo a {equipo.currency === 'USD' ? 'U$' : '$'}{equipo.price?.toLocaleString('es-AR')}</span>
@@ -1014,7 +1014,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
                   </span>
                 </div>
               )}
-              {costoEquipo.sinConvertir.length > 0 && (
+              {isOwner && costoEquipo.sinConvertir.length > 0 && (
                 <div style={{ fontSize: 11, color: 'var(--amber)', marginTop: 8, lineHeight: 1.5 }}>
                   Sin cotización cargada no se pudo convertir: {costoEquipo.sinConvertir.join(', ')}. Ese costo
                   no está sumado — cargá la cotización en Ajustes antes de cerrar.
@@ -1052,7 +1052,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
           )}
 
           {/* Cost breakdown */}
-          {(repairParts.length > 0 || laborCost > 0) && (
+          {isOwner && (repairParts.length > 0 || laborCost > 0) && (
             <div style={{ background: 'var(--surface-2)', padding: 10, borderRadius: 8, border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-2)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <span>Repuestos: <strong>${totalPartsCostARS.toLocaleString()}</strong></span>
               <span style={{ color: 'var(--border)' }}>|</span>

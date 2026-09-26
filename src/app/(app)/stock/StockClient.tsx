@@ -708,9 +708,10 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
       {ConfirmDialog}
       <ManualEntryModal
         open={showManual}
+        isOwner={isOwner}
         onClose={() => setShowManual(false)}
         onSuccess={() => {
-          supabase.from('stock').select(STOCK_FIELDS).order('created_at', { ascending: false })
+          supabase.from('stock').select((isOwner ? STOCK_FIELDS : STOCK_SIN_COSTO) as string).order('created_at', { ascending: false })
             .then(({ data }) => { if (data) setStock(data); });
         }}
       />

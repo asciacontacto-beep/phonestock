@@ -1597,3 +1597,7 @@ select.inp {
   }
   .inv-meta { flex-wrap: wrap; row-gap: 2px; font-size: 12px; margin-top: 3px; }
 }
+
+/* Cotización cripto en la barra: en pantallas chicas sólo el blue (el cripto
+   se ve al abrir el panel). */
+@media (max-width: 560px) { .cotiz-cripto { display: none; } }

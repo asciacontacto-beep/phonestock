@@ -17,3 +17,12 @@ export async function soloDueno(): Promise<void> {
   const perfil = await getProfile(user.id)
   if (perfil?.role !== 'owner') redirect('/sell')
 }
+
+/** ¿El usuario ve costos y plata del local? Para pantallas que usan dueño y vendedor. */
+export async function esDueno(): Promise<boolean> {
+  const user = await getUser()
+  if (!user) return false
+  if (user.email === SUPERADMIN) return true
+  const perfil = await getProfile(user.id)
+  return perfil?.role === 'owner'
+}

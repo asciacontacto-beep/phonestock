@@ -235,6 +235,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
   const [read, setRead] = useState<string[]>([])
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [blueRate, setBlueRate] = useState<{ compra: number; venta: number; updatedAt: string } | null>(null)
+  const [cryptoRate, setCryptoRate] = useState<{ compra: number; venta: number } | null>(null)
   const [rateLoading, setRateLoading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -253,12 +254,17 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  /* Blue y cripto: muchos locales compran y cobran en USDT, y el cripto
+     suele estar unos pesos por encima del blue. Se piden juntos; si uno
+     falla, el otro se muestra igual. */
   const fetchBlue = () => {
     setRateLoading(true)
-    fetch('https://dolarapi.com/v1/dolares/blue')
-      .then(r => r.json())
-      .then(d => setBlueRate({ compra: d.compra, venta: d.venta, updatedAt: d.fechaActualizacion }))
-      .catch(() => {})
+    const pedir = (casa: string) => fetch(`https://dolarapi.com/v1/dolares/${casa}`).then(r => r.json())
+    Promise.allSettled([pedir('blue'), pedir('cripto')])
+      .then(([blue, cripto]) => {
+        if (blue.status === 'fulfilled') setBlueRate({ compra: blue.value.compra, venta: blue.value.venta, updatedAt: blue.value.fechaActualizacion })
+        if (cripto.status === 'fulfilled') setCryptoRate({ compra: cripto.value.compra, venta: cripto.value.venta })
+      })
       .finally(() => setRateLoading(false))
   }
 
@@ -393,6 +399,11 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
             <span style={{ color: 'var(--green)', fontFamily: 'JetBrains Mono' }}>
               {blueRate ? `$${blueRate.venta.toLocaleString('es-AR')}` : '...'}
             </span>
+            <span className="cotiz-cripto" style={{ color: 'var(--text-3)' }}>·</span>
+            <span className="cotiz-cripto">Cripto</span>
+            <span className="cotiz-cripto" style={{ color: 'var(--green)', fontFamily: 'JetBrains Mono' }}>
+              {cryptoRate ? `$${Math.round(cryptoRate.venta).toLocaleString('es-AR')}` : '...'}
+            </span>
           </button>
 
           {openPanel === 'rate' && (
@@ -427,6 +438,27 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 20, fontFamily: 'JetBrains Mono', color: 'var(--green)' }}>
                     ${blueRate?.venta.toLocaleString('es-AR') ?? '—'}
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: '12px 16px 10px', borderTop: '1px solid var(--border)', fontWeight: 700, fontSize: 13 }}>
+                Dólar Cripto <span style={{ fontWeight: 500, color: 'var(--text-3)', fontSize: 11 }}>(USDT)</span>
+              </div>
+              <div style={{ padding: '0 16px 14px', display: 'flex', gap: 24 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 4 }}>
+                    <TrendingDown size={10} /> COMPRA
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 20, fontFamily: 'JetBrains Mono' }}>
+                    ${cryptoRate ? Math.round(cryptoRate.compra).toLocaleString('es-AR') : '—'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 3, marginBottom: 4 }}>
+                    <TrendingUp size={10} /> VENTA
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 20, fontFamily: 'JetBrains Mono', color: 'var(--green)' }}>
+                    ${cryptoRate ? Math.round(cryptoRate.venta).toLocaleString('es-AR') : '—'}
                   </div>
                 </div>
               </div>

@@ -4,8 +4,20 @@ import { Truck, Plus, Trash2, Edit2, Loader2, Check, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
+import { saldoConProveedor, type Pedido, type PagoProveedor } from '@/utils/proveedores';
+import { CuentaModal } from './CuentaModal';
+import { PedidoModal } from './PedidoModal';
+import { PagoModal } from './PagoModal';
 
-export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] }) {
+const plata = (moneda: string, n: number) => `${moneda === 'USD' ? 'U$' : '$'}${n.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
+
+export function SuppliersClient({ initialSuppliers, initialPedidos = [], initialPagos = [], deposits = [], ctaCteActiva = false }: {
+  initialSuppliers: any[];
+  initialPedidos?: Pedido[];
+  initialPagos?: PagoProveedor[];
+  deposits?: any[];
+  ctaCteActiva?: boolean;
+}) {
   const { confirm, ConfirmDialog } = useConfirm();
   const [suppliers, setSuppliers] = useState(initialSuppliers);
   const [saving, setSaving] = useState(false);
@@ -14,6 +26,25 @@ export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] 
 
   const [form, setForm] = useState({ name: '' });
   const supabase = createClient();
+
+  /* Cuenta corriente: pedidos (lo que se compró) y pagos (lo que se pagó). */
+  const [pedidos, setPedidos] = useState<Pedido[]>(initialPedidos);
+  const [pagos, setPagos] = useState<PagoProveedor[]>(initialPagos);
+  const [cuentaDe, setCuentaDe] = useState<any>(null);
+  const [pedidoPara, setPedidoPara] = useState<any>(null);
+  const [pagoPara, setPagoPara] = useState<{ sup: any; pedido?: Pedido } | null>(null);
+
+  const deEste = <T extends { supplier_id: string | number | null }>(xs: T[], id: any) =>
+    xs.filter(x => String(x.supplier_id) === String(id));
+
+  async function recargarCuenta() {
+    const [a, b] = await Promise.all([
+      supabase.from('supplier_orders').select('*').order('fecha', { ascending: false }),
+      supabase.from('supplier_payments').select('*').order('fecha', { ascending: false }),
+    ]);
+    if (a.data) setPedidos(a.data as Pedido[]);
+    if (b.data) setPagos(b.data as PagoProveedor[]);
+  }
 
   async function addSupplier() {
     if (!form.name.trim()) return;
@@ -60,7 +91,9 @@ export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <div className="st">Gestión de Proveedores</div>
-          <div className="ss2">Administra los proveedores disponibles para la carga de productos</div>
+          <div className="ss2">{ctaCteActiva
+            ? 'Tus proveedores, los pedidos que les hiciste y cuánto les debés'
+            : 'Administra los proveedores disponibles para la carga de productos'}</div>
         </div>
         <button className="btn btn-dark" onClick={() => setShowAdd(true)}>
           <Plus size={18} /> Nuevo Proveedor
@@ -77,6 +110,17 @@ export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] 
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{s.name}</div>
+                  {ctaCteActiva && (() => {
+                    const saldo = saldoConProveedor(deEste(pedidos, s.id), deEste(pagos, s.id));
+                    const deudas = (['USD', 'ARS'] as const).filter(m => saldo[m] > 0);
+                    return (
+                      <div style={{ fontSize: 12, marginTop: 2, color: deudas.length ? 'var(--red)' : 'var(--text-3)', fontWeight: deudas.length ? 600 : 400 }}>
+                        {deudas.length
+                          ? `Le debés ${deudas.map(m => plata(m, saldo[m])).join(' + ')}`
+                          : saldo.pedidos ? 'Al día' : 'Sin pedidos'}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
@@ -88,6 +132,12 @@ export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] 
                 </button>
               </div>
             </div>
+            {ctaCteActiva && (
+              <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
+                <button className="btn btn-sm btn-outline" style={{ flex: 1 }} onClick={() => setCuentaDe(s)}>Cuenta corriente</button>
+                <button className="btn btn-sm btn-dark" style={{ flex: 1 }} onClick={() => setPedidoPara(s)}><Plus size={13} /> Pedido</button>
+              </div>
+            )}
           </div>
         ))}
         {suppliers.length === 0 && (
@@ -98,6 +148,38 @@ export function SuppliersClient({ initialSuppliers }: { initialSuppliers: any[] 
       </div>
 
       {ConfirmDialog}
+
+      {cuentaDe && (
+        <CuentaModal
+          proveedor={cuentaDe}
+          pedidos={deEste(pedidos, cuentaDe.id)}
+          pagos={deEste(pagos, cuentaDe.id)}
+          onClose={() => setCuentaDe(null)}
+          onNuevoPedido={() => setPedidoPara(cuentaDe)}
+          onPagar={pedido => setPagoPara({ sup: cuentaDe, pedido })}
+        />
+      )}
+      {pedidoPara && (
+        <PedidoModal
+          proveedor={pedidoPara}
+          deposits={deposits}
+          onClose={() => setPedidoPara(null)}
+          onSaved={recargarCuenta}
+        />
+      )}
+      {pagoPara && (
+        <PagoModal
+          proveedor={pagoPara.sup}
+          pedidos={deEste(pedidos, pagoPara.sup.id)}
+          pagos={deEste(pagos, pagoPara.sup.id)}
+          deposits={deposits}
+          deuda={saldoConProveedor(deEste(pedidos, pagoPara.sup.id), deEste(pagos, pagoPara.sup.id))}
+          pedidoInicial={pagoPara.pedido}
+          onClose={() => setPagoPara(null)}
+          onSaved={recargarCuenta}
+        />
+      )}
+
       {showAdd && (
         <div className="mo">
           <div className="mb" style={{ maxWidth: 420 }}>

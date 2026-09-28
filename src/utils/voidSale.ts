@@ -81,6 +81,18 @@ async function revertirPedidoMayorista(
   return true
 }
 
+/** Unidades de un accesorio a devolver: entera, entre 1 y 1000 (el dato viene de la venta). */
+export function cantidadADevolver(qty: unknown): number {
+  const n = Math.floor(Number(qty))
+  return Number.isFinite(n) && n >= 1 ? Math.min(n, 1000) : 1
+}
+
+/** El canje se carga segundos antes que la venta: un minuto de margen. */
+export function desdeLaVenta(createdAt: string): string {
+  const t = new Date(createdAt).getTime()
+  return Number.isFinite(t) ? new Date(t - 60_000).toISOString() : createdAt
+}
+
 export async function voidSale(supabase: SupabaseClient, sale: Sale): Promise<VoidSaleResult> {
   // Camino atómico: si la función void_sale está instalada en la base, hace
   // toda la reversión en una sola transacción (todo o nada). Si no está, o si
@@ -147,7 +159,7 @@ export async function voidSale(supabase: SupabaseClient, sale: Sale): Promise<Vo
   // 2. Devolver el stock de los accesorios.
   for (const acc of sale.accessories || []) {
     if (!acc?.id) continue
-    const { error } = await supabase.rpc('increment_accessory_stock', { acc_id: acc.id, qty: acc.qty || 1 })
+    const { error } = await supabase.rpc('increment_accessory_stock', { acc_id: acc.id, qty: cantidadADevolver(acc.qty) })
     if (error) {
       warnings.push(`No se pudo devolver el stock de "${acc.name || 'accesorio'}": ${error.message}`)
     } else {
@@ -158,7 +170,12 @@ export async function voidSale(supabase: SupabaseClient, sale: Sale): Promise<Vo
   // 3. Sacar del inventario los equipos que entraron como parte de pago.
   for (const p of sale.payments || []) {
     if (p?.id !== 'tradein' || !p?.device?.imei) continue
-    const { error } = await supabase.from('stock').delete().eq('imei', p.device.imei)
+    /* Sólo el equipo que entró con ESTA venta: disponible y cargado desde el
+       momento de la venta. Antes se borraba todo equipo con ese IMEI, y un
+       canje armado a mano podía borrar un teléfono cualquiera del stock. */
+    let q = supabase.from('stock').delete().eq('imei', p.device.imei).eq('status', 'available')
+    if (sale.created_at) q = q.gte('created_at', desdeLaVenta(sale.created_at))
+    const { error } = await q
     if (error) warnings.push(`No se pudo eliminar el equipo recibido en canje (${p.device.imei}): ${error.message}`)
     else tradeInsRemoved += 1
   }

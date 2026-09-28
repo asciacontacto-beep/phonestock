@@ -1,5 +1,19 @@
 import { describe, it, expect } from 'vitest'
-import { voidSale, voidSaleSummary, pedidoMayoristaDe } from './voidSale'
+import { voidSale, voidSaleSummary, pedidoMayoristaDe, cantidadADevolver, desdeLaVenta } from './voidSale'
+
+describe('anulación: datos de la venta que no se toman al pie de la letra', () => {
+  it('devuelve una cantidad sana de accesorios', () => {
+    expect(cantidadADevolver(2)).toBe(2)
+    expect(cantidadADevolver(1000000)).toBe(1000)
+    expect(cantidadADevolver(-5)).toBe(1)
+    expect(cantidadADevolver('abc')).toBe(1)
+    expect(cantidadADevolver(2.7)).toBe(2)
+  })
+
+  it('el canje a borrar es el que entró desde la venta (un minuto de margen)', () => {
+    expect(desdeLaVenta('2026-09-28T12:00:00.000Z')).toBe('2026-09-28T11:59:00.000Z')
+  })
+})
 
 /** Supabase falso: registra las llamadas para poder afirmar sobre ellas. */
 function fakeSupabase(opts: { stockMatch?: any; failIncrement?: boolean; failDelete?: boolean } = {}) {
@@ -27,13 +41,24 @@ function fakeSupabase(opts: { stockMatch?: any; failIncrement?: boolean; failDel
             return { error: null }
           },
         }),
-        // .delete().eq('id', x)
-        delete: () => ({
-          eq: async (col: string, val: any) => {
-            calls.push({ type: 'delete', table, col, val })
-            return { error: opts.failDelete && table === 'sales' ? { message: 'permiso denegado' } : null }
-          },
-        }),
+        // .delete().eq('id', x)[.eq(...).gte(...)] -> encadenable y "await"-able,
+        // como el cliente real. Se registran todos los filtros.
+        delete: () => {
+          const rec: any = { type: 'delete', table, filters: {} as Record<string, any> }
+          const del: any = {
+            eq: (col: string, val: any) => {
+              if (rec.col === undefined) { rec.col = col; rec.val = val }
+              rec.filters[col] = val
+              return del
+            },
+            gte: (col: string, val: any) => { rec.filters[`${col}>=`] = val; return del },
+            then: (ok: any, mal: any) => {
+              calls.push(rec)
+              return Promise.resolve({ error: opts.failDelete && table === 'sales' ? { message: 'permiso denegado' } : null }).then(ok, mal)
+            },
+          }
+          return del
+        },
       }
       return chain
     },
@@ -59,8 +84,10 @@ describe('voidSale', () => {
 
     // El accesorio vuelve por RPC con la cantidad vendida.
     expect(sb.calls).toContainEqual({ type: 'rpc', fn: 'increment_accessory_stock', args: { acc_id: 'a1', qty: 2 } })
-    // El equipo de canje se saca del inventario.
-    expect(sb.calls).toContainEqual({ type: 'delete', table: 'stock', col: 'imei', val: 'TI-9' })
+    // El equipo de canje se saca del inventario, pero sólo si sigue
+    // disponible: un IMEI escrito a mano no puede borrar un equipo vendido.
+    const canje = sb.calls.find((c: any) => c.type === 'delete' && c.table === 'stock')
+    expect(canje?.filters).toEqual({ imei: 'TI-9', status: 'available' })
     // La venta se borra al final, nunca antes de revertir el stock.
     const idxVenta = sb.calls.findIndex((c: any) => c.type === 'delete' && c.table === 'sales')
     const idxAcc = sb.calls.findIndex((c: any) => c.type === 'rpc')

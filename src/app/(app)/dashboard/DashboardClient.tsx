@@ -1,4 +1,5 @@
 "use client"
+import { filaCsv } from '@/utils/csv';
 import { useState, useMemo } from 'react';
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
@@ -406,9 +407,7 @@ export function DashboardClient({
       s.customer?.name || '', s.customer?.dni || '', s.customer?.phone || '',
       s.notes || '',
     ]);
-    const csv = [headers, ...rows]
-      .map(r => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+    const csv = [headers, ...rows].map(filaCsv).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');

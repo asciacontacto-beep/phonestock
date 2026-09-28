@@ -2,8 +2,6 @@
 import { useState } from 'react';
 import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Building2, Pencil, X, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { createClient as crearClienteSinSesion } from '@supabase/supabase-js';
-import { supabaseEnv, supabaseBrowserUrl } from '@/utils/supabase/env';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 
@@ -47,62 +45,31 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
     if (!form.name || !form.email || !form.password) return;
     try {
       setLoading(true);
-      const initials = form.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
-      const { data: authData } = await supabase.auth.getUser();
-      let orgId = null;
-      if (authData?.user) {
-        const { data: currentProfile } = await supabase.from('profiles').select('org_id').eq('id', authData.user.id).single();
-        orgId = currentProfile?.org_id;
-      }
-
-      /* El registro va por un cliente aparte, sin sesión guardada. Con el
-         cliente de siempre, si Supabase no pide confirmar el email, signUp
-         deja logueado al usuario NUEVO: el dueño perdía su sesión y el
-         perfil se rechazaba por falta de permiso. Así la sesión del dueño
-         no se toca, y el perfil lo guarda él, como corresponde. */
-      const registro = crearClienteSinSesion(
-        supabaseBrowserUrl(),
-        supabaseEnv().anonKey,
-        { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'stackr-alta-usuario' } },
-      );
-      const { data, error } = await registro.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: {
-            name: form.name,
-            role: form.role,
-            initials,
-            color: form.color,
-            org_id: orgId
-          }
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id: data.user.id,
+      /* El alta la hace el servidor (api/admin/create-user): valida los datos
+         y toma el negocio del perfil del dueño, nunca del navegador. Con
+         signUp desde acá, la sesión del dueño pasaba a ser la del usuario
+         nuevo y el perfil no se guardaba, aunque la pantalla dijera "creado". */
+      const res = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: form.name,
           email: form.email,
+          password: form.password,
           role: form.role,
-          initials,
           color: form.color,
-          org_id: orgId,
           // Con un solo local, el vendedor va a ése: sin local asignado, Vender
           // no le muestra equipos.
           deposit_ids: form.role !== 'seller' ? [] : form.deposit_ids.length === 0 && deposits.length === 1 ? [String(deposits[0].id)] : form.deposit_ids,
-        });
-        // Sin perfil el usuario no puede entrar a nada: es un error, no un aviso.
-        if (profileError) throw new Error('Se creó el acceso pero no el perfil: ' + profileError.message);
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Error al crear usuario');
 
-        setShowAdd(false);
-        setForm({ name: '', email: '', password: '', role: 'seller', color: '#3b82f6', deposit_ids: [] });
-        toast.success('Usuario creado correctamente');
-        await fetchUsers();
-      }
+      setShowAdd(false);
+      setForm({ name: '', email: '', password: '', role: 'seller', color: '#3b82f6', deposit_ids: [] });
+      toast.success('Usuario creado correctamente');
+      await fetchUsers();
     } catch (err: any) {
       toast.error(err.message || 'Error al crear usuario');
     } finally {

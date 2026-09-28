@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { readFileSync } from "node:fs";
+import { headersDeSeguridad, redireccionesArchivosPublicos } from "./src/utils/seguridadHeaders";
 
 // Safari bloquea de fábrica las peticiones a otro dominio ("Impedir seguimiento
 // entre sitios"), así que el navegador no puede hablar directo con Supabase:
@@ -20,6 +21,14 @@ const nextConfig: NextConfig = {
       dynamic: 0, // Sin caché de cliente para páginas dinámicas (default Next): datos siempre frescos al navegar (stock, ventas, dashboard reflejan cambios al instante)
       static: 180,
     },
+  },
+  // Ver src/utils/seguridadHeaders.ts: qué frena cada uno y por qué.
+  async headers() {
+    const dev = process.env.NODE_ENV !== "production";
+    return [{ source: "/:path*", headers: headersDeSeguridad(dev) }];
+  },
+  async redirects() {
+    return supabaseUrl ? redireccionesArchivosPublicos(supabaseUrl) : [];
   },
   async rewrites() {
     // Sin la variable no hay a dónde reenviar; la app ya avisa por consola.

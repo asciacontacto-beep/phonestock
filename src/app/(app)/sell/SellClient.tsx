@@ -442,9 +442,18 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
     try {
       setLoading(true);
       const stockWarnings: string[] = [];
+      /* La ficha del cliente se resuelve ANTES de registrar la venta y el
+         vínculo va en la misma fila. Antes se hacía un update después, y
+         eso obligaba a dejar que un vendedor edite ventas ya registradas. */
+      let customerId: string | null = null;
+      if (cust.name) {
+        customerId = await upsertCustomer(supabase, cust).catch(() => null);
+      }
+
       const saleData = {
         seller_id: user.id,
         seller_name: user.name,
+        ...(customerId ? { customer_id: customerId } : {}),
         deposit_id: unit.deposit,
         brand: unit.brand,
         model: unit.model,
@@ -527,11 +536,6 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 
       setStock((p: any[]) => p.map((s: any) => s.id === unit.id ? { ...s, status: 'sold' } : s));
 
-      let customerId: string | null = null;
-      if (cust.name) {
-        customerId = await upsertCustomer(supabase, cust);
-      }
-
       /* La venta ya existe: si el plan falla, queda como una deuda sin
          fechas —como funcionaba antes— y hay que avisarlo, no tragarlo. */
       if (planPreview && saleRow?.[0]?.id) {
@@ -539,13 +543,6 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         if (!guardado.ok) {
           toast.warning(`La venta se registró, pero no se pudo guardar el plan de cuotas: ${guardado.error}`, { duration: 9000 });
         }
-      }
-
-      /* La ficha del cliente se resuelve recién acá (upsertCustomer puede
-         crearla). Sin este vínculo, la cuenta corriente tiene que adivinar
-         de quién es la deuda por nombre. */
-      if (customerId && saleRow?.[0]?.id) {
-        await supabase.from('sales').update({ customer_id: customerId }).eq('id', saleRow[0].id);
       }
 
       // Al vendedor no vuelven los accesorios (la base les completa el costo):

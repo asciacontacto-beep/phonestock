@@ -12,6 +12,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { celdaCsv } from './csv'
 
 /**
  * Qué entra al respaldo.
@@ -64,11 +65,8 @@ export function toCSV(rows: Record<string, unknown>[]): string {
       return set
     }, new Set<string>()),
   )
-  const cell = (v: unknown) => {
-    if (v == null) return ''
-    const str = typeof v === 'object' ? JSON.stringify(v) : String(v)
-    return `"${str.replace(/"/g, '""')}"`
-  }
+  // Vacío sin comillas, como antes; el resto pasa por celdaCsv (fórmulas).
+  const cell = (v: unknown) => (v == null ? '' : celdaCsv(v))
   return [cols.join(','), ...rows.map(r => cols.map(c => cell(r[c])).join(','))].join('\n') + '\n'
 }
 

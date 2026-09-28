@@ -1,4 +1,5 @@
 "use client"
+import { filaCsv } from '@/utils/csv'
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
@@ -127,7 +128,7 @@ export function NegociosClient() {
         fmtDate(o.created_at), o.trial_expires_at ? fmtDate(o.trial_expires_at) : '',
         healthOf(o).label, a?.sales_total ?? '', a?.stock_available ?? '', paidByOrg.get(o.id) ?? 0]
     })
-    const csv = [head, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const csv = [head, ...rows].map(filaCsv).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

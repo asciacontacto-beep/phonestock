@@ -2,10 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { puedeBorrarUsuario, origenPropio, esUuid, eventoSeguridad } from '@/utils/autorizacion';
 
 export async function POST(req: NextRequest) {
-  const { userId } = await req.json();
-  if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 });
+  // Segunda capa contra pedidos armados desde otro sitio (CSRF).
+  if (!origenPropio(req.headers.get('origin'), req.headers.get('host'))) {
+    eventoSeguridad('borrar_usuario_origen_ajeno', { origin: req.headers.get('origin') });
+    return NextResponse.json({ error: 'Origen no permitido' }, { status: 403 });
+  }
+
+  let userId: unknown;
+  try {
+    ({ userId } = await req.json());
+  } catch {
+    return NextResponse.json({ error: 'Pedido inválido' }, { status: 400 });
+  }
+  if (!esUuid(userId)) return NextResponse.json({ error: 'userId required' }, { status: 400 });
 
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -25,8 +37,7 @@ export async function POST(req: NextRequest) {
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const callerId = caller.id;
-  const callerEmail = caller.email;
-  const isSuperAdmin = callerEmail === 'asciacontacto@gmail.com';
+  const isSuperAdmin = caller.email === 'asciacontacto@gmail.com';
 
   // Use service role to bypass RLS for all checks + deletion
   const admin = createClient(
@@ -35,28 +46,21 @@ export async function POST(req: NextRequest) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  if (!isSuperAdmin) {
-    const [{ data: callerProfile }, { data: targetProfile }] = await Promise.all([
-      admin.from('profiles').select('role, org_id').eq('id', callerId).single(),
-      admin.from('profiles').select('role, org_id').eq('id', userId).single(),
-    ]);
+  const [{ data: callerProfile }, { data: targetProfile }] = await Promise.all([
+    admin.from('profiles').select('role, org_id').eq('id', callerId).maybeSingle(),
+    admin.from('profiles').select('role, org_id').eq('id', userId).maybeSingle(),
+  ]);
 
-    if (!callerProfile || !['owner', 'admin'].includes(callerProfile.role)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
-    }
-    // Sólo usuarios del propio negocio. Antes el dueño se salteaba esta
-    // comparación: cualquier dueño (una prueba gratis alcanzaba) podía
-    // borrar usuarios de otros negocios con sólo conocer su id.
-    if (userId === callerId) {
-      return NextResponse.json({ error: 'No podés borrarte a vos mismo' }, { status: 403 });
-    }
-    if (!targetProfile || !callerProfile.org_id || targetProfile.org_id !== callerProfile.org_id) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
-    }
-    // Nobody can delete another owner unless they're also owner
-    if (targetProfile?.role === 'owner' && callerProfile.role !== 'owner') {
-      return NextResponse.json({ error: 'No podés borrar al owner' }, { status: 403 });
-    }
+  // La decisión vive en utils/autorizacion.ts, con sus tests: antes el
+  // dueño se salteaba la comparación de negocio y podía borrar usuarios de
+  // cualquier otro local.
+  const decision = puedeBorrarUsuario({
+    llamadorId: callerId, esSuperadmin: isSuperAdmin,
+    llamador: callerProfile, objetivoId: userId, objetivo: targetProfile,
+  });
+  if (!decision.ok) {
+    eventoSeguridad('borrar_usuario_denegado', { llamador: callerId, objetivo: userId, motivo: decision.motivo });
+    return NextResponse.json({ error: decision.motivo }, { status: decision.status });
   }
 
   // Nullify FK references to auth.users before deletion to avoid constraint errors
@@ -71,5 +75,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No se pudo eliminar el usuario' }, { status: 500 });
   }
 
+  eventoSeguridad('usuario_borrado', { llamador: callerId, objetivo: userId, superadmin: isSuperAdmin });
   return NextResponse.json({ ok: true });
 }

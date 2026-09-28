@@ -48,6 +48,11 @@ export default function UpdatePasswordPage() {
 
       if (updateErr) throw updateErr;
 
+      /* Cambiar la contraseña no cierra las otras sesiones abiertas: quien
+         se hubiera metido en la cuenta seguiría adentro. Se cierran todas
+         menos esta. Si falla, la contraseña igual quedó cambiada. */
+      await supabase.auth.signOut({ scope: "others" }).catch(() => {});
+
       toast.success("Tu contraseña ha sido actualizada exitosamente.");
       router.push("/dashboard");
       router.refresh();

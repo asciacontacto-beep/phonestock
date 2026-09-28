@@ -35,6 +35,14 @@ describe('toUSD', () => {
 })
 
 describe('saleExchangeRate', () => {
+  it('usa la cotizacion del dia de una venta en pesos cobrada en pesos', () => {
+    // Caso real: equipo de U$ 520 vendido a $845.000 con Ajustes en 1200.
+    // Sin la cotizacion del dia, el reporte decia que se vendio a U$ 704.
+    const sale = { payments: [{ id: 'efectivo_ars', currency: 'ARS', exchange_rate: null, sale_rate: 1625 }] }
+    expect(saleExchangeRate(sale, 1200)).toBe(1625)
+    expect(toUSD(845000, 'ARS', saleExchangeRate(sale, 1200))).toBe(520)
+  })
+
   it('usa la cotizacion guardada en la venta', () => {
     const sale = { payments: [{ exchange_rate: 1500 }] }
     expect(saleExchangeRate(sale, 1000)).toBe(1500)

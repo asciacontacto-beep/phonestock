@@ -19,8 +19,11 @@ export function saleCategory(sale: { brand?: string | null }): SaleCategory {
  * ganancia histórica cambia sola cada vez que se actualiza la cotización.
  */
 export function saleExchangeRate(sale: Pick<Sale, 'payments'> | null | undefined, fallbackRate: number): number {
+  // exchange_rate: el pago se convirtió de moneda. sale_rate: venta en
+  // pesos cobrada en pesos, con la cotización del día guardada igual.
   const fromPayments = (sale?.payments || [])
-    .map((p: Payment) => parseFloat(String(p?.exchange_rate)))
+    .flatMap((p: Payment) => [p?.exchange_rate, p?.sale_rate])
+    .map((r: unknown) => parseFloat(String(r)))
     .find((r: number) => Number.isFinite(r) && r > 0)
   return fromPayments || fallbackRate || 1
 }

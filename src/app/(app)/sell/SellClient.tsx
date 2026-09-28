@@ -101,6 +101,11 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       setDeposits(finalDeposits);
       if (finalDeposits.length > 0) setSelectedDeposit(String(finalDeposits[0].id));
       setSettings(settingsData);
+      /* La cotización arranca en la del local. Antes quedaba fija en 1000:
+         un equipo en dólares vendido en pesos pasaba su costo a pesos con un
+         dólar inventado y la ganancia salía cualquier cosa. */
+      const cotLocal = parseFloat(String(settingsData?.exchange_rate));
+      if (cotLocal > 0) setExchangeRate(String(cotLocal));
       setAccessoriesList(accData || []);
       setCardPlans(planesData || []);
 
@@ -143,10 +148,22 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   /* Si se devolvió la diferencia, queda asentada como un movimiento más: así
      la suma de los pagos coincide con el precio de la venta y el recibo
      muestra qué se le devolvió al cliente. */
-  const paymentsToSave = () =>
-    isOverpaid && overpay === 'vuelto'
+  /* Una venta en pesos guarda la cotización del día en cada pago
+     (sale_rate). Sin ella, los reportes la pasaban a dólares con la
+     cotización de Ajustes de hoy, y el costo —convertido con otra— no
+     cerraba: una venta de U$ 520 figuraba como vendida a U$ 704. */
+  const paymentsToSave = () => {
+    const todos = isOverpaid && overpay === 'vuelto'
       ? [...payments, { id: 'vuelto', label: 'Vuelto entregado', amount: -overAmount, original_amount: -overAmount, currency: sc }]
       : payments;
+    const cot = parseFloat(exchangeRate);
+    const enPesos = accessoryOnly || sc === 'ARS';
+    return enPesos && cot > 0 ? todos.map(p => ({ ...p, sale_rate: cot })) : todos;
+  };
+
+  /* Equipo cargado en una moneda y vendido en otra: el costo se convierte
+     con esta cotización, así que tiene que estar a la vista. */
+  const unidadEnOtraMoneda = !accessoryOnly && !!unit?.currency && unit.currency !== sc;
 
   /* Costo del equipo expresado en la moneda de la venta, para poder avisar
      antes de confirmar si se esta vendiendo por debajo de lo que costo. */
@@ -793,12 +810,42 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           <div className="row">
             <div className="col field"><label className="lbl">Precio de Venta</label><input className="inp" type="number" value={sp} onChange={e => setSp(e.target.value)} /></div>
             {!accessoryOnly && (
-              <div className="col field"><label className="lbl">Moneda Venta</label><select className="inp" value={sc} onChange={e => { setSc(e.target.value); setPayments([]); }}>
+              <div className="col field"><label className="lbl">Moneda Venta</label><select className="inp" value={sc} onChange={e => {
+                const nueva = e.target.value;
+                // El precio se pasa a la moneda nueva: si no, "520" dólares
+                // quedaba como $520 pesos.
+                const cot = parseFloat(exchangeRate) || 0;
+                const monto = parseFloat(sp);
+                if (cot > 0 && monto > 0 && nueva !== sc) {
+                  setSp(String(nueva === 'ARS' ? Math.round(monto * cot) : Math.round((monto / cot) * 100) / 100));
+                }
+                setSc(nueva); setPayments([]);
+              }}>
                 <option value="USD">Dólar (USD)</option>
                 <option value="ARS">Pesos (ARS)</option>
               </select></div>
             )}
           </div>
+          {unidadEnOtraMoneda && (() => {
+            const cot = parseFloat(exchangeRate) || 0;
+            const equivale = cot > 0 && price > 0 ? (sc === 'ARS' ? price / cot : price * cot) : null;
+            return (
+              <div className="row">
+                <div className="col field">
+                  <label className="lbl">Cotización del dólar de hoy</label>
+                  <input className="inp" type="number" value={exchangeRate} onChange={e => setExchangeRate(e.target.value)} />
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>
+                    El equipo está cargado en {unit.currency === 'USD' ? 'dólares' : 'pesos'}: con esta cotización se pasan a {sc === 'ARS' ? 'pesos' : 'dólares'} el precio y el costo.
+                    {equivale !== null && (
+                      <> Esta venta equivale a <strong style={{ color: 'var(--text)' }}>
+                        {sc === 'ARS' ? 'U$' : '$'} {equivale.toLocaleString('es-AR', { maximumFractionDigits: sc === 'ARS' ? 0 : 2 })}
+                      </strong>{unit.price ? <> (el equipo figura a {unit.currency === 'USD' ? 'U$' : '$'} {Number(unit.price).toLocaleString('es-AR')})</> : null}.</>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           <div className="lbl">Método de Cobro</div>
           <div className="sell-pay-grid">
             {PAY.map(m => {

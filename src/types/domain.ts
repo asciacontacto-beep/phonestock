@@ -24,6 +24,12 @@ export interface Payment {
   currency?: Currency | string | null
   /** Cotización ARS→USD usada el día de la venta. Clave para no revaluar ventas viejas. */
   exchange_rate?: number | string | null
+  /**
+   * Cotización del día de una venta en pesos, aunque este pago no se haya
+   * convertido. Con ella los reportes pasan a dólares precio y costo con el
+   * mismo número, en vez de usar la cotización de Ajustes de hoy.
+   */
+  sale_rate?: number | string | null
   /** Equipo recibido como parte de pago (canje). */
   device?: StockItem | null
   [key: string]: unknown

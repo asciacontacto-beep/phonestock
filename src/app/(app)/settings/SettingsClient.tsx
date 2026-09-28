@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { ApiKeysCard } from '@/components/ApiKeysCard';
+import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, type FuenteCotizacion } from '@/utils/cotizacion';
 import {
   type ShopSettings, type ReceiptConfig,
   DEFAULT_RECEIPT_CONFIG, normalizeReceiptConfig,
@@ -65,6 +66,19 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
     ? `${typeof window !== 'undefined' ? window.location.origin : ''}/?ref=${referral.code}`
     : '';
 
+  /* Cotización automática: sólo si la base ya tiene la columna (migración
+     20260928_cotizacion_automatica). Sin ella, todo sigue como siempre. */
+  const [hayFuente, setHayFuente] = useState(false);
+  const [valorHoy, setValorHoy] = useState<number | null>(null);
+  const fuente = fuenteValida(form.cotizacion_fuente);
+
+  useEffect(() => {
+    if (fuente === 'manual') { setValorHoy(null); return; }
+    let vivo = true;
+    cotizacionDelDia(fuente).then(v => { if (vivo) setValorHoy(v); });
+    return () => { vivo = false; };
+  }, [fuente]);
+
   const cfg = useMemo(() => normalizeReceiptConfig(form.receipt_config), [form.receipt_config]);
 
   const setField = <K extends keyof ShopSettings>(key: K, value: ShopSettings[K]) =>
@@ -77,6 +91,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       if (!profile?.org_id) { setFetching(false); return; }
       setFetching(true);
       const { data } = await supabase.from('settings').select('*').eq('org_id', profile.org_id).limit(1);
+      const { error: sinColumna } = await supabase.from('settings').select('cotizacion_fuente').limit(0);
+      setHayFuente(!sinColumna);
       if (data && data.length > 0) {
         const { id, org_id, receipt_config, ...rest } = data[0];
         setRowId(id ?? null);
@@ -107,6 +123,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
     try {
       const full: Record<string, unknown> = { org_id: profile.org_id };
       [...BASE_COLUMNS, ...EXTRA_COLUMNS].forEach(col => { full[col] = (form as Record<string, unknown>)[col]; });
+      if (hayFuente) full.cotizacion_fuente = fuente;
 
       type WriteResult = { error: { message?: string; code?: string } | null; data?: { id?: string } | null };
       const write = async (payload: Record<string, unknown>): Promise<WriteResult> => {
@@ -126,6 +143,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       if (missingColumn) {
         const baseOnly: Record<string, unknown> = { org_id: profile.org_id };
         BASE_COLUMNS.forEach(col => { baseOnly[col] = (form as Record<string, unknown>)[col]; });
+        if (hayFuente) baseOnly.cotizacion_fuente = fuente;
         ({ error, data } = await write(baseOnly));
         if (!error) {
           toast.warning('Guardado. Para activar el logo y la personalización avanzada del recibo, aplicá la migración settings (docs/mejoras).', { duration: 9000 });
@@ -294,10 +312,28 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
                 {iconField(<Hash size={16} />, <input className="inp" style={{ paddingLeft: 40 }} value={form.cuit || ''} onChange={e => setField('cuit', e.target.value)} />)}
               </div>
               <div className="col field">
-                <label className="lbl">Cotización USD → ARS</label>
+                <label className="lbl">{fuente === 'manual' ? 'Cotización USD → ARS' : 'Cotización de respaldo'}</label>
                 {iconField(<DollarSign size={16} />, <input className="inp" style={{ paddingLeft: 40 }} type="number" value={form.exchange_rate ?? ''} onChange={e => setField('exchange_rate', parseFloat(e.target.value) || 0)} />)}
               </div>
             </div>
+            {hayFuente && (
+              <div className="field">
+                <label className="lbl">Cotización de las ventas nuevas</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {(['manual', 'blue', 'cripto'] as FuenteCotizacion[]).map(f => (
+                    <button key={f} type="button" className={`btn btn-sm ${fuente === f ? 'btn-dark' : 'btn-outline'}`}
+                      onClick={() => setField('cotizacion_fuente', f)}>
+                      {f === 'manual' ? 'La que escribo arriba' : `${NOMBRE_FUENTE[f]} del día (automática)`}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5 }}>
+                  {fuente === 'manual'
+                    ? 'Las ventas usan la cotización que escribiste arriba. Acordate de actualizarla cuando cambia el dólar.'
+                    : <>Cada venta nueva toma el {NOMBRE_FUENTE[fuente].toLowerCase()} del momento (valor de venta){valorHoy ? <>: hoy <strong style={{ color: 'var(--text)' }}>${valorHoy.toLocaleString('es-AR')}</strong></> : ''}. La de arriba queda de respaldo si no hay internet, y es con la que se calculan las ventas viejas que no guardaron su cotización: por eso no se cambia sola.</>}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Personalización del recibo */}

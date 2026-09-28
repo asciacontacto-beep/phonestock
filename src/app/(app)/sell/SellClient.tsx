@@ -1,4 +1,5 @@
 "use client"
+import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, type FuenteCotizacion } from '@/utils/cotizacion';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { ArrowRight, Plus, Printer, Search, AlertTriangle, FileText, X, MapPin, PackageOpen, CreditCard, ChevronRight, Receipt as ReceiptIcon, User as UserIcon, Loader2 } from 'lucide-react';
 import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
@@ -37,6 +38,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   const [sm, setSm] = useState<string | null>(null);
   const [ma, setMa] = useState('');
   const [exchangeRate, setExchangeRate] = useState('1000');
+  /* Cotización automática (Ajustes): se trae la del día salvo que el
+     usuario ya haya escrito una a mano en esta venta. */
+  const [fuenteCotiz, setFuenteCotiz] = useState<FuenteCotizacion>('manual');
+  const cotTocada = useRef(false);
   const [showTI, setShowTI] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -106,6 +111,13 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
          dólar inventado y la ganancia salía cualquier cosa. */
       const cotLocal = parseFloat(String(settingsData?.exchange_rate));
       if (cotLocal > 0) setExchangeRate(String(cotLocal));
+      const fuenteLocal = fuenteValida(settingsData?.cotizacion_fuente);
+      setFuenteCotiz(fuenteLocal);
+      if (fuenteLocal !== 'manual') {
+        cotizacionDelDia(fuenteLocal).then(v => {
+          if (v && !cotTocada.current) setExchangeRate(String(v));
+        });
+      }
       setAccessoriesList(accData || []);
       setCardPlans(planesData || []);
 
@@ -832,8 +844,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             return (
               <div className="row">
                 <div className="col field">
-                  <label className="lbl">Cotización del dólar de hoy</label>
-                  <input className="inp" type="number" value={exchangeRate} onChange={e => setExchangeRate(e.target.value)} />
+                  <label className="lbl">Cotización del dólar de hoy{fuenteCotiz !== 'manual' ? ` · ${NOMBRE_FUENTE[fuenteCotiz].toLowerCase()} automático` : ''}</label>
+                  <input className="inp" type="number" value={exchangeRate} onChange={e => { cotTocada.current = true; setExchangeRate(e.target.value); }} />
                   <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>
                     El equipo está cargado en {unit.currency === 'USD' ? 'dólares' : 'pesos'}: con esta cotización se pasan a {sc === 'ARS' ? 'pesos' : 'dólares'} el precio y el costo.
                     {equivale !== null && (
@@ -863,7 +875,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                     {needsExchange && (
                       <div className="field" style={{ margin: 0 }}>
                         <label className="lbl">Cotización Dólar</label>
-                        <input className="inp" type="number" value={exchangeRate} onChange={e => setExchangeRate(e.target.value)} />
+                        <input className="inp" type="number" value={exchangeRate} onChange={e => { cotTocada.current = true; setExchangeRate(e.target.value); }} />
                       </div>
                     )}
                     {sm === 'tarjeta' && (

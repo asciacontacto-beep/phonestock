@@ -469,6 +469,48 @@ marcadas.
   cuaderno, otro sistema o nada). Hay un paso "Sus ubicaciones": hasta 2
   durante la prueba.
 
+### 12. Capturas con la sesión abierta (las pasó el dueño, 30/09/2026)
+
+Son de la cuenta de prueba, en modo oscuro. Confirman lo que decía el código
+y agregan algunos detalles:
+
+- **Menú:** "Equipo" (no "Empleados") en Personas. La cotización del día
+  (blue y cripto) queda siempre abajo del menú, arriba de Configuración.
+- **Cuenta corriente vacía:** tiene dos solapas, Cuentas y Reportes.
+  - A la izquierda, un buscador de cliente con botón de orden.
+  - A la derecha, el mensaje "Elija un cliente de la lista para ver su
+    cuenta".
+  - Arriba a la derecha, "0 clientes con saldo pendiente".
+- **Nuevo cliente:** solo el nombre es obligatorio.
+  - A la vista: DNI (sin puntos ni guiones) y teléfono.
+  - En "Más datos": email, dirección, localidad y observaciones internas
+    ("No las ve el cliente").
+- **Nuevo iPhone desde la venta:** si un equipo no está en stock, se da de
+  alta sin salir de la venta (`/admin/ventas/nuevo?clienteId=…`). El
+  formulario tiene tres bloques:
+  - **Equipo:** modelo con buscador, condición (Usado o Sellado) y
+    almacenamiento.
+  - **Precio y costo:** el precio de venta en USD; el costo en USD o ARS.
+  - **Identificación:** IMEI (15 dígitos, acepta el lector de código),
+    código de barras y "Agregar IMEI 2".
+- **Configuración:**
+  - Es un **modal con menú a la izquierda**: Cotización, Recargo, Monedas,
+    Garantía, Mis datos, Sesiones y Suscripción.
+  - Al pie del menú, "Configuración inicial" (para volver a abrir el
+    asistente) y **la versión (v0.27.1)**.
+  - *Cotización:* solapas Dólar blue y Dólar cripto, con la etiqueta
+    "Automático (dolarapi.com)". Muestra el valor grande ($1.560 ARS por
+    USD) y un ejemplo en una línea: "Un producto de USD 100 se cobra
+    $156.000". Tiene "Cargar valor manual".
+  - *Suscripción:* "Período de prueba · PRO gratuito · 30 días restantes".
+    Para renovar hay que escribirles.
+
+![Cuenta corriente sin clientes con saldo](app-cuenta-corriente-vacia.webp)
+![Nuevo cliente: nombre obligatorio, el resto en "Más datos"](app-nuevo-cliente.webp)
+![Alta de un iPhone sin salir de la venta](app-nuevo-iphone.webp)
+![Configuración → Cotización, con menú lateral y versión al pie](app-config-cotizacion.webp)
+![Configuración → Suscripción](app-config-suscripcion.webp)
+
 ---
 
 ## Stackr hoy frente a Stuky (en lo prioritario)
@@ -565,6 +607,32 @@ Es el hueco de "información que aparece en una pantalla y falta en otra":
 - **Casilla "Sale de la caja"** al pagar a un proveedor en efectivo.
 - **Valores de toma de permutas por tramo de batería.**
 
+### F. Configuración ordenada en secciones, con la versión a la vista
+
+Al dueño le gustó especialmente cómo lo resuelve Stuky.
+
+**Hoy en Stackr**, Ajustes (`src/app/(app)/settings/SettingsClient.tsx`) es
+una sola página larga. Se mezclan comercio, recibo, cotización, planes de
+tarjeta, API y backup.
+
+**La propuesta:**
+
+- **Un menú lateral con pocas secciones.** En el celular, el menú pasa arriba
+  como lista. Por ejemplo:
+  - Cotización.
+  - Cobros: planes de tarjeta y financieras, y las cuentas del punto A.
+  - Mi comercio y recibo.
+  - Garantía.
+  - Suscripción.
+  - Avanzado: API y backup.
+- **Al pie del menú, la versión de Stackr.** Sirve para soporte ("¿qué
+  versión ves?") y para avisar novedades. Hoy `package.json` dice 0.1.0 y
+  no se muestra en ningún lado.
+- **En Cotización, el ejemplo en una línea**, como hace Stuky: "Un producto
+  de USD 100 se cobra $…". Se entiende el número sin explicar nada.
+
+Es solo reordenar lo que ya existe; no agrega funciones.
+
 ### (no copiar)
 
 - **Recargo de lista por categoría + interés + IVA sobre el interés.** Son tres
@@ -582,4 +650,5 @@ Es el hueco de "información que aparece en una pantalla y falta en otra":
   cuenta corriente. Verificar con números reales que la ganancia del
   servidor coincide con lo que dicen las leyendas.
 - Capturas de Planes de pago, Configuración → Recargo, detalle de venta con
-  tarjeta, cierre de caja, compras y reportes.
+  tarjeta, cierre de caja, compras y reportes. Cotización y Suscripción ya
+  están (sección 12).

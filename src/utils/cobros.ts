@@ -37,6 +37,9 @@ export interface DatosCobro {
   metodo: string
   /** `deposits.id` es uuid: va como texto, no como número. */
   depositId: string | null
+  /** Si fue por transferencia: la cuenta a la que entró (tabla `accounts`). */
+  accountId?: string | null
+  accountName?: string | null
   /** Fecha real del cobro, AAAA-MM-DD. */
   fecha: string
   hoy: string
@@ -121,6 +124,7 @@ export async function registrarCobro(
     payments: [{
       id: d.metodo, amount: d.monto, original_amount: d.monto,
       currency: d.moneda, exchange_rate: d.cotizacion, label: etiqueta,
+      ...(d.accountId ? { account_id: d.accountId, account_name: d.accountName || null } : {}),
     }],
     notes: d.notas?.trim() || null,
   })

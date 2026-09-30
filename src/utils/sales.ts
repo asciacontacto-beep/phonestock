@@ -1,4 +1,5 @@
 import type { Sale, SaleAccessory, Payment, Repair } from '@/types/domain'
+import { costoDeFinanciacion } from './tarjetas'
 
 export type SaleCategory = 'device' | 'accessory' | 'service' | 'movement'
 
@@ -112,6 +113,16 @@ export function categoryBreakdown(sales: Sale[], repairs: Repair[], exchangeRate
       service.units += 1
     }
     // cat === 'accessory': su price/cost NO se usan (ya se contaron vía JSON arriba)
+
+    /* Lo que se quedó la tarjeta o la financiera cuando el recargo lo
+       absorbió el local. La venta vale el precio de lista, pero a la caja
+       entró menos: esa diferencia es un costo y achica la ganancia. El
+       recargo que paga el cliente no entra acá (no es ganancia ni costo). */
+    const financiacion = toUSD(costoDeFinanciacion(s.payments as Payment[]), 'ARS', rate)
+    if (financiacion > 0) {
+      const bucket = cat === 'device' ? device : cat === 'service' ? service : accessory
+      bucket.cost += financiacion
+    }
   }
 
   // Costo de servicio: sólo reparaciones entregadas, para que el costo caiga

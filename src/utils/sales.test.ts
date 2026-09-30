@@ -186,3 +186,24 @@ describe('totalsFromBreakdown', () => {
     expect(t.profit).toBe(b.device.profit + b.accessory.profit + b.service.profit)
   })
 })
+
+describe('categoryBreakdown · tarjeta o financiera que absorbe el local', () => {
+  const venta = (payments: unknown[]) => ({
+    id: 1, brand: 'Apple', model: 'iPhone 15', currency: 'ARS', price: 600000, cost_price: 450000, payments,
+  })
+
+  it('lo que retiene la financiera es costo y baja la ganancia', () => {
+    // Precio 600.000, costo 450.000, la financiera se queda con 120.000.
+    const pago = { id: 'tarjeta', amount: 600000, original_amount: 480000, currency: 'ARS', card_paid_by: 'shop', card_charged: 600000 }
+    const b = categoryBreakdown([venta([pago])] as never[], [], RATE)
+    expect(b.device.revenue).toBe(600)
+    expect(b.device.cost).toBe(570)
+    expect(totalsFromBreakdown(b).profit).toBe(30)
+  })
+
+  it('si el recargo lo paga el cliente, la ganancia no cambia', () => {
+    const pago = { id: 'tarjeta', amount: 600000, original_amount: 690000, currency: 'ARS', card_paid_by: 'customer', card_charged: 690000 }
+    const b = categoryBreakdown([venta([pago])] as never[], [], RATE)
+    expect(totalsFromBreakdown(b).profit).toBe(150)
+  })
+})

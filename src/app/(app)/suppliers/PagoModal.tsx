@@ -1,16 +1,18 @@
 "use client"
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/utils/supabase/client';
 import { registrarPagoProveedor, pendienteDelPedido, type Moneda, type Pedido, type PagoProveedor } from '@/utils/proveedores';
+import { aceptaCuenta, cuentasDelMetodo, type Cuenta } from '@/utils/cuentas';
+import { cargarCuentas } from '@/utils/cuentasDb';
 
 const METODOS: Record<Moneda, [string, string][]> = {
   USD: [['usd_cash', 'Efectivo USD'], ['usd_transf', 'Transferencia USD'], ['usdt', 'USDT']],
   ARS: [['ars_cash', 'Efectivo ARS'], ['ars_transf', 'Transferencia ARS']],
 };
 
-/** Pago al proveedor: baja la deuda y, si se elige una caja, sale de ella. */
+/** Pago al proveedor: baja la deuda y, si se elige una caja o una cuenta, sale de ella. */
 export function PagoModal({ proveedor, pedidos, pagos, deposits, deuda, pedidoInicial, onClose, onSaved }: {
   proveedor: { id: string | number; name: string };
   pedidos: Pedido[];
@@ -32,6 +34,12 @@ export function PagoModal({ proveedor, pedidos, pagos, deposits, deuda, pedidoIn
   const [fecha, setFecha] = useState(() => new Date().toLocaleDateString('en-CA'));
   const [metodo, setMetodo] = useState(METODOS[monedaInicial][0][0]);
   const [caja, setCaja] = useState('');
+  const [cuentas, setCuentas] = useState<Cuenta[]>([]);
+  const [cuenta, setCuenta] = useState('');
+  useEffect(() => { cargarCuentas(supabase, { soloActivas: true }).then(r => setCuentas(r.cuentas)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  /* Una transferencia no sale del cajón: sale de una cuenta. */
+  const esTransferencia = aceptaCuenta(metodo);
+  const cuentasPosibles = esTransferencia ? cuentasDelMetodo(cuentas, metodo) : [];
   const [notas, setNotas] = useState('');
   const [guardando, setGuardando] = useState(false);
 
@@ -46,7 +54,10 @@ export function PagoModal({ proveedor, pedidos, pagos, deposits, deuda, pedidoIn
     setGuardando(true);
     const r = await registrarPagoProveedor(supabase, {
       supplierId: proveedor.id, proveedorNombre: proveedor.name, orderId: pedidoId || null,
-      moneda, monto: valor, fecha, metodo, depositId: caja || null, notas,
+      moneda, monto: valor, fecha, metodo, notas,
+      depositId: esTransferencia ? null : (caja || null),
+      accountId: esTransferencia ? (cuenta || null) : null,
+      accountName: esTransferencia ? (cuentasPosibles.find(c => c.id === cuenta)?.name || null) : null,
     });
     setGuardando(false);
     if (!r.ok) { toast.error(r.error); return; }
@@ -103,12 +114,23 @@ export function PagoModal({ proveedor, pedidos, pagos, deposits, deuda, pedidoIn
               <input className="inp" type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
             </div>
           </div>
-          <div><label className="lbl">Sale de la caja</label>
-            <select className="inp" value={caja} onChange={e => setCaja(e.target.value)}>
-              <option value="">No sale de una caja</option>
-              {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
-            </select>
-          </div>
+          {esTransferencia ? (
+            cuentasPosibles.length > 0 && (
+              <div><label className="lbl">Sale de la cuenta</label>
+                <select className="inp" value={cuenta} onChange={e => setCuenta(e.target.value)}>
+                  <option value="">No indicar</option>
+                  {cuentasPosibles.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )
+          ) : (
+            <div><label className="lbl">Sale de la caja</label>
+              <select className="inp" value={caja} onChange={e => setCaja(e.target.value)}>
+                <option value="">No sale de una caja</option>
+                {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
+              </select>
+            </div>
+          )}
           <div><label className="lbl">Notas (opcional)</label>
             <input className="inp" value={notas} onChange={e => setNotas(e.target.value)} />
           </div>

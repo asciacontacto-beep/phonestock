@@ -26,6 +26,7 @@ describe('qué tablas entran al respaldo', () => {
       'wholesalers', 'wholesale_orders', 'wholesale_order_items', 'wholesale_payments',
       'appointments', 'cash_movements', 'cash_transfers',
       'repair_parts', 'settings', 'audit_log',
+      'accounts', 'card_plans', 'cash_closures', 'tradein_values',
     ]) {
       expect(nombres).toContain(t)
     }

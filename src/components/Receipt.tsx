@@ -1,6 +1,7 @@
 import type { ReceiptConfig, ReceiptLine, ReceiptExtraField, ShopSettings } from '@/types/receipt';
 import { DEFAULT_RECEIPT_CONFIG, normalizeReceiptConfig } from '@/types/receipt';
 import { tieneAlmacenamiento } from '@/constants/data';
+import { desglosePagoTarjeta } from '@/utils/tarjetas';
 
 /* ── helpers ─────────────────────────────────────────── */
 const money = (n: number, currency?: string) =>
@@ -19,6 +20,8 @@ export interface ReceiptData {
   currency: string;
   total: number;
   paid?: number;
+  /** Recargo de tarjeta o financiación que pagó el cliente, aparte del precio. */
+  surcharge?: number;
   warranty?: string;
   notes?: string;
   extraFields?: ReceiptExtraField[];
@@ -95,6 +98,10 @@ function TicketReceipt({ shop, config: c, data }: { shop: ShopSettings; config: 
           <span style={{ fontWeight: 700, fontSize: 12 }}>TOTAL</span>
           <span style={{ fontWeight: 800, fontSize: 17, color: accent, fontFamily: MONO }}>{money(data.total, data.currency)}</span>
         </div>
+        {!!data.surcharge && data.surcharge > 0 && (<>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginTop: 5, color: '#666' }}><span>Recargo por pago en cuotas</span><span style={{ fontFamily: MONO }}>{money(data.surcharge, data.currency)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, fontWeight: 700 }}><span>Total abonado</span><span style={{ fontFamily: MONO }}>{money(data.total + data.surcharge, data.currency)}</span></div>
+        </>)}
         {data.paid != null && data.paid !== data.total && (<>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginTop: 5, color: '#666' }}><span>Abonado</span><span style={{ fontFamily: MONO }}>{money(data.paid, data.currency)}</span></div>
           {data.total - data.paid > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#b45309', fontWeight: 600 }}><span>Saldo</span><span style={{ fontFamily: MONO }}>{money(data.total - data.paid, data.currency)}</span></div>}
@@ -213,6 +220,10 @@ function A4Receipt({ shop, config: c, data }: { shop: ShopSettings; config: Rece
               <span style={{ fontWeight: 700, fontSize: 14 }}>TOTAL</span>
               <span style={{ fontWeight: 800, fontSize: 22, color: accent, fontFamily: MONO }}>{money(data.total, data.currency)}</span>
             </div>
+            {!!data.surcharge && data.surcharge > 0 && (<>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 8, color: '#555' }}><span>Recargo por pago en cuotas</span><span style={{ fontFamily: MONO }}>{money(data.surcharge, data.currency)}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginTop: 3, fontWeight: 700 }}><span>Total abonado</span><span style={{ fontFamily: MONO }}>{money(data.total + data.surcharge, data.currency)}</span></div>
+            </>)}
             {data.paid != null && data.paid !== data.total && (<>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 8, color: '#555' }}><span>Abonado</span><span style={{ fontFamily: MONO }}>{money(data.paid, data.currency)}</span></div>
               {data.total - data.paid > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 3, color: '#b45309', fontWeight: 700 }}><span>Saldo</span><span style={{ fontFamily: MONO }}>{money(data.total - data.paid, data.currency)}</span></div>}
@@ -282,6 +293,13 @@ export function Receipt({ sale, shop }: { sale: Record<string, unknown>; shop: R
       ];
 
   const paid = payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+  /* El recargo de tarjeta lo pagó el cliente aparte del precio: el
+     comprobante lo muestra, para que "total" y lo que salió de su tarjeta
+     no parezcan dos números que no cierran. */
+  const surcharge = Math.round(payments.reduce((acc, p) => {
+    const r = desglosePagoTarjeta(p as Record<string, unknown>).recargoCliente;
+    return acc + (currency === 'USD' ? r / (Number(p.exchange_rate) || 1) : r);
+  }, 0) * 100) / 100;
   const client = (s.customer as { name?: string; dni?: string; phone?: string }) || {};
 
   return (
@@ -294,7 +312,7 @@ export function Receipt({ sale, shop }: { sale: Record<string, unknown>; shop: R
         seller: (s.seller_name as string) || undefined,
         client, lines,
         payments: config.showPayments ? payments.map(p => ({ label: String(p.label || p.id || 'Pago'), amount: Number(p.amount) || 0, note: p.exchange_rate ? `(${p.currency === 'USD' ? 'U$' : 'ARS'} ${Number(p.original_amount || 0).toLocaleString('es-AR')} @ ${p.exchange_rate})` : undefined })) : undefined,
-        currency, total: Number(s.price) || 0, paid,
+        currency, total: Number(s.price) || 0, paid, surcharge,
         warranty: config.showWarranty ? (String(s.notes || '') || config.warrantyDefault) : undefined,
         notes: config.showImei && s.imei ? `IMEI/Serie: ${s.imei}` : undefined,
       }}

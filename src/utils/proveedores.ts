@@ -150,6 +150,9 @@ export async function registrarPagoProveedor(
     fecha: string
     metodo: string
     depositId?: string | null
+    /** Cuenta de la que salió una transferencia (tabla `accounts`). */
+    accountId?: string | null
+    accountName?: string | null
     notas?: string | null
     userId?: string | null
   },
@@ -167,7 +170,9 @@ export async function registrarPagoProveedor(
   })
   if (error) return { ok: false, error: error.message }
 
-  if (d.depositId) {
+  /* Sale de una caja (efectivo) o de una cuenta (transferencia): en los dos
+     casos queda un movimiento negativo, que es lo que baja el saldo. */
+  if (d.depositId || d.accountId) {
     const aQuien = d.proveedorNombre?.trim() ? ` a ${d.proveedorNombre.trim()}` : ''
     const { error: e2 } = await supabase.from('sales').insert({
       brand: 'MOVIMIENTO',
@@ -176,7 +181,7 @@ export async function registrarPagoProveedor(
       imei: `PPV-${Date.now()}`,
       price: 0, cost_price: 0,
       currency: d.moneda,
-      deposit_id: d.depositId,
+      deposit_id: d.depositId || null,
       seller_id: d.userId ?? null,
       created_at: momentoDelDia(d.fecha),
       payments: [{
@@ -185,10 +190,11 @@ export async function registrarPagoProveedor(
         original_amount: -d.monto,
         currency: d.moneda,
         label: `Pago a proveedor${aQuien}`,
+        ...(d.accountId ? { account_id: d.accountId, account_name: d.accountName || null } : {}),
       }],
       notes: d.notas?.trim() || null,
     })
-    if (e2) return { ok: false, error: `El pago quedó registrado, pero no salió de la caja: ${e2.message}` }
+    if (e2) return { ok: false, error: `El pago quedó registrado, pero no salió de la ${d.accountId ? 'cuenta' : 'caja'}: ${e2.message}` }
   }
   return { ok: true }
 }

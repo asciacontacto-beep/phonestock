@@ -1497,6 +1497,75 @@ select.inp {
   .settings-preview { position: static; }
 }
 
+/* ── Configuración: menú lateral por secciones ── */
+.cfg-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
+.cfg-nav {
+  position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px;
+}
+.cfg-nav-title { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); padding: 8px 10px 6px; }
+.cfg-nav-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 9px 10px; border-radius: 9px; border: 0; background: none; cursor: pointer;
+  font-size: 13.5px; color: var(--text-2); font-weight: 500; transition: background .12s ease, color .12s ease;
+}
+.cfg-nav-item:hover { background: var(--surface-2); color: var(--text); }
+.cfg-nav-item[aria-current="page"] { background: var(--surface-2); color: var(--text); font-weight: 650; }
+.cfg-nav-item svg { flex-shrink: 0; opacity: .75; }
+.cfg-nav-foot { border-top: 1px solid var(--border); margin-top: 8px; padding: 10px 10px 4px; font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+.cfg-main { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.cfg-aviso { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: var(--text-2); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+.cfg-vacio { background: var(--surface-2); border: 1px dashed var(--border-md); border-radius: 10px; padding: 14px; font-size: 13px; color: var(--text-2); line-height: 1.55; margin-bottom: 14px; }
+.cfg-lista { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.cfg-fila { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface-2); border-radius: 10px; }
+.cfg-fila[data-baja="true"] { opacity: .55; }
+.cfg-alta { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.cfg-tipo { display: flex; gap: 6px; margin-bottom: 10px; }
+.cfg-ejemplo { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--text-2); }
+.cfg-ejemplo strong { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.cfg-cotiz-grande { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+
+@media (max-width: 900px) {
+  .cfg-layout { grid-template-columns: 1fr; gap: 14px; }
+  .cfg-nav { position: static; flex-direction: row; overflow-x: auto; padding: 6px; gap: 4px; scrollbar-width: none; }
+  .cfg-nav::-webkit-scrollbar { display: none; }
+  .cfg-nav-title { display: none; }
+  .cfg-nav-item { width: auto; white-space: nowrap; padding: 8px 12px; }
+  .cfg-nav-foot { display: none; }
+}
+.cfg-version-movil { display: none; font-size: 11px; color: var(--text-3); text-align: center; font-family: 'JetBrains Mono', monospace; margin-top: 8px; }
+@media (max-width: 900px) { .cfg-version-movil { display: block; } }
+
+/* ── Plata de una venta: a dónde va, cobrado vs ganancia ── */
+.plata { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; font-size: 13px; }
+.plata-titulo { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+.plata-fila { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; align-items: baseline; }
+.plata-fila > span:last-child { font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+.plata-sub { font-size: 11.5px; color: var(--text-3); }
+.plata-total { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 6px; font-weight: 700; }
+.plata-nota { font-size: 11.5px; color: var(--text-3); line-height: 1.5; margin-top: 6px; }
+.plata-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); white-space: nowrap; }
+.plata-cuando { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 6px; }
+.plata-cuando[data-c="hoy"] { background: var(--green-dim); color: var(--green); }
+.plata-cuando[data-c="acredita"] { background: rgba(59,130,246,.12); color: var(--blue); }
+.plata-cuando[data-c="credito"] { background: rgba(245,158,11,.14); color: var(--amber); }
+.plata-cuando[data-c="canje"] { background: rgba(147,51,234,.12); color: #9333ea; }
+
+/* ── Botones rápidos de monto ── */
+.montos-rapidos { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.monto-rapido { font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border-md); background: var(--surface); color: var(--text-2); cursor: pointer; }
+.monto-rapido:hover { border-color: var(--text-3); color: var(--text); }
+
+/* ── Planes con total y cuota ── */
+.planes-grid { display: grid; gap: 6px; }
+.plan-op { display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; transition: border-color .12s ease, background .12s ease; }
+.plan-op:hover { border-color: var(--border-lg); }
+.plan-op[aria-pressed="true"] { border-color: var(--green); background: var(--green-dim); }
+.plan-op-nombre { font-weight: 600; font-size: 13.5px; }
+.plan-op-sub { font-size: 11.5px; color: var(--text-3); }
+.plan-op-total { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; text-align: right; }
+.plan-op-cuota { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-3); text-align: right; }
+
 /* ── Editor de recibo (modal ancho, 2 columnas) ── */
 .receipt-editor { max-width: 920px; width: 100%; }
 .receipt-editor-body { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,400px); gap: 0; }

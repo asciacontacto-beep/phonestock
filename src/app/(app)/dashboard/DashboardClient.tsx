@@ -5,10 +5,11 @@ import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakd
 import { Sparkline } from '@/components/Sparkline';
 import { voidSale, voidSaleSummary } from '@/utils/voidSale';
 import { logAudit } from '@/utils/audit';
-import { Download, Package, AlertTriangle, Trash2, Box, Wallet, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Download, Package, AlertTriangle, Trash2, Box, Wallet, ShoppingCart, TrendingUp, CalendarClock } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { resumenGlobalDeVencimientos } from '@/utils/cuotas';
+import { porAcreditar } from '@/utils/cuentas';
 import { PrimerosPasos } from '@/components/PrimerosPasos';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -194,6 +195,13 @@ export function DashboardClient({
     }, 0);
     return { count: rows.length, usd };
   }, [allSales, exchangeRate]);
+
+  /* ── Tarjetas y financieras que todavía no pagaron ──
+     La venta se cobró, pero la plata llega días después: no está para usar. */
+  const pendienteAcreditar = useMemo(
+    () => porAcreditar(sales, new Date().toLocaleDateString('en-CA')),
+    [sales],
+  );
 
   /* ── Cuotas: la pregunta no es cuánto me deben, sino a quién llamar hoy ── */
   const vencimientos = useMemo(
@@ -597,6 +605,22 @@ export function DashboardClient({
             <div className="sl">Facturación</div>
             <div className="sv">U$ {Math.round(revenueUSD).toLocaleString('es-AR')}</div>
             <div className="sc-sub">{RANGE_LABELS[range].toLowerCase()}</div>
+          </div>
+        )}
+
+        {userRole !== 'seller' && pendienteAcreditar.cobros > 0 && (
+          <div className="sc" style={{ cursor: 'pointer' }} onClick={() => router.push('/cashiers')}
+            title="Cobros con tarjeta o financiera que todavía no llegaron a la cuenta">
+            <CalendarClock size={16} className="sc-icon sc-i-blue" />
+            <div className="sl">Por acreditar</div>
+            <div className="sv">
+              {pendienteAcreditar.ARS > 0 && `$ ${Math.round(pendienteAcreditar.ARS).toLocaleString('es-AR')}`}
+              {pendienteAcreditar.ARS > 0 && pendienteAcreditar.USD > 0 && ' + '}
+              {pendienteAcreditar.USD > 0 && `U$ ${Math.round(pendienteAcreditar.USD).toLocaleString('es-AR')}`}
+            </div>
+            <div className="sc-sub">
+              {pendienteAcreditar.proxima ? `el próximo llega el ${pendienteAcreditar.proxima.split('-').reverse().slice(0, 2).join('/')}` : 'tarjetas y financieras'}
+            </div>
           </div>
         )}
       </div>

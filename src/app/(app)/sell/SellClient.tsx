@@ -11,10 +11,25 @@ import { Receipt } from '@/components/Receipt';
 import { upsertCustomer, CLIENTE_ANONIMO } from '@/utils/customers';
 import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual, interesPctDesdeCuota } from '@/utils/cuotas';
 import { STOCK_SIN_COSTO, ACCESORIOS_SIN_COSTO, VENTA_SIN_COSTO } from '@/utils/sinCostos';
-import { calcularPagoTarjeta, resumenPlan, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
+import { calcularPagoTarjeta, resumenPlan, etiquetaPlan, opcionesDePlanes, costoDeFinanciacion, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
+import { aceptaCuenta, cuentasDelMetodo, cuentaSugerida, datosDeCuenta, acreditaEl, type Cuenta } from '@/utils/cuentas';
+import { cargarCuentas } from '@/utils/cuentasDb';
+import { destinoDelCobro, montosRapidos, anticiposRapidos } from '@/utils/cobro';
+import { valorSugerido, describirTramo, type ValorToma } from '@/utils/valoresToma';
 import { resolveSale } from '@/utils/saleTotals';
 import { imprimirDocumento } from '@/utils/imprimir';
 import { configuracionDelLocal } from '@/utils/configuracion';
+
+const hoyISO = () => new Date().toLocaleDateString('en-CA');
+
+/* La última cuenta usada con cada medio queda en este navegador: es una
+   comodidad, si no se puede leer se propone la primera. */
+function ultimaCuenta(metodo: string): string | null {
+  try { return localStorage.getItem(`stackr:cuenta:${metodo}`); } catch { return null; }
+}
+function recordarCuenta(metodo: string, id: string) {
+  try { localStorage.setItem(`stackr:cuenta:${metodo}`, id); } catch { /* sin almacenamiento */ }
+}
 
 export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }: { isOwner?: boolean, assignedDeposits?: any[], sellerName?: string | null, orgId?: string | null }) {
   const [stock, setStock] = useState<any[]>([]);
@@ -62,6 +77,11 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   const [cardPlans, setCardPlans] = useState<PlanTarjeta[]>([]);
   const [planTarjeta, setPlanTarjeta] = useState<string>('');
   const [quienPaga, setQuienPaga] = useState<QuienPaga | null>(null);
+  /* Cuentas (banco, billetera, financiera): a cuál entró cada transferencia.
+     Sin la migración de cuentas la lista viene vacía y no se pregunta nada. */
+  const [cuentas, setCuentas] = useState<Cuenta[]>([]);
+  const [cuentaSel, setCuentaSel] = useState<string>('');
+  const [valoresToma, setValoresToma] = useState<ValorToma[]>([]);
   const [primerVenc, setPrimerVenc] = useState(() => vencimientoMensual(new Date().toLocaleDateString('en-CA'), 1));
   
   const [custSearch, setCustSearch] = useState('');
@@ -89,8 +109,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       supabase.from('deposits').select('*').order('name'),
       configuracionDelLocal(supabase, orgId),
       supabase.from('accessories').select(isOwner ? '*' : ACCESORIOS_SIN_COSTO).gt('stock', 0),
-      supabase.from('card_plans').select('*').eq('active', true).order('card_name')
-    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }, { data: planesData }]: any) => {
+      supabase.from('card_plans').select('*').eq('active', true).order('card_name'),
+      cargarCuentas(supabase, { soloActivas: true }),
+      supabase.from('tradein_values').select('*'),
+    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }, { data: planesData }, cuentasRes, { data: tomaData }]: any) => {
       const u = session?.user
       if (u) {
         const isSuperAdmin = u.email === 'asciacontacto@gmail.com'
@@ -120,6 +142,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       }
       setAccessoriesList(accData || []);
       setCardPlans(planesData || []);
+      setCuentas(cuentasRes?.cuentas || []);
+      setValoresToma(tomaData || []);
 
       const preselectId = searchParams.get('item');
       if (preselectId && stockData) {
@@ -243,9 +267,16 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       if (!plan) { toast.error('Elegí el plan de tarjeta'); return; }
       const quien = quienPaga || plan.paid_by;
       const calc = calcularPagoTarjeta({ precio: amt, plan, pagaEl: quien });
+      /* Dónde y cuándo acredita: sale del plan. Hasta esa fecha la plata
+         figura "por acreditar", no disponible. */
+      const cuentaPlan = cuentas.find(c => c.id === plan.account_id) || null;
+      const acredita = acreditaEl(hoyISO(), plan.settlement_days);
       setPayments(p => [...p, {
+        ...datosDeCuenta(cuentaPlan),
+        ...(acredita ? { acredita_el: acredita } : {}),
+        card_kind: plan.kind || 'tarjeta',
         id: sm,
-        label: `${plan.card_name} ${plan.installments}c`,
+        label: etiquetaPlan(plan),
         amount: sc === 'USD' ? calc.cubreDeLaVenta / rate : calc.cubreDeLaVenta,
         original_amount: calc.entraACaja,
         currency: 'ARS',
@@ -261,16 +292,38 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       return;
     }
 
+    /* Transferencia o USDT: a qué cuenta entró. Se recuerda la última
+       usada con cada medio para no tener que elegirla en cada venta. */
+    const cuenta = aceptaCuenta(sm)
+      ? (cuentasDelMetodo(cuentas, sm).find(c => c.id === cuentaSel) || cuentaSugerida(cuentas, sm, ultimaCuenta(sm)))
+      : null;
+    if (cuenta) recordarCuenta(sm, cuenta.id);
     setPayments(p => [...p, { 
       id: sm, 
       label: m?.label, 
       amount: amountInSaleCur, 
       original_amount: amt,
       currency: m?.cur,
-      exchange_rate: (m?.cur !== sc && m?.cur !== 'ANY') ? rate : null
+      exchange_rate: (m?.cur !== sc && m?.cur !== 'ANY') ? rate : null,
+      ...datosDeCuenta(cuenta),
     }]);
     setMa('');
     setSm(null);
+  };
+
+  /* Resto a cobrar expresado en la moneda del medio elegido, para los
+     botones de monto. */
+  const restoEnMoneda = (cur?: string) => {
+    const r = Math.max(0, rem);
+    const cot = parseFloat(exchangeRate) || 0;
+    if (!cur || cur === 'ANY' || cur === sc) return Math.round(r * 100) / 100;
+    if (!(cot > 0)) return 0;
+    return cur === 'ARS' ? Math.round(r * cot) : Math.round((r / cot) * 100) / 100;
+  };
+
+  const elegirMetodo = (id: string) => {
+    setSm(id);
+    setCuentaSel(cuentaSugerida(cuentas, id, ultimaCuenta(id))?.id || '');
   };
 
   const handleTI = (data: any) => {
@@ -862,7 +915,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           <div className="sell-pay-grid">
             {PAY.map(m => {
               const disabled = false; // Allow mixing currencies (ARS and USD)
-              return <button key={m.id} disabled={disabled} className={`btn ${sm === m.id ? 'btn-dark' : 'btn-outline'} btn-sm`} onClick={() => { if (m.id === 'tradein') { setShowTI(true); setSm(null); } else { setSm(m.id); } }}>{m.label}</button>;
+              return <button key={m.id} disabled={disabled} className={`btn ${sm === m.id ? 'btn-dark' : 'btn-outline'} btn-sm`} onClick={() => { if (m.id === 'tradein') { setShowTI(true); setSm(null); } else { elegirMetodo(m.id); } }}>
+                {m.id === 'tarjeta' && cardPlans.some(pl => pl.kind === 'financiera') ? 'Tarjeta / financiera' : m.label}
+              </button>;
             })}
           </div>
           {sm && (
@@ -889,18 +944,48 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                         const quien = quienPaga || plan?.paid_by || 'customer';
                         const monto = parseFloat(ma) || 0;
                         const res = plan ? resumenPlan({ precio: monto, costo: unitCostInSaleCurrency, plan, pagaEl: quien }) : null;
+                        /* La ganancia es de TODA la venta: precio − costo − lo que
+                           se llevan esta tarjeta y las que ya se cargaron. Medirla
+                           contra el monto de este pago daba pérdidas que no eran
+                           (un pago parcial contra el costo entero del equipo). */
+                        const aVenta = sc === 'USD' ? 1 / (parseFloat(exchangeRate) || 1) : 1;
+                        const gananciaVenta = res && unitCostInSaleCurrency != null
+                          ? Math.round((price - unitCostInSaleCurrency - (res.costoParaElLocal + costoDeFinanciacion(payments)) * aVenta) * 100) / 100
+                          : null;
+                        const cuentaPlan = plan ? cuentas.find(c => c.id === plan.account_id) : null;
+                        const acredita = plan ? acreditaEl(hoyISO(), plan.settlement_days) : null;
                         return (
                           <>
+                            {/* Cada plan con lo que paga el cliente y la cuota, para
+                                elegir viendo los números y no un porcentaje suelto. */}
                             <div className="field" style={{ margin: 0 }}>
-                              <label className="lbl">Plan de tarjeta</label>
-                              <select className="inp" value={planTarjeta} onChange={e => { setPlanTarjeta(e.target.value); setQuienPaga(null); }}>
-                                <option value="">Elegí un plan</option>
-                                {cardPlans.map(pl => (
-                                  <option key={pl.id} value={pl.id}>
-                                    {pl.card_name} · {pl.installments} {pl.installments === 1 ? 'pago' : 'cuotas'} · {pl.surcharge_pct}%
-                                  </option>
+                              <label className="lbl">
+                                Plan · qué paga el cliente{!(parseFloat(ma) > 0) && restoEnMoneda('ARS') > 0 ? ` por $ ${restoEnMoneda('ARS').toLocaleString('es-AR')}` : ''}
+                              </label>
+                              <div className="planes-grid">
+                                {opcionesDePlanes(cardPlans, parseFloat(ma) || restoEnMoneda('ARS')).map(({ plan: pl, total, cuota }) => (
+                                  <button key={pl.id} type="button" className="plan-op" aria-pressed={planTarjeta === pl.id}
+                                    onClick={() => {
+                                      setPlanTarjeta(pl.id); setQuienPaga(null);
+                                      if (!(parseFloat(ma) > 0) && restoEnMoneda('ARS') > 0) setMa(String(restoEnMoneda('ARS')));
+                                    }}>
+                                    <span>
+                                      <span className="plan-op-nombre">{pl.card_name} · {pl.installments === 1 ? '1 pago' : `${pl.installments} cuotas`}</span>
+                                      <span className="plan-op-sub" style={{ display: 'block' }}>
+                                        {pl.kind === 'financiera' ? 'Financiera · ' : ''}
+                                        {Number(pl.surcharge_pct) === 0 ? 'sin recargo' : `${pl.paid_by === 'shop' ? (pl.kind === 'financiera' ? 'retiene' : 'absorbe el local') : 'recargo'} ${pl.surcharge_pct}%`}
+                                        {Number(pl.settlement_days) > 0 ? ` · acredita a ${pl.settlement_days} días` : ''}
+                                      </span>
+                                    </span>
+                                    {total > 0 && (
+                                      <span>
+                                        <span className="plan-op-total" style={{ display: 'block' }}>$ {total.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+                                        {pl.installments > 1 && <span className="plan-op-cuota" style={{ display: 'block' }}>{pl.installments} × $ {cuota.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>}
+                                      </span>
+                                    )}
+                                  </button>
                                 ))}
-                              </select>
+                              </div>
                             </div>
                             {plan && plan.surcharge_pct > 0 && (
                               <div className="field" style={{ margin: 0 }}>
@@ -920,7 +1005,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                                   <span style={{ fontFamily: 'JetBrains Mono' }}>$ {res.cobradoAlCliente.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <span style={{ color: 'var(--text-3)' }}>Entra a la caja</span>
+                                  <span style={{ color: 'var(--text-3)' }}>
+                                    {cuentaPlan ? `Entra a ${cuentaPlan.name}` : 'Entra a la caja'}
+                                    {acredita ? ` el ${acredita.split('-').reverse().slice(0, 2).join('/')}` : ''}
+                                  </span>
                                   <span style={{ fontFamily: 'JetBrains Mono', color: 'var(--green)' }}>$ {res.entraACaja.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
                                 </div>
                                 {res.costoParaElLocal > 0 && (
@@ -929,13 +1017,18 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                                     <span style={{ fontFamily: 'JetBrains Mono' }}>− $ {res.costoParaElLocal.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
                                   </div>
                                 )}
-                                {res.ganancia !== null && (
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: 4, color: res.daPerdida ? 'var(--red)' : 'var(--green)' }}>
+                                {gananciaVenta !== null && (
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: 4, color: gananciaVenta < 0 ? 'var(--red)' : 'var(--green)' }}>
                                     <span>Ganancia de la venta</span>
-                                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {res.ganancia.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {gananciaVenta.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
                                   </div>
                                 )}
-                                {res.daPerdida && (
+                                {res.cobradoAlCliente > res.cubreDeLaVenta && (
+                                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>
+                                    El recargo lo paga el cliente: compensa lo que cobra la tarjeta, no es ganancia.
+                                  </div>
+                                )}
+                                {gananciaVenta !== null && gananciaVenta < 0 && (
                                   <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4, lineHeight: 1.5 }}>
                                     Con este plan la venta da pérdida: el recargo que absorbés supera el margen.
                                   </div>
@@ -957,6 +1050,62 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                         <button className="btn btn-dark" style={{ height: 42 }} onClick={addP}><Plus size={16} /> Agregar</button>
                       </div>
                     </div>
+                    {/* Montos rápidos: el resto justo y billetes redondos (el
+                        vuelto lo resuelve la pantalla). Sin pagos todavía, también
+                        los anticipos típicos de una seña. */}
+                    {(() => {
+                      const cur = selectedPay?.cur === 'ANY' ? sc : (selectedPay?.cur || sc);
+                      const resto = restoEnMoneda(cur);
+                      const esEfectivo = sm === 'ars_cash' || sm === 'usd_cash';
+                      const montos = sm === 'tarjeta' ? (resto > 0 ? [resto] : []) : esEfectivo ? montosRapidos(resto, cur === 'USD' ? 'USD' : 'ARS') : (resto > 0 ? [resto] : []);
+                      const anticipos = payments.length === 0 && sm !== 'tarjeta' ? anticiposRapidos(resto, cur === 'USD' ? 'USD' : 'ARS') : [];
+                      const simbolo = cur === 'USD' ? 'U$' : '$';
+                      if (montos.length === 0 && anticipos.length === 0) return null;
+                      return (
+                        <div>
+                          {montos.length > 0 && (
+                            <div className="montos-rapidos" aria-label="Montos rápidos">
+                              {montos.map((v, i) => (
+                                <button key={v} type="button" className="monto-rapido" onClick={() => setMa(String(v))}>
+                                  {i === 0 ? 'Justo · ' : ''}{simbolo} {v.toLocaleString('es-AR')}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {anticipos.length > 0 && (
+                            <div className="montos-rapidos" aria-label="Anticipo o seña">
+                              <span style={{ fontSize: 11.5, color: 'var(--text-3)', alignSelf: 'center' }}>Seña:</span>
+                              {anticipos.map(a => (
+                                <button key={a.pct} type="button" className="monto-rapido" onClick={() => setMa(String(a.monto))}>
+                                  {a.pct}% · {simbolo} {a.monto.toLocaleString('es-AR')}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {/* A qué cuenta entró la transferencia. Con una sola cuenta
+                        de esa moneda no se pregunta: se dice. */}
+                    {aceptaCuenta(sm) && (() => {
+                      const posibles = cuentasDelMetodo(cuentas, sm);
+                      if (posibles.length === 0) return null;
+                      if (posibles.length === 1) {
+                        return <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Entra a <strong style={{ color: 'var(--text)' }}>{posibles[0].name}</strong></div>;
+                      }
+                      return (
+                        <div className="field" style={{ margin: 0 }}>
+                          <label className="lbl">¿A qué cuenta entró?</label>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {posibles.map(c => (
+                              <button key={c.id} type="button" className={`btn btn-sm ${cuentaSel === c.id ? 'btn-dark' : 'btn-outline'}`} onClick={() => setCuentaSel(c.id)}>
+                                {c.name}{c.kind === 'financiera' ? ' (financiera)' : ''}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}
@@ -975,6 +1124,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: 600 }}>{p.label}</span>
                     {p.exchange_rate && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.currency === 'USD' ? 'U$' : '$'} {p.original_amount.toLocaleString()} (Cot. {p.exchange_rate})</span>}
+                    {p.id === 'tarjeta' && p.card_charged != null && Number(p.card_charged) !== Number(p.amount) && (
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>el cliente paga $ {Number(p.card_charged).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+                    )}
+                    {p.account_name && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>entra a {p.account_name}{p.acredita_el ? ` · acredita el ${String(p.acredita_el).split('-').reverse().slice(0, 2).join('/')}` : ''}</span>}
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
@@ -991,6 +1144,32 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                     : rem <= 0.01 ? 'Cubierto' : `${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString(undefined, { maximumFractionDigits: 2 })} pendiente`}
                 </span>
               </div>
+
+              {/* A dónde va la plata: lo que entra hoy, lo que acredita más
+                  adelante, el equipo del canje y lo que queda debiendo. */}
+              {payments.length > 0 && (() => {
+                const destinos = destinoDelCobro(paymentsToSave(), {
+                  monedaVenta: sc === 'USD' ? 'USD' : 'ARS',
+                  saldoPendiente: modoFaltante === 'debe' ? saldoAGuardar : 0,
+                  hoy: hoyISO(),
+                });
+                if (destinos.length === 0) return null;
+                const CUANDO = { hoy: 'hoy', acredita: 'después', canje: 'canje', credito: 'a cobrar' } as const;
+                return (
+                  <div className="plata" style={{ marginTop: 12, background: 'var(--surface-3)' }}>
+                    <div className="plata-titulo">A dónde va la plata</div>
+                    {destinos.map(d => (
+                      <div key={d.clave} className="plata-fila">
+                        <span>
+                          {d.etiqueta}<span className="plata-cuando" data-c={d.cuando}>{CUANDO[d.cuando]}</span>
+                          {d.detalle && <span className="plata-sub" style={{ display: 'block' }}>{d.detalle}</span>}
+                        </span>
+                        <span>{d.moneda === 'USD' ? 'U$' : '$'} {d.monto.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {isUnderpaid && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border-md)' }}>
@@ -1172,7 +1351,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           <div className="mb">
             <div className="mh"><div className="mh-title">Tomar equipo usado</div><button className="btn-icon" onClick={() => setShowTI(false)}><X size={18}/></button></div>
             <div className="mbd">
-              <TradeInForm currency={sc} onConfirm={handleTI} />
+              <TradeInForm currency={sc} onConfirm={handleTI} valores={valoresToma} />
             </div>
           </div>
         </div>
@@ -1194,7 +1373,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   );
 }
 
-function TradeInForm({ currency, onConfirm }: any) {
+function TradeInForm({ currency, onConfirm, valores = [] }: any) {
   const [appleCategory, setAppleCategory] = useState('iPhone');
   const [f, setF] = useState({
     brand: 'Apple', model: 'iPhone 12', storage: '128GB', color: 'Negro',
@@ -1255,6 +1434,23 @@ function TradeInForm({ currency, onConfirm }: any) {
         <div className="col field"><label className="lbl">% Batería</label><input className="inp" type="number" placeholder="Ej: 85" value={f.battery} onChange={e => setF(p => ({ ...p, battery: e.target.value }))} /></div>
       </div>
       <div className="field"><label className="lbl">Detalles / Observaciones</label><input className="inp" value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} placeholder="Ej: Pantalla con rayas..." /></div>
+      {/* Valor de toma según la tabla de Ajustes: se propone, no se impone. */}
+      {(() => {
+        const sug = valorSugerido(valores as ValorToma[], { model: f.model, storage: f.storage, battery: f.battery });
+        if (!sug) return null;
+        const misma = sug.currency === currency;
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 10, marginBottom: 12, fontSize: 13 }}>
+            <span>
+              Según tu tabla: <strong>{sug.currency === 'USD' ? 'U$' : '$'} {Number(sug.value).toLocaleString('es-AR')}</strong>
+              <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-3)' }}>
+                {sug.model}{sug.storage ? ` ${sug.storage}` : ''} · {describirTramo(sug)}{!misma ? ` · está en ${sug.currency} y la venta en ${currency}` : ''}
+              </span>
+            </span>
+            {misma && <button type="button" className="btn btn-outline btn-sm" onClick={() => setF(p => ({ ...p, value: String(sug.value) }))}>Usar</button>}
+          </div>
+        );
+      })()}
       <div className="row">
         <div className="col field"><label className="lbl">Precio Venta Sugerido</label><input className="inp" type="number" value={f.salePrice} onChange={e => setF(p => ({ ...p, salePrice: e.target.value }))} placeholder="0" /></div>
         <div className="col field"><label className="lbl">Costo (Valor toma)</label><input className="inp" type="number" value={f.value} onChange={e => setF(p => ({ ...p, value: e.target.value }))} placeholder="0" /></div>

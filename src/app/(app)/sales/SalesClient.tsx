@@ -12,6 +12,8 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { EmptyState } from '@/components/EmptyState';
 import { PAY } from '@/constants/data';
 import { imprimirDocumento } from '@/utils/imprimir';
+import { PlataDeVenta, chipsDePago } from '@/components/PlataDeVenta';
+import { resumenDeVenta } from '@/utils/cobro';
 
 interface Props {
   sales: any[];
@@ -43,6 +45,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
   const supabase = createClient();
 
   const isOwner = user.role === 'owner';
+  /* Cotización de respaldo para pasar a dólares las ventas viejas que no
+     guardaron la suya (la ganancia se muestra en dólares, como el dashboard). */
+  const cotizacion = Number(shop?.exchange_rate) || 1;
 
   // Solo consideramos ventas reales, no MOVIMIENTOS
   const validSales = useMemo(() => sales.filter(s => s.brand !== 'MOVIMIENTO'), [sales]);
@@ -93,15 +98,6 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
     const totalARS = rows.reduce((a, s) => a + (s.currency === 'USD' ? 0 : s.balance_due), 0);
     return { count: rows.length, totalUSD, totalARS };
   }, [validSales]);
-
-  const PAY_LABELS: Record<string, string> = {
-    ars_cash: 'Efvo ARS',
-    usd_cash: 'Efvo USD',
-    ars_transf: 'Transf ARS',
-    usd_transf: 'Transf USD',
-    usdt: 'USDT',
-    tradein: 'Canje'
-  };
 
   const handleVoidSale = async () => {
     if (!selectedSale) return;
@@ -303,9 +299,23 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                             Debe {sale.currency === 'USD' ? 'U$' : '$'} {Math.round(sale.balance_due).toLocaleString('es-AR')}
                           </div>
                         )}
-                        <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
-                          {sale.payments?.map((p: any) => PAY_LABELS[p.id] || p.label || p.id).join(', ')}
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: 3 }}>
+                          {chipsDePago(sale).map(c => <span key={c} className="plata-chip">{c}</span>)}
                         </div>
+                        {/* Ganancia en ámbar si falta cobrar parte o falta un costo:
+                            se cuenta hoy, pero todavía no es plata segura. */}
+                        {isOwner && (() => {
+                          const r = resumenDeVenta(sale, cotizacion);
+                          if (r.gananciaUSD == null) return null;
+                          const color = r.gananciaUSD < 0 ? 'var(--red)' : (r.pendiente > 0 || r.costoIncompleto) ? 'var(--amber)' : 'var(--green)';
+                          const titulo = r.pendiente > 0 ? 'Pendiente de cobro: la ganancia todavía no entró entera'
+                            : r.costoIncompleto ? 'Falta el costo: ganancia provisoria' : 'Ganancia de la venta';
+                          return (
+                            <div title={titulo} style={{ fontSize: 11, fontWeight: 700, color, marginTop: 3, fontFamily: 'JetBrains Mono' }}>
+                              {r.gananciaUSD >= 0 ? '+' : ''}{r.moneda === 'USD' ? 'U$' : '$'} {Math.round(r.ganancia ?? r.gananciaUSD).toLocaleString('es-AR')}{r.costoIncompleto ? ' *' : ''}
+                            </div>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );
@@ -644,6 +654,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                 </div>
               ) : (
                 <>
+                  {isOwner && <PlataDeVenta sale={selectedSale} exchangeRate={cotizacion} />}
                   <div ref={comprobanteRef}><Receipt sale={selectedSale} shop={shop} /></div>
                   
                   {isOwner && (

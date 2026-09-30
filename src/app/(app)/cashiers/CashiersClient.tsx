@@ -6,6 +6,8 @@ import {
   ArrowRightLeft, X, Building2, ArrowRight, Plus
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { resumenPorCuenta, porAcreditar, NOMBRE_TIPO, type Cuenta } from '@/utils/cuentas';
+import { conDiferencias, claveDeCaja, type Cierre } from '@/utils/cierreCaja';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -16,6 +18,8 @@ interface Props {
   deposits: any[];
   transfers: any[];
   movements: any[];
+  cuentas?: Cuenta[];
+  cierres?: (Cierre & { user_name?: string | null })[];
 }
 
 type PayMethod = { id: string; l: string; p: string };
@@ -26,9 +30,12 @@ const PAY_LABELS: PayMethod[] = [
   { id: 'ars_transf', l: 'Transferencia ARS',  p: 'ARS' },
   { id: 'usd_transf', l: 'Transferencia USD',  p: 'U$' },
   { id: 'usdt',       l: 'Cripto USDT',        p: 'U$' },
+  /* Lo que entra por tarjeta o financiera (neto de lo que se queda). No es
+     efectivo de la caja: acredita en la cuenta del plan, a veces días después. */
+  { id: 'tarjeta',    l: 'Tarjeta / financiera', p: '$' },
 ];
 
-export function CashiersClient({ sales, user, realSellers, deposits, transfers, movements }: Props) {
+export function CashiersClient({ sales, user, realSellers, deposits, transfers, movements, cuentas = [], cierres = [] }: Props) {
   const [showClose, setShowClose] = useState(false);
   const [showExchange, setShowExchange] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -72,7 +79,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
     saleList.forEach(v => {
       if (v.payments && Array.isArray(v.payments)) {
         v.payments.forEach((p: any) => {
-          t[p.id] = (t[p.id] || 0) + (p.original_amount ?? p.amount);
+          t[claveDeCaja(p)] = (t[claveDeCaja(p)] || 0) + (p.original_amount ?? p.amount);
         });
       }
     });
@@ -169,7 +176,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
     const mySales = fSales.filter(v => (v.seller_id || v.sellerId) === user.id);
     const expected: Record<string, number> = {};
     PAY.forEach(p => { expected[p.id] = 0; });
-    mySales.forEach(v => v.payments.forEach((p: any) => { expected[p.id] += (p.original_amount ?? p.amount); }));
+    mySales.forEach(v => v.payments.forEach((p: any) => { const k = claveDeCaja(p); expected[k] = (expected[k] || 0) + (p.original_amount ?? p.amount); }));
     const result = {
       date: new Date().toLocaleString('es-AR'),
       expected,
@@ -343,7 +350,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
         PAY_LABELS.forEach(p => { totals[p.id] = 0; });
         fSales.forEach(v => {
           if (v.payments && Array.isArray(v.payments)) {
-            v.payments.forEach((p: any) => { totals[p.id] = (totals[p.id] || 0) + (p.original_amount ?? p.amount); });
+            v.payments.forEach((p: any) => { totals[claveDeCaja(p)] = (totals[claveDeCaja(p)] || 0) + (p.original_amount ?? p.amount); });
           }
         });
         fMovements.forEach(m => {
@@ -367,6 +374,86 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                   </div>
                 </div>
               ) : null)}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Por cuenta: lo que entró a cada banco, billetera o financiera ──
+          El efectivo vive en las cajas de abajo; esto es lo que no es efectivo.
+          Lo "por acreditar" son tarjetas y financieras que pagan días después. */}
+      {isOwner && (() => {
+        const hoy = new Date().toLocaleDateString('en-CA');
+        const filas = resumenPorCuenta(fSales, hoy, cuentas.filter(c => c.active !== false));
+        const pendiente = porAcreditar(sales, hoy);
+        if (filas.length === 0 && pendiente.cobros === 0) return null;
+        const sim = (m: string) => (m === 'USD' ? 'U$' : '$');
+        return (
+          <div className="card" style={{ marginBottom: 28, padding: 20 }}>
+            <div className="sl" style={{ marginBottom: 4 }}>Por cuenta</div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 14 }}>
+              Transferencias, tarjetas y financieras, según a dónde entró cada cobro. Lo que salió de la cuenta (pagos a proveedores) resta.
+            </div>
+            {filas.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12 }}>
+                {filas.map(f => {
+                  const cuenta = cuentas.find(c => c.id === f.cuentaId);
+                  return (
+                    <div key={f.cuentaId} style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 16px' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{f.nombre}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6 }}>{cuenta ? NOMBRE_TIPO[cuenta.kind] : 'Cuenta'} · {f.operaciones} {f.operaciones === 1 ? 'movimiento' : 'movimientos'}</div>
+                      <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 15, color: f.disponible < 0 ? 'var(--red)' : 'var(--text)' }}>
+                        {sim(f.moneda)} {f.disponible.toLocaleString('es-AR')}
+                      </div>
+                      {f.porAcreditar !== 0 && (
+                        <div style={{ fontSize: 11.5, color: 'var(--blue)', marginTop: 2 }}>+ {sim(f.moneda)} {f.porAcreditar.toLocaleString('es-AR')} por acreditar</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {pendiente.cobros > 0 && (
+              <div style={{ marginTop: 12, fontSize: 12.5, color: 'var(--text-2)' }}>
+                Por acreditar en total (todas las fechas): <strong style={{ fontFamily: 'JetBrains Mono' }}>
+                  {pendiente.ARS > 0 ? `$ ${pendiente.ARS.toLocaleString('es-AR')}` : ''}{pendiente.ARS > 0 && pendiente.USD > 0 ? ' + ' : ''}{pendiente.USD > 0 ? `U$ ${pendiente.USD.toLocaleString('es-AR')}` : ''}
+                </strong> en {pendiente.cobros} {pendiente.cobros === 1 ? 'cobro' : 'cobros'}
+                {pendiente.proxima && <> · el próximo llega el {pendiente.proxima.split('-').reverse().slice(0, 2).join('/')}</>}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── Cierres de turno de los vendedores ──
+          El vendedor declara lo que contó; lo esperado se calcula acá, con sus
+          ventas del turno. Con el cierre a ciegas, sólo el dueño lo ve. */}
+      {isOwner && cierres.length > 0 && (() => {
+        const filas = conDiferencias(cierres, sales);
+        return (
+          <div className="card" style={{ marginBottom: 28, padding: 20 }}>
+            <div className="sl" style={{ marginBottom: 12 }}>Cierres de turno</div>
+            <div className="tw">
+              <table className="table" style={{ fontSize: 13 }}>
+                <thead><tr><th>Vendedor</th><th>Cierre</th><th style={{ textAlign: 'right' }}>Esperado</th><th style={{ textAlign: 'right' }}>Declaró</th><th style={{ textAlign: 'right' }}>Diferencia</th></tr></thead>
+                <tbody>
+                  {filas.map(c => {
+                    const nombre = c.user_name || realSellers.find(s => s.id === c.user_id)?.name || 'Vendedor';
+                    const dif = (n: number, sim: string, dec = 0) => n === 0 ? '—' : `${n > 0 ? '+' : '−'}${sim} ${Math.abs(n).toLocaleString('es-AR', { maximumFractionDigits: dec })}`;
+                    return (
+                      <tr key={c.id || c.created_at}>
+                        <td style={{ fontWeight: 600 }}>{nombre}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{new Date(c.created_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                        <td style={{ textAlign: 'right', fontFamily: 'JetBrains Mono' }}>$ {c.esperado.ars.toLocaleString('es-AR')}{c.esperado.usd ? <><br />U$ {c.esperado.usd.toLocaleString('es-AR')}</> : null}</td>
+                        <td style={{ textAlign: 'right', fontFamily: 'JetBrains Mono' }}>$ {Number(c.declared_ars).toLocaleString('es-AR')}{Number(c.declared_usd) ? <><br />U$ {Number(c.declared_usd).toLocaleString('es-AR')}</> : null}</td>
+                        <td style={{ textAlign: 'right', fontFamily: 'JetBrains Mono', fontWeight: 700, color: c.cuadra ? 'var(--green)' : 'var(--red)' }}>
+                          {c.cuadra ? 'Cuadra' : <>{dif(c.diferencia.ars, '$')}{c.diferencia.usd ? <><br />{dif(c.diferencia.usd, 'U$', 2)}</> : null}</>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         );
@@ -434,7 +521,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                       PAY_LABELS.forEach(p => { st[p.id] = 0; });
                       sellerSales.forEach(v => {
                         if (v.payments && Array.isArray(v.payments)) {
-                          v.payments.forEach((p: any) => { st[p.id] = (st[p.id] || 0) + (p.original_amount ?? p.amount); });
+                          v.payments.forEach((p: any) => { st[claveDeCaja(p)] = (st[claveDeCaja(p)] || 0) + (p.original_amount ?? p.amount); });
                         }
                       });
                       const sellerHasAny = PAY_LABELS.some(it => st[it.id] !== 0);

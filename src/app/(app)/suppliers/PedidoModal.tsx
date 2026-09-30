@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Trash2, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/utils/supabase/client';
@@ -7,6 +7,8 @@ import { BRANDS, MODELS, COLORS, almacenamientosDe } from '@/constants/data';
 import { ModelPicker } from '@/components/ModelPicker';
 import { limpiarImei, repetidosEnLote, buscarImeisEnStock, avisoDuplicado } from '@/utils/imei';
 import { crearPedidoConEquipos, registrarPagoProveedor, type Moneda } from '@/utils/proveedores';
+import { aceptaCuenta, cuentasDelMetodo, type Cuenta } from '@/utils/cuentas';
+import { cargarCuentas } from '@/utils/cuentasDb';
 
 /**
  * Un pedido al proveedor, cargado como bulto: todos los equipos que llegaron
@@ -56,7 +58,13 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
   const [montoPago, setMontoPago] = useState('');
   const [metodo, setMetodo] = useState('usd_cash');
   const [caja, setCaja] = useState('');
+  const [cuentas, setCuentas] = useState<Cuenta[]>([]);
+  const [cuenta, setCuenta] = useState('');
   const [guardando, setGuardando] = useState(false);
+  useEffect(() => { cargarCuentas(supabase, { soloActivas: true }).then(r => setCuentas(r.cuentas)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  /* Una transferencia no sale del cajón: sale de una cuenta. */
+  const esTransferencia = aceptaCuenta(metodo);
+  const cuentasPosibles = esTransferencia ? cuentasDelMetodo(cuentas, metodo) : [];
 
   const upd = (i: number, cambios: Partial<Linea>) =>
     setLineas(ls => ls.map((l, idx) => idx === i ? { ...l, ...cambios } : l));
@@ -118,7 +126,10 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
       if (pago > 0) {
         const p = await registrarPagoProveedor(supabase, {
           supplierId: proveedor.id, proveedorNombre: proveedor.name, orderId: r.pedido.id,
-          moneda, monto: pago, fecha, metodo, depositId: caja || null,
+          moneda, monto: pago, fecha, metodo,
+          depositId: esTransferencia ? null : (caja || null),
+          accountId: esTransferencia ? (cuenta || null) : null,
+          accountName: esTransferencia ? (cuentasPosibles.find(c => c.id === cuenta)?.name || null) : null,
         });
         if (!p.ok) toast.warning(`El pedido se guardó, pero el pago no: ${p.error}`, { duration: 9000 });
       }
@@ -242,12 +253,21 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
                     {METODOS[moneda].map(([k, n]) => <option key={k} value={k}>{n}</option>)}
                   </select>
                 </div>
-                <div><label className="lbl">Sale de la caja</label>
-                  <select className="inp" value={caja} onChange={e => setCaja(e.target.value)}>
-                    <option value="">No sale de una caja</option>
-                    {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
-                  </select>
-                </div>
+                {esTransferencia ? (
+                  <div><label className="lbl">Sale de la cuenta</label>
+                    <select className="inp" value={cuenta} onChange={e => setCuenta(e.target.value)} disabled={cuentasPosibles.length === 0}>
+                      <option value="">{cuentasPosibles.length === 0 ? 'Sin cuentas cargadas' : 'No indicar'}</option>
+                      {cuentasPosibles.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                ) : (
+                  <div><label className="lbl">Sale de la caja</label>
+                    <select className="inp" value={caja} onChange={e => setCaja(e.target.value)}>
+                      <option value="">No sale de una caja</option>
+                      {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
           </div>

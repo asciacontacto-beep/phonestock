@@ -3,9 +3,13 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Save, Building2, MapPin, Camera, Phone, Mail, Globe, FileText, Loader2,
   DollarSign, Download, Hash, Image as ImageIcon, Palette, ReceiptText, Trash2, Copy,
+  CreditCard, Lock, Smartphone, Database, ArrowRight,
 } from 'lucide-react';
 import { downloadBackup } from '@/utils/backup';
 import { CardPlansCard } from '@/components/CardPlansCard';
+import { CuentasCard } from '@/components/CuentasCard';
+import { ValoresTomaCard } from '@/components/ValoresTomaCard';
+import type { Cuenta } from '@/utils/cuentas';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
@@ -48,6 +52,20 @@ const TOGGLES: { key: keyof ReceiptConfig; label: string }[] = [
   { key: 'showFooterBrand', label: '“Generado con Stackr”' },
 ];
 
+type Seccion = 'negocio' | 'cotizacion' | 'cobros' | 'caja' | 'toma' | 'datos';
+
+const SECCIONES: { v: Seccion; l: string; desc: string; icon: React.ReactNode }[] = [
+  { v: 'negocio',    l: 'Negocio y recibo', desc: 'La identidad de tu negocio y el diseño del recibo.', icon: <Building2 size={16} /> },
+  { v: 'cotizacion', l: 'Cotización',       desc: 'El dólar con el que se pasan precios y costos a pesos.', icon: <DollarSign size={16} /> },
+  { v: 'cobros',     l: 'Cobros',           desc: 'Dónde entra la plata y los planes de tarjeta o financiera.', icon: <CreditCard size={16} /> },
+  { v: 'caja',       l: 'Caja',             desc: 'Cómo cierran el turno los vendedores.', icon: <Lock size={16} /> },
+  { v: 'toma',       l: 'Valores de toma',  desc: 'Cuánto pagás por un usado que entra en parte de pago.', icon: <Smartphone size={16} /> },
+  { v: 'datos',      l: 'Datos y accesos',  desc: 'Respaldo, claves de acceso y tu link de invitación.', icon: <Database size={16} /> },
+];
+
+/** Versión de la app (next.config.ts): la que se pregunta en soporte. */
+const VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '';
+
 export function SettingsClient({ profile }: { profile: { org_id?: string; role?: string } | null }) {
   const supabase = createClient();
   const [form, setForm] = useState<ShopSettings>(DEFAULTS);
@@ -57,8 +75,14 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
   const [backupLoading, setBackupLoading] = useState(false);
   /* Configuración tenía todo en una sola columna larga: los planes de
      tarjeta quedaban al fondo, debajo del recibo, y no los encontraba
-     nadie. Cada tema pasa a ser una sección propia. */
-  const [seccion, setSeccion] = useState<'negocio' | 'tarjetas' | 'datos'>('negocio');
+     nadie. Cada tema es una sección propia, con un menú al costado. */
+  const [seccion, setSeccion] = useState<Seccion>('negocio');
+  /* Cuentas: las usan los planes (dónde acredita cada uno). Sin la
+     migración de cuentas, los planes funcionan como antes. */
+  const [cuentas, setCuentas] = useState<Cuenta[]>([]);
+  const [hayCuentas, setHayCuentas] = useState(false);
+  /* Cierre a ciegas: sólo si la base ya tiene la columna. */
+  const [hayCiegas, setHayCiegas] = useState(false);
   /* Link de referidos del negocio. Si la migración no está aplicada, la
      tarjeta simplemente no aparece. */
   const [referral, setReferral] = useState<{ code: string; invitados: number; pagos: number } | null>(null);
@@ -93,6 +117,10 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       const { data } = await supabase.from('settings').select('*').eq('org_id', profile.org_id).limit(1);
       const { error: sinColumna } = await supabase.from('settings').select('cotizacion_fuente').limit(0);
       setHayFuente(!sinColumna);
+      const { error: sinCiegas } = await supabase.from('settings').select('cierre_a_ciegas').limit(0);
+      setHayCiegas(!sinCiegas);
+      const { error: sinCuentas } = await supabase.from('accounts').select('id').limit(0);
+      setHayCuentas(!sinCuentas);
       if (data && data.length > 0) {
         const { id, org_id, receipt_config, ...rest } = data[0];
         setRowId(id ?? null);
@@ -124,6 +152,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       const full: Record<string, unknown> = { org_id: profile.org_id };
       [...BASE_COLUMNS, ...EXTRA_COLUMNS].forEach(col => { full[col] = (form as Record<string, unknown>)[col]; });
       if (hayFuente) full.cotizacion_fuente = fuente;
+      if (hayCiegas) full.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
 
       type WriteResult = { error: { message?: string; code?: string } | null; data?: { id?: string } | null };
       const write = async (payload: Record<string, unknown>): Promise<WriteResult> => {
@@ -144,6 +173,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
         const baseOnly: Record<string, unknown> = { org_id: profile.org_id };
         BASE_COLUMNS.forEach(col => { baseOnly[col] = (form as Record<string, unknown>)[col]; });
         if (hayFuente) baseOnly.cotizacion_fuente = fuente;
+        if (hayCiegas) baseOnly.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
         ({ error, data } = await write(baseOnly));
         if (!error) {
           toast.warning('Guardado. Para activar el logo y la personalización avanzada del recibo, aplicá la migración settings (docs/mejoras).', { duration: 9000 });
@@ -208,43 +238,44 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
     );
   }
 
+  const actual = SECCIONES.find(x => x.v === seccion)!;
+  const guardaAjustes = seccion === 'negocio' || seccion === 'cotizacion' || seccion === 'caja';
+  const cotizEjemplo = fuente !== 'manual' && valorHoy ? valorHoy : Number(form.exchange_rate) || 0;
+
   return (
     <div className="page">
       <div className="sh" style={{ marginBottom: 16 }}>
         <div>
           <div className="st">Configuración</div>
-          <div className="helper-text">
-            {seccion === 'negocio' ? 'Personalizá la identidad de tu negocio y el diseño del recibo.'
-              : seccion === 'tarjetas' ? 'Los planes con los que cobrás con tarjeta y su recargo.'
-              : 'Respaldo, claves de acceso y tu link de invitación.'}
-          </div>
+          <div className="helper-text">{actual.desc}</div>
         </div>
-        {seccion === 'negocio' && (
+        {guardaAjustes && (
           <button className="btn btn-dark" onClick={save} disabled={loading}>
             {loading ? <Loader2 className="spin" size={18} /> : <><Save size={17} style={{ marginRight: 8 }} /> Guardar</>}
           </button>
         )}
       </div>
 
-      <div className="filters-wrap no-print" style={{ marginBottom: 22 }}>
-        {([
-          { v: 'negocio',  l: 'Negocio y recibo' },
-          { v: 'tarjetas', l: 'Planes de tarjeta' },
-          { v: 'datos',    l: 'Datos y accesos' },
-        ] as const).map(opt => (
-          <button key={opt.v} className={`btn-pill ${seccion === opt.v ? 'active' : ''}`}
-            onClick={() => setSeccion(opt.v)}>{opt.l}</button>
-        ))}
-      </div>
+      <div className="cfg-layout">
+        {/* ── Menú de secciones. Al pie, la versión: es lo que se pregunta en soporte. ── */}
+        <nav className="cfg-nav no-print" aria-label="Secciones de configuración">
+          <div className="cfg-nav-title">Configuración</div>
+          {SECCIONES.map(opt => (
+            <button key={opt.v} className="cfg-nav-item" aria-current={seccion === opt.v ? 'page' : undefined}
+              onClick={() => setSeccion(opt.v)}>
+              {opt.icon}{opt.l}
+            </button>
+          ))}
+          {VERSION && <div className="cfg-nav-foot">Stackr v{VERSION}</div>}
+        </nav>
 
-      <div
-        style={seccion === 'negocio'
-          ? { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,380px)', gap: 20, alignItems: 'start' }
-          : { display: 'block' }}
-        className={seccion === 'negocio' ? 'settings-grid' : ''}
-      >
-        {/* ── Columna de edición ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div
+          style={seccion === 'negocio'
+            ? { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,380px)', gap: 20, alignItems: 'start', minWidth: 0 }
+            : { minWidth: 0 }}
+          className={seccion === 'negocio' ? 'settings-grid' : ''}
+        >
+        <div className="cfg-main">
 
           {seccion === 'negocio' && <>
           {/* Identidad */}
@@ -306,34 +337,10 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
                 {iconField(<Globe size={16} />, <input className="inp" style={{ paddingLeft: 40 }} value={form.website || ''} onChange={e => setField('website', e.target.value)} />)}
               </div>
             </div>
-            <div className="row">
-              <div className="col field">
-                <label className="lbl">CUIT</label>
-                {iconField(<Hash size={16} />, <input className="inp" style={{ paddingLeft: 40 }} value={form.cuit || ''} onChange={e => setField('cuit', e.target.value)} />)}
-              </div>
-              <div className="col field">
-                <label className="lbl">{fuente === 'manual' ? 'Cotización USD → ARS' : 'Cotización de respaldo'}</label>
-                {iconField(<DollarSign size={16} />, <input className="inp" style={{ paddingLeft: 40 }} type="number" value={form.exchange_rate ?? ''} onChange={e => setField('exchange_rate', parseFloat(e.target.value) || 0)} />)}
-              </div>
+            <div className="field">
+              <label className="lbl">CUIT</label>
+              {iconField(<Hash size={16} />, <input className="inp" style={{ paddingLeft: 40 }} value={form.cuit || ''} onChange={e => setField('cuit', e.target.value)} />)}
             </div>
-            {hayFuente && (
-              <div className="field">
-                <label className="lbl">Cotización de las ventas nuevas</label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {(['manual', 'blue', 'cripto'] as FuenteCotizacion[]).map(f => (
-                    <button key={f} type="button" className={`btn btn-sm ${fuente === f ? 'btn-dark' : 'btn-outline'}`}
-                      onClick={() => setField('cotizacion_fuente', f)}>
-                      {f === 'manual' ? 'La que escribo arriba' : `${NOMBRE_FUENTE[f]} del día (automática)`}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5 }}>
-                  {fuente === 'manual'
-                    ? 'Las ventas usan la cotización que escribiste arriba. Acordate de actualizarla cuando cambia el dólar.'
-                    : <>Cada venta nueva toma el {NOMBRE_FUENTE[fuente].toLowerCase()} del momento (valor de venta){valorHoy ? <>: hoy <strong style={{ color: 'var(--text)' }}>${valorHoy.toLocaleString('es-AR')}</strong></> : ''}. La de arriba queda de respaldo si no hay internet, y es con la que se calculan las ventas viejas que no guardaron su cotización: por eso no se cambia sola.</>}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Personalización del recibo */}
@@ -401,7 +408,81 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
 
           </>}
 
-          {seccion === 'tarjetas' && <CardPlansCard />}
+          {seccion === 'cotizacion' && (
+          <div className="card">
+            <div className="lbl" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <DollarSign size={15} /> Cotización del dólar
+            </div>
+            {hayFuente && (
+              <div className="field">
+                <label className="lbl">De dónde sale la cotización de las ventas nuevas</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {(['manual', 'blue', 'cripto'] as FuenteCotizacion[]).map(f => (
+                    <button key={f} type="button" className={`btn btn-sm ${fuente === f ? 'btn-dark' : 'btn-outline'}`}
+                      onClick={() => setField('cotizacion_fuente', f)}>
+                      {f === 'manual' ? 'La que escribo abajo' : `${NOMBRE_FUENTE[f]} del día (automática)`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {fuente !== 'manual' && (
+              <div style={{ marginBottom: 14 }}>
+                <div className="helper-text">{NOMBRE_FUENTE[fuente]} de hoy · automático (dolarapi.com)</div>
+                <div className="cfg-cotiz-grande">{valorHoy ? `$ ${valorHoy.toLocaleString('es-AR')}` : '…'} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-3)' }}>ARS por USD</span></div>
+              </div>
+            )}
+            <div className="field" style={{ maxWidth: 320 }}>
+              <label className="lbl">{fuente === 'manual' ? 'Cotización USD → ARS' : 'Cotización de respaldo'}</label>
+              {iconField(<DollarSign size={16} />, <input className="inp" style={{ paddingLeft: 40 }} type="number" value={form.exchange_rate ?? ''} onChange={e => setField('exchange_rate', parseFloat(e.target.value) || 0)} />)}
+            </div>
+            {/* El número solo no se entiende; el ejemplo sí. */}
+            {cotizEjemplo > 0 && (
+              <div className="cfg-ejemplo">
+                <ArrowRight size={14} /> Un producto de <strong>USD 100</strong> se cobra <strong>$ {(100 * cotizEjemplo).toLocaleString('es-AR')}</strong>
+              </div>
+            )}
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 12, lineHeight: 1.5 }}>
+              {fuente === 'manual'
+                ? 'Las ventas usan la cotización que escribiste. Acordate de actualizarla cuando cambia el dólar.'
+                : 'Cada venta nueva toma el valor del momento (valor de venta). La cotización de respaldo se usa si no hay internet, y es con la que se calculan las ventas viejas que no guardaron la suya: por eso no se cambia sola.'}
+            </div>
+          </div>
+          )}
+
+          {seccion === 'cobros' && <>
+            <CuentasCard onChange={setCuentas} />
+            <CardPlansCard cuentas={cuentas} hayCuentas={hayCuentas} />
+          </>}
+
+          {seccion === 'caja' && (
+          <div className="card">
+            <div className="lbl" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Lock size={15} /> Cierre de turno
+            </div>
+            {!hayCiegas ? (
+              <div className="cfg-aviso">Para usar el cierre a ciegas hay que aplicar la migración 20260930_cuentas_financieras_y_caja.sql (ver docs/mejoras/README.md).</div>
+            ) : (
+              <>
+                <label style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input type="checkbox" style={{ marginTop: 3 }} checked={Boolean(form.cierre_a_ciegas)}
+                    onChange={e => setField('cierre_a_ciegas', e.target.checked)} />
+                  <span>
+                    <span style={{ fontWeight: 600, display: 'block' }}>Cierre a ciegas</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                      El vendedor cuenta el efectivo y lo declara sin ver cuánto espera el sistema, y en su caja
+                      no ve los totales en efectivo. Si viera el número, contaría hasta llegar a él y el arqueo no
+                      controlaría nada. La diferencia la ves vos en Cajas → Cierres de turno.
+                    </span>
+                  </span>
+                </label>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 12 }}>Acordate de tocar <strong>Guardar</strong>.</div>
+              </>
+            )}
+          </div>
+          )}
+
+          {seccion === 'toma' && <ValoresTomaCard />}
 
           {seccion === 'datos' && <>
           {/* Invitá a otro local */}
@@ -459,6 +540,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
           {/* Las claves dan acceso a costos y datos de clientes: sólo el dueño. */}
           {profile?.role === 'owner' && <ApiKeysCard />}
           </>}
+          {VERSION && <div className="cfg-version-movil">Stackr v{VERSION}</div>}
         </div>
 
         {/* ── Vista previa en vivo ──
@@ -477,6 +559,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
           </p>
         </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -93,3 +93,48 @@ WHERE relnamespace = 'public'::regnamespace
                   'suppliers','accessories','spare_parts','repairs','settings');
 ```
 `relrowsecurity` debe ser `true` en todas.
+
+---
+
+## 5. Cuentas, financieras, cierre a ciegas y valores de toma
+
+**Archivo:** `supabase/migrations/20260930_cuentas_financieras_y_caja.sql`
+
+**Qué hace:** agrega todo lo que salió del relevamiento de Stuky
+(`docs/mejoras/stuky/RELEVAMIENTO.md`). Es **aditivo y no destructivo**:
+tablas y columnas nuevas, con valores por defecto que dejan todo como estaba.
+
+- **`accounts`:** tus cuentas (banco, billetera, financiera, procesadora de
+  tarjeta). Al cobrar por transferencia se elige a cuál entró; la cuenta queda
+  guardada dentro del pago de la venta.
+- **`card_plans`:** tres columnas nuevas.
+  - `kind`: tarjeta o financiera.
+  - `account_id`: la cuenta donde acredita.
+  - `settlement_days`: los días que tarda en acreditar.
+- **`cash_closures`:** los cierres de turno de los vendedores. Guarda solo lo
+  que declaró cada uno; lo esperado lo calcula la app al mirarlo.
+- **`settings.cierre_a_ciegas`:** con esto activado, el vendedor cierra sin ver
+  lo esperado.
+- **`tradein_values`:** cuánto pagás por un usado según modelo, capacidad y
+  batería.
+
+**La app degrada con gracia:** sin la migración, todo sigue como antes. Las
+secciones nuevas de Configuración avisan que falta aplicarla, y la venta no
+pregunta a qué cuenta entra la transferencia.
+
+**Cómo aplicarla:**
+1. Supabase → SQL Editor → pegá el archivo → Run. Se puede correr dos veces
+   sin problema.
+2. Andá a **Configuración → Cobros** y cargá tus cuentas (por ejemplo: Galicia,
+   Mercado Pago, la financiera).
+3. En los planes, marcá dónde acredita cada uno y a cuántos días.
+4. Si querés el cierre a ciegas: **Configuración → Caja**, tildalo y guardá.
+
+**Para volver atrás:** las instrucciones están al pie del archivo. Las ventas
+no se tocan: cada pago guarda el nombre de su cuenta.
+
+**Un cambio en los números que vas a notar:** la ganancia del Dashboard y de
+Rentabilidad ahora descuenta lo que se queda la tarjeta o la financiera cuando
+el recargo **lo absorbe el local**. Antes no se descontaba, así que esas ventas
+figuraban con más ganancia de la real. El recargo que paga el cliente sigue sin
+contar como ganancia.

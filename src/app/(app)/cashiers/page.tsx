@@ -23,12 +23,18 @@ export default async function CashiersPage() {
     { data: depositsData },
     { data: transfersData },
     { data: movementsData },
+    cuentasRes,
+    { data: cierresData },
   ] = await Promise.all([
     supabase.from('sales').select('*').order('created_at', { ascending: false }),
     vendedores,
     supabase.from('deposits').select('*').order('name'),
     supabase.from('cash_transfers').select('*').order('created_at', { ascending: false }),
     supabase.from('cash_movements').select('*').order('created_at', { ascending: false }),
+    // Sin la migración de cuentas estas dos tablas no existen: vuelven con
+    // error y se muestran vacías.
+    supabase.from('accounts').select('id,name,kind,currency,active').order('name'),
+    supabase.from('cash_closures').select('*').order('created_at', { ascending: false }).limit(30),
   ])
 
   const isSuperAdmin = user?.email === 'asciacontacto@gmail.com'
@@ -51,6 +57,8 @@ export default async function CashiersPage() {
       deposits={depositsData || []}
       transfers={transfersData || []}
       movements={movementsData || []}
+      cuentas={cuentasRes.error ? [] : (cuentasRes.data || [])}
+      cierres={cierresData || []}
     />
   )
 }

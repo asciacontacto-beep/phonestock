@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Wallet, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -10,6 +10,8 @@ import {
   type Cobro, type Id, type Moneda, type VentaConDeuda,
 } from '@/utils/cuentaCorriente'
 import { estadoDeCuota, type CuotaPlan } from '@/utils/cuotas'
+import { aceptaCuenta, cuentasDelMetodo, cuentaSugerida, type Cuenta } from '@/utils/cuentas'
+import { cargarCuentas } from '@/utils/cuentasDb'
 
 /** Una cuota tal como vuelve de la base. */
 type CuotaGuardada = CuotaPlan & { id: Id; sale_id: Id }
@@ -260,6 +262,14 @@ function ModalCobro({
   const [depositId, setDepositId] = useState(deposits[0]?.id ? String(deposits[0].id) : '')
   const [notas, setNotas] = useState('')
   const [loading, setLoading] = useState(false)
+  /* Si el cliente transfiere: a qué cuenta entró (banco, billetera o la de
+     una financiera). Sin cuentas cargadas no se pregunta. */
+  const [cuentas, setCuentas] = useState<Cuenta[]>([])
+  // `null`: la sugerida para el medio elegido; '' es "no indicar".
+  const [cuentaElegida, setCuenta] = useState<string | null>(null)
+  useEffect(() => { cargarCuentas(supabase, { soloActivas: true }).then(r => setCuentas(r.cuentas)) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const cuentasPosibles = aceptaCuenta(metodo) ? cuentasDelMetodo(cuentas, metodo) : []
+  const cuenta = cuentaElegida ?? (cuentaSugerida(cuentas, metodo)?.id || '')
 
   const moneda = (METODOS.find(m => m.id === metodo)?.moneda || 'ARS') as Moneda
   const necesitaCotizacion = Boolean(venta) && moneda !== monedaVenta
@@ -277,6 +287,8 @@ function ModalCobro({
       cotizacion: necesitaCotizacion ? (parseFloat(cotizacion) || null) : null,
       metodo,
       depositId: depositId || null,
+      accountId: cuentasPosibles.find(c => c.id === cuenta)?.id ?? null,
+      accountName: cuentasPosibles.find(c => c.id === cuenta)?.name ?? null,
       fecha,
       hoy: hoyISO(),
       notas,
@@ -313,7 +325,7 @@ function ModalCobro({
 
           <div>
             <label className="lbl">Medio de pago</label>
-            <select className="inp" value={metodo} onChange={e => setMetodo(e.target.value)}>
+            <select className="inp" value={metodo} onChange={e => { setMetodo(e.target.value); setCuenta(null) }}>
               {METODOS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
             </select>
           </div>
@@ -349,6 +361,16 @@ function ModalCobro({
               {deposits.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
             </select>
           </div>
+
+          {cuentasPosibles.length > 0 && (
+            <div>
+              <label className="lbl">¿A qué cuenta entró la transferencia?</label>
+              <select className="inp" value={cuenta} onChange={e => setCuenta(e.target.value)}>
+                <option value="">No indicar</option>
+                {cuentasPosibles.map(c => <option key={c.id} value={c.id}>{c.name}{c.kind === 'financiera' ? ' (financiera)' : ''}</option>)}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="lbl">Nota (opcional)</label>

@@ -22,6 +22,13 @@
 
 export type QuienPaga = 'customer' | 'shop'
 
+/**
+ * Tarjeta o financiera. La cuenta es la misma: la financiera le paga al
+ * local el precio menos lo que retiene, igual que una tarjeta cuyo recargo
+ * absorbe el local. Cambia el nombre y, casi siempre, quién paga.
+ */
+export type TipoPlan = 'tarjeta' | 'financiera'
+
 export interface PlanTarjeta {
   id: string
   card_name: string
@@ -30,6 +37,88 @@ export interface PlanTarjeta {
   paid_by: QuienPaga
   deposit_id?: string | null
   active?: boolean
+  kind?: TipoPlan | null
+  /** Cuenta donde acredita (tabla `accounts`). */
+  account_id?: string | null
+  /** Días hasta que la plata llega a la cuenta. 0 o vacío: en el momento. */
+  settlement_days?: number | null
+}
+
+/** "Visa 3c", "Financiera X 12c", "Débito". */
+export function etiquetaPlan(plan: Pick<PlanTarjeta, 'card_name' | 'installments'>): string {
+  return plan.installments > 1 ? `${plan.card_name} ${plan.installments}c` : plan.card_name
+}
+
+export interface OpcionPlan {
+  plan: PlanTarjeta
+  /** Lo que paga el cliente en total con este plan. */
+  total: number
+  /** Lo que paga por cuota. */
+  cuota: number
+  /** Lo que entra al local (antes de la fecha de acreditación). */
+  entra: number
+}
+
+/**
+ * Cada plan con el total y la cuota para este monto, para elegir viendo los
+ * números en vez de un porcentaje suelto.
+ */
+export function opcionesDePlanes(planes: PlanTarjeta[], precio: number): OpcionPlan[] {
+  return planes.map(plan => {
+    const pago = calcularPagoTarjeta({ precio, plan })
+    const cuotas = Math.max(1, plan.installments || 1)
+    return {
+      plan,
+      total: pago.cobradoAlCliente,
+      cuota: redondear(pago.cobradoAlCliente / cuotas),
+      entra: pago.entraACaja,
+    }
+  })
+}
+
+/** Un pago con tarjeta tal como queda guardado en `sales.payments`. */
+export interface PagoGuardado {
+  id?: string
+  amount?: number | string | null
+  original_amount?: number | string | null
+  exchange_rate?: number | string | null
+  card_charged?: number | string | null
+  [k: string]: unknown
+}
+
+export interface DesgloseTarjeta {
+  /** Recargo que pagó el cliente, en pesos. No es ganancia. */
+  recargoCliente: number
+  /** Lo que se quedó la tarjeta o la financiera y paga el local, en pesos. */
+  costoLocal: number
+  /** Lo que pagó el cliente con este medio, en pesos. */
+  cobrado: number
+}
+
+/**
+ * De un pago ya guardado: cuánto fue recargo del cliente y cuánto le costó
+ * al local. Los pagos viejos, sin `card_charged`, dan cero: no hay de dónde
+ * sacarlo y no se inventa.
+ */
+export function desglosePagoTarjeta(p: PagoGuardado): DesgloseTarjeta {
+  const cero = { recargoCliente: 0, costoLocal: 0, cobrado: Number(p.original_amount ?? p.amount) || 0 }
+  if (p.id !== 'tarjeta' || p.card_charged == null) return cero
+  const cobrado = Number(p.card_charged) || 0
+  const rate = Number(p.exchange_rate) || 1
+  // `amount` está en la moneda de la venta: si la venta es en dólares, se
+  // pasa a pesos con la cotización con que se cargó el pago.
+  const cubrePesos = (Number(p.amount) || 0) * rate
+  const entra = Number(p.original_amount) || 0
+  return {
+    recargoCliente: redondear(Math.max(0, cobrado - cubrePesos)),
+    costoLocal: redondear(Math.max(0, cobrado - entra)),
+    cobrado,
+  }
+}
+
+/** Lo que las tarjetas y financieras le costaron al local en una venta, en pesos. */
+export function costoDeFinanciacion(pagos: PagoGuardado[] | null | undefined): number {
+  return redondear((pagos || []).reduce((a, p) => a + desglosePagoTarjeta(p).costoLocal, 0))
 }
 
 function redondear(n: number): number {

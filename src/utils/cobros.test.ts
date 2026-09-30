@@ -216,3 +216,20 @@ describe('eliminarCobro', () => {
     expect(sb.calls.find((c: any) => c.table === 'customer_payments')).toBeUndefined()
   })
 })
+
+describe('registrarCobro · transferencia a una cuenta', () => {
+  it('el movimiento de caja guarda a qué cuenta entró', async () => {
+    const sb = fakeSupabase()
+    const r = await registrarCobro(sb, { ...base, metodo: 'usd_transf', accountId: 'acc-1', accountName: 'Cuenta USD' })
+    expect(r.ok).toBe(true)
+    const mov = sb.calls.find((c: { type: string; table: string }) => c.type === 'insert' && c.table === 'sales')
+    expect(mov.payload.payments[0]).toMatchObject({ id: 'usd_transf', account_id: 'acc-1', account_name: 'Cuenta USD' })
+  })
+
+  it('sin cuenta, el pago queda como siempre', async () => {
+    const sb = fakeSupabase()
+    await registrarCobro(sb, base)
+    const mov = sb.calls.find((c: { type: string; table: string }) => c.type === 'insert' && c.table === 'sales')
+    expect(mov.payload.payments[0].account_id).toBeUndefined()
+  })
+})

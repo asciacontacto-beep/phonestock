@@ -1900,3 +1900,71 @@ select.inp {
   .br-marca { transition: opacity 150ms ease; }
   .br-cuerpo, .br-alcance, .br-flecha { transition: none; }
 }
+
+/* ── Tablas en el celular: tarjeta con rótulos ───────────────
+   La regla general de arriba apila cada celda en un renglón sin decir qué
+   es: en Clientes salía "—, —, 2 compras, 30/9, —". Las tablas con .tm
+   pasan a una grilla de dos (o tres, .tm3) columnas y cada dato lleva su
+   rótulo, sacado de data-label. Las celdas vacías (.tm-vacio) no ocupan
+   lugar y las decorativas (.tm-ocultar) se esconden. */
+@media (max-width: 768px) {
+  .table.tm tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 13px 14px; }
+  .table.tm3 tr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .table.tm td { padding: 0; border: 0; min-width: 0; text-align: left !important; }
+  .table.tm td.tm-full { grid-column: 1 / -1; }
+  .table.tm3 td.tm-dos { grid-column: span 2; }
+  .table.tm td.tm-primero { order: -1; }
+  .table.tm td.tm-vacio, .table.tm td.tm-ocultar { display: none; }
+  .table.tm td[data-label]::before {
+    content: attr(data-label); display: block; margin-bottom: 3px;
+    font-family: inherit; font-size: 10.5px; font-weight: 600; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--text-3);
+  }
+  .table.tm td.tm-fecha { align-self: center; text-align: right !important; }
+  .gx-tabla.tm .gx-acciones { justify-content: flex-start; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--border-md); }
+  .gx-tabla.tm .gx-monto { text-align: left !important; }
+}
+
+/* ── Ajustes para el celular ──────────────────────────────── */
+.search-bar > input { min-width: 0; }
+.search-bar > .btn-pill { flex-shrink: 0; }
+@media (max-width: 768px) {
+  /* Título y botones: si no entran en un renglón, los botones bajan en vez
+     de cortarse contra el borde (Accesorios, Depósitos). */
+  .sh { flex-wrap: wrap; row-gap: 12px; }
+  .sh > * { min-width: 0; }
+  .sh .ss2 { display: none; }
+
+  /* Las tiras de botones de período se deslizan de costado. */
+  .rep-cab .pills-scroll { width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .pills-scroll::-webkit-scrollbar { display: none; }
+
+  /* Una tarjeta de números sola en su fila ocupa todo el ancho, en vez de
+     quedar a media pantalla con un hueco al lado. */
+  .sg > :last-child:nth-child(odd),
+  .inv-kpis > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  /* Cajas: cuatro botones apilados ocupaban media pantalla. */
+  .cj-acciones { display: grid !important; grid-template-columns: 1fr 1fr; width: 100%; }
+  .cj-acciones > * { width: 100% !important; min-width: 0; justify-content: center; }
+  .cj-acciones .btn { padding: 10px 10px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cj-acciones .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  /* Ventas: el buscador arriba y los tres filtros en una fila. */
+  .ventas-filtros-card { padding: 12px; }
+  .ventas-filtros { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px !important; }
+  .ventas-filtros > .field { min-width: 0 !important; }
+  .ventas-filtros > .field:first-child { grid-column: 1 / -1; }
+  .ventas-filtros > .field:first-child .lbl { display: none; }
+  .ventas-filtros .lbl { font-size: 11px; margin-bottom: 4px; }
+  .ventas-filtros select.inp { padding-left: 10px; padding-right: 22px; text-overflow: ellipsis; }
+}
+@media (max-width: 768px) {
+  /* Historial de ventas: equipo y monto arriba, cliente y vendedor con
+     rótulo, la fecha al pie. Antes cada venta ocupaba media pantalla. */
+  .table.vt tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .table.vt td.vt-equipo { order: -2; }
+  .table.vt td.vt-monto { order: -1; text-align: right !important; }
+  .table.vt td.vt-monto > div:last-of-type { justify-content: flex-end; }
+  .table.vt td.vt-fecha { order: 10; grid-column: 1 / -1; padding-top: 8px; border-top: 1px dashed var(--border-md); font-size: 11.5px !important; }
+}

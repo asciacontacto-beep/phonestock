@@ -169,19 +169,19 @@ export function RecibosClient({ sales, shop }: { sales: Sale[]; shop: ShopSettin
       </div>
 
       <div className="tw">
-        <table className="table">
+        <table className="table tm">
           <thead>
             <tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th style={{ width: 40 }}></th></tr>
           </thead>
           <tbody>
             {filtered.map(s => (
               <tr key={s.id} onClick={() => openSale(s)} style={{ cursor: 'pointer' }}>
-                <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{s.created_at ? new Date(s.created_at).toLocaleDateString('es-AR') : ''}</td>
-                <td>{s.customer?.name || '-'}</td>
-                <td style={{ fontWeight: 600 }}>
+                <td data-label="Fecha" style={{ fontSize: 12, color: 'var(--text-2)' }}>{s.created_at ? new Date(s.created_at).toLocaleDateString('es-AR') : ''}</td>
+                <td data-label="Cliente">{s.customer?.name || '-'}</td>
+                <td className="tm-full tm-primero" style={{ fontWeight: 600 }}>
                   {s.brand === 'ACCESORIOS' ? (s.accessories || []).map((a: any) => `${a.qty}x ${a.name}`).join(', ') : `${s.brand} ${s.model}`}
                 </td>
-                <td><ReceiptIcon size={14} color="var(--text-3)" /></td>
+                <td className="tm-ocultar"><ReceiptIcon size={14} color="var(--text-3)" /></td>
               </tr>
             ))}
             {filtered.length === 0 && (

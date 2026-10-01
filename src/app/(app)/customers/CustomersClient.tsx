@@ -157,7 +157,7 @@ export function CustomersClient({
               : 'Los clientes se guardan automáticamente al completar una venta.'}
           />
         ) : (
-          <table className="table">
+          <table className="table tm">
             <thead>
               <tr>
                 <th>Cliente</th>
@@ -178,7 +178,7 @@ export function CustomersClient({
                 const d = deuda(c);
                 return (
                   <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(c)}>
-                    <td>
+                    <td className="tm-full">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
                           width: 36, height: 36, borderRadius: '50%',
@@ -191,28 +191,28 @@ export function CustomersClient({
                         <div style={{ fontWeight: 600 }}>{c.name}</div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Contacto" className={!c.phone && !c.email ? 'tm-vacio' : undefined}>
                       <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
                         {c.phone && <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Phone size={10} style={{ opacity: 0.5 }} /> {c.phone}</div>}
                         {c.email && <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Mail size={10} style={{ opacity: 0.5 }} /> {c.email}</div>}
                         {!c.phone && !c.email && <span style={{ color: 'var(--text-3)' }}>—</span>}
                       </div>
                     </td>
-                    <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>
+                    <td data-label="DNI / CUIT" className={!c.dni ? 'tm-vacio' : undefined} style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>
                       {c.dni || <span style={{ color: 'var(--text-3)' }}>—</span>}
                     </td>
-                    <td>
+                    <td data-label="Compras">
                       <span className={`badge ${sl.length >= 2 ? 'b-green' : 'b-neu'}`}>
                         {sl.length} {sl.length === 1 ? 'compra' : 'compras'}
                       </span>
                     </td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                    <td data-label="Última compra" style={{ fontSize: 12, color: 'var(--text-2)' }}>
                       {ls ? new Date(ls.created_at).toLocaleDateString('es-AR') : '—'}
                     </td>
-                    <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>
+                    <td data-label="Total" className={ts > 0 ? undefined : 'tm-vacio'} style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>
                       {ts > 0 ? `U$ ${ts.toLocaleString('es-AR')}` : <span style={{ color: 'var(--text-3)' }}>—</span>}
                     </td>
-                    <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, fontSize: 12 }}>
+                    <td data-label="Debe" className={d.USD <= 0 && d.ARS <= 0 ? 'tm-vacio' : undefined} style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, fontSize: 12 }}>
                       {d.USD <= 0 && d.ARS <= 0 ? (
                         <span style={{ color: 'var(--text-3)' }}>—</span>
                       ) : (
@@ -222,7 +222,7 @@ export function CustomersClient({
                         </div>
                       )}
                     </td>
-                    <td><ChevronRight size={16} color="var(--text-3)" /></td>
+                    <td className="tm-ocultar"><ChevronRight size={16} color="var(--text-3)" /></td>
                   </tr>
                 );
               })}

@@ -135,8 +135,8 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
         )}
       </div>
 
-      <div className="card no-print" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div className="card no-print ventas-filtros-card" style={{ marginBottom: 20 }}>
+        <div className="ventas-filtros" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <div className="field" style={{ margin: 0, flex: 2, minWidth: 200 }}>
             <label className="lbl">Buscar</label>
             <div style={{ position: 'relative' }}>
@@ -221,7 +221,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
           )
         ) : (
           <div className="tw">
-            <table className="table">
+            <table className="table tm vt">
               <thead>
                 <tr>
                   <th>Fecha</th>
@@ -245,8 +245,8 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
                   return (
                     <tr key={sale.id} onClick={() => setSelectedSale(sale)} style={{ cursor: 'pointer' }} className="hover-row">
-                      <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{dateStr}</td>
-                      <td>
+                      <td className="vt-fecha" style={{ fontSize: 12, color: 'var(--text-2)' }}>{dateStr}</td>
+                      <td className="vt-equipo">
                         <div style={{ fontWeight: 600 }}>{sale.brand} {sale.model}</div>
                         {sale.imei && (
                           <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
@@ -275,11 +275,11 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           );
                         })()}
                       </td>
-                      <td>
+                      <td data-label="Cliente">
                         <div style={{ fontWeight: 500 }}>{sale.customer?.name || '-'}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{sale.customer?.phone || sale.customer?.dni || ''}</div>
                       </td>
-                      <td>
+                      <td data-label="Vendió">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
                           <UserIcon size={12} style={{ color: 'var(--text-3)' }} /> 
                           {sale.seller_name || 'Desconocido'}
@@ -290,7 +290,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           </div>
                         )}
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td className="vt-monto" style={{ textAlign: 'right' }}>
                         <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text)' }}>
                           {sale.currency === 'USD' ? 'U$' : 'ARS '} {sale.price.toLocaleString('es-AR')}
                         </div>

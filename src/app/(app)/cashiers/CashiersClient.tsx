@@ -310,7 +310,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
           <div className="st">{isOwner ? 'Control de Cajas' : 'Mi Caja'}</div>
           <div className="ss2" style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 4 }}>Saldo por depósito · Ventas y transferencias</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="cj-acciones" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <select 
             className="inp" 
             style={{ width: 'auto', padding: '6px 12px' }}
@@ -434,7 +434,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
           <div className="card" style={{ marginBottom: 28, padding: 20 }}>
             <div className="sl" style={{ marginBottom: 12 }}>Cierres de turno</div>
             <div className="tw">
-              <table className="table" style={{ fontSize: 13 }}>
+              <table className="table tm tm3" style={{ fontSize: 13 }}>
                 <thead><tr><th>Vendedor</th><th>Cierre</th><th style={{ textAlign: 'right' }}>Esperado</th><th style={{ textAlign: 'right' }}>Declaró</th><th style={{ textAlign: 'right' }}>Diferencia</th></tr></thead>
                 <tbody>
                   {filas.map(c => {
@@ -442,11 +442,11 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                     const dif = (n: number, sim: string, dec = 0) => n === 0 ? '—' : `${n > 0 ? '+' : '−'}${sim} ${Math.abs(n).toLocaleString('es-AR', { maximumFractionDigits: dec })}`;
                     return (
                       <tr key={c.id || c.created_at}>
-                        <td style={{ fontWeight: 600 }}>{nombre}</td>
-                        <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{new Date(c.created_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'JetBrains Mono' }}>$ {c.esperado.ars.toLocaleString('es-AR')}{c.esperado.usd ? <><br />U$ {c.esperado.usd.toLocaleString('es-AR')}</> : null}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'JetBrains Mono' }}>$ {Number(c.declared_ars).toLocaleString('es-AR')}{Number(c.declared_usd) ? <><br />U$ {Number(c.declared_usd).toLocaleString('es-AR')}</> : null}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'JetBrains Mono', fontWeight: 700, color: c.cuadra ? 'var(--green)' : 'var(--red)' }}>
+                        <td className="tm-dos" style={{ fontWeight: 600 }}>{nombre}</td>
+                        <td className="tm-fecha" style={{ fontSize: 12, color: 'var(--text-2)' }}>{new Date(c.created_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                        <td data-label="Esperado" style={{ textAlign: 'right', fontFamily: 'JetBrains Mono' }}>$ {c.esperado.ars.toLocaleString('es-AR')}{c.esperado.usd ? <><br />U$ {c.esperado.usd.toLocaleString('es-AR')}</> : null}</td>
+                        <td data-label="Declaró" style={{ textAlign: 'right', fontFamily: 'JetBrains Mono' }}>$ {Number(c.declared_ars).toLocaleString('es-AR')}{Number(c.declared_usd) ? <><br />U$ {Number(c.declared_usd).toLocaleString('es-AR')}</> : null}</td>
+                        <td data-label="Diferencia" style={{ textAlign: 'right', fontFamily: 'JetBrains Mono', fontWeight: 700, color: c.cuadra ? 'var(--green)' : 'var(--red)' }}>
                           {c.cuadra ? 'Cuadra' : <>{dif(c.diferencia.ars, '$')}{c.diferencia.usd ? <><br />{dif(c.diferencia.usd, 'U$', 2)}</> : null}</>}
                         </td>
                       </tr>

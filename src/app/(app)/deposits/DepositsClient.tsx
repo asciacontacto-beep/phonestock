@@ -88,7 +88,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
 
   return (
     <div className="page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="sh" style={{ marginBottom: 24 }}>
         <div>
           <div className="st">Gestión de Depósitos</div>
           <div className="ss2">Ubicaciones, transferencias y distribución de stock</div>

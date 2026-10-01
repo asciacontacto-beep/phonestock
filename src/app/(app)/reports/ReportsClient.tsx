@@ -245,9 +245,9 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
 
   return (
     <div className="page reports dash">
-      <div className="sh" style={{ marginBottom: 20 }}>
+      <div className="sh rep-cab" style={{ marginBottom: 20 }}>
         <h1 className="st">Rentabilidad</h1>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="pills-scroll" style={{ display: 'flex', gap: 6 }}>
           {([['7d', '7 días'], ['30d', '30 días'], ['90d', '90 días'], ['all', 'Todo']] as [Period, string][]).map(([v, l]) => (
             <button key={v} className={`btn-pill ${period === v ? 'active' : ''}`} onClick={() => setPeriod(v)}>{l}</button>
           ))}

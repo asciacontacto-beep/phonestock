@@ -296,7 +296,7 @@ export function ExpensesClient({ initialExpenses, deposits, pagosPorGasto, cotiz
               </div>
             ) : (
               <div className="tw">
-                <table className="table gx-tabla">
+                <table className="table gx-tabla tm tm3">
                   <thead>
                     <tr>
                       <th>Fecha</th>
@@ -311,10 +311,10 @@ export function ExpensesClient({ initialExpenses, deposits, pagosPorGasto, cotiz
                       const origen = origenDelGasto({ payments: pagos[String(g.id)] });
                       return (
                         <tr key={g.id}>
-                          <td className="gx-fecha">
+                          <td className="gx-fecha" data-label="Fecha">
                             {new Date(g.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
                           </td>
-                          <td>
+                          <td className="tm-full tm-primero">
                             <div style={{ fontWeight: 600 }}>{g.description}</div>
                             <div className="gx-sub">
                               <span className="badge b-neu">{g.category}</span>
@@ -322,12 +322,12 @@ export function ExpensesClient({ initialExpenses, deposits, pagosPorGasto, cotiz
                               {g.seller_name && <span>por {g.seller_name}</span>}
                             </div>
                           </td>
-                          <td className="gx-origen">
+                          <td className="gx-origen" data-label="Sale de">
                             {origen.metodo ? nombreDelMetodo(origen.metodo) : <span title="Gasto sin movimiento de caja">—</span>}
                             {origen.cuenta && <div className="gx-sub">{origen.cuenta}</div>}
                           </td>
-                          <td className="gx-monto">{montoDe(g)}</td>
-                          <td>
+                          <td className="gx-monto" data-label="Monto">{montoDe(g)}</td>
+                          <td className="tm-full">
                             <div className="gx-acciones">
                               <button className="btn-icon" onClick={() => abrirRepetir(g)} title="Repetir con fecha de hoy" aria-label="Repetir"><Repeat size={14} /></button>
                               <button className="btn-icon" onClick={() => abrirEditar(g)} title="Editar" aria-label="Editar"><Pencil size={14} /></button>

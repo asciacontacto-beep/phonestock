@@ -154,7 +154,7 @@ líneas de "agregado", que pasan a `true`.
 - `20260919_planes_de_cuenta.sql`: sin ella, el aviso de vencimiento de la
   cuenta consulta columnas (`lifetime`, `paid_until`) que no existen.
 
-**Para volver atrás:** las instrucciones están al pie del archivo. Las ventas
+**Para volver atrás:** `supabase/rollback/20260930_cuentas_financieras_y_caja_volver_atras.sql`. Ojo: ese archivo sí borra (las tablas y columnas nuevas, con lo cargado en ellas). Las ventas
 no se tocan: cada pago guarda el nombre de su cuenta.
 
 **Un cambio en los números que vas a notar:** la ganancia del Dashboard y de

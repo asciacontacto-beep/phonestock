@@ -39,18 +39,24 @@ ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
 
 -- Todo el equipo las ve (el vendedor elige a cuál entra la transferencia);
 -- sólo el dueño las crea o cambia.
-DROP POLICY IF EXISTS "cuentas_ver" ON public.accounts;
-CREATE POLICY "cuentas_ver" ON public.accounts
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'accounts' AND policyname = 'cuentas_ver') THEN
+    CREATE POLICY "cuentas_ver" ON public.accounts
   FOR SELECT TO authenticated
   USING (org_id = public.current_user_org_id());
+  END IF;
+END $$;
 
-DROP POLICY IF EXISTS "cuentas_dueno" ON public.accounts;
-CREATE POLICY "cuentas_dueno" ON public.accounts
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'accounts' AND policyname = 'cuentas_dueno') THEN
+    CREATE POLICY "cuentas_dueno" ON public.accounts
   FOR ALL TO authenticated
   USING (org_id = public.current_user_org_id()
          AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'owner'))
   WITH CHECK (org_id = public.current_user_org_id()
          AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'owner'));
+  END IF;
+END $$;
 
 -- ── 2. Planes de tarjeta o financiera ──────────────────────────────────────
 ALTER TABLE public.card_plans
@@ -88,24 +94,33 @@ CREATE INDEX IF NOT EXISTS cash_closures_org_idx ON public.cash_closures (org_id
 ALTER TABLE public.cash_closures ENABLE ROW LEVEL SECURITY;
 
 -- El vendedor registra y ve sus propios cierres; el dueño ve todos.
-DROP POLICY IF EXISTS "cierres_propios" ON public.cash_closures;
-CREATE POLICY "cierres_propios" ON public.cash_closures
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'cash_closures' AND policyname = 'cierres_propios') THEN
+    CREATE POLICY "cierres_propios" ON public.cash_closures
   FOR SELECT TO authenticated
   USING (org_id = public.current_user_org_id()
          AND (user_id = auth.uid()
               OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'owner')));
+  END IF;
+END $$;
 
-DROP POLICY IF EXISTS "cierres_registrar" ON public.cash_closures;
-CREATE POLICY "cierres_registrar" ON public.cash_closures
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'cash_closures' AND policyname = 'cierres_registrar') THEN
+    CREATE POLICY "cierres_registrar" ON public.cash_closures
   FOR INSERT TO authenticated
   WITH CHECK (org_id = public.current_user_org_id() AND user_id = auth.uid());
+  END IF;
+END $$;
 
 -- Un cierre no se edita: si hubo un error se hace otro. Sólo el dueño borra.
-DROP POLICY IF EXISTS "cierres_borrar_dueno" ON public.cash_closures;
-CREATE POLICY "cierres_borrar_dueno" ON public.cash_closures
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'cash_closures' AND policyname = 'cierres_borrar_dueno') THEN
+    CREATE POLICY "cierres_borrar_dueno" ON public.cash_closures
   FOR DELETE TO authenticated
   USING (org_id = public.current_user_org_id()
          AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'owner'));
+  END IF;
+END $$;
 
 -- ── 4. Cierre a ciegas ──────────────────────────────────────────────────────
 ALTER TABLE public.settings
@@ -132,18 +147,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS tradein_values_unico
 ALTER TABLE public.tradein_values ENABLE ROW LEVEL SECURITY;
 
 -- El vendedor la consulta al tomar un usado; sólo el dueño la carga.
-DROP POLICY IF EXISTS "toma_ver" ON public.tradein_values;
-CREATE POLICY "toma_ver" ON public.tradein_values
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'tradein_values' AND policyname = 'toma_ver') THEN
+    CREATE POLICY "toma_ver" ON public.tradein_values
   FOR SELECT TO authenticated
   USING (org_id = public.current_user_org_id());
+  END IF;
+END $$;
 
-DROP POLICY IF EXISTS "toma_dueno" ON public.tradein_values;
-CREATE POLICY "toma_dueno" ON public.tradein_values
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'tradein_values' AND policyname = 'toma_dueno') THEN
+    CREATE POLICY "toma_dueno" ON public.tradein_values
   FOR ALL TO authenticated
   USING (org_id = public.current_user_org_id()
          AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'owner'))
   WITH CHECK (org_id = public.current_user_org_id()
          AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'owner'));
+  END IF;
+END $$;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.accounts, public.cash_closures, public.tradein_values TO authenticated;
 
@@ -152,10 +173,4 @@ COMMIT;
 -- Para que la API vea las tablas nuevas sin esperar.
 NOTIFY pgrst, 'reload schema';
 
--- ── Para volver atrás, si hiciera falta ─────────────────────────────────────
---   ALTER TABLE public.card_plans DROP COLUMN IF EXISTS account_id,
---     DROP COLUMN IF EXISTS settlement_days, DROP COLUMN IF EXISTS kind;
---   ALTER TABLE public.settings DROP COLUMN IF EXISTS cierre_a_ciegas;
---   DROP TABLE IF EXISTS public.tradein_values, public.cash_closures, public.accounts;
--- (Las ventas no se tocan: la cuenta de cada pago queda guardada en
---  `sales.payments` con su nombre.)
+-- Para volver atrás: supabase/rollback/20260930_cuentas_financieras_y_caja_volver_atras.sql

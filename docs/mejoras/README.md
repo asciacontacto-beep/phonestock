@@ -123,12 +123,36 @@ secciones nuevas de Configuración avisan que falta aplicarla, y la venta no
 pregunta a qué cuenta entra la transferencia.
 
 **Cómo aplicarla:**
+0. Antes, corré `supabase/checks/20260930_verificar_cuentas.sql`, que es solo
+   lectura, y guardá el resultado. Hace una foto con la cantidad de filas de
+   cada tabla y una huella de `card_plans` y `settings`.
 1. Supabase → SQL Editor → pegá el archivo → Run. Se puede correr dos veces
-   sin problema.
+   sin problema. Va dentro de una transacción: si algo fallara, no queda nada
+   a medias.
 2. Andá a **Configuración → Cobros** y cargá tus cuentas (por ejemplo: Galicia,
    Mercado Pago, la financiera).
 3. En los planes, marcá dónde acredita cada uno y a cuántos días.
 4. Si querés el cierre a ciegas: **Configuración → Caja**, tildalo y guardá.
+
+**Para verificar después:** corré de nuevo el archivo de verificación. La
+cantidad de filas y las huellas tienen que dar idénticas; solo cambian las 7
+líneas de "agregado", que pasan a `true`.
+
+**Probado el 1/10/2026** sobre una réplica de la estructura de producción
+(las 33 tablas, con sus columnas y tipos reales) y datos de dos negocios:
+
+- No cambia ninguna fila existente y las huellas dan iguales.
+- Correrla dos veces no da error.
+- Las tablas nuevas no dejan ver datos de un negocio a otro.
+- El vendedor puede ver las cuentas, pero no crearlas ni modificarlas, y no
+  puede editar un cierre de turno ya enviado.
+
+**Ojo, son anteriores a esto:** en producción faltan dos migraciones del repo.
+
+- `20260813_void_sale_atomic.sql`: la app tiene un plan B para anular ventas
+  sin ella.
+- `20260919_planes_de_cuenta.sql`: sin ella, el aviso de vencimiento de la
+  cuenta consulta columnas (`lifetime`, `paid_until`) que no existen.
 
 **Para volver atrás:** las instrucciones están al pie del archivo. Las ventas
 no se tocan: cada pago guarda el nombre de su cuenta.

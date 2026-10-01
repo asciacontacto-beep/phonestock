@@ -206,7 +206,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
         brand: 'MOVIMIENTO', model: 'CAMBIO DE DIVISA',
         storage: '-', color: '-', imei: `EXC-${Date.now()}`,
         cost_price: 0, price: 0, currency: 'USD',
-        deposit_id: parseInt(actualDepositId),
+        deposit_id: actualDepositId,
         payments: [
           { id: fromCur === 'ARS' ? 'ars_cash' : 'usd_cash', amount: -parseFloat(fromAmt), original_amount: -parseFloat(fromAmt), label: `Egreso ${fromCur}` },
           { id: toCur === 'ARS' ? 'ars_cash' : 'usd_cash', amount: parseFloat(toAmt), original_amount: parseFloat(toAmt), label: `Ingreso ${toCur}` }

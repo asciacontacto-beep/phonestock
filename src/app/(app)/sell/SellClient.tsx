@@ -382,7 +382,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       const saleData = {
         seller_id: user.id,
         seller_name: user.name,
-        deposit_id: selectedDeposit ? parseInt(String(selectedDeposit)) : null,
+        deposit_id: selectedDeposit ? String(selectedDeposit) : null,
         brand: 'ACCESORIOS',
         model: resumen.slice(0, 120),
         storage: '-', color: '-',

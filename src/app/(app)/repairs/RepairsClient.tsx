@@ -538,7 +538,7 @@ function NewRepairModal({ onClose, onSave, user }: any) {
         // Registrar movimiento en caja
         const saleData = {
           seller_id: user.id, seller_name: user.name,
-          deposit_id: parseInt(f.deposit_id),
+          deposit_id: f.deposit_id || null,
           brand: 'SERVICIO', model: 'SEÑA REPARACIÓN',
           storage: '-', color: '-', imei: `REP-${repData[0].id.split('-')[0]}`,
           cost_price: 0, price: deposit_paid, currency: 'ARS',
@@ -814,7 +814,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
       if (isDeliveringWithBalance) {
         const saleData = {
           seller_id: user.id, seller_name: user.name,
-          deposit_id: parseInt(collectDepositId),
+          deposit_id: collectDepositId || null,
           brand: 'SERVICIO', model: 'COBRO REPARACIÓN',
           storage: '-', color: '-', imei: `REP-${f.id.split('-')[0]}`,
           cost_price: 0, price: pending_balance, currency: 'ARS',

@@ -123,7 +123,7 @@ export function TurnosClient({ isOwner, user }: { isOwner: boolean; user: any })
               padding: '7px 16px', borderRadius: 7, border: 'none', cursor: 'pointer',
               fontSize: 13, fontWeight: 600,
               background: tab === t.id ? 'var(--text)' : 'transparent',
-              color: tab === t.id ? '#fff' : 'var(--text-3)',
+              color: tab === t.id ? 'var(--bg)' : 'var(--text-3)',
               transition: 'all 0.15s',
             }}
           >
@@ -269,13 +269,13 @@ function AppointmentCard({ appt, index, onEdit, onConfirm, onCancel, onDelete }:
         border: `1px solid ${isToday ? 'var(--text)' : 'var(--border-md)'}`,
         borderRadius: 10, padding: '10px 6px', alignSelf: 'flex-start',
       }}>
-        <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: isToday ? '#fff' : appt.status === 'cancelled' ? 'var(--text-3)' : 'var(--text)' }}>
+        <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: isToday ? 'var(--bg)' : appt.status === 'cancelled' ? 'var(--text-3)' : 'var(--text)' }}>
           {dt.getDate()}
         </div>
-        <div style={{ fontSize: 11, color: isToday ? 'rgba(255,255,255,0.7)' : 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3, fontWeight: 600 }}>
+        <div style={{ fontSize: 11, color: isToday ? 'color-mix(in srgb, var(--bg) 70%, transparent)' : 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3, fontWeight: 600 }}>
           {dt.toLocaleDateString('es-AR', { month: 'short' })}
         </div>
-        <div style={{ fontSize: 12, color: isToday ? 'rgba(255,255,255,0.8)' : 'var(--text-2)', marginTop: 6, fontWeight: 600 }}>
+        <div style={{ fontSize: 12, color: isToday ? 'color-mix(in srgb, var(--bg) 80%, transparent)' : 'var(--text-2)', marginTop: 6, fontWeight: 600 }}>
           {timeStr}
         </div>
       </div>
@@ -465,7 +465,7 @@ function CalendarView({ appointments, tab, calDate, setCalDate, onConfirm, onEdi
                     width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     borderRadius: '50%',
                     background: isToday ? 'var(--text)' : 'transparent',
-                    color: isToday ? '#fff' : 'var(--text-2)',
+                    color: isToday ? 'var(--bg)' : 'var(--text-2)',
                   }}>
                     {day.getDate()}
                   </span>
@@ -513,10 +513,10 @@ function CalendarView({ appointments, tab, calDate, setCalDate, onConfirm, onEdi
                   border: `1px solid ${isToday ? 'var(--text)' : 'var(--border-md)'}`,
                   boxShadow: 'var(--shadow-xs)',
                 }}>
-                  <div style={{ fontSize: 10, color: isToday ? 'rgba(255,255,255,0.7)' : 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 10, color: isToday ? 'color-mix(in srgb, var(--bg) 70%, transparent)' : 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase' }}>
                     {day.toLocaleDateString('es-AR', { weekday: 'short' })}
                   </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: isToday ? '#fff' : 'var(--text)', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: isToday ? 'var(--bg)' : 'var(--text)', lineHeight: 1.2 }}>
                     {day.getDate()}
                   </div>
                 </div>
@@ -839,7 +839,7 @@ function AppointmentModal({ appt, stockPhones, onClose, onSave, supabase }: any)
               <input type="checkbox" checked={f.trade_in_active} onChange={e => setF({ ...f, trade_in_active: e.target.checked })} style={{ display: 'none' }} />
               <span style={{
                 display: 'inline-flex', width: 36, height: 20, borderRadius: 10, flexShrink: 0,
-                background: f.trade_in_active ? 'var(--purple)' : 'rgba(0,0,0,0.25)',
+                background: f.trade_in_active ? 'var(--purple)' : 'var(--border-lg)',
                 alignItems: 'center', padding: '0 3px',
                 justifyContent: f.trade_in_active ? 'flex-end' : 'flex-start',
                 transition: 'background 0.2s',

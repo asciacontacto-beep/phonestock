@@ -910,9 +910,12 @@ select.inp {
     right: 12px;
     height: 62px;
     border-radius: 20px;
-    background: rgba(255,255,255,0.78);
+    /* Con los colores del tema: era blanco fijo y en tema oscuro quedaba una
+       barra gris clara con la sección activa casi invisible. */
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
     backdrop-filter: blur(26px) saturate(180%);
-    border: 1px solid rgba(0,0,0,0.055);
+    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    border: 1px solid var(--border);
     box-shadow:
       0 10px 30px -8px rgba(0,0,0,0.20),
       0 3px 10px -2px rgba(0,0,0,0.07);
@@ -946,7 +949,7 @@ select.inp {
   }
 
   .bn-item.on { color: var(--text); }
-  .bn-item.on .bn-ico { background: rgba(17,17,17,0.075); }
+  .bn-item.on .bn-ico { background: color-mix(in srgb, var(--text) 9%, transparent); }
   .bn-item:active .bn-ico { transform: scale(0.9); }
   .bn-lbl { line-height: 1; }
 

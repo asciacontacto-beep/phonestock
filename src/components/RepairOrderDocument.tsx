@@ -135,7 +135,7 @@ export function RepairOrderDocument({ shop, config, repair }: { shop: ShopSettin
       </div>
 
       {c.thankYouText && <div style={{ marginTop: 16, textAlign: 'center', fontSize: isA4 ? 12 : 11, fontWeight: 700, color: accent }}>{c.thankYouText}</div>}
-      {c.showFooterBrand && <div style={{ marginTop: 10, textAlign: 'center', fontSize: 8.5, color: '#bbb' }}>Generado con Stackr</div>}
+      {c.showFooterBrand && <div style={{ marginTop: 10, textAlign: 'center', fontSize: 8.5, color: '#8a8a8a' }}>Generado con Stackr</div>}
     </div>
   );
 }

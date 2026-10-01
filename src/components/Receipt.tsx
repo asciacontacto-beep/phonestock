@@ -116,7 +116,7 @@ function TicketReceipt({ shop, config: c, data }: { shop: ShopSettings; config: 
           {c.footerText && <div style={{ fontSize: 9, color: '#777', marginTop: 5 }}>{c.footerText}</div>}
         </div>
       )}
-      {c.showFooterBrand && <div style={{ marginTop: 10, textAlign: 'center', fontSize: 8, color: '#bbb' }}>Generado con Stackr</div>}
+      {c.showFooterBrand && <div style={{ marginTop: 10, textAlign: 'center', fontSize: 8, color: '#8a8a8a' }}>Generado con Stackr</div>}
     </div>
   );
 }
@@ -253,7 +253,7 @@ function A4Receipt({ shop, config: c, data }: { shop: ShopSettings; config: Rece
         {c.thankYouText && <div style={{ fontSize: 13, fontWeight: 700, color: accent }}>{c.thankYouText}</div>}
         {shop.warranty_text && <div style={{ fontSize: 10, color: '#777', fontStyle: 'italic', lineHeight: 1.6, marginTop: 8, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>{shop.warranty_text}</div>}
         {c.footerText && <div style={{ fontSize: 10.5, color: '#777', marginTop: 6 }}>{c.footerText}</div>}
-        {c.showFooterBrand && <div style={{ marginTop: 12, fontSize: 9, color: '#bbb', letterSpacing: '0.04em' }}>Generado con Stackr</div>}
+        {c.showFooterBrand && <div style={{ marginTop: 12, fontSize: 9, color: '#8a8a8a', letterSpacing: '0.04em' }}>Generado con Stackr</div>}
       </div>
     </div>
   );

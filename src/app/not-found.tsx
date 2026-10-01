@@ -31,7 +31,7 @@ export default function NotFound() {
           borderRadius: 12,
           border: '1px solid var(--border-md)',
           background: 'var(--accent)',
-          color: '#ffffff',
+          color: 'var(--bg)',
           fontWeight: 600,
           textDecoration: 'none',
         }}

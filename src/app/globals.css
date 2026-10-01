@@ -1746,3 +1746,82 @@ select.inp {
 /* Cotización cripto en la barra: en pantallas chicas sólo el blue (el cripto
    se ve al abrir el panel). */
 @media (max-width: 560px) { .cotiz-cripto { display: none; } }
+
+/* ── Pestañas de sección ─────────────────────
+   Inventario → Equipos / Accesorios / Depósitos; Cajas → Cajas / Gastos.
+   Van arriba de la pantalla, con el mismo ancho y margen que .page, y la
+   pantalla que sigue arranca más cerca: son su encabezado. */
+.sec-tabs {
+  display: flex; gap: 2px;
+  /* El ancho del contenido de .page (1280 menos sus márgenes), para que
+     la línea de abajo no se pase de las tarjetas. */
+  width: calc(100% - 72px); max-width: 1208px; margin: 22px auto 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+}
+.sec-tabs::-webkit-scrollbar { display: none; }
+.sec-tab {
+  position: relative;
+  padding: 9px 14px 11px;
+  color: var(--text-3); font-size: 13.5px; font-weight: 500;
+  text-decoration: none; white-space: nowrap;
+  transition: color var(--dur-rapida) var(--ease);
+}
+.sec-tab:hover { color: var(--text); }
+.sec-tab.on { color: var(--text); font-weight: 600; }
+.sec-tab.on::after {
+  content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px;
+  height: 2px; border-radius: 2px; background: var(--text);
+}
+.sec-tabs + .page { padding-top: 22px; }
+@media (max-width: 768px) {
+  .sec-tabs { width: calc(100% - 32px); margin-top: 10px; }
+  .sec-tab { padding: 8px 12px 10px; font-size: 13px; }
+  .sec-tabs + .page { padding-top: 14px; }
+}
+
+/* ── Gastos ──────────────────────────────── */
+.gx-barra { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.gx-periodos { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.gx-periodos::-webkit-scrollbar { display: none; }
+.gx-cambio { display: inline-flex; align-items: center; gap: 6px; }
+.gx-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.gx-lista { min-width: 0; }
+.gx-tabla td { vertical-align: middle; }
+.gx-fecha { white-space: nowrap; font-size: 12.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.gx-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; font-size: 11.5px; color: var(--text-3); }
+.gx-sub .badge { font-size: 10.5px; padding: 1px 7px; }
+.gx-origen { font-size: 13px; white-space: nowrap; }
+.gx-origen .gx-sub { margin-top: 2px; }
+.gx-monto { text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--red); white-space: nowrap; }
+.gx-acciones { display: flex; gap: 2px; justify-content: flex-end; }
+.gx-acciones .btn-icon { opacity: .55; }
+.gx-tabla tr:hover .gx-acciones .btn-icon, .gx-acciones .btn-icon:focus-visible { opacity: 1; }
+.gx-vacio { padding: 40px 16px; text-align: center; color: var(--text-3); font-size: 13.5px; border: 1px dashed var(--border-md); border-radius: 12px; }
+.gx-filtro { cursor: pointer; flex-shrink: 0; }
+.gx-cats { padding: 16px; position: sticky; top: 16px; }
+.gx-cat { display: block; width: 100%; text-align: left; padding: 9px 10px; margin: 0 -10px; width: calc(100% + 20px); border-radius: 9px; transition: background var(--dur-rapida) var(--ease); }
+.gx-cat:hover { background: var(--surface-2); }
+.gx-cat.on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--text); }
+.gx-cat-fila { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; font-weight: 600; }
+.gx-cat-fila strong { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+.gx-cat-barra { height: 5px; border-radius: 3px; background: var(--surface-3); margin-top: 7px; overflow: hidden; }
+.gx-cat-barra i { display: block; height: 100%; border-radius: 3px; background: var(--red); opacity: .8; }
+.gx-cat .gx-sub { margin-top: 5px; }
+.gx-nota { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--text-3); line-height: 1.45; }
+.gx-form .field { margin-bottom: 14px; }
+.gx-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.gx-monto-inp { display: flex; gap: 6px; }
+.gx-monto-inp .inp { flex: 1; min-width: 0; font-family: 'JetBrains Mono', monospace; }
+.gx-moneda { display: flex; border: 1px solid var(--border-md); border-radius: 9px; overflow: hidden; flex-shrink: 0; }
+.gx-moneda button { padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--text-3); background: var(--surface); }
+.gx-moneda button.on { background: var(--text); color: var(--bg); }
+@media (max-width: 900px) {
+  .gx-cuerpo { grid-template-columns: 1fr; }
+  .gx-cats { position: static; }
+}
+@media (max-width: 768px) {
+  .gx-acciones .btn-icon { opacity: 1; }
+  .gx-dos { grid-template-columns: 1fr; }
+}

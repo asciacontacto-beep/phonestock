@@ -1,8 +1,9 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Box, ScanLine, ShoppingCart, Wallet, User as UserIcon, Settings, Warehouse, Users2, FileText, Package, Headphones, Wrench, Truck, BarChart3, CreditCard, ShoppingBag, CalendarDays, Receipt, Building2, MessageSquare, DollarSign, Store } from 'lucide-react';
+import { LayoutDashboard, Box, ScanLine, ShoppingCart, Settings, Users2, FileText, Package, Wrench, Truck, CreditCard, CalendarDays, Building2, MessageSquare, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { menuActivo, rutaDe } from '@/utils/secciones';
 
 interface SidebarProps {
   user: any;
@@ -14,8 +15,6 @@ interface SidebarProps {
 
 export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarProps) {
   const pathname = usePathname();
-  // Derive active from real pathname so it updates instantly on navigation
-  const currentPage = pathname.replace('/', '') || 'dashboard';
 
   const nav = isSuperAdmin ?
     [
@@ -28,29 +27,21 @@ export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarPr
     ] :
     user.role === 'owner' ?
     [
-      { g: 'General' },
-      { id: 'dashboard',   l: 'Resumen',        i: <LayoutDashboard size={17} /> },
-      { id: 'reports',     l: 'Rentabilidad',    i: <BarChart3 size={17} /> },
-      { g: 'Inventario' },
-      { id: 'stock',       l: 'Inventario',      i: <Package size={17} /> },
-      { id: 'accessories', l: 'Accesorios',      i: <Headphones size={17} /> },
-      { id: 'deposits',    l: 'Depósitos',        i: <Warehouse size={17} /> },
-      { id: 'scan',        l: 'Carga EAN',        i: <ScanLine size={17} /> },
-      { id: 'catalogo',    l: 'Catálogo',         i: <Store size={17} /> },
+      // Una entrada por tema; las pantallas del tema son pestañas arriba
+      // (ver utils/secciones.ts).
+      { g: 'Negocio' },
+      { id: 'dashboard',   l: 'Resumen',          i: <LayoutDashboard size={17} /> },
+      { id: 'stock',       l: 'Inventario',       i: <Package size={17} /> },
       { g: 'Operaciones' },
       { id: 'sell',        l: 'Nueva Operación',  i: <ShoppingCart size={17} /> },
-      { id: 'sales',       l: 'Historial Ventas', i: <FileText size={17} /> },
-      { id: 'recibos',     l: 'Recibo',           i: <Receipt size={17} /> },
+      { id: 'sales',       l: 'Ventas',           i: <FileText size={17} /> },
+      { id: 'cashiers',    l: 'Caja y gastos',    i: <CreditCard size={17} /> },
       { id: 'repairs',     l: 'Servicio Técnico', i: <Wrench size={17} /> },
       { id: 'turnos',      l: 'Turnos',           i: <CalendarDays size={17} /> },
-      { id: 'cashiers',    l: 'Cajas',            i: <CreditCard size={17} /> },
-      { id: 'expenses',    l: 'Gastos',           i: <Wallet size={17} /> },
       { g: 'Contactos' },
       { id: 'customers',   l: 'Clientes',         i: <Users2 size={17} /> },
-      { id: 'mayoristas',  l: 'Mayoristas',       i: <ShoppingBag size={17} /> },
       { id: 'suppliers',   l: 'Proveedores',      i: <Truck size={17} /> },
-      { g: 'Configuración' },
-      { id: 'users',       l: 'Usuarios',         i: <UserIcon size={17} /> },
+      { g: 'Ajustes' },
       { id: 'settings',    l: 'Configuración',    i: <Settings size={17} /> },
     ] :
     [
@@ -62,6 +53,12 @@ export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarPr
       { id: 'cashier_me', l: 'Mi Caja',          i: <CreditCard size={17} /> },
       { id: 'repairs',    l: 'Servicio Técnico', i: <Wrench size={17} /> },
     ];
+
+  // Derive active from real pathname so it updates instantly on navigation.
+  // Accesorios marca Inventario, Gastos marca Caja, etc. Si la pantalla
+  // tiene su propia entrada (el vendedor tiene "Ingresar Equipo"), va esa.
+  const ruta = rutaDe(pathname);
+  const currentPage = nav.some(it => 'id' in it && it.id === ruta) ? ruta : menuActivo(pathname);
 
   return (
     <div className={`sidebar no-print ${isOpen ? 'open' : ''}`}>
@@ -83,7 +80,7 @@ export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarPr
             key={it.id}
             href={`/${it.id}`}
             prefetch={true}
-            className={`s-item ${currentPage === it.id || (currentPage === '' && it.id === 'dashboard') ? 'on' : ''}`}
+            className={`s-item ${currentPage === it.id ? 'on' : ''}`}
             onClick={() => setPage(it.id)}
           >
             {it.i}

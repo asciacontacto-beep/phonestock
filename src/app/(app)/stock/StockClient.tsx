@@ -1,7 +1,8 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
 import { BRANDS, STORAGES, COLORS, almacenamientosDe, tieneAlmacenamiento } from '@/constants/data';
-import { Edit2, Trash2, X, Search, PenLine, Package, Clock, Plus } from 'lucide-react';
+import { Edit2, Trash2, X, Search, PenLine, Package, Clock, Plus, ScanLine } from 'lucide-react';
+import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { configuracionDelLocal } from '@/utils/configuracion';
 import { mandarAReparar } from '@/utils/reparacionPropia';
@@ -256,9 +257,13 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
     <div className="page">
       <div className="sh">
         <h1 className="st">Inventario Global</h1>
-        <button className="btn btn-dark no-print" onClick={() => setShowManual(true)}>
-          <PenLine size={15} /> Cargar equipo
-        </button>
+        {/* La carga por código (EAN / IMEI) era una entrada aparte del menú. */}
+        <div style={{ display: 'flex', gap: 8 }} className="no-print">
+          <Link href="/scan" className="btn btn-outline" aria-label="Cargar por código" title="Cargar por código"><ScanLine size={15} /> <span className="inv-desk">Cargar por código</span></Link>
+          <button className="btn btn-dark" onClick={() => setShowManual(true)}>
+            <PenLine size={15} /> Cargar equipo
+          </button>
+        </div>
       </div>
 
       {dataLoaded && resumen.unidades > 0 && (

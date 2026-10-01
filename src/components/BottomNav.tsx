@@ -1,5 +1,6 @@
 import { LayoutGrid, Box, ShoppingCart, Wallet, Menu, ScanLine, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import { menuActivo } from '@/utils/secciones';
 
 interface BottomNavProps {
   page: string;
@@ -32,19 +33,23 @@ export function BottomNav({ page, user, onMenu, isSuperAdmin }: BottomNavProps) 
         { id: 'menu', l: 'Menú', i: <Menu size={20} />, action: onMenu }
       ];
 
+  // En Accesorios queda marcado Stock; en Gastos, Cajas. Si la pantalla
+  // tiene su propio botón (el vendedor tiene "Cargar"), va ese.
+  const activo = navItems.some(it => it.id === page) ? page : menuActivo('/' + page);
+
   return (
     <div className="bottom-nav no-print">
       {navItems.map((it) => {
         if (it.action) {
           return (
-            <button key={it.id} className={`bn-item ${page === it.id ? 'on' : ''}`} onClick={it.action}>
+            <button key={it.id} className={`bn-item ${activo === it.id ? 'on' : ''}`} onClick={it.action}>
               <span className="bn-ico">{it.i}</span>
               <span className="bn-lbl">{it.l}</span>
             </button>
           );
         }
         return (
-          <Link key={it.id} href={`/${it.id}`} className={`bn-item ${page === it.id ? 'on' : ''}`}>
+          <Link key={it.id} href={`/${it.id}`} className={`bn-item ${activo === it.id ? 'on' : ''}`}>
             <span className="bn-ico">{it.i}</span>
             <span className="bn-lbl">{it.l}</span>
           </Link>

@@ -5,6 +5,7 @@ import { Topbar } from './Topbar'
 import { BottomNav } from './BottomNav'
 import { CommandPalette } from './CommandPalette'
 import { AvisoDeCuenta } from '@/components/AvisoDeCuenta'
+import { SectionTabs } from './SectionTabs'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -62,6 +63,7 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
         <Topbar page={page} user={mergedUser} onLogout={handleLogout} />
         <AvisoDeCuenta orgId={mergedUser.org_id} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
+          {finalRole === 'owner' && !isSuperAdmin && <SectionTabs />}
           {children}
         </div>
       </div>

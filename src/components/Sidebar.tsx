@@ -1,64 +1,91 @@
 "use client"
-import { useState, useEffect } from 'react';
-import { LayoutDashboard, Box, ScanLine, ShoppingCart, Settings, Users2, FileText, Package, Wrench, Truck, CreditCard, CalendarDays, Building2, MessageSquare, DollarSign } from 'lucide-react';
-import Link from 'next/link';
+import {
+  LayoutDashboard, BarChart3, Package, Headphones, Warehouse, ScanLine, ShoppingCart, FileText, Receipt,
+  CreditCard, Wallet, Wrench, CalendarDays, Users2, ShoppingBag, Truck, Settings, User as UserIcon, Store,
+} from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { menuActivo, rutaDe } from '@/utils/secciones';
+import { pestanaDe, rutaDe } from '@/utils/secciones';
+import { BranchedNav, type Rama } from './BranchedNav';
 
 interface SidebarProps {
-  user: any;
+  user: { role?: string } | null;
   page: string;
   setPage: (page: string) => void;
   isOpen?: boolean;
   isSuperAdmin?: boolean;
 }
 
-export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarProps) {
+const I = 15;
+
+/* El dueño ve siete temas que se despliegan; adentro, cada pantalla. Antes
+   eran diecinueve entradas sueltas. Las pestañas de arriba de cada pantalla
+   (utils/secciones.ts) siguen siendo el atajo dentro del tema. */
+const DUENO: Rama[] = [
+  { label: 'Resumen', hijos: [
+    { id: 'dashboard', label: 'Resumen', icon: <LayoutDashboard size={I} /> },
+    { id: 'reports', label: 'Rentabilidad', icon: <BarChart3 size={I} /> },
+  ] },
+  { label: 'Ventas', hijos: [
+    { id: 'sell', label: 'Nueva operación', icon: <ShoppingCart size={I} /> },
+    { id: 'sales', label: 'Historial', icon: <FileText size={I} /> },
+    { id: 'recibos', label: 'Recibo manual', icon: <Receipt size={I} /> },
+  ] },
+  { label: 'Inventario', hijos: [
+    { id: 'stock', label: 'Equipos', icon: <Package size={I} /> },
+    { id: 'accessories', label: 'Accesorios', icon: <Headphones size={I} /> },
+    { id: 'deposits', label: 'Depósitos', icon: <Warehouse size={I} /> },
+    { id: 'scan', label: 'Carga EAN', icon: <ScanLine size={I} /> },
+  ] },
+  { label: 'Caja', hijos: [
+    { id: 'cashiers', label: 'Cajas', icon: <CreditCard size={I} /> },
+    { id: 'expenses', label: 'Gastos', icon: <Wallet size={I} /> },
+  ] },
+  { label: 'Taller', hijos: [
+    { id: 'repairs', label: 'Servicio técnico', icon: <Wrench size={I} /> },
+    { id: 'turnos', label: 'Turnos', icon: <CalendarDays size={I} /> },
+  ] },
+  { label: 'Contactos', hijos: [
+    { id: 'customers', label: 'Clientes', icon: <Users2 size={I} /> },
+    { id: 'mayoristas', label: 'Mayoristas', icon: <ShoppingBag size={I} /> },
+    { id: 'suppliers', label: 'Proveedores', icon: <Truck size={I} /> },
+  ] },
+  { label: 'Configuración', hijos: [
+    { id: 'settings', label: 'Ajustes', icon: <Settings size={I} /> },
+    { id: 'users', label: 'Usuarios', icon: <UserIcon size={I} /> },
+    { id: 'catalogo', label: 'Catálogo', icon: <Store size={I} /> },
+  ] },
+];
+
+const VENDEDOR: Rama[] = [
+  { label: 'Mi terminal', hijos: [
+    { id: 'dashboard', label: 'Resumen', icon: <LayoutDashboard size={I} /> },
+    { id: 'sell', label: 'Nueva operación', icon: <ShoppingCart size={I} /> },
+    { id: 'stock', label: 'Ver stock', icon: <Package size={I} /> },
+    { id: 'scan', label: 'Ingresar equipo', icon: <ScanLine size={I} /> },
+    { id: 'cashier_me', label: 'Mi caja', icon: <CreditCard size={I} /> },
+    { id: 'repairs', label: 'Servicio técnico', icon: <Wrench size={I} /> },
+  ] },
+];
+
+const SUPERADMIN: Rama[] = [
+  { label: 'Stackr Admin', hijos: [
+    { id: 'superadmin', label: 'Resumen', icon: <LayoutDashboard size={I} /> },
+    { id: 'superadmin/negocios', label: 'Negocios', icon: <Store size={I} /> },
+    { id: 'superadmin/seguimiento', label: 'Seguimiento', icon: <Users2 size={I} /> },
+    { id: 'superadmin/cobros', label: 'Cobros', icon: <Wallet size={I} /> },
+    { id: 'superadmin/agenda', label: 'Agenda', icon: <CalendarDays size={I} /> },
+  ] },
+];
+
+export function Sidebar({ user, setPage, isOpen, isSuperAdmin }: SidebarProps) {
   const pathname = usePathname();
+  const items = isSuperAdmin ? SUPERADMIN : user?.role === 'owner' ? DUENO : VENDEDOR;
 
-  const nav = isSuperAdmin ?
-    [
-      { g: 'Stackr Admin' },
-      { id: 'superadmin',             l: 'Resumen',      i: <LayoutDashboard size={17} /> },
-      { id: 'superadmin/negocios',    l: 'Negocios',     i: <Building2 size={17} /> },
-      { id: 'superadmin/seguimiento', l: 'Seguimiento',  i: <MessageSquare size={17} /> },
-      { id: 'superadmin/cobros',      l: 'Cobros',       i: <DollarSign size={17} /> },
-      { id: 'superadmin/agenda',      l: 'Agenda',       i: <CalendarDays size={17} /> },
-    ] :
-    user.role === 'owner' ?
-    [
-      // Una entrada por tema; las pantallas del tema son pestañas arriba
-      // (ver utils/secciones.ts).
-      { g: 'Negocio' },
-      { id: 'dashboard',   l: 'Resumen',          i: <LayoutDashboard size={17} /> },
-      { id: 'stock',       l: 'Inventario',       i: <Package size={17} /> },
-      { g: 'Operaciones' },
-      { id: 'sell',        l: 'Nueva Operación',  i: <ShoppingCart size={17} /> },
-      { id: 'sales',       l: 'Ventas',           i: <FileText size={17} /> },
-      { id: 'cashiers',    l: 'Caja y gastos',    i: <CreditCard size={17} /> },
-      { id: 'repairs',     l: 'Servicio Técnico', i: <Wrench size={17} /> },
-      { id: 'turnos',      l: 'Turnos',           i: <CalendarDays size={17} /> },
-      { g: 'Contactos' },
-      { id: 'customers',   l: 'Clientes',         i: <Users2 size={17} /> },
-      { id: 'suppliers',   l: 'Proveedores',      i: <Truck size={17} /> },
-      { g: 'Ajustes' },
-      { id: 'settings',    l: 'Configuración',    i: <Settings size={17} /> },
-    ] :
-    [
-      { g: 'Mi Terminal' },
-      { id: 'dashboard',  l: 'Resumen',          i: <LayoutDashboard size={17} /> },
-      { id: 'sell',       l: 'Nueva Operación',  i: <ShoppingCart size={17} /> },
-      { id: 'stock',      l: 'Ver Stock',        i: <Box size={17} /> },
-      { id: 'scan',       l: 'Ingresar Equipo',  i: <ScanLine size={17} /> },
-      { id: 'cashier_me', l: 'Mi Caja',          i: <CreditCard size={17} /> },
-      { id: 'repairs',    l: 'Servicio Técnico', i: <Wrench size={17} /> },
-    ];
-
-  // Derive active from real pathname so it updates instantly on navigation.
-  // Accesorios marca Inventario, Gastos marca Caja, etc. Si la pantalla
-  // tiene su propia entrada (el vendedor tiene "Ingresar Equipo"), va esa.
+  // La ruta exacta si está en el menú (superadmin/negocios); si no, la
+  // pantalla a la que pertenece (mayoristas/123 → Mayoristas).
   const ruta = rutaDe(pathname);
-  const currentPage = nav.some(it => 'id' in it && it.id === ruta) ? ruta : menuActivo(pathname);
+  const enMenu = items.some(it => it.hijos?.some(h => h.id === ruta) || it.id === ruta);
+  const activo = enMenu ? ruta : pestanaDe(pathname);
 
   return (
     <div className={`sidebar no-print ${isOpen ? 'open' : ''}`}>
@@ -74,19 +101,9 @@ export function Sidebar({ user, page, setPage, isOpen, isSuperAdmin }: SidebarPr
         <span className="s-name">Stackr</span>
       </div>
       <div className="s-nav">
-        {nav.map((it: any, i) => it.g ?
-          <div key={i} className="s-group">{it.g}</div> :
-          <Link
-            key={it.id}
-            href={`/${it.id}`}
-            prefetch={true}
-            className={`s-item ${currentPage === it.id ? 'on' : ''}`}
-            onClick={() => setPage(it.id)}
-          >
-            {it.i}
-            {it.l}
-          </Link>
-        )}
+        {/* La clave cambia con el rol: el perfil llega después del primer
+            dibujo y el menú del dueño arranca con sus secciones cerradas. */}
+        <BranchedNav key={isSuperAdmin ? 'admin' : user?.role || 'seller'} items={items} activo={activo} onNavigate={() => setPage(activo)} />
       </div>
     </div>
   );

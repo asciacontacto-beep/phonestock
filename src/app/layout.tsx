@@ -21,6 +21,9 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
+  /* Que la app llegue hasta los bordes del iPhone (la isla, la barra de
+     inicio); los márgenes los ponen las variables env(safe-area-inset-*). */
+  viewportFit: "cover",
 };
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://stackrarg.vercel.app";
@@ -44,6 +47,13 @@ export const metadata: Metadata = {
     "software local tecnología",
   ],
   manifest: "/manifest.json",
+  /* Instalada desde Safari ("Agregar a inicio") abre sin la barra del
+     navegador, como una app. */
+  appleWebApp: {
+    capable: true,
+    title: "Stackr",
+    statusBarStyle: "default",
+  },
   alternates: {
     canonical: "https://stackrarg.vercel.app",
   },

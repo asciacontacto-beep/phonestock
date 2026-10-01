@@ -312,7 +312,10 @@ input, select, textarea { outline: none; }
   box-shadow: 0 1px 2px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.1);
 }
 .btn-dark:hover { box-shadow: 0 4px 14px -4px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.14); }
-.btn-dark:hover { background: #333; }
+/* Un punto más suave que el texto, en los dos temas. Antes era #333 fijo:
+   en tema oscuro el botón (claro) se volvía gris oscuro al pasar el mouse,
+   y en el celular quedaba así después de tocarlo. */
+.btn-dark:hover { background: color-mix(in srgb, var(--text) 86%, var(--bg)); }
 
 .btn-outline {
   background: var(--surface); color: var(--text-2);
@@ -802,7 +805,10 @@ select.inp {
     padding: 16px;
     padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
     max-width: 100%;
-    overflow-x: hidden;
+    /* clip y no hidden: hidden convierte a la página en un contenedor con
+       scroll propio y lo "sticky" de adentro (la barra de la venta) deja
+       de pegarse. */
+    overflow-x: clip;
   }
 
   /* ── Page header ─── */
@@ -1747,6 +1753,9 @@ select.inp {
    se ve al abrir el panel). */
 @media (max-width: 560px) { .cotiz-cripto { display: none; } }
 
+/* Envoltorio de la barra de arriba: sólo existe en el celular. */
+.tb-wrap { display: contents; }
+
 /* ── Pestañas de sección ─────────────────────
    Inventario → Equipos / Accesorios / Depósitos; Cajas → Cajas / Gastos.
    Van arriba de la pantalla, con el mismo ancho y margen que .page, y la
@@ -1910,7 +1919,7 @@ select.inp {
 @media (max-width: 768px) {
   .table.tm tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 13px 14px; }
   .table.tm3 tr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .table.tm td { padding: 0; border: 0; min-width: 0; text-align: left !important; }
+  .table.tm td { padding: 0; border: 0; min-width: 0; text-align: left !important; background: transparent !important; }
   .table.tm td.tm-full { grid-column: 1 / -1; }
   .table.tm3 td.tm-dos { grid-column: span 2; }
   .table.tm td.tm-primero { order: -1; }
@@ -1947,8 +1956,9 @@ select.inp {
   /* Cajas: cuatro botones apilados ocupaban media pantalla. */
   .cj-acciones { display: grid !important; grid-template-columns: 1fr 1fr; width: 100%; }
   .cj-acciones > * { width: 100% !important; min-width: 0; justify-content: center; }
-  .cj-acciones .btn { padding: 10px 10px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cj-acciones .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .sh .cj-acciones .btn { padding: 0 10px; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sh .cj-acciones .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .sh .cj-acciones select.inp { min-height: 40px; padding-top: 0; padding-bottom: 0; border-radius: 12px; }
 
   /* Ventas: el buscador arriba y los tres filtros en una fila. */
   .ventas-filtros-card { padding: 12px; }
@@ -1967,4 +1977,100 @@ select.inp {
   .table.vt td.vt-monto { order: -1; text-align: right !important; }
   .table.vt td.vt-monto > div:last-of-type { justify-content: flex-end; }
   .table.vt td.vt-fecha { order: 10; grid-column: 1 / -1; padding-top: 8px; border-top: 1px dashed var(--border-md); font-size: 11.5px !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Celular: que se sienta app
+   Un solo sistema de botones (alto táctil de 44–46px, letra de 15px,
+   esquinas de 14px), respuesta al toque en todo lo que se toca y nada de
+   efectos de mouse, que en el celular quedan "pegados" después de tocar.
+   ════════════════════════════════════════════════════════════════════ */
+button, a, .btn, .btn-pill, .bn-item, .br-item, .br-cabeza, .sec-tab {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 768px) {
+  html, body { overscroll-behavior-y: none; }
+  .main { overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+  button, .btn, .btn-pill, .sec-tab, .bn-item { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+
+  /* El aviso de novedades se come un renglón arriba de todo: en el
+     celular las novedades están en la campanita. */
+  .tb-novedades { display: none !important; }
+
+  /* Bordes del iPhone (isla, barra de inicio) en horizontal o instalada. */
+  .page {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .sidebar { padding-top: env(safe-area-inset-top); }
+
+  /* ── Botones ─────────────────────────────────────── */
+  .btn {
+    min-height: 46px; padding: 0 18px; gap: 8px;
+    font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+    border-radius: 14px;
+    transition: transform 160ms var(--ease), opacity 160ms ease, background 160ms ease;
+  }
+  .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .btn:active { transform: scale(.97); opacity: .88; }
+  .btn:disabled { opacity: .45; transform: none; }
+  .btn-dark { box-shadow: none; }
+  .btn-outline { box-shadow: none; background: var(--surface); border-color: var(--border-md); color: var(--text); }
+  .btn-ghost { color: var(--text-2); }
+  .btn-sm { min-height: 36px; padding: 0 12px; font-size: 13.5px; border-radius: 11px; }
+  .btn-sm svg { width: 15px; height: 15px; }
+  .btn-lg { min-height: 52px; font-size: 16px; border-radius: 16px; }
+
+  /* En el encabezado de cada pantalla el botón acompaña al título, no
+     compite con él: más bajo, como en las apps. */
+  .sh .btn { min-height: 40px; padding: 0 14px; font-size: 14px; border-radius: 12px; }
+  .sh .btn svg { width: 16px; height: 16px; }
+
+  /* Íconos tocables de 40px (el mínimo cómodo para el dedo). */
+  .btn-icon { width: 40px; height: 40px; border-radius: 12px; }
+  .btn-icon:active { background: var(--surface-3); }
+
+  .btn-pill { min-height: 36px; padding: 0 15px; font-size: 13.5px; font-weight: 500; box-shadow: none; }
+  .btn-pill.active { box-shadow: none; }
+  .sel-pill { min-height: 36px; box-shadow: none; }
+
+  /* Lo que se toca y no es botón (filas, tarjetas) también responde. */
+  .table tr, .inv-row, .panel-row.is-link, .card[role="button"] { transition: transform 140ms var(--ease), background 140ms ease; }
+  .table tbody tr:active, .inv-row:active, .panel-row.is-link:active { transform: scale(.985); }
+
+  /* En pantallas táctiles no hay "hover": sin esto el último botón tocado
+     queda iluminado. */
+  @media (hover: none) {
+    .btn-dark:hover { background: var(--text); box-shadow: none; }
+    .btn-outline:hover { border-color: var(--border-md); color: var(--text); }
+    .btn-ghost:hover { background: transparent; }
+    .btn-pill:hover, .sel-pill:hover { border-color: var(--border-md); }
+    .btn-pill.active:hover { border-color: var(--text); }
+    .btn-icon:hover { background: transparent; }
+    .table tbody tr:hover td, .table tr:hover td { background: transparent; }
+  }
+}
+@media (max-width: 768px) {
+  /* Venta paso a paso: el botón para seguir queda siempre a mano, arriba
+     de la barra de abajo, en vez de tener que bajar hasta el final. */
+  .paso-acciones {
+    position: sticky; z-index: 6;
+    /* 0 alcanza: el área con scroll ya deja libre el alto de la barra de
+       abajo (padding-bottom de .main). */
+    bottom: 0;
+    margin: 12px -16px -16px; padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+  }
+
+  /* La barra de arriba flota: lo que pasa por debajo se esfuma en vez de
+     asomarse cortado entre la píldora y el borde. */
+  .tb-wrap {
+    display: block; position: sticky; top: 0; z-index: 20;
+    padding: 10px 0 12px;
+    background: linear-gradient(to bottom, var(--bg) 70%, color-mix(in srgb, var(--bg) 0%, transparent));
+  }
+  .tb-wrap .topbar { position: relative; top: 0; margin-top: 0; }
 }

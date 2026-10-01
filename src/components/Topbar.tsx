@@ -297,7 +297,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
     <>
     {hasUnread && !bannerDismissed && (
       <div
-        className="no-print"
+        className="no-print tb-novedades"
         onClick={() => { setOpenPanel('bell'); setBannerDismissed(true); }}
         /* Era una franja verde brillante a todo el ancho, arriba de todo:
            lo primero que veía el usuario al entrar era un aviso nuestro, no
@@ -323,6 +323,9 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
         </button>
       </div>
     )}
+    {/* En el celular el envoltorio es el que se queda arriba, con un fondo que
+        esfuma lo que pasa por debajo; en la compu no existe (display: contents). */}
+    <div className="tb-wrap no-print">
     <div className="topbar no-print">
       <div ref={ref} style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', marginLeft: 'auto' }}>
 
@@ -638,6 +641,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
         </div>
 
       </div>
+    </div>
     </div>
     </>
   );

@@ -684,7 +684,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             <div className="col field"><label className="lbl">Instagram</label><input className="inp" value={cust.instagram} onChange={e => setCust(p => ({ ...p, instagram: e.target.value }))} placeholder="@usuario" /></div>
           </div>
           <div className="divider" />
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="paso-acciones" style={{ display: 'flex', gap: 12 }}>
             <button className="btn btn-ghost" onClick={() => setStep(2)}>Volver</button>
             <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!accessoryOnly && !cust.name} onClick={() => setStep(4)}>Continuar al Pago</button>
           </div>
@@ -834,7 +834,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             )}
           </div>
           
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="paso-acciones" style={{ display: 'flex', gap: 12 }}>
             <button className="btn btn-ghost" onClick={() => setStep(1)}>Atrás</button>
             <button className="btn btn-dark btn-lg" style={{ flex: 1 }} onClick={() => {
                if (accessoryOnly) {
@@ -1334,7 +1334,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             </label>
             <textarea className="inp" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ej: Garantía 30 días..." rows={2} style={{ resize: 'none' }} />
           </div>
-          <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+          <div className="paso-acciones" style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             <button className="btn btn-ghost" onClick={() => setStep(3)}>Atrás</button>
             {/* Antes se bloqueaba si no cerraba exacto: no se podía registrar
                 ni un saldo pendiente ni un canje tomado por más que la venta.

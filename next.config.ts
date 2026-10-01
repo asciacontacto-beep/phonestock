@@ -8,13 +8,12 @@ import { readFileSync } from "node:fs";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 // Versión que se ve al pie de Configuración: sirve para soporte ("¿qué
-// versión ves?"). En Vercel se le suma el commit, para saber qué deploy es.
+// versión ves?").
 const { version } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
-const commit = (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 7);
 
 const nextConfig: NextConfig = {
   env: {
-    NEXT_PUBLIC_APP_VERSION: commit ? `${version} · ${commit}` : version,
+    NEXT_PUBLIC_APP_VERSION: version,
   },
   experimental: {
     staleTimes: {

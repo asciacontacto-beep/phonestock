@@ -627,7 +627,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                       <div style={{ fontSize: 11, color: 'var(--text-2)' }}>{s.storage} · {s.color}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'JetBrains Mono', marginTop: 2 }}>{s.imei || 'Sin IMEI/Serie'}</div>
                     </td>
-                    <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}</td>
+                    <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString('es-AR')}</td>
                     <td><span className="badge b-neu">{deposits.find(d => d.id === s.deposit)?.name ?? '—'}</span></td>
                     <td style={{ textAlign: 'right', color: 'var(--text-3)' }}><ArrowRight size={16} /></td>
                   </tr>
@@ -866,7 +866,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                 <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{unit.storage} · {unit.color}</div>
                 {isOwner && unit.cost_price && (
                   <div style={{ fontSize: 11, marginTop: 6, color: 'var(--text-3)' }}>
-                    Precio de costo: <span style={{ fontFamily: 'JetBrains Mono' }}>{unit.currency === 'USD' ? 'U$' : '$'} {unit.cost_price?.toLocaleString()}</span>
+                    Precio de costo: <span style={{ fontFamily: 'JetBrains Mono' }}>{unit.currency === 'USD' ? 'U$' : '$'} {unit.cost_price?.toLocaleString('es-AR')}</span>
                   </div>
                 )}
               </>
@@ -1123,14 +1123,14 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: 600 }}>{p.label}</span>
-                    {p.exchange_rate && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.currency === 'USD' ? 'U$' : '$'} {p.original_amount.toLocaleString()} (Cot. {p.exchange_rate})</span>}
+                    {p.exchange_rate && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.currency === 'USD' ? 'U$' : '$'} {p.original_amount.toLocaleString('es-AR')} (Cot. {p.exchange_rate})</span>}
                     {p.id === 'tarjeta' && p.card_charged != null && Number(p.card_charged) !== Number(p.amount) && (
                       <span style={{ fontSize: 11, color: 'var(--text-3)' }}>el cliente paga $ {Number(p.card_charged).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
                     )}
                     {p.account_name && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>entra a {p.account_name}{p.acredita_el ? ` · acredita el ${String(p.acredita_el).split('-').reverse().slice(0, 2).join('/')}` : ''}</span>}
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                    <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
                     <button className="btn-ghost" onClick={() => setPayments(ps => ps.filter((_, j) => j !== i))} style={{ padding: 0, color: 'var(--red)' }}>×</button>
                   </div>
                 </div>
@@ -1140,8 +1140,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                 <span style={{ flex: 1 }}>Saldo</span>
                 <span style={{ color: isOverpaid ? 'var(--blue)' : rem <= 0.01 ? 'var(--green)' : 'var(--amber)' }}>
                   {isOverpaid
-                    ? `${sc === 'USD' ? 'U$' : '$'} ${overAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} a favor del cliente`
-                    : rem <= 0.01 ? 'Cubierto' : `${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString(undefined, { maximumFractionDigits: 2 })} pendiente`}
+                    ? `${sc === 'USD' ? 'U$' : '$'} ${overAmount.toLocaleString('es-AR', { maximumFractionDigits: 2 })} a favor del cliente`
+                    : rem <= 0.01 ? 'Cubierto' : `${sc === 'USD' ? 'U$' : '$'} ${rem.toLocaleString('es-AR', { maximumFractionDigits: 2 })} pendiente`}
                 </span>
               </div>
 

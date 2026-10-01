@@ -312,7 +312,7 @@ function SparePartsTab() {
                   <td style={{ fontWeight: 600 }}>{p.name}</td>
                   <td style={{ color: 'var(--text-2)', fontSize: 13 }}>{p.category || '—'}</td>
                   <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>
-                    {p.currency === 'USD' ? 'USD ' : '$'}{p.cost_price?.toLocaleString()}
+                    {p.currency === 'USD' ? 'USD ' : '$'}{p.cost_price?.toLocaleString('es-AR')}
                   </td>
                   <td>
                     <span className="badge" style={{
@@ -909,7 +909,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
                       {rp.currency === 'USD' ? 'USD ' : '$'}{rp.cost_price} × {rp.qty}
                       {rp.currency === 'USD' && (
                         <span style={{ color: 'var(--text-3)', marginLeft: 4 }}>
-                          (≈ ${(rp.cost_price * exchangeRate * rp.qty).toLocaleString()})
+                          (≈ ${(rp.cost_price * exchangeRate * rp.qty).toLocaleString('es-AR')})
                         </span>
                       )}
                     </div>}
@@ -1054,11 +1054,11 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
           {/* Cost breakdown */}
           {isOwner && (repairParts.length > 0 || laborCost > 0) && (
             <div style={{ background: 'var(--surface-2)', padding: 10, borderRadius: 8, border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-2)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              <span>Repuestos: <strong>${totalPartsCostARS.toLocaleString()}</strong></span>
+              <span>Repuestos: <strong>${totalPartsCostARS.toLocaleString('es-AR')}</strong></span>
               <span style={{ color: 'var(--border)' }}>|</span>
-              <span>Mano de obra: <strong>${(laborCost || 0).toLocaleString()}</strong></span>
+              <span>Mano de obra: <strong>${(laborCost || 0).toLocaleString('es-AR')}</strong></span>
               <span style={{ color: 'var(--border)' }}>|</span>
-              <span style={{ color: 'var(--text)', fontWeight: 700 }}>Total costo: ${totalCostARS.toLocaleString()}</span>
+              <span style={{ color: 'var(--text)', fontWeight: 700 }}>Total costo: ${totalCostARS.toLocaleString('es-AR')}</span>
             </div>
           )}
 

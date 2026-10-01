@@ -382,7 +382,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
               <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-3)', fontSize: 11 }} />
               <Tooltip
                 contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }}
-                formatter={(val: any) => [`U$ ${val.toLocaleString()}`, undefined]}
+                formatter={(val: any) => [`U$ ${val.toLocaleString('es-AR')}`, undefined]}
               />
               <Legend verticalAlign="top" height={36} />
               <Area type="monotone" dataKey="revenue" name="Facturación" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#revGrad)" />
@@ -409,7 +409,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
                   <YAxis dataKey="model" type="category" axisLine={false} tickLine={false} tick={{ fill: 'var(--text)', fontSize: 11, fontWeight: 500 }} width={130} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }}
-                    formatter={(val: any, name: any) => [`U$ ${Math.round(val).toLocaleString()}`, name === 'profit' ? 'Ganancia' : name]}
+                    formatter={(val: any, name: any) => [`U$ ${Math.round(val).toLocaleString('es-AR')}`, name === 'profit' ? 'Ganancia' : name]}
                   />
                   <Bar dataKey="profit" name="Ganancia" radius={[0, 6, 6, 0]} barSize={22}>
                     {modelRanking.map((_, i) => (
@@ -452,7 +452,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, color: s.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                      U$ {Math.round(s.profit).toLocaleString()}
+                      U$ {Math.round(s.profit).toLocaleString('es-AR')}
                     </div>
                   </div>
                 </div>
@@ -479,7 +479,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-3)', fontSize: 11 }} />
                 <Tooltip
                   contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }}
-                  formatter={(val: any) => [`U$ ${val.toLocaleString()}`, 'Gastos']}
+                  formatter={(val: any) => [`U$ ${val.toLocaleString('es-AR')}`, 'Gastos']}
                 />
                 <Bar dataKey="expenses" name="Gastos" radius={[6, 6, 0, 0]} barSize={36}>
                   {depBalance.map((_, i) => (
@@ -494,7 +494,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
 
       {/* Exchange rate info */}
       <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: 'var(--text-3)' }}>
-        Cotización Dólar Blue utilizada: <strong>$ {exchangeRate.toLocaleString()}</strong> · Los montos en ARS se convirtieron automáticamente.
+        Cotización Dólar Blue utilizada: <strong>$ {exchangeRate.toLocaleString('es-AR')}</strong> · Los montos en ARS se convirtieron automáticamente.
       </div>
 
       {detailCat && (

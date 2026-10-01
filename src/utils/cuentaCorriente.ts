@@ -15,6 +15,8 @@
  * real. Este módulo es la cuenta: no habla con Supabase, sólo con números.
  */
 
+import { diaLocal } from './fechas'
+
 export type Moneda = 'ARS' | 'USD'
 
 /**
@@ -75,8 +77,15 @@ function redondear(n: number): number {
 }
 
 /** La parte `AAAA-MM-DD` de una fecha, venga con hora o sin ella. */
+/**
+ * El día de un movimiento. Una fecha sola ('2026-09-30', como `paid_at`)
+ * queda como está; un instante ('2026-10-01T00:30:00Z', como `created_at`)
+ * se pasa al día local: recortado en UTC, una venta de las 21:30 figuraba
+ * en el extracto al día siguiente.
+ */
 function soloFecha(valor: string | null | undefined): string {
-  return (valor || '').slice(0, 10)
+  const v = valor || ''
+  return v.length > 10 && v.includes('T') ? diaLocal(v) : v.slice(0, 10)
 }
 
 /**

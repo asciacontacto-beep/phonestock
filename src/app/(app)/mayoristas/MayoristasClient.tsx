@@ -59,8 +59,8 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
 
   const renderBalance = (b: { USD: number; ARS: number }) => {
     const parts: string[] = []
-    if (b.USD > 0) parts.push(`-U$${b.USD.toLocaleString()}`)
-    if (b.ARS > 0) parts.push(`-$${b.ARS.toLocaleString()}`)
+    if (b.USD > 0) parts.push(`-U$${b.USD.toLocaleString('es-AR')}`)
+    if (b.ARS > 0) parts.push(`-$${b.ARS.toLocaleString('es-AR')}`)
     if (parts.length === 0) return <span style={{ color: 'var(--green)' }}>Al día ✓</span>
     return <span style={{ color: 'var(--red)' }}>{parts.join(' / ')}</span>
   }
@@ -70,8 +70,8 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
       return <div className="sv" style={{ color: 'var(--green)' }}>$0</div>
     }
     const lines: string[] = []
-    if (totalUSD > 0) lines.push(`U$${totalUSD.toLocaleString()}`)
-    if (totalARS > 0) lines.push(`$${totalARS.toLocaleString()}`)
+    if (totalUSD > 0) lines.push(`U$${totalUSD.toLocaleString('es-AR')}`)
+    if (totalARS > 0) lines.push(`$${totalARS.toLocaleString('es-AR')}`)
     return (
       <div style={{ color: 'var(--red)' }}>
         {lines.map((l, i) => (
@@ -101,7 +101,7 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
         </div>
         <div className="sc">
           <div className="sl">Total cobrado</div>
-          <div className="sv">${totalCobrado.toLocaleString()}</div>
+          <div className="sv">${totalCobrado.toLocaleString('es-AR')}</div>
         </div>
         <div className="sc">
           <div className="sl">Pedidos activos</div>

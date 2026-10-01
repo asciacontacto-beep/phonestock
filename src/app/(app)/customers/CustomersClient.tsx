@@ -210,7 +210,7 @@ export function CustomersClient({
                       {ls ? new Date(ls.created_at).toLocaleDateString('es-AR') : '—'}
                     </td>
                     <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>
-                      {ts > 0 ? `U$ ${ts.toLocaleString()}` : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                      {ts > 0 ? `U$ ${ts.toLocaleString('es-AR')}` : <span style={{ color: 'var(--text-3)' }}>—</span>}
                     </td>
                     <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, fontSize: 12 }}>
                       {d.USD <= 0 && d.ARS <= 0 ? (
@@ -342,7 +342,7 @@ export function CustomersClient({
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <div style={{ fontWeight: 700 }}>{s.brand} {s.model}</div>
                       <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, color: 'var(--green)' }}>
-                        {s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}
+                        {s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString('es-AR')}
                       </div>
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)' }}>

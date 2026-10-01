@@ -146,7 +146,7 @@ export function SellAccessoriesModal({ accessories, onClose, onSold }: {
                 <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border)' }}>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{a.category}{a.compatible_model ? ' · ' + a.compatible_model : ''}{a.color ? ' · ' + a.color : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Stock: {a.stock} · {sym} {(a.sale_price || 0).toLocaleString()}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Stock: {a.stock} · {sym} {(a.sale_price || 0).toLocaleString('es-AR')}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     {inCart ? (
@@ -174,7 +174,7 @@ export function SellAccessoriesModal({ accessories, onClose, onSold }: {
                     <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: 'var(--surface-3)', borderRadius: 6 }}>
                       <div style={{ fontSize: 13 }}>{item.qty}x {item.name}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>{sym} {(item.sale_price * item.qty).toLocaleString()}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{sym} {(item.sale_price * item.qty).toLocaleString('es-AR')}</span>
                         <button className="btn-icon" onClick={() => removeItem(item.id)}><Trash2 size={13} color="var(--red)" /></button>
                       </div>
                     </div>
@@ -189,7 +189,7 @@ export function SellAccessoriesModal({ accessories, onClose, onSold }: {
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 12px', fontWeight: 700, fontSize: 16 }}>
-                  Total: $ {Math.round(totalARS).toLocaleString()}
+                  Total: $ {Math.round(totalARS).toLocaleString('es-AR')}
                 </div>
               </div>
 
@@ -213,7 +213,7 @@ export function SellAccessoriesModal({ accessories, onClose, onSold }: {
         <div style={{ display: 'flex', gap: 10, padding: '16px 20px', borderTop: '1px solid var(--border)' }}>
           <button className="btn btn-ghost" onClick={onClose} disabled={loading}>Cancelar</button>
           <button className="btn btn-dark btn-lg" style={{ flex: 1 }} onClick={confirm} disabled={loading || cart.length === 0}>
-            {loading ? 'Procesando...' : `Confirmar · $ ${Math.round(totalARS).toLocaleString()}`}
+            {loading ? 'Procesando...' : `Confirmar · $ ${Math.round(totalARS).toLocaleString('es-AR')}`}
           </button>
         </div>
       </div>

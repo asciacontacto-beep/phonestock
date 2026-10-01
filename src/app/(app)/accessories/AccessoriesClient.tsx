@@ -113,16 +113,16 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
         <div className="sc">
           <div className="sl">Valor Total Venta</div>
           <div className="sv" style={{ color: 'var(--green)' }}>
-            {totalValueUSD > 0 && <span style={{ marginRight: 8 }}>U$ {totalValueUSD.toLocaleString()}</span>}
-            {totalValueARS > 0 && <span>$ {totalValueARS.toLocaleString()}</span>}
+            {totalValueUSD > 0 && <span style={{ marginRight: 8 }}>U$ {totalValueUSD.toLocaleString('es-AR')}</span>}
+            {totalValueARS > 0 && <span>$ {totalValueARS.toLocaleString('es-AR')}</span>}
             {totalValueUSD === 0 && totalValueARS === 0 && <span>U$ 0</span>}
           </div>
         </div>
         <div className="sc">
           <div className="sl">Costo Total</div>
           <div className="sv">
-            {totalCostUSD > 0 && <span style={{ marginRight: 8 }}>U$ {totalCostUSD.toLocaleString()}</span>}
-            {totalCostARS > 0 && <span>$ {totalCostARS.toLocaleString()}</span>}
+            {totalCostUSD > 0 && <span style={{ marginRight: 8 }}>U$ {totalCostUSD.toLocaleString('es-AR')}</span>}
+            {totalCostARS > 0 && <span>$ {totalCostARS.toLocaleString('es-AR')}</span>}
             {totalCostUSD === 0 && totalCostARS === 0 && <span>U$ 0</span>}
           </div>
         </div>
@@ -161,8 +161,8 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
                   <span className={`badge ${a.stock > 0 ? 'b-green' : 'b-red'}`}>{a.stock} un.</span>
                 </td>
                 <td>{deposits.find((d:any) => d.id === a.deposit_id)?.name}</td>
-                <td>{a.currency === 'USD' ? 'U$' : '$'} {a.cost_price?.toLocaleString() || 0}</td>
-                <td style={{ fontWeight: 600 }}>{a.currency === 'USD' ? 'U$' : '$'} {a.sale_price?.toLocaleString() || 0}</td>
+                <td>{a.currency === 'USD' ? 'U$' : '$'} {a.cost_price?.toLocaleString('es-AR') || 0}</td>
+                <td style={{ fontWeight: 600 }}>{a.currency === 'USD' ? 'U$' : '$'} {a.sale_price?.toLocaleString('es-AR') || 0}</td>
                 {(user.role === 'owner' || user.role === 'admin') && (
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>

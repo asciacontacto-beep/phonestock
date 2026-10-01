@@ -412,7 +412,7 @@ export function DashboardClient({
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `ventas_${range}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `ventas_${range}_${new Date().toLocaleDateString('en-CA')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

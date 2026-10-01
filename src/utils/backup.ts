@@ -102,7 +102,7 @@ export async function armarRespaldo(
 export async function downloadBackup(supabase: SupabaseClient): Promise<BackupResult> {
   const { texto, tables } = await armarRespaldo(supabase)
 
-  const stamp = new Date().toISOString().slice(0, 10)
+  const stamp = new Date().toLocaleDateString('en-CA')
   const fileName = `respaldo_${stamp}.csv`
   // BOM para que Excel respete los acentos.
   const blob = new Blob(['﻿' + texto], { type: 'text/csv;charset=utf-8;' })

@@ -19,12 +19,12 @@ export function CobrosClient() {
   const [monthFilter, setMonthFilter] = useState('all')
   const [form, setForm] = useState({
     org_id: '', amount: '', currency: 'USD', method: 'Transferencia',
-    concept: 'Licencia', paid_at: new Date().toISOString().slice(0, 10), notes: '',
+    concept: 'Licencia', paid_at: new Date().toLocaleDateString('en-CA'), notes: '',
   })
 
   const resetForm = () => setForm({
     org_id: '', amount: '', currency: 'USD', method: 'Transferencia',
-    concept: 'Licencia', paid_at: new Date().toISOString().slice(0, 10), notes: '',
+    concept: 'Licencia', paid_at: new Date().toLocaleDateString('en-CA'), notes: '',
   })
 
   const save = async () => {
@@ -91,7 +91,7 @@ export function CobrosClient() {
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = `cobros_${new Date().toISOString().slice(0, 10)}.csv`; a.click()
+    a.href = url; a.download = `cobros_${new Date().toLocaleDateString('en-CA')}.csv`; a.click()
     URL.revokeObjectURL(url)
   }
 

@@ -117,9 +117,9 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                       <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{items.length} equipos disponibles</div>
                       {(valUsd > 0 || valArs > 0) && (
                         <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4 }}>
-                          Capital: {valUsd > 0 ? `U$ ${valUsd.toLocaleString()}` : ''}
+                          Capital: {valUsd > 0 ? `U$ ${valUsd.toLocaleString('es-AR')}` : ''}
                           {valUsd > 0 && valArs > 0 ? ' + ' : ''}
-                          {valArs > 0 ? `$ ${valArs.toLocaleString()}` : ''}
+                          {valArs > 0 ? `$ ${valArs.toLocaleString('es-AR')}` : ''}
                         </div>
                       )}
                     </div>
@@ -183,7 +183,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                     <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{s.storage} · {s.color}</div>
                   </td>
                   <td style={{ fontFamily: 'monospace', color: 'var(--text-3)', fontSize: 12 }}>{s.imei}</td>
-                  <td style={{ fontWeight: 700 }}>{s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString()}</td>
+                  <td style={{ fontWeight: 700 }}>{s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString('es-AR')}</td>
                   <td>
                     {dep ? (
                       <span className="badge b-neu" style={{ borderLeft: `3px solid ${dep.color}` }}>

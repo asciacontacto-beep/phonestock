@@ -144,11 +144,11 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
       <div className="sg" style={{ marginBottom: 24 }}>
         <div className="sc">
           <div className="sl">Total ARS</div>
-          <div className="sv" style={{ color: 'var(--red)' }}>$ {Math.round(totalARS).toLocaleString()}</div>
+          <div className="sv" style={{ color: 'var(--red)' }}>$ {Math.round(totalARS).toLocaleString('es-AR')}</div>
         </div>
         <div className="sc">
           <div className="sl">Total USD</div>
-          <div className="sv" style={{ color: 'var(--red)' }}>U$ {totalUSD.toLocaleString()}</div>
+          <div className="sv" style={{ color: 'var(--red)' }}>U$ {totalUSD.toLocaleString('es-AR')}</div>
         </div>
         <div className="sc">
           <div className="sl">Registros</div>
@@ -167,8 +167,8 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
                 <span style={{ fontWeight: 600, fontSize: 14 }}>{cat}</span>
               </div>
               <div style={{ display: 'flex', gap: 16, fontFamily: 'JetBrains Mono', fontSize: 13 }}>
-                {vals.ars > 0 && <span style={{ color: 'var(--text-2)' }}>$ {Math.round(vals.ars).toLocaleString()}</span>}
-                {vals.usd > 0 && <span style={{ color: 'var(--text-2)' }}>U$ {vals.usd.toLocaleString()}</span>}
+                {vals.ars > 0 && <span style={{ color: 'var(--text-2)' }}>$ {Math.round(vals.ars).toLocaleString('es-AR')}</span>}
+                {vals.usd > 0 && <span style={{ color: 'var(--text-2)' }}>U$ {vals.usd.toLocaleString('es-AR')}</span>}
               </div>
             </div>
           ))}
@@ -232,7 +232,7 @@ export function ExpensesClient({ initialExpenses, initialDeposits, currentUser }
                   <td><span className="badge b-neu">{e.category}</span></td>
                   <td style={{ fontSize: 13 }}>{depName(e.deposit_id)}</td>
                   <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--red)' }}>
-                    {e.currency === 'USD' ? 'U$' : '$'} {e.amount?.toLocaleString()}
+                    {e.currency === 'USD' ? 'U$' : '$'} {e.amount?.toLocaleString('es-AR')}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                     {e.created_at ? new Date(e.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) : '—'}

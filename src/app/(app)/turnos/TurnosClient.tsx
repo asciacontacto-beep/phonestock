@@ -1078,7 +1078,7 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase }: a
                     <span style={{ fontWeight: 600, fontSize: 14 }}>{p.label}</span>
                     {p.exchange_rate && (
                       <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6 }}>
-                        ({p.currency === 'USD' ? 'U$' : '$'} {p.original_amount.toLocaleString()} · cot. {p.exchange_rate})
+                        ({p.currency === 'USD' ? 'U$' : '$'} {p.original_amount.toLocaleString('es-AR')} · cot. {p.exchange_rate})
                       </span>
                     )}
                   </div>

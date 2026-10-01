@@ -644,6 +644,60 @@ Es solo reordenar lo que ya existe; no agrega funciones.
   30 permisos individuales.** Suman pantallas; conviene esperar a que un
   cliente los pida.
 
+## Estado en Stackr (1/10/2026): implementado
+
+Todo lo propuesto (A a F) quedó hecho y probado en local, con ventas de
+prueba sobre una copia de la base. La base de producción no se tocó: para
+activarlo hay que aplicar la migración
+`supabase/migrations/20260930_cuentas_financieras_y_caja.sql`. Los pasos
+están en `docs/mejoras/README.md`, sección 5. Sin la migración, la app
+funciona como antes.
+
+**A. Cuentas**
+- Se cargan en Configuración → Cobros.
+- La venta pregunta a qué cuenta entró la transferencia; también el cobro
+  de cuotas y el pago a proveedores.
+- En Cajas hay un bloque "Por cuenta".
+
+**B. Planes de tarjeta o financiera**
+- Cada plan dice dónde acredita y a cuántos días.
+- Lo que falta acreditar aparece en Cajas y como tarjeta en el Dashboard.
+- **Bug corregido:** la ganancia de reportes y dashboard no descontaba el
+  recargo que absorbía el local.
+
+**C. Cobrado al cliente separado de la ganancia**
+- Aparece en el detalle de la venta y en el comprobante (recargo y total
+  abonado).
+- La lista de ventas muestra chips de medio de pago y cuenta, y la ganancia
+  en ámbar si falta cobrar.
+
+**D. Pantalla de venta**
+- Cada plan muestra el total y la cuota.
+- Botones de monto (justo y redondeos) y de seña (10, 20, 30 y 50%).
+- Panel "A dónde va la plata".
+- **Bug corregido:** la vista previa calculaba la ganancia contra un pago
+  parcial.
+
+**E. Caja y canjes**
+- "Mi caja" del vendedor: antes redirigía y no existía.
+- Cierre a ciegas opcional; el dueño ve la diferencia en Cajas.
+- El vuelto ahora se descuenta del efectivo esperado.
+- Pago a proveedor por transferencia que sale de una cuenta.
+- Valores de toma por modelo, capacidad y batería; el canje propone el
+  valor.
+
+**F. Configuración**
+- Menú lateral por secciones y versión al pie.
+- En Cotización, el ejemplo "USD 100 se cobra $…".
+
+**Además (pedido del dueño)**
+- Inventario muestra la ficha del equipo en la misma pantalla y un resumen
+  de stock, capital, valor y margen.
+- Se corrigieron los errores de hidratación (fechas y números distintos
+  entre servidor y navegador).
+- Se corrigió el extracto de cuenta corriente, que mostraba al día
+  siguiente las ventas hechas de noche.
+
 ## Pendiente (requiere acceso a `api.stukysistema.com`)
 
 - Cargar ventas de prueba con transferencia, tarjeta en cuotas, seña y

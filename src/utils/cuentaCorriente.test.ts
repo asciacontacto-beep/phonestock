@@ -210,6 +210,15 @@ describe('validarCobro', () => {
   })
 })
 
+describe('construirMovimientos · día de la venta', () => {
+  it('una venta de las 21:30 en Argentina figura ese día, no al siguiente', () => {
+    const [m] = construirMovimientos([
+      { id: 1, brand: 'Apple', model: 'AirPods', price: 260000, balance_due: 200000, currency: 'ARS', created_at: '2026-10-01T00:30:00Z' },
+    ], [], 'ARS')
+    expect(m.fecha).toBe('2026-09-30')
+  })
+})
+
 describe('construirMovimientos', () => {
   const ventas = [
     venta({ id: 'v1', price: 1000, balance_due: 400, currency: 'USD', created_at: '2026-09-01T10:00:00Z' }),

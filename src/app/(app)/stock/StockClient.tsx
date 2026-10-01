@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
-import { BRANDS, STORAGES, COLORS, MODEL_STORAGES, almacenamientosDe } from '@/constants/data';
-import { Edit2, Trash2, X, Search, PenLine, Package, ShoppingCart, Clock, Plus } from 'lucide-react';
+import { BRANDS, STORAGES, COLORS, almacenamientosDe, tieneAlmacenamiento } from '@/constants/data';
+import { Edit2, Trash2, X, Search, PenLine, Package, Clock, Plus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { configuracionDelLocal } from '@/utils/configuracion';
 import { mandarAReparar } from '@/utils/reparacionPropia';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { STOCK_SIN_COSTO } from '@/utils/sinCostos';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
 import { useConfirm } from '@/hooks/useConfirm';
+import { DetalleEquipo } from '@/components/DetalleEquipo';
 
 /** Dias que el equipo lleva sin venderse. Plata parada es lo que mas duele. */
 function daysInStock(createdAt?: string | null): number | null {
@@ -46,6 +47,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
   const [bulkDeposit, setBulkDeposit] = useState<string>('');
   const [bulkTransferring, setBulkTransferring] = useState(false);
   const [visibleCount, setVisibleCount] = useState(50);
+  const [proveedores, setProveedores] = useState<Record<string, string>>({});
   const router = useRouter();
   const supabase = createClient();
 
@@ -61,6 +63,19 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
       ]);
       setStock(stockData || []);
       setDeposits(depositsData || []);
+      /* Datos extra de la ficha (catálogo y proveedor) en una consulta
+         aparte: si alguna columna no existe en esta base, la lista igual
+         carga. */
+      supabase.from('stock').select('id,in_catalog,supplier_id').then(({ data, error }) => {
+        if (error || !data) return;
+        const extra = new Map((data as { id: string | number }[]).map(r => [String(r.id), r]));
+        setStock(p => p.map(x => ({ ...x, ...(extra.get(String(x.id)) || {}) })));
+      });
+      if (isOwner) {
+        supabase.from('suppliers').select('id,name').then(({ data }) => {
+          setProveedores(Object.fromEntries(((data || []) as { id: string | number; name: string }[]).map(p => [String(p.id), p.name])));
+        });
+      }
       if (settingsData?.exchange_rate) setExchangeRate(settingsData.exchange_rate);
       if (depositsData && depositsData.length > 0) setSelectedDeposit(depositsData[0].id);
       setDataLoaded(true);
@@ -110,6 +125,21 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
     return { count: items.length, capital };
   }, [stock, exchangeRate]);
 
+  /* Resumen del stock disponible, en dólares (lo que está en pesos se pasa
+     con la cotización de Ajustes). El costo y el margen sólo para el dueño. */
+  const resumen = useMemo(() => {
+    const disp = stock.filter(s => s.status === 'available');
+    const aUSD = (v: number, cur: string) => (cur === 'USD' ? v : v / (exchangeRate || 1));
+    let costo = 0, venta = 0, conCosto = 0, ventaConCosto = 0;
+    for (const s of disp) {
+      const p = aUSD(Number(s.price) || 0, s.currency);
+      venta += p;
+      if (s.cost_price) { costo += aUSD(Number(s.cost_price), s.currency); conCosto += 1; ventaConCosto += p; }
+    }
+    return { unidades: disp.length, costo, venta, margen: ventaConCosto - costo, sinCosto: disp.length - conCosto,
+      modelos: new Set(disp.map(s => s.model)).size };
+  }, [stock, exchangeRate]);
+
   const handleDelete = async (id: any) => {
     if (!await confirm('¿Eliminar este equipo del stock?')) return;
     try {
@@ -149,14 +179,16 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
         imei: editItem.imei || null,
         battery: editItem.condition === 'used' ? (editItem.battery || null) : null,
         notes: editItem.notes?.trim() || null,
-        // in_catalog no va: esta pantalla no lo trae ni lo edita, y mandarlo
-        // en false sacaba el equipo del catálogo público en cada edición.
+        // in_catalog va sólo si se leyó de la base: mandarlo sin saber el
+        // valor real sacaba el equipo del catálogo público en cada edición.
+        ...(typeof editItem.in_catalog === 'boolean' ? { in_catalog: editItem.in_catalog } : {}),
       };
       const { error } = await supabase.from('stock').update(updatedFields).eq('id', editItem.id);
       if (error) throw error;
       const updatedItem = { ...editItem, ...updatedFields };
       setStock(p => p.map(s => s.id === editItem.id ? updatedItem : s));
       setEditItem(null);
+      if (detailItem?.id === updatedItem.id) setDetailItem(updatedItem);
       router.refresh();
       toast.success('Equipo actualizado');
     } catch (e: any) { 
@@ -228,6 +260,16 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
           <PenLine size={15} /> Cargar equipo
         </button>
       </div>
+
+      {dataLoaded && resumen.unidades > 0 && (
+        <div className="inv-kpis no-print">
+          <div className="inv-kpi"><span>En stock</span><strong>{resumen.unidades}</strong><em>{resumen.modelos} {resumen.modelos === 1 ? 'modelo' : 'modelos'}</em></div>
+          {isOwner && <div className="inv-kpi"><span>Capital invertido</span><strong>U$ {Math.round(resumen.costo).toLocaleString('es-AR')}</strong><em>{resumen.sinCosto > 0 ? `${resumen.sinCosto} sin costo cargado` : 'a precio de costo'}</em></div>}
+          <div className="inv-kpi"><span>Valor de venta</span><strong>U$ {Math.round(resumen.venta).toLocaleString('es-AR')}</strong><em>a precio de lista</em></div>
+          {isOwner && <div className="inv-kpi"><span>Margen potencial</span><strong style={{ color: resumen.margen >= 0 ? 'var(--green)' : 'var(--red)' }}>U$ {Math.round(resumen.margen).toLocaleString('es-AR')}</strong><em>si vendés todo a lista</em></div>}
+          <div className="inv-kpi"><span>Más de 60 días</span><strong style={{ color: aged.count > 0 ? 'var(--amber)' : undefined }}>{aged.count}</strong><em>{isOwner && aged.capital > 0 ? `U$ ${Math.round(aged.capital).toLocaleString('es-AR')} parados` : 'sin venderse'}</em></div>
+        </div>
+      )}
 
       <div className="search-bar no-print">
         <Search size={16} color="var(--text-3)" style={{ flexShrink: 0 }} />
@@ -372,24 +414,31 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
           }}
         />
       ) : (
-        <>
+        <div className={`inv-layout ${detailItem ? 'con-detalle' : ''}`}>
+          <div style={{ minWidth: 0 }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-            {rows.slice(0, visibleCount).map((s, idx) => {
+            <div className="inv-cabecera">
+              <span>{rows.length} {rows.length === 1 ? 'equipo' : 'equipos'}</span>
+              <span>Precio</span>
+              <span className="inv-cab-dep">Depósito</span>
+            </div>
+            {rows.slice(0, visibleCount).map((s) => {
               const dep = depositOf(s);
               const isSelected = selectedItems.includes(s.id);
+              const isOpen = detailItem?.id === s.id;
               const batteryLabel = s.battery ? (String(s.battery).includes('%') ? s.battery : `${s.battery}%`) : null;
               return (
                 <div
                   key={s.id}
                   onClick={() => setDetailItem(s)}
-                  className="inv-row"
+                  className={`inv-row ${isOpen ? 'is-open' : ''}`}
                   style={{
-                    background: isSelected ? 'var(--surface-2)' : 'transparent',
-                    borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                    background: isSelected || isOpen ? 'var(--surface-2)' : 'transparent',
+                    borderTop: '1px solid var(--border)',
                     cursor: 'pointer', transition: 'background 0.1s',
                   }}
-                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-2)'; }}
-                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                  onMouseEnter={e => { if (!isSelected && !isOpen) (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-2)'; }}
+                  onMouseLeave={e => { if (!isSelected && !isOpen) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                 >
                   {/* Custom checkbox */}
                   <div className="inv-check" onClick={e => e.stopPropagation()}>
@@ -410,19 +459,18 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
                     </div>
                   </div>
 
-                  {/* Condition dot */}
-                  <div className="inv-dot" style={{
-                    background: s.condition === 'new' ? 'var(--green)' : 'var(--text-3)',
-                  }} />
-
                   {/* Main info */}
                   <div style={{ flex: '1 1 160px', minWidth: 0 }}>
                     <div className="inv-name">
                       {s.model}
+                      <span className={`inv-cond ${s.condition === 'new' ? 'nuevo' : ''}`}>{s.condition === 'new' ? 'Sellado' : 'Usado'}</span>
+                      {s.status !== 'available' && filter.status !== s.status && <span className="inv-cond">{s.status === 'sold' ? 'Vendido' : s.status === 'in_repair' ? 'En taller' : s.status}</span>}
                     </div>
                     <div className="inv-meta">
-                      <span>{s.storage}</span>
-                      {s.color && <><span>·</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.color}</span></>}
+                      {/* Sin almacenamiento (AirPods, accesorios) no se muestra un "-" suelto. */}
+                      {[tieneAlmacenamiento(s.storage) ? s.storage : null, s.color].filter(Boolean).map((t, i) => (
+                        <span key={i} style={{ display: 'contents' }}>{i > 0 && <span>·</span>}<span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</span></span>
+                      ))}
                       {batteryLabel && s.condition === 'used' && <><span>·</span><span>{batteryLabel}</span></>}
                       {s.imei && <><span>·</span><span style={{ fontFamily: 'monospace', flexShrink: 0 }}>···{s.imei.slice(-6)}</span></>}
                       {s.status === 'available' && (() => {
@@ -438,13 +486,16 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
                   {/* Price */}
                   <div style={{ flex: '0 0 auto', textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>
-                      {s.currency === 'USD' ? 'U$' : '$'}{s.price?.toLocaleString()}
+                      {s.currency === 'USD' ? 'U$' : '$'}{s.price?.toLocaleString('es-AR')}
                     </div>
-                    {isOwner && s.cost_price && (
+                    {isOwner && s.cost_price ? (
                       <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
-                        costo {s.currency === 'USD' ? 'U$' : '$'}{s.cost_price.toLocaleString()}
+                        costo {s.currency === 'USD' ? 'U$' : '$'}{s.cost_price.toLocaleString('es-AR')}
+                        {s.price > 0 && <span style={{ color: s.price - s.cost_price >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}> · {Math.round(((s.price - s.cost_price) / s.price) * 100)}%</span>}
                       </div>
-                    )}
+                    ) : isOwner ? (
+                      <div style={{ fontSize: 11, color: 'var(--amber)', marginTop: 1 }}>sin costo</div>
+                    ) : null}
                   </div>
 
                   {/* Deposit */}
@@ -471,7 +522,27 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
             </button>
           </div>
         )}
-        </>
+          </div>
+
+          {/* Ficha del equipo en la misma pantalla. En el celular sube como hoja. */}
+          {detailItem && (
+            <>
+              <div className="eq-fondo" onClick={() => setDetailItem(null)} />
+              <DetalleEquipo
+                key={detailItem.id}
+                item={detailItem}
+                deposito={depositOf(detailItem)}
+                isOwner={isOwner}
+                exchangeRate={exchangeRate}
+                proveedor={detailItem.supplier_id != null ? proveedores[String(detailItem.supplier_id)] : null}
+                onClose={() => setDetailItem(null)}
+                onVender={() => router.push(`/sell?item=${detailItem.id}`)}
+                onEditar={() => setEditItem(detailItem)}
+                onEliminar={() => handleDelete(detailItem.id)}
+              />
+            </>
+          )}
+        </div>
       )}
 
       {selectedItems.length > 0 && (
@@ -627,85 +698,6 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
         </div>
       )}
 
-      {detailItem && (
-        <div className="mo" onClick={() => setDetailItem(null)}>
-          <div className="mb" onClick={e => e.stopPropagation()}>
-            <div className="mh">
-              <div>
-                <div className="mh-title">{detailItem.brand} {detailItem.model}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
-                  {detailItem.storage} · {detailItem.color}
-                </div>
-              </div>
-              <button className="btn-icon" onClick={() => setDetailItem(null)}><X size={18} /></button>
-            </div>
-            <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-              {/* Price block */}
-              <div>
-                <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1 }}>
-                  {detailItem.currency === 'USD' ? 'U$' : '$'}{detailItem.price?.toLocaleString()}
-                </div>
-                {isOwner && detailItem.cost_price && (
-                  <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 6 }}>
-                    costo {detailItem.currency === 'USD' ? 'U$' : '$'}{detailItem.cost_price?.toLocaleString()}
-                  </div>
-                )}
-              </div>
-
-              {/* Status + IMEI */}
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                {detailItem.status !== 'available' && (
-                  <span className="badge b-amber">Vendido</span>
-                )}
-                <span className={`badge ${detailItem.condition === 'new' ? 'b-green' : 'b-neu'}`}>
-                  {detailItem.condition === 'new' ? 'Sellado' : `Usado${detailItem.battery ? ' · ' + (String(detailItem.battery).includes('%') ? detailItem.battery : detailItem.battery + '%') : ''}`}
-                </span>
-                {detailItem.imei && (
-                  <span style={{ fontSize: 12, color: 'var(--text-3)', fontFamily: 'monospace' }}>···{detailItem.imei.slice(-6)}</span>
-                )}
-                {detailItem.status === 'available' && (() => {
-                  const d = daysInStock(detailItem.created_at);
-                  if (d == null) return null;
-                  const c = agingColor(d);
-                  return (
-                    <span style={{ fontSize: 12, color: c || 'var(--text-3)', fontWeight: c ? 700 : 400 }}>
-                      {d === 0 ? 'ingresó hoy' : `hace ${d} días en stock`}
-                    </span>
-                  );
-                })()}
-              </div>
-
-              {detailItem.notes && (
-                <div style={{ background: 'var(--surface-2)', padding: 12, borderRadius: 8, fontSize: 13 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 2, textTransform: 'uppercase', fontWeight: 600 }}>Observaciones</div>
-                  {detailItem.notes}
-                </div>
-              )}
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 10 }}>
-                {detailItem.status === 'available' && (
-                  <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => router.push(`/sell?item=${detailItem.id}`)}>
-                    <ShoppingCart size={15} /> Vender
-                  </button>
-                )}
-                <button className="btn btn-outline" style={{ flex: detailItem.status === 'available' ? 0 : 1, minWidth: 100 }}
-                  onClick={() => { setDetailItem(null); setEditItem(detailItem); }}>
-                  <Edit2 size={15} /> Editar
-                </button>
-                {/* En mobile la fila no muestra los botones de acción, así que
-                    borrar tiene que estar acá. */}
-                <button className="btn btn-outline" style={{ color: 'var(--red)', flex: 0 }} aria-label="Eliminar equipo"
-                  onClick={() => handleDelete(detailItem.id)}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-  
       {ConfirmDialog}
       <ManualEntryModal
         open={showManual}

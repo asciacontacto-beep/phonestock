@@ -237,7 +237,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
     if (fromDepData) {
       const availableBalance = fromDepData.totals[payment_method] || 0;
       if (transferAmount > availableBalance) {
-        toast.error(`Saldo insuficiente en la caja origen. Disponible: ${availableBalance.toLocaleString()}`);
+        toast.error(`Saldo insuficiente en la caja origen. Disponible: ${availableBalance.toLocaleString('es-AR')}`);
         return;
       }
     }
@@ -656,7 +656,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                 <div className="sc" style={{ background: closureResult.diff.usd === 0 ? 'var(--green-bg)' : 'rgba(239, 68, 68, 0.1)' }}>
                   <div className="sl">Diferencia USD</div>
                   <div className="sv" style={{ color: closureResult.diff.usd >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 20 }}>
-                    {closureResult.diff.usd >= 0 ? '+' : ''} U$ {closureResult.diff.usd.toLocaleString()}
+                    {closureResult.diff.usd >= 0 ? '+' : ''} U$ {closureResult.diff.usd.toLocaleString('es-AR')}
                   </div>
                 </div>
               </div>
@@ -665,8 +665,8 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                 <div className="receipt-row"><span>Esperado Pesos:</span><span>ARS {closureResult.expected.ars_cash.toLocaleString('es-AR')}</span></div>
                 <div className="receipt-row"><span>Declarado Pesos:</span><span>ARS {closureResult.declared.ars_cash.toLocaleString('es-AR')}</span></div>
                 <div className="divider" style={{ margin: '8px 0' }} />
-                <div className="receipt-row"><span>Esperado Dólares:</span><span>U$ {closureResult.expected.usd_cash.toLocaleString()}</span></div>
-                <div className="receipt-row"><span>Declarado Dólares:</span><span>U$ {closureResult.declared.usd_cash.toLocaleString()}</span></div>
+                <div className="receipt-row"><span>Esperado Dólares:</span><span>U$ {closureResult.expected.usd_cash.toLocaleString('es-AR')}</span></div>
+                <div className="receipt-row"><span>Declarado Dólares:</span><span>U$ {closureResult.declared.usd_cash.toLocaleString('es-AR')}</span></div>
               </div>
               <div style={{ marginTop: 24, textAlign: 'center' }}>
                 {Math.abs(closureResult.diff.ars) < 1 && Math.abs(closureResult.diff.usd) < 1 ? (

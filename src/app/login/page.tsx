@@ -612,7 +612,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
             </div>
 
             <div className="lp-form-card">
-              <form onSubmit={handleSubmit}>
+              <form method="post" onSubmit={handleSubmit}>
                 <AnimatePresence initial={false}>
                   {!isLogin && (
                     <motion.div
@@ -636,7 +636,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
 
                 <div className="lp-field">
                   <label className="lp-label">Email</label>
-                  <input className="lp-input" type="email" placeholder="nombre@empresa.com" value={email} onChange={e => setEmail(e.target.value)} required autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+                  <input className="lp-input" type="email" name="email" autoComplete="email" placeholder="nombre@empresa.com" value={email} onChange={e => setEmail(e.target.value)} required autoCapitalize="none" autoCorrect="off" spellCheck={false} />
                 </div>
 
                 <div className="lp-field" style={{ marginBottom: isLogin ? 8 : 18 }}>
@@ -648,7 +648,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
                       </button>
                     )}
                   </div>
-                  <input className="lp-input" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} required autoCapitalize="none" autoCorrect="off" />
+                  <input className="lp-input" type="password" name="password" autoComplete={isLogin ? "current-password" : "new-password"} placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} required autoCapitalize="none" autoCorrect="off" />
                 </div>
 
                 <AnimatePresence initial={false}>
@@ -662,7 +662,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
                       style={{ overflow: 'hidden' }}
                     >
                       <label className="lp-label">Confirmar contraseña</label>
-                      <input className="lp-input" type="password" placeholder="Repetí tu contraseña" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required={!isLogin} autoCapitalize="none" autoCorrect="off" />
+                      <input className="lp-input" type="password" autoComplete="new-password" placeholder="Repetí tu contraseña" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required={!isLogin} autoCapitalize="none" autoCorrect="off" />
                     </motion.div>
                   )}
                 </AnimatePresence>

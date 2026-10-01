@@ -272,10 +272,10 @@ function AppointmentCard({ appt, index, onEdit, onConfirm, onCancel, onDelete }:
         <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color: isToday ? 'var(--bg)' : appt.status === 'cancelled' ? 'var(--text-3)' : 'var(--text)' }}>
           {dt.getDate()}
         </div>
-        <div style={{ fontSize: 11, color: isToday ? 'color-mix(in srgb, var(--bg) 70%, transparent)' : 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3, fontWeight: 600 }}>
+        <div style={{ fontSize: 11, color: isToday ? 'var(--bg)' : 'var(--text-3)', opacity: isToday ? 0.7 : 1, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3, fontWeight: 600 }}>
           {dt.toLocaleDateString('es-AR', { month: 'short' })}
         </div>
-        <div style={{ fontSize: 12, color: isToday ? 'color-mix(in srgb, var(--bg) 80%, transparent)' : 'var(--text-2)', marginTop: 6, fontWeight: 600 }}>
+        <div style={{ fontSize: 12, color: isToday ? 'var(--bg)' : 'var(--text-2)', opacity: isToday ? 0.8 : 1, marginTop: 6, fontWeight: 600 }}>
           {timeStr}
         </div>
       </div>
@@ -513,7 +513,7 @@ function CalendarView({ appointments, tab, calDate, setCalDate, onConfirm, onEdi
                   border: `1px solid ${isToday ? 'var(--text)' : 'var(--border-md)'}`,
                   boxShadow: 'var(--shadow-xs)',
                 }}>
-                  <div style={{ fontSize: 10, color: isToday ? 'color-mix(in srgb, var(--bg) 70%, transparent)' : 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 10, color: isToday ? 'var(--bg)' : 'var(--text-3)', opacity: isToday ? 0.7 : 1, fontWeight: 600, textTransform: 'uppercase' }}>
                     {day.toLocaleDateString('es-AR', { weekday: 'short' })}
                   </div>
                   <div style={{ fontSize: 20, fontWeight: 800, color: isToday ? 'var(--bg)' : 'var(--text)', lineHeight: 1.2 }}>

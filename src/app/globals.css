@@ -315,7 +315,10 @@ input, select, textarea { outline: none; }
 /* Un punto más suave que el texto, en los dos temas. Antes era #333 fijo:
    en tema oscuro el botón (claro) se volvía gris oscuro al pasar el mouse,
    y en el celular quedaba así después de tocarlo. */
-.btn-dark:hover { background: color-mix(in srgb, var(--text) 86%, var(--bg)); }
+.btn-dark:hover { background: var(--text); opacity: .9; }
+@supports (color: color-mix(in srgb, red, blue)) {
+  .btn-dark:hover { background: color-mix(in srgb, var(--text) 86%, var(--bg)); opacity: 1; }
+}
 
 .btn-outline {
   background: var(--surface); color: var(--text-2);
@@ -808,6 +811,7 @@ select.inp {
     /* clip y no hidden: hidden convierte a la página en un contenedor con
        scroll propio y lo "sticky" de adentro (la barra de la venta) deja
        de pegarse. */
+    overflow-x: hidden; /* Safari < 16 no conoce clip */
     overflow-x: clip;
   }
 
@@ -912,6 +916,7 @@ select.inp {
     border-radius: 20px;
     /* Con los colores del tema: era blanco fijo y en tema oscuro quedaba una
        barra gris clara con la sección activa casi invisible. */
+    background: var(--surface); /* Safari < 16.2 */
     background: color-mix(in srgb, var(--surface) 82%, transparent);
     backdrop-filter: blur(26px) saturate(180%);
     -webkit-backdrop-filter: blur(26px) saturate(180%);
@@ -949,7 +954,9 @@ select.inp {
   }
 
   .bn-item.on { color: var(--text); }
-  .bn-item.on .bn-ico { background: color-mix(in srgb, var(--text) 9%, transparent); }
+  /* Sin color-mix: el compilador le inventa a Safari viejo un respaldo
+     del color del texto, y el ícono quedaba invisible sobre su cápsula. */
+  .bn-item.on .bn-ico { background: var(--surface-3); }
   .bn-item:active .bn-ico { transform: scale(0.9); }
   .bn-lbl { line-height: 1; }
 
@@ -2073,6 +2080,7 @@ button, a, .btn, .btn-pill, .bn-item, .br-item, .br-cabeza, .sec-tab {
   .tb-wrap {
     display: block; position: sticky; top: 0; z-index: 20;
     padding: 10px 0 12px;
+    background: var(--bg); /* Safari < 16.2 */
     background: linear-gradient(to bottom, var(--bg) 70%, color-mix(in srgb, var(--bg) 0%, transparent));
   }
   .tb-wrap .topbar { position: relative; top: 0; margin-top: 0; }

@@ -1845,92 +1845,112 @@ select.inp {
   .gx-dos { grid-template-columns: 1fr; }
 }
 
-/* ── Menú lateral desplegable (BranchedNav) ──────────────────
-   Adaptado de "Branched Menu" de React Bits. Los temas se despliegan y
-   las pantallas cuelgan de una línea; la rama de la pantalla actual se
-   dibuja con el color del texto. Todo sale de los tokens del tema, así
-   que funciona igual en claro y oscuro. */
-.br-menu {
-  --br-fila: 34px;
-  --br-sangria: 38px;
-  --br-ease: cubic-bezier(0.23, 1, 0.32, 1);
-  position: relative;
-  display: flex; flex-direction: column;
-  padding: 4px 0 8px 14px; margin-left: 6px;
-  color: var(--text);
-  font-size: 13.5px; line-height: 1.2;
+/* ── Menú lateral (SideNav) ──────────────────────────────────
+   Minimalista, con un toque técnico: cada sección lleva su número en
+   monoespaciada y una regla fina que la separa del resto. Dos resaltados
+   que se deslizan: el de la pantalla actual (sólido, con una barrita a la
+   izquierda) y el del mouse (tenue). Los renglones toman el alto que les
+   da la barra (--sn-fila) para que el menú entre entero. */
+.s-nav.s-nav-sn { padding: 10px 10px 6px; overflow-y: auto; scrollbar-width: none; }
+.s-nav.s-nav-sn::-webkit-scrollbar { display: none; }
+.sn {
+  --sn-ease: cubic-bezier(.22, 1, .36, 1);
+  position: relative; display: flex; flex-direction: column;
+  padding-top: 2px;
 }
-.br-menu::before {
-  content: ''; position: absolute; top: 10px; bottom: 0; left: 0;
-  width: 2px; border-radius: 1px;
-  background: linear-gradient(to bottom, var(--border-md) 0%, var(--border-md) 60%, transparent 100%);
-}
-.br-marca {
-  position: absolute; top: -1px; left: 0; z-index: 1;
-  width: 2px; height: 16px; border-radius: 1px;
-  background: var(--text); opacity: 0;
-  transition: top 220ms var(--br-ease), opacity 150ms ease;
-}
-.br-marca[data-on] { opacity: 1; }
-.br-seccion { display: flex; flex-direction: column; }
-.br-cabeza {
-  display: flex; align-items: center; gap: 8px; width: 100%;
-  padding: 9px 8px 9px 0; border: 0; background: none;
-  color: var(--text-3); font: inherit; font-size: 14px; font-weight: 500;
-  text-align: left; text-decoration: none; cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 200ms ease;
-}
-.br-cabeza-txt { flex: 1; }
-.br-flecha { flex: none; opacity: .55; transition: transform 250ms var(--br-ease), opacity 200ms ease; }
-.br-seccion[data-open] .br-flecha { transform: rotate(90deg); }
-.br-seccion[data-open] > .br-cabeza,
-.br-seccion[data-actual] > .br-cabeza,
-.br-cabeza[data-active] { color: var(--text); }
-.br-seccion[data-actual] > .br-cabeza { font-weight: 600; }
-@media (hover: hover) and (pointer: fine) {
-  .br-cabeza:hover { color: var(--text); }
-  .br-cabeza:hover .br-flecha { opacity: .9; }
-}
-.br-cabeza:focus-visible, .br-item:focus-visible { outline: 2px solid var(--border-lg); outline-offset: 2px; border-radius: 6px; }
-.br-cuerpo { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms var(--br-ease); }
-.br-seccion[data-open] .br-cuerpo { grid-template-rows: 1fr; }
-.br-pliegue { min-height: 0; overflow: hidden; }
-.br-arbol { position: relative; padding: 4px 0; box-sizing: border-box; }
-.br-lineas { position: absolute; top: 0; left: 0; overflow: visible; opacity: 0; pointer-events: none; transition: opacity 200ms ease; }
-.br-seccion[data-open] .br-lineas { opacity: 1; transition: opacity 250ms ease 100ms; }
-.br-base, .br-alcance { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.br-base { stroke: var(--border-md); }
-.br-alcance { stroke: var(--text); transition: stroke-dashoffset 400ms var(--br-ease); }
-.br-item {
-  display: flex; align-items: center; gap: 9px;
-  width: 100%; height: var(--br-fila);
-  padding: 0 8px 0 var(--br-sangria); box-sizing: border-box;
-  color: var(--text-3); font-size: 13.5px; text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 200ms ease;
-}
-.br-item .br-icono { display: inline-flex; flex: none; opacity: .85; }
-.br-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (hover: hover) and (pointer: fine) { .br-item:hover { color: var(--text); } }
-.br-item[data-active] { color: var(--text); font-weight: 600; }
-.br-item[data-active] .br-icono { opacity: 1; }
+.sn-seccion + .sn-seccion { margin-top: var(--sn-entre, 10px); }
 
-/* Menú siempre abierto (BranchedNav): los renglones toman el alto que les
-   da la pantalla (--br-fila) y las cabezas de sección son títulos, no
-   botones. La barra no scrollea. */
-.s-nav.s-nav-ramas { overflow-y: auto; padding-top: 6px; padding-bottom: 6px; }
-.br-menu { padding-top: 4px; padding-bottom: 4px; }
-.br-menu .br-item { height: var(--br-fila, 34px); font-size: var(--br-letra, 13.5px); }
-.br-menu .br-seccion > .br-titulo {
-  height: var(--br-titulo, 30px); margin-top: 2px; padding-top: 0; padding-bottom: 0;
-  cursor: default; color: var(--text-3);
-  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+.sn-titulo {
+  display: flex; align-items: center; gap: 8px;
+  height: var(--sn-titulo, 24px); padding: 0 10px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--text-3);
+  transition: color .3s ease;
 }
-.br-menu .br-seccion[data-actual] > .br-titulo { color: var(--text); font-weight: 700; }
+.sn-num { opacity: .55; font-weight: 500; transition: opacity .3s ease; }
+.sn-regla {
+  flex: 1; height: 1px; margin-left: 2px;
+  background: linear-gradient(to right, var(--border-md), transparent);
+  transform-origin: left; transform: scaleX(.35); opacity: .7;
+  transition: transform .5s var(--sn-ease), opacity .3s ease;
+}
+.sn-seccion[data-actual] .sn-titulo { color: var(--text); }
+.sn-seccion[data-actual] .sn-num { opacity: 1; }
+.sn-seccion[data-actual] .sn-regla { transform: scaleX(1); opacity: 1; }
+
+.sn-item {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 10px;
+  height: var(--sn-fila, 32px); padding: 0 10px;
+  border-radius: 9px;
+  color: var(--text-2); font-size: 13.5px; font-weight: 500; letter-spacing: -.01em;
+  text-decoration: none; outline: none;
+  transition: color .2s ease;
+}
+.sn-icono { display: inline-flex; flex: none; color: var(--text-3); transition: color .2s ease, transform .3s var(--sn-ease); }
+.sn-icono svg { width: 16px; height: 16px; }
+.sn-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: transform .3s var(--sn-ease); }
+.sn-item:hover, .sn-item:focus-visible { color: var(--text); }
+.sn-item:hover .sn-icono, .sn-item:focus-visible .sn-icono { color: var(--text-2); }
+.sn-item:hover .sn-label { transform: translateX(2px); }
+.sn-item:focus-visible { box-shadow: inset 0 0 0 1.5px var(--border-lg); }
+.sn-item:active .sn-icono { transform: scale(.88); }
+.sn-item[data-active] { color: var(--text); font-weight: 600; }
+.sn-item[data-active] .sn-icono { color: var(--text); }
+.sn-item[data-active] .sn-label { transform: none; }
+
+/* El puntito de la pantalla actual: verde, con un pulso lento. */
+.sn-punto { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--green); opacity: 0; transform: scale(.4); transition: opacity .3s ease, transform .4s var(--sn-ease); }
+.sn-item[data-active] .sn-punto { opacity: 1; transform: none; animation: sn-pulso 2.6s ease-in-out infinite; }
+@keyframes sn-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,.45); }
+  50%      { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+}
+
+/* Resaltados que viajan (se ubican desde el componente). */
+.sn-hover, .sn-marca {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 0;
+  border-radius: 9px; pointer-events: none;
+}
+.sn-hover {
+  background: var(--surface-2);
+  transition: transform .28s var(--sn-ease), height .28s var(--sn-ease), opacity .2s ease;
+}
+.sn-marca {
+  opacity: 0;
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--border);
+  transition: transform .45s var(--sn-ease), height .45s var(--sn-ease), opacity .25s ease;
+}
+.sn-marca[data-on] { opacity: 1; }
+.sn-marca::before {
+  content: ''; position: absolute; left: -10px; top: 50%; width: 3px; height: 16px;
+  margin-top: -8px; border-radius: 0 3px 3px 0; background: var(--text);
+}
+
+/* Entrada escalonada al cargar la barra. */
+.sn-titulo, .sn-item { animation: sn-entra .5s var(--sn-ease) both; animation-delay: calc(var(--i, 0) * 22ms); }
+@keyframes sn-entra { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+
+/* Pie: estado de conexión y versión. */
+.s-pie {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 18px calc(11px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-3);
+  letter-spacing: .02em;
+}
+.s-pie-estado { display: inline-flex; align-items: center; gap: 7px; }
+.s-pie-estado i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-dim); }
+.s-pie-estado[data-off] { color: var(--red); }
+.s-pie-estado[data-off] i { background: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
+/* En pantallas bajitas el pie cede su lugar al menú. */
+@media (max-height: 720px) { .s-pie { display: none; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .br-marca { transition: opacity 150ms ease; }
-  .br-cuerpo, .br-alcance, .br-flecha { transition: none; }
+  .sn-titulo, .sn-item { animation: none; }
+  .sn-hover, .sn-marca, .sn-regla, .sn-label, .sn-icono { transition: none; }
+  .sn-item[data-active] .sn-punto { animation: none; }
 }
 
 /* ── Tablas en el celular: tarjeta con rótulos ───────────────
@@ -2008,7 +2028,7 @@ select.inp {
    esquinas de 14px), respuesta al toque en todo lo que se toca y nada de
    efectos de mouse, que en el celular quedan "pegados" después de tocar.
    ════════════════════════════════════════════════════════════════════ */
-button, a, .btn, .btn-pill, .bn-item, .br-item, .br-cabeza, .sec-tab {
+button, a, .btn, .btn-pill, .bn-item, .sn-item, .sec-tab {
   -webkit-tap-highlight-color: transparent;
 }
 

@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { pestanaDe, rutaDe } from '@/utils/secciones';
-import { BranchedNav, type Rama } from './BranchedNav';
+import { useEffect, useState } from 'react';
+import { SideNav, type NavSeccion as Rama } from './SideNav';
 
 interface SidebarProps {
   user: { role?: string } | null;
@@ -17,7 +18,7 @@ interface SidebarProps {
 
 const I = 15;
 
-/* El dueño ve siete temas que se despliegan; adentro, cada pantalla. Antes
+/* El dueño ve siete temas, siempre abiertos; adentro, cada pantalla. Antes
    eran diecinueve entradas sueltas. Las pestañas de arriba de cada pantalla
    (utils/secciones.ts) siguen siendo el atajo dentro del tema. */
 const DUENO: Rama[] = [
@@ -84,7 +85,7 @@ export function Sidebar({ user, setPage, isOpen, isSuperAdmin }: SidebarProps) {
   // La ruta exacta si está en el menú (superadmin/negocios); si no, la
   // pantalla a la que pertenece (mayoristas/123 → Mayoristas).
   const ruta = rutaDe(pathname);
-  const enMenu = items.some(it => it.hijos?.some(h => h.id === ruta) || it.id === ruta);
+  const enMenu = items.some(it => it.hijos.some(h => h.id === ruta));
   const activo = enMenu ? ruta : pestanaDe(pathname);
 
   return (
@@ -100,11 +101,36 @@ export function Sidebar({ user, setPage, isOpen, isSuperAdmin }: SidebarProps) {
         </svg>
         <span className="s-name">Stackr</span>
       </div>
-      <div className="s-nav s-nav-ramas">
+      <div className="s-nav s-nav-sn">
         {/* La clave cambia con el rol: el perfil llega después del primer
-            dibujo y el menú del dueño arranca con sus secciones cerradas. */}
-        <BranchedNav key={isSuperAdmin ? 'admin' : user?.role || 'seller'} items={items} activo={activo} onNavigate={() => setPage(activo)} />
+            dibujo, y el menú del dueño entra con su propia animación. */}
+        <SideNav key={isSuperAdmin ? 'admin' : user?.role || 'seller'} secciones={items} activo={activo} onNavigate={() => setPage(activo)} />
       </div>
+      <PieDelMenu />
+    </div>
+  );
+}
+
+/* Abajo de todo: si hay conexión y qué versión corre. En un local con
+   wifi que se corta, ver "Sin conexión" explica por qué no guarda. */
+function PieDelMenu() {
+  const [enLinea, setEnLinea] = useState(true);
+  useEffect(() => {
+    const actualizar = () => setEnLinea(navigator.onLine);
+    actualizar();
+    window.addEventListener('online', actualizar);
+    window.addEventListener('offline', actualizar);
+    return () => {
+      window.removeEventListener('online', actualizar);
+      window.removeEventListener('offline', actualizar);
+    };
+  }, []);
+  return (
+    <div className="s-pie" aria-live="polite">
+      <span className="s-pie-estado" data-off={enLinea ? undefined : ''}>
+        <i aria-hidden="true" />{enLinea ? 'En línea' : 'Sin conexión'}
+      </span>
+      <span className="s-pie-ver">v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
     </div>
   );
 }

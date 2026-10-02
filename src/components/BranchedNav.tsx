@@ -21,7 +21,7 @@
  * redistribute the components themselves — whether alone, in a bundle, or
  * as a ported version.
  */
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 
 export interface RamaHoja {
@@ -39,8 +39,15 @@ export interface Rama {
   hijos?: RamaHoja[]
 }
 
-const PAD = 4;
-const FILA = 34;
+const PAD = 3;
+/* El alto de cada renglón se ajusta al alto de la pantalla, entre estos
+   dos, para que el menú entero entre sin scroll y sin quedar vacío. */
+const FILA_MIN = 21;
+/* Los títulos de sección, un poco más bajos que las pantallas. */
+const TITULO = 0.85;
+const FILA_MAX = 36;
+/* Lo que ocupa el menú además de los renglones (márgenes de arriba y abajo). */
+const MARGEN_MENU = 14;
 const SANGRIA = 38;
 const TRONCO = 13;
 const RADIO = 9;
@@ -53,19 +60,40 @@ export function BranchedNav({ items, activo, onNavigate }: {
   onNavigate?: () => void
 }) {
   const seccionActiva = items.findIndex(it => it.hijos?.some(h => h.id === activo));
-  // Lo que el usuario abrió o cerró a mano. Lo que no tocó: abierta sólo la
-  // sección de la pantalla actual. Así al navegar se abre sola la nueva sin
-  // un efecto que pise lo que eligió.
-  const [tocadas, setTocadas] = useState<Record<number, boolean>>({});
-  // Con una sola sección (vendedor), siempre arranca abierta.
-  const abierta = (i: number) => tocadas[i] ?? (i === seccionActiva || items.length === 1);
+  /* Todas las secciones van siempre abiertas: plegadas, el menú quedaba
+     con siete palabras arriba y media barra vacía, y había que abrir y
+     cerrar para encontrar cada pantalla. */
 
   const navRef = useRef<HTMLElement>(null);
+  const [fila, setFila] = useState(30);
+
+  // Renglones = cabezas de sección + pantallas. Se reparte el alto libre
+  // entre todos, con un tope para que en pantallas altas no se separen de más.
+  const cabezasN = items.length;
+  const hojasN = items.reduce((n, it) => n + (it.hijos?.length || 0), 0);
+  useLayoutEffect(() => {
+    const cont = navRef.current?.parentElement;
+    if (!cont) return;
+    const medir = () => {
+      const st = getComputedStyle(cont);
+      const libre = cont.clientHeight - parseFloat(st.paddingTop) - parseFloat(st.paddingBottom) - MARGEN_MENU;
+      // Lo que mide el menú con renglones de f px (los títulos se redondean).
+      const alto = (f: number) => cabezasN * (Math.round(f * TITULO) + 2 + PAD * 2) + hojasN * f;
+      let f = FILA_MAX;
+      while (f > FILA_MIN && alto(f) > libre) f--;
+      setFila(Math.max(FILA_MIN, Math.min(FILA_MAX, f)));
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(cont);
+    return () => ro.disconnect();
+  }, [cabezasN, hojasN]);
+  const FILA = fila;
   const cabezas = useRef<(HTMLElement | null)[]>([]);
   const marcaRef = useRef<HTMLSpanElement>(null);
 
   const hojaActiva = items.findIndex(it => !it.hijos && it.id === activo);
-  const marcada = seccionActiva >= 0 && abierta(seccionActiva) ? seccionActiva : hojaActiva;
+  const marcada = seccionActiva >= 0 ? seccionActiva : hojaActiva;
 
   // La marquita del tronco sigue a la sección actual. Se mide el DOM: el
   // alto de cada sección depende de cuáles estén abiertas.
@@ -87,7 +115,7 @@ export function BranchedNav({ items, activo, onNavigate }: {
     });
     if (navRef.current) ro.observe(navRef.current);
     return () => ro.disconnect();
-  }, [marcada, items]);
+  }, [marcada, items, fila]);
 
   const r = Math.min(RADIO, FILA / 2 - 2);
   const finX = SANGRIA - 8;
@@ -97,7 +125,8 @@ export function BranchedNav({ items, activo, onNavigate }: {
   const largo = (k: number) => filaY(k) - r + (Math.PI * r) / 2 + (finX - TRONCO - r);
 
   return (
-    <nav ref={navRef} className="br-menu" aria-label="Menú principal">
+    <nav ref={navRef} className="br-menu" aria-label="Menú principal"
+      style={{ '--br-fila': `${fila}px`, '--br-titulo': `${Math.round(fila * TITULO)}px`, '--br-letra': `${fila < 27 ? 13 : 13.5}px` } as CSSProperties}>
       <span ref={marcaRef} className="br-marca" aria-hidden="true" />
       {items.map((it, i) => {
         const hijos = it.hijos;
@@ -120,21 +149,16 @@ export function BranchedNav({ items, activo, onNavigate }: {
             </div>
           );
         }
-        const open = abierta(i);
         const alto = PAD * 2 + hijos.length * FILA;
         return (
-          <div key={it.label} className="br-seccion" data-open={open ? '' : undefined} data-actual={i === seccionActiva ? '' : undefined}>
-            <button
+          <div key={it.label} className="br-seccion" data-open="" data-actual={i === seccionActiva ? '' : undefined}>
+            <div
               ref={el => { cabezas.current[i] = el; }}
-              type="button"
-              className="br-cabeza"
-              aria-expanded={open}
-              onClick={() => setTocadas(p => ({ ...p, [i]: !open }))}
+              className="br-cabeza br-titulo"
             >
               {it.icon && <span className="br-icono" aria-hidden="true">{it.icon}</span>}
               <span className="br-cabeza-txt">{it.label}</span>
-              <svg className="br-flecha" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18" /></svg>
-            </button>
+            </div>
             <div className="br-cuerpo">
               <div className="br-pliegue">
                 <div className="br-arbol" style={{ height: alto }}>
@@ -160,7 +184,6 @@ export function BranchedNav({ items, activo, onNavigate }: {
                         className="br-item"
                         data-active={on ? '' : undefined}
                         aria-current={on ? 'page' : undefined}
-                        tabIndex={open ? 0 : -1}
                         onClick={onNavigate}
                       >
                         {h.icon && <span className="br-icono" aria-hidden="true">{h.icon}</span>}

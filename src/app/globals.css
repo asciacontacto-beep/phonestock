@@ -1915,6 +1915,19 @@ select.inp {
 @media (hover: hover) and (pointer: fine) { .br-item:hover { color: var(--text); } }
 .br-item[data-active] { color: var(--text); font-weight: 600; }
 .br-item[data-active] .br-icono { opacity: 1; }
+
+/* Menú siempre abierto (BranchedNav): los renglones toman el alto que les
+   da la pantalla (--br-fila) y las cabezas de sección son títulos, no
+   botones. La barra no scrollea. */
+.s-nav.s-nav-ramas { overflow-y: auto; padding-top: 6px; padding-bottom: 6px; }
+.br-menu { padding-top: 4px; padding-bottom: 4px; }
+.br-menu .br-item { height: var(--br-fila, 34px); font-size: var(--br-letra, 13.5px); }
+.br-menu .br-seccion > .br-titulo {
+  height: var(--br-titulo, 30px); margin-top: 2px; padding-top: 0; padding-bottom: 0;
+  cursor: default; color: var(--text-3);
+  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+}
+.br-menu .br-seccion[data-actual] > .br-titulo { color: var(--text); font-weight: 700; }
 @media (prefers-reduced-motion: reduce) {
   .br-marca { transition: opacity 150ms ease; }
   .br-cuerpo, .br-alcance, .br-flecha { transition: none; }

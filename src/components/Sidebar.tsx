@@ -100,7 +100,7 @@ export function Sidebar({ user, setPage, isOpen, isSuperAdmin }: SidebarProps) {
         </svg>
         <span className="s-name">Stackr</span>
       </div>
-      <div className="s-nav">
+      <div className="s-nav s-nav-ramas">
         {/* La clave cambia con el rol: el perfil llega después del primer
             dibujo y el menú del dueño arranca con sus secciones cerradas. */}
         <BranchedNav key={isSuperAdmin ? 'admin' : user?.role || 'seller'} items={items} activo={activo} onNavigate={() => setPage(activo)} />

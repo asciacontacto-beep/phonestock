@@ -47,6 +47,21 @@ dos columnas), `m-list` + `m-row` (listas agrupadas), `m-buscar`, `m-chips`
 (filtros rápidos), `m-acciones` (accesos de un toque), `m-fab` (acción
 principal), `m-estado` (punto + palabra), `m-sec` (títulos de sección).
 
+## Movimiento y respuesta
+
+- La barra de pestañas flota con bordes redondeados; una píldora se
+  desliza hasta la pestaña tocada y se marca al instante, antes de que
+  llegue la pantalla. Volver a tocar la activa sube al principio.
+- Mientras carga una pantalla se ve su forma (`EsqueletoMobile`), no un
+  hueco en blanco.
+- Al bajar se esconde el botón flotante y el encabezado gana una línea
+  fina; al subir vuelve todo.
+- Las hojas se arrastran desde cualquier parte (si la lista está arriba):
+  un tirón rápido o pasar el 30% la cierra; el fondo se aclara mientras.
+- Sólo se animan `transform` y `opacity`, con la curva `--m-resorte`.
+  `.page` sólo aparece (sin moverse), porque un transform rompería lo que
+  tiene `position: fixed` adentro. Con "reducir movimiento" no se anima nada.
+
 Reglas: áreas táctiles de 40px o más, nada que dependa del hover, safe
 areas del iPhone en el encabezado y la barra, todo con los tokens del tema
 (funciona en claro y oscuro).

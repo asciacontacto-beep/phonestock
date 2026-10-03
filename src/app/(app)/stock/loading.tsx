@@ -1,7 +1,11 @@
+import { EsqueletoMobile } from '@/components/mobile/EsqueletoMobile';
 /** Skeleton con la forma del inventario: encabezado, filtros y grilla de equipos. */
 export default function StockLoading() {
   return (
-    <div className="page" aria-busy="true" aria-label="Cargando el inventario">
+    <>
+    {/* En el celular, la forma de la pantalla mobile. */}
+    <EsqueletoMobile tipo="lista" />
+    <div className="page solo-desk" aria-busy="true" aria-label="Cargando el inventario">
       <div className="sh" style={{ marginBottom: 22 }}>
         <div>
           <div className="skeleton" style={{ width: 150, height: 24, borderRadius: 8 }} />
@@ -26,5 +30,6 @@ export default function StockLoading() {
         ))}
       </div>
     </div>
+    </>
   );
 }

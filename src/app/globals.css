@@ -2552,3 +2552,110 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
   .el-tabla .el-dep .badge { font-size: 10.5px; }
   .el-tabla .el-flecha { display: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   STACKR MOBILE · TERMINACIÓN
+   Todo lo que se mueve anima sólo transform y opacity (los mueve la GPU,
+   sin recalcular la página), con curvas de resorte cortas. Nada espera a
+   la red para responder: el toque se ve en el acto.
+   ════════════════════════════════════════════════════════════════════ */
+:root {
+  --m-resorte: cubic-bezier(.32, .72, 0, 1);   /* la curva de las hojas de iOS */
+  --m-rapido: cubic-bezier(.2, .8, .2, 1);
+  --m-tabbar: 64px;
+  --m-tabbar-aire: 10px;
+}
+
+@media (max-width: 768px) {
+  .main { padding-bottom: calc(var(--m-tabbar) + var(--m-tabbar-aire) + 28px + env(safe-area-inset-bottom)); }
+
+  /* ── Barra de pestañas flotante ───────────────────────── */
+  .mtab-bar {
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(var(--m-tabbar-aire) + env(safe-area-inset-bottom));
+    height: var(--m-tabbar);
+    padding: 6px;
+    border-radius: 26px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    -webkit-backdrop-filter: saturate(190%) blur(26px);
+    backdrop-filter: saturate(190%) blur(26px);
+    box-shadow:
+      0 12px 32px -10px rgba(17, 17, 17, .22),
+      0 2px 8px -2px rgba(17, 17, 17, .08);
+    transform: translateZ(0);
+  }
+  [data-theme="dark"] .mtab-bar { box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .6); border-color: var(--border-md); }
+
+  /* La cápsula de la pestaña activa: viaja de una a otra. */
+  .mtab-pildora {
+    position: absolute; top: 6px; bottom: 6px; left: 6px;
+    width: calc((100% - 12px) / var(--n));
+    border-radius: 20px;
+    background: var(--surface-3);
+    transform: translate3d(calc(var(--i) * 100%), 0, 0);
+    transition: transform .42s var(--m-resorte);
+    will-change: transform;
+  }
+  [data-theme="dark"] .mtab-pildora { background: rgba(255, 255, 255, .09); }
+  .mtab { position: relative; z-index: 1; border-radius: 20px; gap: 2px; font-size: 10.5px; transition: color .2s ease; }
+  .mtab-ico { height: 26px; transition: transform .3s var(--m-resorte); }
+  .mtab.on .mtab-ico { transform: translate3d(0, -1px, 0) scale(1.06); }
+  .mtab:active .mtab-ico { transform: scale(.84); transition-duration: .12s; }
+
+  /* ── Encabezado: línea fina sólo cuando hay algo debajo ── */
+  .mt-bar { box-shadow: 0 1px 0 transparent; transition: box-shadow .25s ease; }
+  [data-m-scroll] .mt-bar { box-shadow: 0 1px 0 var(--border); }
+
+  /* ── Cada pantalla entra suave ──────────────────────────────
+     La página sólo aparece (opacity): si se moviera entera, lo que tiene
+     posición fija adentro (el botón flotante, la ficha del equipo) saltaría
+     mientras dura la entrada. Los bloques sí suben, uno detrás de otro. */
+  .page { animation: m-aparece .24s ease both; }
+  .m-pantalla > :not(.m-fab) { animation: m-entra .42s var(--m-resorte) both; }
+  .m-pantalla > :nth-child(2) { animation-delay: .03s; }
+  .m-pantalla > :nth-child(3) { animation-delay: .06s; }
+  .m-pantalla > :nth-child(4) { animation-delay: .09s; }
+  .m-pantalla > :nth-child(n+5) { animation-delay: .12s; }
+  @keyframes m-aparece { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes m-entra { from { opacity: 0; transform: translate3d(0, 12px, 0); } to { opacity: 1; transform: none; } }
+  /* Las tarjetas que ya traían su propia animación no se duplican. */
+  .page .card, .page .sc { animation: none; }
+
+  /* ── Botón flotante: sobre la barra, se corre al bajar ───── */
+  .m-fab {
+    bottom: calc(var(--m-tabbar) + var(--m-tabbar-aire) + 14px + env(safe-area-inset-bottom));
+    transition: transform .38s var(--m-resorte), opacity .25s ease;
+    will-change: transform;
+    /* La entrada no se queda "pegada" al terminar: si no, su transform
+       le gana a la transición y el botón no se podría correr. */
+    animation-fill-mode: backwards;
+  }
+  [data-m-bajando] .m-fab { transform: translate3d(0, calc(100% + var(--m-tabbar) + 30px), 0); opacity: 0; }
+  .m-fab:active { transform: scale(.94); }
+
+  /* ── Respuesta al toque en todo lo que se toca ──────────── */
+  .m-row, .m-kpi, .m-chip, .mm-row, .cm-contacto a, .cm-contacto button { -webkit-tap-highlight-color: transparent; }
+  button.m-row, a.m-row { transition: background .12s ease, transform .18s var(--m-rapido); }
+  button.m-row:active, a.m-row:active { transform: scale(.985); }
+  .m-kpi { transition: transform .18s var(--m-rapido); }
+
+  /* Listas largas: las filas fuera de pantalla no se dibujan hasta que
+     aparecen (el scroll de 500 ventas queda liviano). */
+  .vm .m-row, .sm .m-row, .cm .m-row { content-visibility: auto; contain-intrinsic-size: auto 66px; }
+
+  /* Los números no bailan al cambiar. */
+  .m-hero-num, .m-kpi-num, .m-row-num, .vd-monto, .cc-saldo-num, .cc-mov-num { font-feature-settings: 'tnum' 1, 'cv11' 1; }
+}
+
+/* ── Hojas: curva de resorte, entran rápido y frenan suave ── */
+.ms-hoja { transition: transform .44s var(--m-resorte); will-change: transform; transform: translate3d(0, 100%, 0); }
+.ms-capa.on .ms-hoja { transform: translate3d(0, 0, 0); }
+.ms-capa { transition: background .34s ease; }
+.ms-cuerpo { overscroll-behavior: contain; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page, .m-pantalla > *, .mtab-pildora, .m-fab, .ms-hoja { animation: none !important; transition: none !important; }
+}

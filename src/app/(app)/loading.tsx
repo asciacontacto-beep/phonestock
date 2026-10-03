@@ -1,3 +1,4 @@
+import { EsqueletoMobile } from '@/components/mobile/EsqueletoMobile';
 /**
  * Skeleton genérico para las pantallas de lista (stock, ventas, clientes,
  * gastos, accesorios, etc.). Reemplaza al spinner: dibuja la forma típica
@@ -7,7 +8,10 @@
  */
 export default function Loading() {
   return (
-    <div className="page" aria-busy="true" aria-label="Cargando">
+    <>
+    {/* En el celular, la forma de la pantalla mobile. */}
+    <EsqueletoMobile tipo="lista" />
+    <div className="page solo-desk" aria-busy="true" aria-label="Cargando">
       {/* Encabezado: título + acción */}
       <div className="sh" style={{ marginBottom: 22 }}>
         <div>
@@ -41,5 +45,6 @@ export default function Loading() {
         ))}
       </div>
     </div>
+    </>
   );
 }

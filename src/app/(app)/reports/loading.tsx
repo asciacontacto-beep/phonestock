@@ -1,7 +1,11 @@
+import { EsqueletoMobile } from '@/components/mobile/EsqueletoMobile';
 /** Skeleton con la forma de Rentabilidad: encabezado, tarjetas de totales y gráficos. */
 export default function ReportsLoading() {
   return (
-    <div className="page" aria-busy="true" aria-label="Cargando la rentabilidad">
+    <>
+    {/* En el celular, la forma de la pantalla mobile. */}
+    <EsqueletoMobile tipo="inicio" />
+    <div className="page solo-desk" aria-busy="true" aria-label="Cargando la rentabilidad">
       <div className="sh" style={{ marginBottom: 22 }}>
         <div>
           <div className="skeleton" style={{ width: 160, height: 24, borderRadius: 8 }} />
@@ -30,5 +34,6 @@ export default function ReportsLoading() {
         ))}
       </div>
     </div>
+    </>
   );
 }

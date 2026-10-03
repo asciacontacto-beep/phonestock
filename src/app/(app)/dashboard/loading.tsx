@@ -1,3 +1,4 @@
+import { EsqueletoMobile } from '@/components/mobile/EsqueletoMobile';
 /**
  * Skeleton con la forma real del dashboard.
  *
@@ -7,7 +8,10 @@
  */
 export default function DashboardLoading() {
   return (
-    <div className="page" aria-busy="true" aria-label="Cargando el resumen">
+    <>
+    {/* En el celular, la forma de la pantalla mobile. */}
+    <EsqueletoMobile tipo="inicio" />
+    <div className="page solo-desk" aria-busy="true" aria-label="Cargando el resumen">
       {/* Encabezado */}
       <div className="sh" style={{ marginBottom: 20 }}>
         <div className="skeleton" style={{ width: 130, height: 26, borderRadius: 8 }} />
@@ -60,5 +64,6 @@ export default function DashboardLoading() {
         ))}
       </div>
     </div>
+    </>
   );
 }

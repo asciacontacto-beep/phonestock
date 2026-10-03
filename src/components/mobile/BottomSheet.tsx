@@ -26,7 +26,6 @@ export function BottomSheet({
   const [montada, setMontada] = useState(open)
   const [entro, setEntro] = useState(false)
   const hojaRef = useRef<HTMLDivElement>(null)
-  const arrastre = useRef<{ y0: number; dy: number } | null>(null)
 
   // Al abrirse se monta en el mismo render; se muestra en el cuadro
   // siguiente (para que la animación arranque desde abajo) y al cerrarse
@@ -56,24 +55,58 @@ export function BottomSheet({
     }
   }, [open, onClose])
 
-  if (!montada || typeof document === 'undefined') return null
+  /* Arrastre para cerrar, como en iOS: desde el agarre, el título o el
+     contenido (si ya está arriba de todo). La hoja sigue al dedo y el fondo
+     se aclara; se cierra si bajó bastante o si el gesto fue rápido. Con
+     escuchas nativos, para poder frenar el scroll mientras se arrastra. */
+  useEffect(() => {
+    const hoja = hojaRef.current
+    if (!montada || !hoja) return
+    const capa = hoja.parentElement as HTMLElement | null
+    const cuerpo = hoja.querySelector<HTMLElement>('.ms-cuerpo')
+    let y0 = 0, t0 = 0, dy = 0, activo = false, posible = false
 
-  const empezar = (y: number) => { arrastre.current = { y0: y, dy: 0 } }
-  const mover = (y: number) => {
-    const a = arrastre.current
-    if (!a || !hojaRef.current) return
-    a.dy = Math.max(0, y - a.y0)
-    hojaRef.current.style.transition = 'none'
-    hojaRef.current.style.transform = `translateY(${a.dy}px)`
-  }
-  const soltar = () => {
-    const a = arrastre.current
-    arrastre.current = null
-    if (!hojaRef.current) return
-    hojaRef.current.style.transition = ''
-    hojaRef.current.style.transform = ''
-    if (a && a.dy > 90) onClose()
-  }
+    const inicio = (e: TouchEvent) => {
+      const desdeCuerpo = cuerpo?.contains(e.target as Node)
+      posible = !desdeCuerpo || (cuerpo?.scrollTop ?? 0) <= 0
+      activo = false; dy = 0
+      y0 = e.touches[0].clientY; t0 = performance.now()
+    }
+    const mover = (e: TouchEvent) => {
+      if (!posible) return
+      const d = e.touches[0].clientY - y0
+      if (!activo) {
+        if (d <= 4) { if (d < -4) posible = false; return }
+        activo = true
+        hoja.style.transition = 'none'
+        if (capa) capa.style.transition = 'none'
+      }
+      e.preventDefault()
+      dy = Math.max(0, d)
+      hoja.style.transform = `translate3d(0, ${dy}px, 0)`
+      if (capa) capa.style.background = `rgba(10, 10, 12, ${0.36 * Math.max(0, 1 - dy / hoja.offsetHeight)})`
+    }
+    const fin = () => {
+      if (!activo) return
+      activo = false
+      const velocidad = dy / Math.max(1, performance.now() - t0)
+      hoja.style.transition = ''; hoja.style.transform = ''
+      if (capa) { capa.style.transition = ''; capa.style.background = '' }
+      if (dy > Math.min(140, hoja.offsetHeight * 0.3) || velocidad > 0.55) onClose()
+    }
+    hoja.addEventListener('touchstart', inicio, { passive: true })
+    hoja.addEventListener('touchmove', mover, { passive: false })
+    hoja.addEventListener('touchend', fin)
+    hoja.addEventListener('touchcancel', fin)
+    return () => {
+      hoja.removeEventListener('touchstart', inicio)
+      hoja.removeEventListener('touchmove', mover)
+      hoja.removeEventListener('touchend', fin)
+      hoja.removeEventListener('touchcancel', fin)
+    }
+  }, [montada, onClose])
+
+  if (!montada || typeof document === 'undefined') return null
 
   return createPortal(
     <div className={`ms-capa ${visible ? 'on' : ''}`} onClick={onClose}>
@@ -85,21 +118,11 @@ export function BottomSheet({
         aria-label={label || (typeof title === 'string' ? title : undefined)}
         onClick={e => e.stopPropagation()}
       >
-        <div
-          className="ms-agarre"
-          onTouchStart={e => empezar(e.touches[0].clientY)}
-          onTouchMove={e => mover(e.touches[0].clientY)}
-          onTouchEnd={soltar}
-        >
+        <div className="ms-agarre">
           <span />
         </div>
         {title && (
-          <div
-            className="ms-cab"
-            onTouchStart={e => empezar(e.touches[0].clientY)}
-            onTouchMove={e => mover(e.touches[0].clientY)}
-            onTouchEnd={soltar}
-          >
+          <div className="ms-cab">
             <div className="ms-titulo">{title}</div>
             <button className="ms-cerrar" onClick={onClose} aria-label="Cerrar"><X size={18} /></button>
           </div>

@@ -63,6 +63,35 @@ export function MobileHeader({ user, superadmin, onLogout }: { user: Usuario | n
   const titulo = tituloDe(pathname, user, superadmin)
   const iniciales = user?.initials || (user?.name || 'S').slice(0, 2).toUpperCase()
 
+  /* Al scrollear: el encabezado marca una línea cuando hay contenido debajo
+     y el botón flotante se corre al bajar y vuelve al subir. Se escribe en
+     atributos del documento, sin re-renderizar nada: el scroll queda libre. */
+  useEffect(() => {
+    const main = document.querySelector<HTMLElement>('.main')
+    if (!main) return
+    const raiz = document.documentElement
+    let ultimo = main.scrollTop
+    let pedido = 0
+    const leer = () => {
+      pedido = 0
+      const y = main.scrollTop
+      raiz.toggleAttribute('data-m-scroll', y > 4)
+      if (Math.abs(y - ultimo) > 6) {
+        raiz.toggleAttribute('data-m-bajando', y > ultimo && y > 80)
+        ultimo = y
+      }
+    }
+    const alScrollear = () => { if (!pedido) pedido = requestAnimationFrame(leer) }
+    main.addEventListener('scroll', alScrollear, { passive: true })
+    leer()
+    return () => {
+      main.removeEventListener('scroll', alScrollear)
+      if (pedido) cancelAnimationFrame(pedido)
+      raiz.removeAttribute('data-m-scroll')
+      raiz.removeAttribute('data-m-bajando')
+    }
+  }, [pathname])
+
   return (
     <>
       <header className="mt-bar solo-mob">
@@ -154,27 +183,46 @@ function HojaCuenta({ open, onClose, user, onLogout }: { open: boolean; onClose:
 export function TabBar({ user, superadmin }: { user: Usuario | null; superadmin: boolean }) {
   const pathname = usePathname()
   const [mas, setMas] = useState(false)
+  // La pestaña tocada se marca en el acto, antes de que llegue la pantalla:
+  // esperar a la navegación es lo que hace sentir lenta a una web.
+  const [tocada, setTocada] = useState<string | null>(null)
   const ruta = rutaDe(pathname)
   const p = pestanaDe(pathname)
   // Hasta que llega el perfil no se sabe si es dueño o vendedor: la barra
   // espera vacía en vez de mostrar las pestañas equivocadas un instante.
   const pestanas = superadmin || !user ? [] : user.role === 'owner' ? PESTANAS_DUENO : PESTANAS_VENDEDOR
-  const activa = pestanas.find(t => t.activaEn.includes(ruta) || t.activaEn.includes(p))?.id ?? (superadmin ? null : 'mas')
+  const enRuta = pestanas.find(t => t.activaEn.includes(ruta) || t.activaEn.includes(p))?.id ?? (superadmin ? null : 'mas')
+  const activa = mas ? 'mas' : (tocada ?? enRuta)
 
-  // Al navegar, la hoja se cierra sola.
+  // Al llegar a la pantalla nueva: se olvida el toque y la hoja se cierra.
   const [rutaVista, setRutaVista] = useState(pathname)
-  if (rutaVista !== pathname) { setRutaVista(pathname); setMas(false) }
+  if (rutaVista !== pathname) { setRutaVista(pathname); setMas(false); setTocada(null) }
+
+  const ids = [...pestanas.map(t => t.id), 'mas']
+  const indice = Math.max(0, ids.indexOf(activa || 'mas'))
+
+  const tocar = (e: React.MouseEvent, id: string) => {
+    if (id === enRuta && ruta === id) {
+      // Tocar la pestaña en la que ya estás vuelve arriba, como en iOS.
+      e.preventDefault()
+      document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    setTocada(id)
+  }
 
   return (
     <>
-      <nav className="mtab-bar solo-mob" aria-label="Secciones">
+      <nav className="mtab-bar solo-mob" aria-label="Secciones" style={{ '--n': ids.length, '--i': indice } as React.CSSProperties}>
+        {pestanas.length > 0 && <span className="mtab-pildora" aria-hidden="true" />}
         {pestanas.map(t => (
-          <Link key={t.id} href={`/${t.id}`} prefetch className={`mtab ${activa === t.id ? 'on' : ''}`} aria-current={activa === t.id ? 'page' : undefined}>
+          <Link key={t.id} href={`/${t.id}`} prefetch className={`mtab ${activa === t.id ? 'on' : ''}`}
+            aria-current={enRuta === t.id ? 'page' : undefined} onClick={e => tocar(e, t.id)}>
             <span className="mtab-ico">{t.icon}</span>
             <span className="mtab-lbl">{t.label}</span>
           </Link>
         ))}
-        {(user || superadmin) && <button className={`mtab ${activa === 'mas' || mas ? 'on' : ''}`} onClick={() => setMas(true)} aria-haspopup="dialog">
+        {(user || superadmin) && <button className={`mtab ${activa === 'mas' ? 'on' : ''}`} onClick={() => setMas(true)} aria-haspopup="dialog">
           <span className="mtab-ico"><LayoutGrid size={22} /></span>
           <span className="mtab-lbl">Más</span>
         </button>}

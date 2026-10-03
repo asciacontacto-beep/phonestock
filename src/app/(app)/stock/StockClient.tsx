@@ -15,6 +15,8 @@ import { STOCK_SIN_COSTO } from '@/utils/sinCostos';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
 import { useConfirm } from '@/hooks/useConfirm';
 import { DetalleEquipo } from '@/components/DetalleEquipo';
+import { StockMobile } from './StockMobile';
+import { useEsCelular } from '@/hooks/useEsCelular';
 
 /** Dias que el equipo lleva sin venderse. Plata parada es lo que mas duele. */
 function daysInStock(createdAt?: string | null): number | null {
@@ -51,6 +53,8 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
   const [proveedores, setProveedores] = useState<Record<string, string>>({});
   const router = useRouter();
   const supabase = createClient();
+  // En el celular, StockMobile: lista agrupada, filtros en una hoja.
+  const celular = useEsCelular();
 
   const STOCK_FIELDS = 'id,brand,model,storage,condition,status,deposit,color,imei,currency,price,cost_price,battery,notes,created_at';
 
@@ -253,8 +257,40 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
   const depositMap = useMemo(() => Object.fromEntries(deposits.map(d => [String(d.id), d])), [deposits]);
   const depositOf = (s: any) => depositMap[String(s.deposit)];
 
+  const detalle = detailItem && (
+    <DetalleEquipo
+      key={detailItem.id}
+      item={detailItem}
+      deposito={depositOf(detailItem)}
+      isOwner={isOwner}
+      exchangeRate={exchangeRate}
+      proveedor={detailItem.supplier_id != null ? proveedores[String(detailItem.supplier_id)] : null}
+      onClose={() => setDetailItem(null)}
+      onVender={() => router.push(`/sell?item=${detailItem.id}`)}
+      onEditar={() => setEditItem(detailItem)}
+      onEliminar={() => handleDelete(detailItem.id)}
+    />
+  );
+
   return (
     <div className="page">
+      {celular ? (
+        <>
+          <StockMobile
+            stock={stock}
+            rows={rows}
+            filter={filter}
+            setFilter={f => { setFilter(f); setVisibleCount(50); }}
+            deposits={deposits}
+            dataLoaded={dataLoaded}
+            isOwner={Boolean(isOwner)}
+            onAbrir={setDetailItem}
+            onCargar={() => setShowManual(true)}
+            resumen={resumen}
+          />
+          {detailItem && <><div className="eq-fondo" onClick={() => setDetailItem(null)} />{detalle}</>}
+        </>
+      ) : <>
       <div className="sh">
         <h1 className="st">Inventario Global</h1>
         {/* La carga por código (EAN / IMEI) era una entrada aparte del menú. */}
@@ -533,22 +569,12 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
           {detailItem && (
             <>
               <div className="eq-fondo" onClick={() => setDetailItem(null)} />
-              <DetalleEquipo
-                key={detailItem.id}
-                item={detailItem}
-                deposito={depositOf(detailItem)}
-                isOwner={isOwner}
-                exchangeRate={exchangeRate}
-                proveedor={detailItem.supplier_id != null ? proveedores[String(detailItem.supplier_id)] : null}
-                onClose={() => setDetailItem(null)}
-                onVender={() => router.push(`/sell?item=${detailItem.id}`)}
-                onEditar={() => setEditItem(detailItem)}
-                onEliminar={() => handleDelete(detailItem.id)}
-              />
+              {detalle}
             </>
           )}
         </div>
       )}
+      </>}
 
       {selectedItems.length > 0 && (
         <div style={{

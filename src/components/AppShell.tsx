@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
-import { BottomNav } from './BottomNav'
+import { MobileHeader, TabBar } from './mobile/MobileShell'
 import { CommandPalette } from './CommandPalette'
 import { AvisoDeCuenta } from '@/components/AvisoDeCuenta'
 import { SectionTabs } from './SectionTabs'
@@ -60,6 +60,9 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
         isSuperAdmin={isSuperAdmin}
       />
       <div className="main" onClick={() => sbOpen && setSbOpen(false)}>
+        {/* En el celular: encabezado y barra de pestañas propios. La barra
+            superior y el menú lateral de la compu ahí no se muestran. */}
+        <MobileHeader user={profile ? mergedUser : null} superadmin={isSuperAdmin} onLogout={handleLogout} />
         <Topbar page={page} user={mergedUser} onLogout={handleLogout} />
         <AvisoDeCuenta orgId={mergedUser.org_id} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -67,7 +70,7 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
           {children}
         </div>
       </div>
-      <BottomNav page={page} user={mergedUser} onMenu={() => setSbOpen(true)} isSuperAdmin={isSuperAdmin} />
+      <TabBar user={profile ? mergedUser : null} superadmin={isSuperAdmin} />
       <CommandPalette role={finalRole} />
       {sbOpen && (
         <div className="sidebar-overlay" onClick={() => setSbOpen(false)} style={{

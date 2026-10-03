@@ -13,6 +13,7 @@ import { porAcreditar } from '@/utils/cuentas';
 import { PrimerosPasos } from '@/components/PrimerosPasos';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
+import { InicioMobile } from './InicioMobile';
 
 type Range = 'today' | 'week' | 'month' | 'all';
 
@@ -444,7 +445,9 @@ export function DashboardClient({
   }
 
   return (
-    <div className="page dash">
+    <>
+    {/* En el celular va InicioMobile (abajo), con los mismos números. */}
+    <div className="page dash solo-desk">
 
       {/* Header */}
       <div className="sh" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12, justifyContent: 'flex-end' }}>
@@ -746,6 +749,27 @@ export function DashboardClient({
         </div>
       )}
 
+    </div>
+
+    <InicioMobile
+      esDueno={userRole !== 'seller'}
+      range={range}
+      setRange={setRange}
+      ganancia={profitUSD}
+      delta={profitDelta}
+      facturacion={revenueUSD}
+      ventas={filteredSales.length}
+      stock={av.length}
+      capital={capitalUSD}
+      deuda={debts}
+      acreditar={pendienteAcreditar}
+      alertas={alerts}
+      recientes={allSales.slice(0, 6)}
+      serie={profitSeries}
+      haySerie={hasSeries}
+    />
+
+      {/* Fuera de las dos vistas: tienen que poder abrirse en cualquiera. */}
       {ConfirmDialog}
 
       {detailCat && (
@@ -758,6 +782,6 @@ export function DashboardClient({
           onClose={() => setDetailCat(null)}
         />
       )}
-    </div>
+    </>
   );
 }

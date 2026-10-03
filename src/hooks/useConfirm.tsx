@@ -14,7 +14,7 @@ export function useConfirm() {
   const handleCancel = () => { state?.resolve(false); setState(null); }
 
   const ConfirmDialog = state ? (
-    <div className="mo" style={{ zIndex: 1001 }}>
+    <div className="mo" style={{ zIndex: 1500 }}>
       <div className="mb" style={{ maxWidth: 380 }}>
         <div className="mbd" style={{ padding: '24px 24px 16px' }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>Confirmar</div>

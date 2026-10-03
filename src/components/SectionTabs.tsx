@@ -15,7 +15,7 @@ export function SectionTabs() {
   const actual = pestanaDe(pathname)
 
   return (
-    <nav className="sec-tabs no-print" aria-label="Pestañas de la sección">
+    <nav className={`sec-tabs sec-de-${seccion.menu} no-print`} aria-label="Pestañas de la sección">
       {seccion.pestanas.map(p => (
         <Link
           key={p.id}

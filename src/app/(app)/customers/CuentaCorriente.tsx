@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Wallet, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -33,7 +34,7 @@ const hoyISO = () => new Date().toLocaleDateString('en-CA')
 type Caja = { id: string; name: string }
 
 export function CuentaCorriente({
-  customer, sales, payments, installments, deposits, exchangeRate, userId,
+  customer, sales, payments, installments, deposits, exchangeRate, userId, variante,
 }: {
   customer: { id: Id; name: string }
   /** Las ventas de este cliente, ya emparejadas por quien llama. */
@@ -43,6 +44,8 @@ export function CuentaCorriente({
   deposits: Caja[]
   exchangeRate: number
   userId: string
+  /** 'mobile': saldo grande arriba y movimientos como lista (ficha del celular). */
+  variante?: 'mobile'
 }) {
   const supabase = createClient()
   const router = useRouter()
@@ -80,6 +83,37 @@ export function CuentaCorriente({
     if (!r.ok) { toast.error(r.error); return }
     toast.success('Cobro eliminado y deuda recalculada')
     router.refresh()
+  }
+
+  const modalCobro = cobrando && (
+    <ModalCobro
+      venta={cobrando === 'cuenta' ? null : cobrando}
+      cuota={cuotaElegida}
+      cobrosPrevios={misCobros}
+      customer={customer}
+      deposits={deposits}
+      exchangeRate={exchangeRate}
+      userId={userId}
+      zIndex={variante === 'mobile' ? 1400 : undefined}
+      onClose={() => { setCobrando(null); setCuotaElegida(null) }}
+      onDone={() => { setCobrando(null); setCuotaElegida(null); router.refresh() }}
+    />
+  )
+
+  if (variante === 'mobile') {
+    return (
+      <CuentaMobile
+        saldo={saldo}
+        deudas={deudas}
+        sales={sales}
+        misCobros={misCobros}
+        installments={installments}
+        loading={loading}
+        onCobrar={(v, c) => { setCuotaElegida(c); setCobrando(v) }}
+        onBorrar={borrar}
+        modal={modalCobro && typeof document !== 'undefined' ? createPortal(modalCobro, document.body) : null}
+      />
+    )
   }
 
   return (
@@ -215,25 +249,144 @@ export function CuentaCorriente({
         )
       })}
 
-      {cobrando && (
-        <ModalCobro
-          venta={cobrando === 'cuenta' ? null : cobrando}
-          cuota={cuotaElegida}
-          cobrosPrevios={misCobros}
-          customer={customer}
-          deposits={deposits}
-          exchangeRate={exchangeRate}
-          userId={userId}
-          onClose={() => { setCobrando(null); setCuotaElegida(null) }}
-          onDone={() => { setCobrando(null); setCuotaElegida(null); router.refresh() }}
-        />
+      {modalCobro}
+    </>
+  )
+}
+
+/**
+ * La cuenta corriente en el celular: cuánto debe, en grande; qué ventas
+ * tienen saldo y se pueden cobrar; y los movimientos como una lista de
+ * más y menos, no una tabla de debe/haber.
+ */
+function CuentaMobile({
+  saldo, deudas, sales, misCobros, installments, loading, onCobrar, onBorrar, modal,
+}: {
+  saldo: Record<Moneda, number>
+  deudas: VentaConDeuda[]
+  sales: VentaConDeuda[]
+  misCobros: Cobro[]
+  installments: CuotaGuardada[]
+  loading: boolean
+  onCobrar: (venta: VentaConDeuda | 'cuenta', cuota: CuotaGuardada | null) => void
+  onBorrar: (cobro: Cobro & { id: Id }) => void
+  modal: React.ReactNode
+}) {
+  const monedas = (['USD', 'ARS'] as Moneda[]).filter(m => saldo[m] !== 0 || construirMovimientos(sales, misCobros, m).length > 0)
+  const conDeuda = (['USD', 'ARS'] as Moneda[]).filter(m => saldo[m] > 0)
+  /* La cuota que toca cobrar de una venta (la primera sin pagar), o null si
+     la venta no tiene plan. "Registrar pago" va siempre a lo más viejo. */
+  const proximaCuota = (v: VentaConDeuda) => installments
+    .filter(c => String(c.sale_id) === String(v.id))
+    .sort((a, b) => a.number - b.number)
+    .find(c => estadoDeCuota(c, misCobros.filter(p => String(p.installment_id) === String(c.id)), hoyISO()).estado !== 'paid') || null
+  const fechaCorta = (f: string) => {
+    const [y, mm, d] = f.split('-').map(Number)
+    return new Date(y, mm - 1, d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }).replace('.', '')
+  }
+
+  return (
+    <>
+      <section className="m-card cc-saldo">
+        <div className="m-hero-lbl">{conDeuda.length > 0 ? 'Saldo pendiente' : 'Cuenta corriente'}</div>
+        {conDeuda.length > 0 ? (
+          conDeuda.map(m => <div key={m} className="cc-saldo-num">{money(saldo[m], m)}</div>)
+        ) : (
+          <div className="cc-saldo-num cc-al-dia">Al día</div>
+        )}
+        {(['USD', 'ARS'] as Moneda[]).filter(m => saldo[m] < 0).map(m => (
+          <div key={m} className="m-row-s">A favor del cliente: {money(saldo[m], m)}</div>
+        ))}
+        <div className="m-row-s" style={{ marginTop: 4 }}>
+          {deudas.length > 0 ? `${deudas.length} ${deudas.length === 1 ? 'venta con saldo' : 'ventas con saldo'}` : 'No debe nada'}
+        </div>
+        <div className="cc-acciones">
+          {deudas.length > 0 ? (
+            <>
+              <button className="btn btn-dark" style={{ flex: 2 }} onClick={() => onCobrar(deudas[0], proximaCuota(deudas[0]))}>Registrar pago</button>
+              <button className="btn btn-outline" onClick={() => onCobrar('cuenta', null)}>A cuenta</button>
+            </>
+          ) : (
+            <button className="btn btn-outline" onClick={() => onCobrar('cuenta', null)}>Cobro a cuenta</button>
+          )}
+        </div>
+      </section>
+
+      {deudas.length > 0 && (
+        <section>
+          <div className="m-sec">Ventas con saldo</div>
+          <div className="m-list">
+            {deudas.map(v => {
+              const pendiente = saldoDeVenta(v, misCobros)
+              const moneda: Moneda = v.currency === 'USD' ? 'USD' : 'ARS'
+              const cuotas = installments.filter(c => String(c.sale_id) === String(v.id)).sort((a, b) => a.number - b.number)
+              const proxima = cuotas.find(c => estadoDeCuota(c, misCobros.filter(p => String(p.installment_id) === String(c.id)), hoyISO()).estado !== 'paid')
+              const est = proxima ? estadoDeCuota(proxima, misCobros.filter(p => String(p.installment_id) === String(proxima.id)), hoyISO()) : null
+              return (
+                <div key={String(v.id)} className="m-row">
+                  <div className="m-row-main">
+                    <div className="m-row-t">{[v.brand, v.model].filter(Boolean).join(' ')}</div>
+                    <div className="m-row-s">
+                      {proxima
+                        ? `Cuota ${proxima.number}/${cuotas.length} · ${est?.vencida ? `vencida hace ${est.diasDeAtraso} d` : `vence ${fechaCorta(proxima.due_date)}`}`
+                        : `Debe ${money(pendiente, moneda)}`}
+                    </div>
+                  </div>
+                  <button className="btn btn-outline btn-sm" onClick={() => onCobrar(v, proxima || null)}>
+                    Cobrar {proxima && est ? money(est.resta || proxima.amount, moneda) : ''}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </section>
       )}
+
+      {monedas.map(m => {
+        const movs = construirMovimientos(sales, misCobros, m)
+        if (movs.length === 0) return null
+        const final = movs[movs.length - 1]?.saldo ?? 0
+        return (
+          <section key={m}>
+            <div className="m-sec"><span>Movimientos{monedas.length > 1 ? ` en ${m === 'USD' ? 'dólares' : 'pesos'}` : ''}</span><span>{movs.length}</span></div>
+            <div className="m-list">
+              {[...movs].reverse().map((mv, i) => {
+                const cobro = mv.cobroId ? misCobros.find(c => String(c.id) === String(mv.cobroId)) : null
+                const esVenta = mv.tipo === 'venta'
+                return (
+                  <div key={i} className="m-row cc-mov">
+                    <div className="m-row-main">
+                      <div className={`cc-mov-num ${esVenta ? '' : 'pos'}`}>{esVenta ? '+' : '−'} {money(esVenta ? mv.debe : mv.haber, m)}</div>
+                      <div className="m-row-s">
+                        {esVenta ? 'Venta' : 'Pago'} · {fechaCorta(mv.fecha)}
+                        {esVenta && mv.haber > 0 ? ` · pagó ${money(mv.haber, m)} en el momento` : ''}
+                      </div>
+                      <div className="cc-mov-concepto">{esVenta ? mv.concepto : mv.concepto.replace(/^Cobro · /, '')}</div>
+                    </div>
+                    {cobro && (
+                      <button className="mt-btn" style={{ color: 'var(--red)' }} disabled={loading} aria-label="Eliminar cobro"
+                        onClick={() => onBorrar(cobro as Cobro & { id: Id })}>
+                        <Trash2 size={17} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+              <div className="m-row cc-final">
+                <div className="m-row-main"><div className="m-row-t">Saldo actual</div></div>
+                <div className={`m-row-num ${final > 0 ? 'neg' : 'pos'}`}>{money(final, m)}</div>
+              </div>
+            </div>
+          </section>
+        )
+      })}
+      {modal}
     </>
   )
 }
 
 function ModalCobro({
-  venta, cuota, cobrosPrevios, customer, deposits, exchangeRate, userId, onClose, onDone,
+  venta, cuota, cobrosPrevios, customer, deposits, exchangeRate, userId, onClose, onDone, zIndex = 300,
 }: {
   venta: VentaConDeuda | null
   cuota: CuotaGuardada | null
@@ -244,6 +397,8 @@ function ModalCobro({
   userId: string
   onClose: () => void
   onDone: () => void
+  /** En el celular se abre encima de la ficha del cliente (una hoja). */
+  zIndex?: number
 }) {
   const supabase = createClient()
   const monedaVenta: Moneda = venta ? (venta.currency === 'USD' ? 'USD' : 'ARS') : 'ARS'
@@ -305,7 +460,7 @@ function ModalCobro({
   }
 
   return (
-    <div className="mo" style={{ zIndex: 300 }} onClick={onClose}>
+    <div className="mo" style={{ zIndex }} onClick={onClose}>
       <div className="mb" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <div className="mh">
           <div className="mh-title">{cuota ? `Cobrar cuota ${cuota.number}` : venta ? 'Cobrar saldo' : 'Cobro a cuenta'}</div>

@@ -2,7 +2,9 @@
 import { useState, useMemo, useRef } from 'react';
 import { Search, ShoppingCart, Plus, Building2, User as UserIcon, Printer, X, Trash2, Loader2, Edit2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEsCelular } from '@/hooks/useEsCelular';
+import { VentasMobile } from './VentasMobile';
 import { Receipt } from '@/components/Receipt';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
@@ -43,6 +45,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
   const router = useRouter();
   const supabase = createClient();
+  // En el celular, VentasMobile: lista por día y ficha vertical.
+  const celular = useEsCelular();
+  const ventaInicial = useSearchParams().get('venta');
 
   const isOwner = user.role === 'owner';
   /* Cotización de respaldo para pasar a dólares las ventas viejas que no
@@ -99,6 +104,23 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
     return { count: rows.length, totalUSD, totalARS };
   }, [validSales]);
 
+  /* Pasa la venta a modo edición. La usa el botón Editar del detalle y la
+     ficha del celular. */
+  const abrirEdicion = (sale: typeof selectedSale) => {
+    setEditData({
+      seller_id: sale.seller_id,
+      notes: sale.notes || '',
+      customer: sale.customer || { name: '', dni: '', phone: '', email: '' },
+      currency: sale.currency,
+      payments: (sale.payments || []).map((p: any) => ({
+        ...p,
+        original_amount: p.original_amount ?? p.amount,
+        currency: p.currency || sale.currency
+      }))
+    });
+    setIsEditing(true);
+  };
+
   const handleVoidSale = async () => {
     if (!selectedSale) return;
     if (!await confirm('¿Estás seguro de anular esta venta? Esta acción revertirá el stock de equipos, eliminará equipos recibidos en canje y borrará la venta del historial.')) return;
@@ -123,6 +145,27 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
   return (
     <div className="page">
+      {celular ? (
+        <VentasMobile
+          ventas={filteredSales}
+          filtros={{ q, depFilter, sellerFilter, currencyFilter, onlyDebt }}
+          setFiltros={f => {
+            if (f.q !== undefined) setQ(f.q);
+            if (f.depFilter !== undefined) setDepFilter(f.depFilter);
+            if (f.sellerFilter !== undefined) setSellerFilter(f.sellerFilter);
+            if (f.currencyFilter !== undefined) setCurrencyFilter(f.currencyFilter);
+            if (f.onlyDebt !== undefined) setOnlyDebt(f.onlyDebt);
+          }}
+          deposits={deposits}
+          vendedores={realSellers}
+          deudas={debts}
+          esDueno={isOwner}
+          cotizacion={cotizacion}
+          inicial={ventaInicial}
+          onComprobante={v => { setIsEditing(false); setSelectedSale(v); }}
+          onEditar={v => { setSelectedSale(v); abrirEdicion(v); }}
+        />
+      ) : <>
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <div className="st">Historial de Ventas</div>
@@ -325,6 +368,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
           </div>
         )}
       </div>
+      </>}
 
       {ConfirmDialog}
       {/* Sale Detail Modal */}
@@ -338,20 +382,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                   <button
                     className="btn btn-outline btn-sm"
                     style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                    onClick={() => {
-                      setEditData({
-                        seller_id: selectedSale.seller_id,
-                        notes: selectedSale.notes || '',
-                        customer: selectedSale.customer || { name: '', dni: '', phone: '', email: '' },
-                        currency: selectedSale.currency,
-                        payments: (selectedSale.payments || []).map((p: any) => ({
-                          ...p,
-                          original_amount: p.original_amount ?? p.amount,
-                          currency: p.currency || selectedSale.currency
-                        }))
-                      });
-                      setIsEditing(true);
-                    }}
+                    onClick={() => abrirEdicion(selectedSale)}
                   >
                     <Edit2 size={18} /> Editar
                   </button>

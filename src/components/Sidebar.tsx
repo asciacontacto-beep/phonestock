@@ -21,7 +21,7 @@ const I = 15;
 /* El dueño ve siete temas, siempre abiertos; adentro, cada pantalla. Antes
    eran diecinueve entradas sueltas. Las pestañas de arriba de cada pantalla
    (utils/secciones.ts) siguen siendo el atajo dentro del tema. */
-const DUENO: Rama[] = [
+export const DUENO: Rama[] = [
   { label: 'Resumen', hijos: [
     { id: 'dashboard', label: 'Resumen', icon: <LayoutDashboard size={I} /> },
     { id: 'reports', label: 'Rentabilidad', icon: <BarChart3 size={I} /> },
@@ -57,7 +57,7 @@ const DUENO: Rama[] = [
   ] },
 ];
 
-const VENDEDOR: Rama[] = [
+export const VENDEDOR: Rama[] = [
   { label: 'Mi terminal', hijos: [
     { id: 'dashboard', label: 'Resumen', icon: <LayoutDashboard size={I} /> },
     { id: 'sell', label: 'Nueva operación', icon: <ShoppingCart size={I} /> },
@@ -68,7 +68,7 @@ const VENDEDOR: Rama[] = [
   ] },
 ];
 
-const SUPERADMIN: Rama[] = [
+export const SUPERADMIN: Rama[] = [
   { label: 'Stackr Admin', hijos: [
     { id: 'superadmin', label: 'Resumen', icon: <LayoutDashboard size={I} /> },
     { id: 'superadmin/negocios', label: 'Negocios', icon: <Store size={I} /> },

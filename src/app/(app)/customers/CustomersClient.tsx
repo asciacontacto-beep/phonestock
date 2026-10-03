@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 import { EmptyState } from '@/components/EmptyState';
 import { CuentaCorriente } from './CuentaCorriente';
+import { ClientesMobile } from './ClientesMobile';
+import { useEsCelular } from '@/hooks/useEsCelular';
 import { saldoPorMoneda, type Cobro } from '@/utils/cuentaCorriente';
 
 export function CustomersClient({
@@ -32,6 +34,8 @@ export function CustomersClient({
   
   const supabase = createClient();
   const router = useRouter();
+  // En el celular, ClientesMobile: lista y ficha con la cuenta corriente.
+  const celular = useEsCelular();
 
   const filtered = customers.filter(c =>
     !q || `${c.name} ${c.dni} ${c.phone} ${c.email}`.toLowerCase().includes(q.toLowerCase())
@@ -92,6 +96,32 @@ export function CustomersClient({
       router.refresh();
     } catch(e: any) { toast.error(e.message); } finally { setLoading(false); }
   };
+
+  if (celular) {
+    return (
+      <div className="page">
+        <ClientesMobile
+          clientes={filtered}
+          q={q}
+          setQ={setQ}
+          // Sin las filas espejo de los cobros (MOVIMIENTO): no son compras.
+          ventasDe={c => custSales(c).filter(v => v.brand !== 'MOVIMIENTO')}
+          deudaDe={deuda}
+          abierto={selected}
+          setAbierto={setSelected}
+          editando={isEditing}
+          setEditando={setIsEditing}
+          editData={editData}
+          setEditData={setEditData}
+          onGuardar={handleUpdate}
+          onBorrar={handleDelete}
+          guardando={loading}
+          cuenta={{ payments: initialPayments, installments, deposits, exchangeRate, userId }}
+        />
+        {ConfirmDialog}
+      </div>
+    );
+  }
 
   return (
     <div className="page">

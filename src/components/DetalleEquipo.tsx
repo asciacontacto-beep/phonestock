@@ -121,7 +121,7 @@ export function DetalleEquipo({
         {item.in_catalog && <span className="badge b-neu"><Store size={11} /> En catálogo</span>}
         {d != null && (
           <span className="badge" style={d >= 90 ? { color: 'var(--red)' } : d >= 60 ? { color: 'var(--amber)' } : undefined}>
-            {d === 0 ? 'Ingresó hoy' : `${d} días en stock`}
+            {d === 0 ? 'Ingresó hoy' : `${d} ${d === 1 ? 'día' : 'días'} en stock`}
           </span>
         )}
       </div>

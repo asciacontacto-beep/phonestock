@@ -613,7 +613,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             </div>
           )}
           <div className="tw">
-            <table className="table">
+            <table className="table el-tabla">
               <thead><tr><th>Equipo</th><th>Precio</th><th>Ubicación</th><th style={{ width: 30 }}></th></tr></thead>
               <tbody>
                 {av.slice(0, 15).map((s: any) => (
@@ -622,14 +622,14 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                     onClick={() => { setUnit(s); setSp(s.price); setSc(s.currency); setStep(2); }}
                     style={{ cursor: 'pointer' }}
                   >
-                    <td>
+                    <td className="el-eq">
                       <div style={{ fontWeight: 600 }}>{s.brand} {s.model}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-2)' }}>{s.storage} · {s.color}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'JetBrains Mono', marginTop: 2 }}>{s.imei || 'Sin IMEI/Serie'}</div>
                     </td>
-                    <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString('es-AR')}</td>
-                    <td><span className="badge b-neu">{deposits.find(d => d.id === s.deposit)?.name ?? '—'}</span></td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-3)' }}><ArrowRight size={16} /></td>
+                    <td className="el-precio" style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString('es-AR')}</td>
+                    <td className="el-dep"><span className="badge b-neu">{deposits.find(d => d.id === s.deposit)?.name ?? '—'}</span></td>
+                    <td className="el-flecha" style={{ textAlign: 'right', color: 'var(--text-3)' }}><ArrowRight size={16} /></td>
                   </tr>
                 ))}
               </tbody>

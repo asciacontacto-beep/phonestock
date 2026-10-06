@@ -6,6 +6,7 @@ import { ModelPicker } from '@/components/ModelPicker';
 import { toast } from 'sonner';
 import { BRANDS, MODELS, STORAGES, COLORS, PAY } from '@/constants/data';
 import { paraInputFechaHora } from '@/utils/fechas';
+import { traerTodo } from '@/utils/supabase/todo';
 
 type Appointment = {
   id: string;
@@ -68,8 +69,8 @@ export function TurnosClient({ isOwner, user }: { isOwner: boolean; user: any })
   const fetchAll = async () => {
     setLoading(true);
     const [apptRes, stockRes, depRes] = await Promise.all([
-      supabase.from('appointments').select('*').order('scheduled_at'),
-      supabase.from('stock').select('id,brand,model,storage,color,imei,price,currency,cost_price,deposit').eq('status', 'available').order('brand'),
+      traerTodo(() => supabase.from('appointments').select('*').order('scheduled_at').order('id')),
+      traerTodo(() => supabase.from('stock').select('id,brand,model,storage,color,imei,price,currency,cost_price,deposit').eq('status', 'available').order('brand').order('id')),
       supabase.from('deposits').select('id,name,color').order('name'),
     ]);
     if (apptRes.data) setAppointments(apptRes.data);

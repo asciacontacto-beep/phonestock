@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server"
 import { DepositsClient } from "./DepositsClient"
 import { soloDueno } from "@/utils/permisos"
+import { traerTodo } from '@/utils/supabase/todo'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +13,7 @@ export default async function DepositsPage() {
     { data: stockData },
     { data: depositsData }
   ] = await Promise.all([
-    supabase.from('stock').select('*').order('created_at', { ascending: false }),
+    traerTodo(() => supabase.from('stock').select('*').order('created_at', { ascending: false }).order('id')),
     supabase.from('deposits').select('*').order('name')
   ])
 

@@ -1,6 +1,7 @@
 import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { CashiersClient } from "./CashiersClient"
 import { soloDueno } from "@/utils/permisos"
+import { traerTodo } from '@/utils/supabase/todo'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,11 +27,11 @@ export default async function CashiersPage() {
     cuentasRes,
     { data: cierresData },
   ] = await Promise.all([
-    supabase.from('sales').select('*').order('created_at', { ascending: false }),
+    traerTodo(() => supabase.from('sales').select('*').order('created_at', { ascending: false }).order('id')),
     vendedores,
     supabase.from('deposits').select('*').order('name'),
-    supabase.from('cash_transfers').select('*').order('created_at', { ascending: false }),
-    supabase.from('cash_movements').select('*').order('created_at', { ascending: false }),
+    traerTodo(() => supabase.from('cash_transfers').select('*').order('created_at', { ascending: false }).order('id')),
+    traerTodo(() => supabase.from('cash_movements').select('*').order('created_at', { ascending: false }).order('id')),
     // Sin la migración de cuentas estas dos tablas no existen: vuelven con
     // error y se muestran vacías.
     supabase.from('accounts').select('id,name,kind,currency,active').order('name'),

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { CustomersClient } from "./CustomersClient"
 import { configuracionDelLocal } from '@/utils/configuracion'
 import { soloDueno } from "@/utils/permisos"
+import { traerTodo } from '@/utils/supabase/todo'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,14 +23,14 @@ export default async function CustomersPage() {
     { data: settings },
     { data: installmentsData },
   ] = await Promise.all([
-    supabase.from('customers').select('*').order('updated_at', { ascending: false }),
-    supabase.from('sales').select('*').order('created_at', { ascending: false }),
+    traerTodo(() => supabase.from('customers').select('*').order('updated_at', { ascending: false }).order('id')),
+    traerTodo(() => supabase.from('sales').select('*').order('created_at', { ascending: false }).order('id')),
     // Si la migración de cuenta corriente todavía no se corrió, esto viene
     // con error y data null: la pantalla sigue funcionando sin los cobros.
-    supabase.from('customer_payments').select('*').order('paid_at', { ascending: false }),
+    traerTodo(() => supabase.from('customer_payments').select('*').order('paid_at', { ascending: false }).order('id')),
     supabase.from('deposits').select('*').order('name'),
     configuracionDelLocal(supabase, orgId, 'exchange_rate'),
-    supabase.from('sale_installments').select('*').order('due_date'),
+    traerTodo(() => supabase.from('sale_installments').select('*').order('due_date').order('id')),
   ])
 
   return (

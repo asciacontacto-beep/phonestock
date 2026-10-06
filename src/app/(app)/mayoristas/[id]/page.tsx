@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation"
 import { MayoristaDetailClient } from "./MayoristaDetailClient"
 import { configuracionDelLocal } from '@/utils/configuracion'
 import { soloDueno } from "@/utils/permisos"
+import { traerTodo } from '@/utils/supabase/todo'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +31,7 @@ export default async function MayoristaDetailPage({ params }: { params: Promise<
       ? supabase.from('wholesale_order_items').select('*').in('order_id', orderIds)
       : Promise.resolve({ data: [] }),
     supabase.from('wholesale_payments').select('*').eq('wholesaler_id', id).order('created_at', { ascending: false }),
-    supabase.from('stock').select('id,brand,model,storage,color,status,price,currency').eq('status', 'available'),
+    traerTodo(() => supabase.from('stock').select('id,brand,model,storage,color,status,price,currency').eq('status', 'available').order('id')),
     configuracionDelLocal(supabase, (await getProfile(user.id))?.org_id, 'exchange_rate'),
   ])
 

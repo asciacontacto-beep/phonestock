@@ -56,6 +56,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
 
   // Solo consideramos ventas reales, no MOVIMIENTOS
   const validSales = useMemo(() => sales.filter(s => s.brand !== 'MOVIMIENTO'), [sales]);
+  // La tabla dibuja de a 100: con mil ventas o más, dibujarlas todas juntas
+  // hacía la página pesada (megas de HTML) y lenta para abrir.
+  const [visibles, setVisibles] = useState(100);
 
   const filteredSales = useMemo(() => {
     return validSales.filter(s => {
@@ -275,7 +278,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                 </tr>
               </thead>
               <tbody>
-                {filteredSales.map(sale => {
+                {filteredSales.slice(0, visibles).map(sale => {
                   const dDate = new Date(sale.created_at);
                   const dateStr = dDate.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
                   
@@ -365,6 +368,13 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                 })}
               </tbody>
             </table>
+            {visibles < filteredSales.length && (
+              <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                <button className="btn btn-outline" onClick={() => setVisibles(v => v + 100)}>
+                  Ver más ({filteredSales.length - visibles} restantes)
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

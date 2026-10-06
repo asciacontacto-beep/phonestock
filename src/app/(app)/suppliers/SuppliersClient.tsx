@@ -8,6 +8,7 @@ import { saldoConProveedor, type Pedido, type PagoProveedor } from '@/utils/prov
 import { CuentaModal } from './CuentaModal';
 import { PedidoModal } from './PedidoModal';
 import { PagoModal } from './PagoModal';
+import { traerTodo } from '@/utils/supabase/todo';
 
 const plata = (moneda: string, n: number) => `${moneda === 'USD' ? 'U$' : '$'}${n.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 
@@ -39,8 +40,8 @@ export function SuppliersClient({ initialSuppliers, initialPedidos = [], initial
 
   async function recargarCuenta() {
     const [a, b] = await Promise.all([
-      supabase.from('supplier_orders').select('*').order('fecha', { ascending: false }),
-      supabase.from('supplier_payments').select('*').order('fecha', { ascending: false }),
+      traerTodo(() => supabase.from('supplier_orders').select('*').order('fecha', { ascending: false }).order('id')),
+      traerTodo(() => supabase.from('supplier_payments').select('*').order('fecha', { ascending: false }).order('id')),
     ]);
     if (a.data) setPedidos(a.data as Pedido[]);
     if (b.data) setPagos(b.data as PagoProveedor[]);

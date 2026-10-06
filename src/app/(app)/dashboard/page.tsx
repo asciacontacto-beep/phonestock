@@ -2,6 +2,7 @@ import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { configuracionDelLocal } from '@/utils/configuracion'
 import { redirect } from "next/navigation"
 import { DashboardClient } from "./DashboardClient"
+import { traerTodo } from '@/utils/supabase/todo'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,25 +30,25 @@ export default async function DashboardPage() {
     { data: installmentsData },
     { data: paymentsData }
   ] = await Promise.all([
-    supabase.from('stock')
+    traerTodo(() => supabase.from('stock')
       .select(esVendedor ? COLS_STOCK : `${COLS_STOCK},cost_price`)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false }).order('id')),
     esVendedor
-      ? supabase.from('sales').select(COLS_VENTAS).eq('seller_id', user.id)
-          .order('created_at', { ascending: false }).limit(500)
-      : supabase.from('sales').select(`${COLS_VENTAS},cost_price`)
-          .order('created_at', { ascending: false }).limit(500),
+      ? traerTodo(() => supabase.from('sales').select(COLS_VENTAS).eq('seller_id', user.id)
+          .order('created_at', { ascending: false }).order('id'))
+      : traerTodo(() => supabase.from('sales').select(`${COLS_VENTAS},cost_price`)
+          .order('created_at', { ascending: false }).order('id')),
     configuracionDelLocal(supabase, profile?.org_id, 'exchange_rate'),
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
-      : supabase.from('repairs').select('id, cost, created_at, updated_at'),
+      : traerTodo(() => supabase.from('repairs').select('id, cost, created_at, updated_at').order('id')),
     // Cuotas y cobros sólo alimentan alertas que el vendedor no ve.
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
-      : supabase.from('sale_installments').select('id,sale_id,number,due_date,amount,currency'),
+      : traerTodo(() => supabase.from('sale_installments').select('id,sale_id,number,due_date,amount,currency').order('id')),
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
-      : supabase.from('customer_payments').select('installment_id,amount,currency,exchange_rate,paid_at'),
+      : traerTodo(() => supabase.from('customer_payments').select('id,installment_id,amount,currency,exchange_rate,paid_at').order('paid_at').order('id')),
   ])
 
   // Los accesorios de cada venta llevan su costo adentro (lo completa la

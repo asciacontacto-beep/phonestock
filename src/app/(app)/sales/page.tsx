@@ -2,6 +2,7 @@ import { createClient, getProfile } from '@/utils/supabase/server'
 import { SalesClient } from './SalesClient'
 import { configuracionDelLocal } from '@/utils/configuracion'
 import { soloDueno } from "@/utils/permisos"
+import { traerTodo } from '@/utils/supabase/todo'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +29,7 @@ export default async function SalesPage() {
     { data: currentUserProfile },
     { data: settings }
   ] = await Promise.all([
-    supabase.from('sales').select('*').order('created_at', { ascending: false }),
+    traerTodo(() => supabase.from('sales').select('*').order('created_at', { ascending: false }).order('id')),
     supabase.from('deposits').select('*').order('name'),
     vendedores,
     supabase.from('profiles').select('*').eq('id', user?.id).single(),

@@ -11,6 +11,7 @@ import { upsertCustomer } from '@/utils/customers';
 import { useConfirm } from '@/hooks/useConfirm';
 import { RepairOrderModal } from './RepairOrderModal';
 import { normalizeReceiptConfig, type ShopSettings } from '@/types/receipt';
+import { traerTodo } from '@/utils/supabase/todo';
 
 /** Abre la orden de reparación premium (branded) en un modal con preview + PDF. */
 function printRepairTicket(repair: any) {
@@ -37,7 +38,7 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
 
   const fetchRepairs = async () => {
     setLoading(true);
-    const { data } = await supabase.from('repairs').select('*').order('created_at', { ascending: false });
+    const { data } = await traerTodo(() => supabase.from('repairs').select('*').order('created_at', { ascending: false }).order('id'));
     if (data) setRepairs(data);
     setLoading(false);
   };

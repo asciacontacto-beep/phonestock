@@ -19,6 +19,7 @@ import { valorSugerido, describirTramo, type ValorToma } from '@/utils/valoresTo
 import { resolveSale } from '@/utils/saleTotals';
 import { imprimirDocumento } from '@/utils/imprimir';
 import { configuracionDelLocal } from '@/utils/configuracion';
+import { traerTodo } from '@/utils/supabase/todo';
 
 const hoyISO = () => new Date().toLocaleDateString('en-CA');
 
@@ -105,10 +106,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       /* Al vendedor el costo no le llega: ni en pantalla ni en los datos (lo
          que se manda al navegador se puede leer con sus herramientas). El
          costo de la venta lo completa la base (completar_costo_venta). */
-      supabase.from('stock').select(isOwner ? '*' : STOCK_SIN_COSTO).eq('status', 'available').order('created_at', { ascending: false }),
+      traerTodo(() => supabase.from('stock').select(isOwner ? '*' : STOCK_SIN_COSTO).eq('status', 'available').order('created_at', { ascending: false }).order('id')),
       supabase.from('deposits').select('*').order('name'),
       configuracionDelLocal(supabase, orgId),
-      supabase.from('accessories').select(isOwner ? '*' : ACCESORIOS_SIN_COSTO).gt('stock', 0),
+      traerTodo(() => supabase.from('accessories').select(isOwner ? '*' : ACCESORIOS_SIN_COSTO).gt('stock', 0).order('id')),
       supabase.from('card_plans').select('*').eq('active', true).order('card_name'),
       cargarCuentas(supabase, { soloActivas: true }),
       supabase.from('tradein_values').select('*'),

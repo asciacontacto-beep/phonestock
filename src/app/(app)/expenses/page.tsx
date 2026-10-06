@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { ExpensesClient } from "./ExpensesClient"
 import { configuracionDelLocal } from '@/utils/configuracion'
 import { MARCA_GASTO, type PagoGasto } from '@/utils/gastos'
+import { traerTodo } from '@/utils/supabase/todo'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,10 +25,10 @@ export default async function ExpensesPage() {
     { data: movimientos },
     { data: settings },
   ] = await Promise.all([
-    supabase.from('expenses').select('*').order('created_at', { ascending: false }).limit(5000),
+    traerTodo(() => supabase.from('expenses').select('*').order('created_at', { ascending: false }).order('id')),
     supabase.from('deposits').select('id,name,color').order('name'),
     // La fila espejo dice de dónde salió cada gasto (efectivo, qué cuenta).
-    supabase.from('sales').select('imei,payments').like('imei', `${MARCA_GASTO}%`).limit(5000),
+    traerTodo(() => supabase.from('sales').select('id,imei,payments').like('imei', `${MARCA_GASTO}%`).order('id')),
     configuracionDelLocal(supabase, profile?.org_id, 'exchange_rate'),
   ])
 

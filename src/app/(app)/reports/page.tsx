@@ -2,6 +2,7 @@ import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { ReportsClient } from "./ReportsClient"
 import { configuracionDelLocal } from '@/utils/configuracion'
+import { traerTodo } from '@/utils/supabase/todo'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,11 +21,11 @@ export default async function ReportsPage() {
     { data: settingsData },
     { data: repairsData }
   ] = await Promise.all([
-    supabase.from('sales').select('*').order('created_at', { ascending: false }),
-    supabase.from('expenses').select('*').order('created_at', { ascending: false }),
+    traerTodo(() => supabase.from('sales').select('*').order('created_at', { ascending: false }).order('id')),
+    traerTodo(() => supabase.from('expenses').select('*').order('created_at', { ascending: false }).order('id')),
     supabase.from('deposits').select('*').order('name'),
     configuracionDelLocal(supabase, profile?.org_id),
-    supabase.from('repairs').select('id, cost, created_at, updated_at')
+    traerTodo(() => supabase.from('repairs').select('id, cost, created_at, updated_at').order('id'))
   ])
 
   const exchangeRate = settingsData?.exchange_rate || 1200;

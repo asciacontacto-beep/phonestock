@@ -17,6 +17,7 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { DetalleEquipo } from '@/components/DetalleEquipo';
 import { StockMobile } from './StockMobile';
 import { useEsCelular } from '@/hooks/useEsCelular';
+import { traerTodo } from '@/utils/supabase/todo';
 
 /** Dias que el equipo lleva sin venderse. Plata parada es lo que mas duele. */
 function daysInStock(createdAt?: string | null): number | null {
@@ -62,7 +63,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
     (async () => {
       const [{ data: stockData, error: stockErr }, { data: depositsData }, { data: settingsData }] = await Promise.all([
         // Al vendedor el costo no le llega ni en los datos.
-        supabase.from('stock').select((isOwner ? STOCK_FIELDS : STOCK_SIN_COSTO) as string).order('created_at', { ascending: false }),
+        traerTodo(() => supabase.from('stock').select((isOwner ? STOCK_FIELDS : STOCK_SIN_COSTO) as string).order('created_at', { ascending: false }).order('id')),
         supabase.from('deposits').select('id,name,color').order('name'),
         configuracionDelLocal(supabase, orgId, 'exchange_rate'),
       ]);
@@ -74,7 +75,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
       /* Datos extra de la ficha (catálogo y proveedor) en una consulta
          aparte: si alguna columna no existe en esta base, la lista igual
          carga. */
-      supabase.from('stock').select('id,in_catalog,supplier_id').then(({ data, error }) => {
+      traerTodo(() => supabase.from('stock').select('id,in_catalog,supplier_id').order('id')).then(({ data, error }) => {
         if (error || !data) return;
         const extra = new Map((data as { id: string | number }[]).map(r => [String(r.id), r]));
         setStock(p => p.map(x => ({ ...x, ...(extra.get(String(x.id)) || {}) })));
@@ -738,7 +739,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
         isOwner={isOwner}
         onClose={() => setShowManual(false)}
         onSuccess={() => {
-          supabase.from('stock').select((isOwner ? STOCK_FIELDS : STOCK_SIN_COSTO) as string).order('created_at', { ascending: false })
+          traerTodo(() => supabase.from('stock').select((isOwner ? STOCK_FIELDS : STOCK_SIN_COSTO) as string).order('created_at', { ascending: false }).order('id'))
             .then(({ data }) => { if (data) setStock(data); });
         }}
       />

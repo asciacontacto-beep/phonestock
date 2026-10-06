@@ -44,9 +44,13 @@ export function CustomersClient({
   // Las ventas de mostrador no son de nadie: antes, una ficha llamada
   // "Consumidor Final" se quedaba con todas y aparecía comprando todo.
   const custSales = (c: any) => sales.filter(s => ventaEsDe(s.customer, c));
+  // Lo que el cliente compró: sin las filas espejo de los cobros
+  // (MOVIMIENTO), que no son compras. La deuda y la cuenta corriente siguen
+  // recibiendo todo (custSales), como siempre.
+  const compras = (c: Parameters<typeof custSales>[0]) => custSales(c).filter(s => s.brand !== 'MOVIMIENTO');
 
   const totalSpent = (c: any) =>
-    custSales(c).reduce((a: number, s: any) => {
+    compras(c).reduce((a: number, s: any) => {
       if (s.currency === 'USD') return a + s.price;
       return a;
     }, 0);
@@ -56,7 +60,7 @@ export function CustomersClient({
   const deuda = (c: any) => saldoPorMoneda(custSales(c), initialPayments.filter(p => (p as any).customer_id === c.id));
 
   const lastSale = (c: any) => {
-    const sl = custSales(c);
+    const sl = compras(c);
     return sl.length > 0 ? sl[0] : null;
   };
 
@@ -104,8 +108,7 @@ export function CustomersClient({
           clientes={filtered}
           q={q}
           setQ={setQ}
-          // Sin las filas espejo de los cobros (MOVIMIENTO): no son compras.
-          ventasDe={c => custSales(c).filter(v => v.brand !== 'MOVIMIENTO')}
+          ventasDe={compras}
           deudaDe={deuda}
           abierto={selected}
           setAbierto={setSelected}
@@ -146,7 +149,7 @@ export function CustomersClient({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div className="sl">Con 2+ compras</div>
-              <div className="sv">{customers.filter(c => custSales(c).length >= 2).length}</div>
+              <div className="sv">{customers.filter(c => compras(c).length >= 2).length}</div>
             </div>
             <div style={{ padding: 12, background: 'var(--surface-2)', borderRadius: 12 }}>
               <TrendingUp size={20} color="var(--green)" />
@@ -202,7 +205,7 @@ export function CustomersClient({
             </thead>
             <tbody>
               {filtered.map(c => {
-                const sl = custSales(c);
+                const sl = compras(c);
                 const ls = lastSale(c);
                 const ts = totalSpent(c);
                 const d = deuda(c);
@@ -362,12 +365,12 @@ export function CustomersClient({
 
               <div className="sl" style={{ marginBottom: 12, fontSize: 12, marginTop: 24 }}>
                 <ShoppingBag size={13} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
-                HISTORIAL DE COMPRAS ({custSales(selected).length})
+                HISTORIAL DE COMPRAS ({compras(selected).length})
               </div>
-              {custSales(selected).length === 0 ? (
+              {compras(selected).length === 0 ? (
                 <div style={{ color: 'var(--text-3)', fontSize: 13, padding: '16px 0' }}>Sin ventas registradas.</div>
               ) : (
-                custSales(selected).map((s: any, i: number) => (
+                compras(selected).map((s: any, i: number) => (
                   <div key={i} className="card" style={{ marginBottom: 12, padding: 14, background: 'var(--surface-3)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <div style={{ fontWeight: 700 }}>{s.brand} {s.model}</div>

@@ -63,6 +63,20 @@ export function MobileHeader({ user, superadmin, onLogout }: { user: Usuario | n
   const titulo = tituloDe(pathname, user, superadmin)
   const iniciales = user?.initials || (user?.name || 'S').slice(0, 2).toUpperCase()
 
+  /* Mientras haya un modal abierto (los `.mo` de siempre), la barra de
+     pestañas y el botón flotante se van. El modal es una hoja que llega
+     hasta abajo y ahí están sus botones (Guardar, Crear, Confirmar): nada
+     puede quedar encima de ellos. Se observa el DOM en vez de tocar cada
+     modal, así vale también para los que se agreguen mañana. */
+  useEffect(() => {
+    const raiz = document.documentElement
+    const mirar = () => raiz.toggleAttribute('data-m-modal', !!document.querySelector('.mo'))
+    const obs = new MutationObserver(mirar)
+    obs.observe(document.body, { childList: true, subtree: true })
+    mirar()
+    return () => { obs.disconnect(); raiz.removeAttribute('data-m-modal') }
+  }, [])
+
   /* Al scrollear: el encabezado marca una línea cuando hay contenido debajo
      y el botón flotante se corre al bajar y vuelve al subir. Se escribe en
      atributos del documento, sin re-renderizar nada: el scroll queda libre. */

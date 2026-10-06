@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { ArrowLeft, Plus, CreditCard, Phone, Mail, X, Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -18,7 +18,7 @@ const STATUS_CLASS: Record<string, string> = { draft: 'b-neu', confirmed: 'b-blu
 const METHOD_LABEL: Record<string, string> = { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta' }
 
 export function MayoristaDetailClient({
-  wholesaler: initialWholesaler, initialOrders, initialPayments, availableStock, totalOwed, exchangeRate
+  wholesaler: initialWholesaler, initialOrders, initialPayments, availableStock, exchangeRate,
 }: {
   wholesaler: Wholesaler
   initialOrders: Order[]
@@ -39,6 +39,24 @@ export function MayoristaDetailClient({
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const supabase = createClient()
   const router = useRouter()
+
+  /* Lo que debe, con los pedidos y pagos que hay en pantalla (misma cuenta
+     que hace el servidor): así se actualiza apenas se crea, cobra o
+     cancela un pedido, sin esperar a recargar. */
+  const totalOwed = orders
+    .filter(o => o.status !== 'cancelled')
+    .reduce((acc, o) => {
+      const cur = (o.currency ?? 'ARS') as 'USD' | 'ARS'
+      acc[cur] += o.balance
+      return acc
+    }, { USD: 0, ARS: 0 })
+
+  /* Equipos ya comprometidos en otro pedido abierto de este revendedor: no
+     se ofrecen de nuevo, para no vender dos veces la misma unidad. */
+  const enPedidoAbierto = new Set(
+    orders.filter(o => o.status === 'confirmed' || o.status === 'draft')
+      .flatMap(o => o.items.map(i => i.stock_id).filter((x): x is number => x != null))
+  )
 
   const handleDeliver = (order: Order) => {
     setConfirmDialog({
@@ -267,8 +285,8 @@ export function MayoristaDetailClient({
                 const backorderItems = o.items.filter(i => i.is_backorder)
                 const isExpanded = expandedOrders.has(o.id)
                 return (
-                  <>
-                    <tr key={o.id}>
+                  <Fragment key={o.id}>
+                    <tr>
                       <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(o.created_at).toLocaleDateString('es-AR')}</td>
                       <td style={{ fontSize: 13 }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -342,7 +360,7 @@ export function MayoristaDetailClient({
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>
@@ -430,7 +448,7 @@ export function MayoristaDetailClient({
       {showNewOrder && (
         <NewOrderModal
           wholesaler={wholesaler}
-          availableStock={availableStock}
+          availableStock={availableStock.filter(s => !enPedidoAbierto.has(s.id))}
           onClose={() => setShowNewOrder(false)}
           onCreated={(order) => {
             setOrders(prev => [order, ...prev])
@@ -512,6 +530,9 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
     { stock_id: null, brand: '', model: '', storage: '', color: '', qty: 1, unit_price: 0, is_backorder: false }
   ])
   const [stockQ, setStockQ] = useState<string[]>([''])
+  // Qué renglón tiene la lista de resultados abierta. Antes la lista no se
+  // cerraba al elegir y tapaba cantidad y precio: parecía trabado.
+  const [abierta, setAbierta] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
@@ -522,7 +543,19 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
       ...l, stock_id: item.id, brand: item.brand, model: item.model,
       storage: item.storage, color: item.color, unit_price: item.price
     } : l))
-    setStockQ(prev => prev.map((q, i) => i === idx ? `${item.brand} ${item.model} ${item.storage}` : q))
+    setStockQ(prev => prev.map((q, i) => i === idx ? [item.brand, item.model, item.storage].filter(Boolean).join(' ') : q))
+    setAbierta(null)
+  }
+
+  /* Lo que se puede elegir en un renglón: lo que coincide con lo escrito,
+     sin las unidades ya elegidas en otro renglón de este pedido. */
+  const resultados = (idx: number) => {
+    const q = stockQ[idx].trim().toLowerCase()
+    const usadas = new Set(lines.filter((l, i) => i !== idx && l.stock_id != null).map(l => l.stock_id))
+    return availableStock
+      .filter(s => !usadas.has(s.id))
+      .filter(s => [s.brand, s.model, s.storage, s.color].filter(Boolean).join(' ').toLowerCase().includes(q))
+      .slice(0, 8)
   }
 
   const addLine = () => {
@@ -536,7 +569,7 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
   }
 
   const handleCreate = async () => {
-    if (lines.some(l => !l.brand)) { toast.error('Completá todos los ítems'); return }
+    if (lines.some(l => !l.brand)) { toast.error('Elegí un equipo del stock (o marcá Encargue) en cada ítem'); return }
     setLoading(true)
     try {
       const { data: orderData, error: oErr } = await supabase.from('wholesale_orders').insert([{
@@ -591,31 +624,48 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                         className="inp"
                         placeholder={line.is_backorder ? 'Escribí marca/modelo (encargue)' : 'Buscar en stock...'}
                         value={stockQ[idx]}
+                        onFocus={() => { if (!line.is_backorder && !line.stock_id) setAbierta(idx) }}
+                        onBlur={() => setAbierta(a => (a === idx ? null : a))}
                         onChange={e => {
-                          setStockQ(prev => prev.map((q, i) => i === idx ? e.target.value : q))
+                          const v = e.target.value
+                          setStockQ(prev => prev.map((q, i) => i === idx ? v : q))
                           if (line.is_backorder) {
-                            const parts = e.target.value.split(' ')
+                            const parts = v.split(' ')
                             setLines(prev => prev.map((l, i) => i === idx ? { ...l, brand: parts[0] || '', model: parts.slice(1).join(' ') || '' } : l))
+                          } else {
+                            // Cambiar el texto suelta el equipo elegido: nunca queda
+                            // un equipo distinto del que se lee en el campo.
+                            if (line.stock_id) setLines(prev => prev.map((l, i) => i === idx ? { ...l, stock_id: null, brand: '', model: '', storage: '', color: '' } : l))
+                            setAbierta(idx)
                           }
                         }}
                       />
-                      {!line.is_backorder && stockQ[idx].length > 1 && (
-                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--border-md)', borderRadius: 8, zIndex: 50, maxHeight: 160, overflowY: 'auto', boxShadow: 'var(--shadow)' }}>
-                          {availableStock.filter(s =>
-                            `${s.brand} ${s.model} ${s.storage} ${s.color}`.toLowerCase().includes(stockQ[idx].toLowerCase())
-                          ).slice(0, 8).map(s => (
-                            <div
-                              key={s.id}
-                              onClick={() => selectStock(idx, s)}
-                              style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--border)' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
-                              onMouseLeave={e => (e.currentTarget.style.background = '')}
-                            >
-                              <strong>{s.brand} {s.model}</strong> · {s.storage} · {s.color} · {s.currency === 'USD' ? 'U$' : '$'}{s.price}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {!line.is_backorder && abierta === idx && stockQ[idx].trim().length > 1 && (() => {
+                        const opciones = resultados(idx)
+                        return (
+                          <div className="mp-res" role="listbox">
+                            {opciones.length === 0 ? (
+                              <div className="mp-res-vacio">No hay equipos disponibles con ese nombre. Si lo vas a conseguir, marcá <strong>Encargue</strong>.</div>
+                            ) : opciones.map(s => (
+                              <button
+                                key={s.id}
+                                type="button"
+                                role="option"
+                                aria-selected={false}
+                                className="mp-res-op"
+                                // mousedown antes que el blur del campo: si no, la
+                                // lista se cierra antes de que llegue el toque.
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={() => selectStock(idx, s)}
+                              >
+                                <strong>{s.brand} {s.model}</strong>
+                                <span>{[s.storage, s.color].filter(Boolean).join(' · ')}</span>
+                                <span className="mp-res-precio">{s.currency === 'USD' ? 'U$' : '$'} {Number(s.price || 0).toLocaleString('es-AR')}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )
+                      })()}
                     </div>
                     {lines.length > 1 && (
                       <button className="btn-icon" style={{ color: 'var(--red)', flexShrink: 0 }} onClick={() => removeLine(idx)}>
@@ -648,7 +698,17 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                         <input
                           type="checkbox"
                           checked={line.is_backorder}
-                          onChange={e => setLines(prev => prev.map((l, i) => i === idx ? { ...l, is_backorder: e.target.checked, stock_id: null } : l))}
+                          onChange={e => {
+                            const encargue = e.target.checked
+                            // Encargue: vale lo escrito. Volver a stock: hay que elegir
+                            // un equipo de la lista, así que se limpia el renglón.
+                            const parts = stockQ[idx].trim().split(' ')
+                            setLines(prev => prev.map((l, i) => i === idx ? (encargue
+                              ? { ...l, is_backorder: true, stock_id: null, brand: parts[0] || '', model: parts.slice(1).join(' ') }
+                              : { ...l, is_backorder: false, stock_id: null, brand: '', model: '', storage: '', color: '' }) : l))
+                            if (!encargue) setStockQ(prev => prev.map((q, i) => i === idx ? '' : q))
+                            setAbierta(null)
+                          }}
                         />
                         Encargue
                       </label>

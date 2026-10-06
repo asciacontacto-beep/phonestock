@@ -2567,7 +2567,15 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 }
 
 @media (max-width: 768px) {
-  .main { padding-bottom: calc(var(--m-tabbar) + var(--m-tabbar-aire) + 28px + env(safe-area-inset-bottom)); }
+  .main {
+    padding-bottom: calc(var(--m-tabbar) + var(--m-tabbar-aire) + 28px + env(safe-area-inset-bottom));
+    /* Cuando el foco o el teclado llevan a un campo, que no lo deje
+       debajo de la barra flotante. */
+    scroll-padding-bottom: calc(var(--m-tabbar) + var(--m-tabbar-aire) + 16px + env(safe-area-inset-bottom));
+  }
+  /* En las hojas, lo último (los botones) no queda pegado a la barra de
+     inicio del iPhone. */
+  .mbd { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
 
   /* ── Barra de pestañas flotante ───────────────────────── */
   .mtab-bar {
@@ -2613,8 +2621,12 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
      La página sólo aparece (opacity): si se moviera entera, lo que tiene
      posición fija adentro (el botón flotante, la ficha del equipo) saltaría
      mientras dura la entrada. Los bloques sí suben, uno detrás de otro. */
-  .page { animation: m-aparece .24s ease both; }
-  .m-pantalla > :not(.m-fab) { animation: m-entra .42s var(--m-resorte) both; }
+  /* `backwards`, no `both`: una animación que se queda aplicada al
+     terminar convierte a la página en una capa propia, y los modales que
+     viven adentro quedaban debajo de la barra de pestañas, con sus botones
+     de Guardar tapados. */
+  .page { animation: m-aparece .24s ease backwards; }
+  .m-pantalla > :not(.m-fab) { animation: m-entra .42s var(--m-resorte) backwards; }
   .m-pantalla > :nth-child(2) { animation-delay: .03s; }
   .m-pantalla > :nth-child(3) { animation-delay: .06s; }
   .m-pantalla > :nth-child(4) { animation-delay: .09s; }
@@ -2633,6 +2645,10 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
        le gana a la transición y el botón no se podría correr. */
     animation-fill-mode: backwards;
   }
+  /* Con un modal abierto, la barra y el botón flotante se apartan. */
+  .mtab-bar { transition: transform .32s var(--m-resorte), opacity .2s ease; }
+  [data-m-modal] .mtab-bar { transform: translate3d(0, calc(100% + 24px), 0); opacity: 0; pointer-events: none; }
+  [data-m-modal] .m-fab { transform: translate3d(0, calc(100% + var(--m-tabbar) + 30px), 0); opacity: 0; pointer-events: none; }
   [data-m-bajando] .m-fab { transform: translate3d(0, calc(100% + var(--m-tabbar) + 30px), 0); opacity: 0; }
   .m-fab:active { transform: scale(.94); }
 
@@ -2659,3 +2675,15 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 @media (prefers-reduced-motion: reduce) {
   .page, .m-pantalla > *, .mtab-pildora, .m-fab, .ms-hoja { animation: none !important; transition: none !important; }
 }
+
+/* ── Pedido mayorista: resultados del buscador de stock ──────
+   Van dentro del renglón (no flotando encima): empujan lo de abajo en vez
+   de taparlo, y se ven completos también en el celular. */
+.mp-res { margin-top: 6px; border: 1px solid var(--border-md); border-radius: 10px; background: var(--surface); overflow: hidden; max-height: 264px; overflow-y: auto; }
+.mp-res-op { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; width: 100%; padding: 10px 12px; text-align: left; font: inherit; font-size: 13px; color: var(--text); background: none; border: 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.mp-res-op:last-child { border-bottom: 0; }
+.mp-res-op:hover, .mp-res-op:focus-visible { background: var(--surface-2); outline: none; }
+.mp-res-op > span:not(.mp-res-precio) { grid-column: 1; font-size: 12px; color: var(--text-3); }
+.mp-res-precio { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 600; }
+.mp-res-vacio { padding: 12px; font-size: 12.5px; color: var(--text-3); line-height: 1.45; }
+@media (max-width: 768px) { .mp-res-op { min-height: 52px; } }

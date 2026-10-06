@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Building2, Pencil, X, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { createClient as crearClienteSinSesion } from '@supabase/supabase-js';
+import { supabaseEnv, supabaseBrowserUrl } from '@/utils/supabase/env';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 
@@ -54,7 +56,17 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
         orgId = currentProfile?.org_id;
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      /* El registro va por un cliente aparte, sin sesión guardada. Con el
+         cliente de siempre, si Supabase no pide confirmar el email, signUp
+         deja logueado al usuario NUEVO: el dueño perdía su sesión y el
+         perfil se rechazaba por falta de permiso. Así la sesión del dueño
+         no se toca, y el perfil lo guarda él, como corresponde. */
+      const registro = crearClienteSinSesion(
+        supabaseBrowserUrl(),
+        supabaseEnv().anonKey,
+        { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'stackr-alta-usuario' } },
+      );
+      const { data, error } = await registro.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
@@ -81,7 +93,8 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
           org_id: orgId,
           deposit_ids: form.role === 'seller' ? form.deposit_ids : [],
         });
-        if (profileError) console.warn('Profile upsert warning:', profileError.message);
+        // Sin perfil el usuario no puede entrar a nada: es un error, no un aviso.
+        if (profileError) throw new Error('Se creó el acceso pero no el perfil: ' + profileError.message);
 
         setShowAdd(false);
         setForm({ name: '', email: '', password: '', role: 'seller', color: '#3b82f6', deposit_ids: [] });

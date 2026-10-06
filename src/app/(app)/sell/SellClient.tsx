@@ -20,6 +20,7 @@ import { resolveSale } from '@/utils/saleTotals';
 import { imprimirDocumento } from '@/utils/imprimir';
 import { configuracionDelLocal } from '@/utils/configuracion';
 import { traerTodo } from '@/utils/supabase/todo';
+import { reportarError } from '@/utils/reportarError';
 
 const hoyISO = () => new Date().toLocaleDateString('en-CA');
 
@@ -125,7 +126,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         finalDeposits = finalDeposits.filter((d: any) => assignedDeposits.map(String).includes(String(d.id)));
       }
       
-      if (stockErr) toast.error(`No se pudo cargar el stock: ${stockErr.message}`, { duration: 10000 });
+      if (stockErr) {
+        toast.error(`No se pudo cargar el stock: ${stockErr.message}`, { duration: 10000 });
+        reportarError('consulta', `Vender: ${stockErr.message}`);
+      }
       setStock(stockData || []);
       setDeposits(finalDeposits);
       if (finalDeposits.length > 0) setSelectedDeposit(String(finalDeposits[0].id));

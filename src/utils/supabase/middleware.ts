@@ -64,6 +64,9 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/c/') &&
     // Privacidad y términos los tiene que poder leer cualquiera antes de
     // crear una cuenta (y Meta los pide para los anuncios).
+    // Los errores de la app se reportan también sin sesión: los del ingreso
+    // (un Safari viejo que no deja entrar) son de los que más importan.
+    request.nextUrl.pathname !== '/api/errores' &&
     request.nextUrl.pathname !== '/privacidad' &&
     request.nextUrl.pathname !== '/terminos' &&
     request.nextUrl.pathname !== '/'

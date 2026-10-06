@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { reportarError } from '@/utils/reportarError';
 
 export default function GlobalError({
   error,
@@ -11,6 +12,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('[global-error]', error);
+    reportarError('pantalla', error.message, [error.stack, error.digest && `digest ${error.digest}`].filter(Boolean).join('\n'));
   }, [error]);
 
   return (

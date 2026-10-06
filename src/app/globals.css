@@ -2711,3 +2711,11 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 .cjm-dir.out { background: var(--red-dim); color: var(--red); }
 .cjm-hoja .m-sec:first-child { margin-top: 0; }
 .cjm .m-acciones .m-accion span:last-child { text-align: center; line-height: 1.2; }
+
+/* ── Superadmin · Errores ─────────────────────────────────── */
+.er-fila { width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; font: inherit; color: inherit; cursor: pointer; align-items: flex-start; }
+.er-fila:hover { background: var(--surface-2); }
+.er-fila .panel-meta + .panel-meta { margin-top: 2px; }
+.er-detalle { padding: 4px 16px 14px 39px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.er-caso { padding: 8px 0; border-top: 1px dashed var(--border-md); }
+.er-stack { margin: 6px 0 0; padding: 10px 12px; max-height: 220px; overflow: auto; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font: 11.5px/1.45 'JetBrains Mono', monospace; color: var(--text-2); white-space: pre-wrap; word-break: break-word; }

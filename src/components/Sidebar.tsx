@@ -1,5 +1,5 @@
 "use client"
-import {
+import { Bug,
   LayoutDashboard, BarChart3, Package, Headphones, Warehouse, ScanLine, ShoppingCart, FileText, Receipt,
   CreditCard, Wallet, Wrench, CalendarDays, Users2, ShoppingBag, Truck, Settings, User as UserIcon, Store,
 } from 'lucide-react';
@@ -75,6 +75,7 @@ export const SUPERADMIN: Rama[] = [
     { id: 'superadmin/seguimiento', label: 'Seguimiento', icon: <Users2 size={I} /> },
     { id: 'superadmin/cobros', label: 'Cobros', icon: <Wallet size={I} /> },
     { id: 'superadmin/agenda', label: 'Agenda', icon: <CalendarDays size={I} /> },
+    { id: 'superadmin/errores', label: 'Errores', icon: <Bug size={I} /> },
   ] },
 ];
 

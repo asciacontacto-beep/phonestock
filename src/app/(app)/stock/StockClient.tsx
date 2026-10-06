@@ -18,6 +18,7 @@ import { DetalleEquipo } from '@/components/DetalleEquipo';
 import { StockMobile } from './StockMobile';
 import { useEsCelular } from '@/hooks/useEsCelular';
 import { traerTodo } from '@/utils/supabase/todo';
+import { reportarError } from '@/utils/reportarError';
 
 /** Dias que el equipo lleva sin venderse. Plata parada es lo que mas duele. */
 function daysInStock(createdAt?: string | null): number | null {
@@ -69,7 +70,10 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
       ]);
       // Si el stock no se pudo leer, se dice: una lista vacía en silencio
       // parece "no hay equipos" y no deja ver qué pasó.
-      if (stockErr) toast.error(`No se pudo cargar el stock: ${stockErr.message}`, { duration: 10000 });
+      if (stockErr) {
+        toast.error(`No se pudo cargar el stock: ${stockErr.message}`, { duration: 10000 });
+        reportarError('consulta', `Stock: ${stockErr.message}`);
+      }
       setStock(stockData || []);
       setDeposits(depositsData || []);
       /* Datos extra de la ficha (catálogo y proveedor) en una consulta

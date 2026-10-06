@@ -10,6 +10,8 @@
  * Corre antes de que la app se vuelva interactiva.
  */
 
+import { reportarError } from '@/utils/reportarError'
+
 if (typeof Object.hasOwn !== 'function') {
   Object.defineProperty(Object, 'hasOwn', {
     value: (obj: object, key: PropertyKey) => Object.prototype.hasOwnProperty.call(Object(obj), key),
@@ -50,6 +52,18 @@ if (typeof globalThis.structuredClone !== 'function') {
     value: (v: unknown) => clonar(v),
     configurable: true,
     writable: true,
+  })
+}
+
+/* Errores que nadie atrapó: se reportan para verlos en Superadmin →
+   Errores (ver utils/reportarError). Nunca interrumpen nada. */
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', e => {
+    reportarError('error', e.message || (e.error instanceof Error ? e.error.message : ''), e.error instanceof Error ? e.error.stack : `${e.filename || ''}:${e.lineno || ''}:${e.colno || ''}`)
+  })
+  window.addEventListener('unhandledrejection', e => {
+    const r = e.reason
+    reportarError('promesa', r instanceof Error ? r.message : r, r instanceof Error ? r.stack : null)
   })
 }
 

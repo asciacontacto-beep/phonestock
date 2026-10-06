@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCw } from 'lucide-react';
+import { reportarError } from '@/utils/reportarError';
 
 export default function AppError({
   error,
@@ -13,6 +14,7 @@ export default function AppError({
   useEffect(() => {
     // Log para poder rastrear el error en producción (Vercel logs).
     console.error('[app-error]', error);
+    reportarError('pantalla', error.message, [error.stack, error.digest && `digest ${error.digest}`].filter(Boolean).join('\n'));
   }, [error]);
 
   return (

@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { BRANDS, MODELS, STORAGES, COLORS, PAY } from '@/constants/data';
 import { paraInputFechaHora } from '@/utils/fechas';
 import { traerTodo } from '@/utils/supabase/todo';
+import { useEsCelular } from '@/hooks/useEsCelular';
+import { TurnosMobile } from './TurnosMobile';
 
 type Appointment = {
   id: string;
@@ -51,6 +53,7 @@ type Tab = 'cards' | 'monthly' | 'weekly';
 
 export function TurnosClient({ isOwner, user }: { isOwner: boolean; user: any }) {
   const supabase = createClient();
+  const celular = useEsCelular();
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [stockPhones, setStockPhones] = useState<any[]>([]);
@@ -105,6 +108,17 @@ export function TurnosClient({ isOwner, user }: { isOwner: boolean; user: any })
 
   return (
     <div className="page">
+      {celular ? (
+        <TurnosMobile
+          turnos={appointments}
+          cargando={loading}
+          onNuevo={() => { setEditItem(null); setShowNew(true); }}
+          onEditar={a => { setEditItem(a as Appointment); setShowNew(true); }}
+          onConfirmar={a => setConfirmItem(a as Appointment)}
+          onCancelar={handleCancel}
+          onBorrar={handleDelete}
+        />
+      ) : (<>
       {/* Header */}
       <div className="sh">
         <h1 className="st">Turnos</h1>
@@ -158,6 +172,7 @@ export function TurnosClient({ isOwner, user }: { isOwner: boolean; user: any })
           onEdit={(a: Appointment) => { setEditItem(a); setShowNew(true); }}
         />
       )}
+      </>)}
 
       {showNew && (
         <AppointmentModal

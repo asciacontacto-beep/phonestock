@@ -2719,3 +2719,26 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 .er-detalle { padding: 4px 16px 14px 39px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
 .er-caso { padding: 8px 0; border-top: 1px dashed var(--border-md); }
 .er-stack { margin: 6px 0 0; padding: 10px 12px; max-height: 220px; overflow: auto; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font: 11.5px/1.45 'JetBrains Mono', monospace; color: var(--text-2); white-space: pre-wrap; word-break: break-word; }
+
+/* ── Servicio técnico en el celular ───────────────────────── */
+.rpm .m-kpi { text-align: left; font: inherit; color: inherit; cursor: pointer; border: 1px solid var(--m-borde, var(--border)); }
+.rpm .m-kpi.rpm-on { border-color: var(--text); box-shadow: 0 0 0 1px var(--text) inset; }
+.rpm-falla { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.rpm-orden { font: 11px 'JetBrains Mono', monospace; color: var(--text-3); }
+.rpm .m-row-der { align-items: flex-end; }
+
+/* ── Turnos en el celular ─────────────────────────────────── */
+.tm-fila { align-items: center; }
+.tm-hora { width: 52px; flex-shrink: 0; font-size: 15px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--text); }
+.tmm .m-row-der { align-items: flex-end; }
+.tm-aviso { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 11px; display: inline-grid; place-items: center; background: var(--amber-dim, rgba(245,158,11,.15)); color: var(--amber); font-size: 12px; font-weight: 700; }
+.tm-pie { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
+.tm-pie .btn, .tm-acciones .btn { justify-content: center; }
+.tm-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 16px; }
+
+/* ── Rentabilidad en el celular ───────────────────────────── */
+.rnm .m-hero-num.cjm-neg { color: var(--red); }
+.rnm .m-row-der { align-items: flex-end; }
+.rnm button.m-row:disabled { opacity: .55; }
+.rnm-pos { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--surface-3); font-size: 11.5px; font-weight: 700; color: var(--text-2); }
+.rnm-aviso .m-row { align-items: flex-start; }

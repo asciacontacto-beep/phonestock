@@ -5,6 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieCha
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
 import { diaLocal } from '@/utils/fechas';
+import { useEsCelular } from '@/hooks/useEsCelular';
+import { RentabilidadMobile } from './RentabilidadMobile';
 
 type Period = '7d' | '30d' | '90d' | 'all';
 
@@ -17,6 +19,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
 }) {
   const [period, setPeriod] = useState<Period>('30d');
   const [detailCat, setDetailCat] = useState<'device' | 'accessory' | 'service' | null>(null);
+  const celular = useEsCelular();
 
   const cutoff = useMemo(() => {
     if (period === 'all') return null;
@@ -242,6 +245,39 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
 
   // Colors
   const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+
+  if (celular) {
+    return (
+      <div className="page">
+        <RentabilidadMobile
+          periodo={period}
+          setPeriodo={setPeriod}
+          neta={netProfit}
+          delta={netDelta}
+          facturacion={totalRevenue}
+          bruta={grossProfit}
+          margen={margin}
+          gastos={totalExpensesUSD}
+          rubros={{ device: breakdown.device, accessory: breakdown.accessory, service: breakdown.service }}
+          modelos={modelRanking}
+          vendedores={sellerRanking}
+          tendencia={dailyTrend.map(d => d.profit)}
+          cotizacion={exchangeRate}
+          onRubro={setDetailCat}
+        />
+        {detailCat && (
+          <ProfitBreakdownModal
+            cat={detailCat}
+            stats={breakdown[detailCat]}
+            lines={linesFor(detailCat)}
+            pendingRepairs={breakdown.pendingRepairs}
+            periodLabel={PERIOD_LABEL[period]}
+            onClose={() => setDetailCat(null)}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="page reports dash">

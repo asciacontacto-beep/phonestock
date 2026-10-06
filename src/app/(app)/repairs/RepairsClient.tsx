@@ -12,6 +12,8 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { RepairOrderModal } from './RepairOrderModal';
 import { normalizeReceiptConfig, type ShopSettings } from '@/types/receipt';
 import { traerTodo } from '@/utils/supabase/todo';
+import { useEsCelular } from '@/hooks/useEsCelular';
+import { ReparacionesMobile } from './ReparacionesMobile';
 
 /** Abre la orden de reparación premium (branded) en un modal con preview + PDF. */
 function printRepairTicket(repair: any) {
@@ -29,6 +31,7 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
 
   const supabase = createClient();
   const router = useRouter();
+  const celular = useEsCelular();
 
   const orderConfig = normalizeReceiptConfig(shop.receipt_config);
 
@@ -55,7 +58,9 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
   const getStatus = (id: string) => STATUSES.find(s => s.id === id) || STATUSES[0];
 
   const filtered = repairs.filter(r => {
-    if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+    // "en-taller" lo usa el celular: todo lo que todavía está en el taller.
+    if (filterStatus === 'en-taller') { if (!['INGRESADO', 'REVISION', 'REPUESTO'].includes(r.status)) return false; }
+    else if (filterStatus !== 'all' && r.status !== filterStatus) return false;
     if (q) {
       const qs = q.toLowerCase();
       if (!r.customer_name?.toLowerCase().includes(qs) &&
@@ -67,6 +72,22 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
 
   return (
     <div className="page">
+      {celular && activeTab === 'repairs' ? (
+        <ReparacionesMobile
+          todas={repairs}
+          lista={filtered}
+          estados={STATUSES}
+          estado={filterStatus}
+          setEstado={setFilterStatus}
+          q={q}
+          setQ={setQ}
+          cargando={loading}
+          esDueno={isOwner}
+          onAbrir={setDetailItem}
+          onNueva={() => setShowNew(true)}
+          onRepuestos={() => setActiveTab('parts')}
+        />
+      ) : (<>
       <div className="sh">
         <h1 className="st">Servicio Técnico</h1>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -220,6 +241,7 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
           )}
         </>
       )}
+      </>)}
 
       {showNew && <NewRepairModal onClose={() => setShowNew(false)} onSave={fetchRepairs} user={user} />}
       {detailItem && <RepairDetailModal repair={detailItem} onClose={() => setDetailItem(null)} onSave={fetchRepairs} user={user} isOwner={isOwner} STATUSES={STATUSES} />}

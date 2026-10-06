@@ -24,6 +24,9 @@ jerarquía. La compu y la tablet siguen exactamente igual.
 | Cuenta corriente | `CuentaCorriente` | `CuentaCorriente variante="mobile"` |
 | Cajas | `cashiers/CashiersClient.tsx` | `cashiers/CajasMobile.tsx` |
 | Gastos | `expenses/ExpensesClient.tsx` | `expenses/GastosMobile.tsx` |
+| Servicio técnico | `repairs/RepairsClient.tsx` | `repairs/ReparacionesMobile.tsx` |
+| Turnos | `turnos/TurnosClient.tsx` | `turnos/TurnosMobile.tsx` |
+| Rentabilidad | `reports/ReportsClient.tsx` | `reports/RentabilidadMobile.tsx` |
 
 Editar una venta, ver el comprobante, anular, cobrar, cargar un equipo:
 siempre la misma lógica que la compu. La vista mobile sólo cambia cómo se
@@ -76,7 +79,7 @@ areas del iPhone en el encabezado y la barra, todo con los tokens del tema
 
 ## Pantallas sin vista propia
 
-Servicio técnico, Turnos, Ajustes, Mayoristas, etc. usan su diseño
+Ajustes, Mayoristas, Proveedores, Depósitos, etc. usan su diseño
 responsive dentro del marco nuevo: el título va al encabezado y las tablas
 se vuelven tarjetas con rótulos. Si alguna pasa a usarse mucho desde el
 teléfono, el camino es el mismo: un `XMobile.tsx` al lado, con el mismo

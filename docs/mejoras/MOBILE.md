@@ -22,6 +22,8 @@ jerarquía. La compu y la tablet siguen exactamente igual.
 | Ventas | `sales/SalesClient.tsx` | `sales/VentasMobile.tsx` |
 | Clientes | `customers/CustomersClient.tsx` | `customers/ClientesMobile.tsx` |
 | Cuenta corriente | `CuentaCorriente` | `CuentaCorriente variante="mobile"` |
+| Cajas | `cashiers/CashiersClient.tsx` | `cashiers/CajasMobile.tsx` |
+| Gastos | `expenses/ExpensesClient.tsx` | `expenses/GastosMobile.tsx` |
 
 Editar una venta, ver el comprobante, anular, cobrar, cargar un equipo:
 siempre la misma lógica que la compu. La vista mobile sólo cambia cómo se
@@ -38,7 +40,13 @@ llega y cómo se ve.
   filtros, acciones y fichas (venta, cliente). Se cierra tocando afuera,
   con Escape o arrastrándola.
 - Los modales de siempre (`.mo` / `.mb`) en el celular ya se muestran como
-  hoja; los formularios largos, a pantalla completa.
+  hoja; los formularios largos, a pantalla completa. Mientras hay uno
+  abierto, la barra de pestañas y el botón flotante se apartan
+  (`data-m-modal` en el documento, lo pone el encabezado), así nunca tapan
+  el botón de Guardar.
+- Ojo con las animaciones de entrada: con `fill-mode: both` el elemento
+  queda como capa propia para siempre y lo que tiene adentro (un modal)
+  ya no puede pasar por encima de la barra. Se usa `backwards`.
 
 ## Piezas de diseño (globals.css, sección "STACKR MOBILE")
 
@@ -68,7 +76,7 @@ areas del iPhone en el encabezado y la barra, todo con los tokens del tema
 
 ## Pantallas sin vista propia
 
-Cajas, Gastos, Servicio técnico, Turnos, Ajustes, etc. usan su diseño
+Servicio técnico, Turnos, Ajustes, Mayoristas, etc. usan su diseño
 responsive dentro del marco nuevo: el título va al encabezado y las tablas
 se vuelven tarjetas con rótulos. Si alguna pasa a usarse mucho desde el
 teléfono, el camino es el mismo: un `XMobile.tsx` al lado, con el mismo

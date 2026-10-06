@@ -10,6 +10,8 @@ import { resumenPorCuenta, porAcreditar, NOMBRE_TIPO, type Cuenta } from '@/util
 import { conDiferencias, claveDeCaja, type Cierre } from '@/utils/cierreCaja';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useEsCelular } from '@/hooks/useEsCelular';
+import { CajasMobile, type CajaLocal } from './CajasMobile';
 
 interface Props {
   sales: any[];
@@ -67,6 +69,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
 
   const supabase = createClient();
   const router   = useRouter();
+  const celular  = useEsCelular();
 
   const isOwner = user.role === 'owner';
 
@@ -300,10 +303,67 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
     }
   };
 
+  // ─── números de la pantalla (los usan la compu y el celular) ─────────────
+
+  /** Lo que entró por cada medio en un grupo de ventas. */
+  const porMedio = (lista: typeof sales) => {
+    const t: Record<string, number> = {};
+    PAY_LABELS.forEach(p => { t[p.id] = 0; });
+    lista.forEach(v => {
+      if (v.payments && Array.isArray(v.payments)) {
+        v.payments.forEach((p: any) => { t[claveDeCaja(p)] = (t[claveDeCaja(p)] || 0) + (p.original_amount ?? p.amount); });
+      }
+    });
+    return t;
+  };
+
+  // Resumen general (dueño): ventas + ingresos y egresos manuales.
+  const totalesGenerales = porMedio(fSales);
+  fMovements.forEach(m => {
+    if (m.movement_type === 'IN') {
+       totalesGenerales[m.payment_method] = (totalesGenerales[m.payment_method] || 0) + Number(m.amount);
+    } else if (m.movement_type === 'OUT') {
+       totalesGenerales[m.payment_method] = (totalesGenerales[m.payment_method] || 0) - Number(m.amount);
+    }
+  });
+  const hayTotalesGenerales = PAY_LABELS.some(it => totalesGenerales[it.id] !== 0);
+  const ventasDelPeriodo = fSales.filter(s => s.brand !== 'MOVIMIENTO').length;
+
+  // Por cuenta: lo que no es efectivo, según a dónde entró cada cobro.
+  const hoyISO = new Date().toLocaleDateString('en-CA');
+  const filasPorCuenta = resumenPorCuenta(fSales, hoyISO, cuentas.filter(c => c.active !== false));
+  const pendienteAcreditar = porAcreditar(sales, hoyISO);
+
+  const filasCierres = conDiferencias(cierres, sales);
+
   // ─── render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="page">
+      {celular ? (
+        <CajasMobile
+          esDueno={isOwner}
+          esVendedor={user.role === 'seller'}
+          rango={dateFilter}
+          setRango={setDateFilter}
+          medios={PAY_LABELS}
+          totales={totalesGenerales}
+          hayTotales={hayTotalesGenerales}
+          ventas={ventasDelPeriodo}
+          porCuenta={filasPorCuenta}
+          cuentas={cuentas}
+          pendiente={pendienteAcreditar}
+          cierres={filasCierres.map(c => ({ ...c, user_name: c.user_name || realSellers.find(s => s.id === c.user_id)?.name || null }))}
+          // Igual que en la compu: el vendedor sólo ve los locales a los que pertenece.
+          cajas={depositData.filter(d => isOwner || (user.deposit_ids || []).map(String).includes(String(d.dep.id))) as CajaLocal[]}
+          locales={deposits}
+          totalesDeVendedor={(caja, id) => porMedio(caja.depSales.filter(v => (v.seller_id || v.sellerId) === id))}
+          onMovimiento={() => setShowMovement(true)}
+          onTransferir={() => setShowTransfer(true)}
+          onCambio={() => setShowExchange(true)}
+          onCerrarTurno={() => setShowClose(true)}
+        />
+      ) : (<>
       {/* Header */}
       <div className="sh" style={{ flexWrap: 'wrap', gap: 16 }}>
         <div style={{ minWidth: 200 }}>
@@ -346,25 +406,11 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
 
       {/* Owner: resumen general */}
       {isOwner && (() => {
-        const totals: Record<string, number> = {};
-        PAY_LABELS.forEach(p => { totals[p.id] = 0; });
-        fSales.forEach(v => {
-          if (v.payments && Array.isArray(v.payments)) {
-            v.payments.forEach((p: any) => { totals[claveDeCaja(p)] = (totals[claveDeCaja(p)] || 0) + (p.original_amount ?? p.amount); });
-          }
-        });
-        fMovements.forEach(m => {
-          if (m.movement_type === 'IN') {
-             totals[m.payment_method] = (totals[m.payment_method] || 0) + Number(m.amount);
-          } else if (m.movement_type === 'OUT') {
-             totals[m.payment_method] = (totals[m.payment_method] || 0) - Number(m.amount);
-          }
-        });
-        const hasAny = PAY_LABELS.some(it => totals[it.id] !== 0);
-        if (!hasAny) return null;
+        const totals = totalesGenerales;
+        if (!hayTotalesGenerales) return null;
         return (
           <div className="card" style={{ marginBottom: 28, padding: 20 }}>
-            <div className="sl" style={{ marginBottom: 16 }}>Resumen General — {fSales.filter(s => s.brand !== 'MOVIMIENTO').length} ventas</div>
+            <div className="sl" style={{ marginBottom: 16 }}>Resumen General — {ventasDelPeriodo} ventas</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
               {PAY_LABELS.map(it => totals[it.id] !== 0 ? (
                 <div key={it.id} style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 16px' }}>
@@ -383,9 +429,8 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
           El efectivo vive en las cajas de abajo; esto es lo que no es efectivo.
           Lo "por acreditar" son tarjetas y financieras que pagan días después. */}
       {isOwner && (() => {
-        const hoy = new Date().toLocaleDateString('en-CA');
-        const filas = resumenPorCuenta(fSales, hoy, cuentas.filter(c => c.active !== false));
-        const pendiente = porAcreditar(sales, hoy);
+        const filas = filasPorCuenta;
+        const pendiente = pendienteAcreditar;
         if (filas.length === 0 && pendiente.cobros === 0) return null;
         const sim = (m: string) => (m === 'USD' ? 'U$' : '$');
         return (
@@ -429,7 +474,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
           El vendedor declara lo que contó; lo esperado se calcula acá, con sus
           ventas del turno. Con el cierre a ciegas, sólo el dueño lo ve. */}
       {isOwner && cierres.length > 0 && (() => {
-        const filas = conDiferencias(cierres, sales);
+        const filas = filasCierres;
         return (
           <div className="card" style={{ marginBottom: 28, padding: 20 }}>
             <div className="sl" style={{ marginBottom: 12 }}>Cierres de turno</div>
@@ -608,6 +653,8 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
 
 
       </div>
+
+      </>)}
 
       {/* ─── Modal: Cierre de turno ─────────────────────────────── */}
       {showClose && !closureResult && (

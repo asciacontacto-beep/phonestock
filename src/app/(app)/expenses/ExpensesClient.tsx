@@ -9,6 +9,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { diaLocal } from '@/utils/fechas';
 import { aceptaCuenta, cuentasDelMetodo, type Cuenta } from '@/utils/cuentas';
 import { cargarCuentas } from '@/utils/cuentasDb';
+import { useEsCelular } from '@/hooks/useEsCelular';
+import { GastosMobile } from './GastosMobile';
 import {
   CATEGORIAS_GASTO, METODOS_GASTO, MARCA_GASTO, PERIODOS,
   validarGasto, momentoDelGasto, movimientoDelGasto, origenDelGasto, nombreDelMetodo,
@@ -44,6 +46,7 @@ export function ExpensesClient({ initialExpenses, deposits, pagosPorGasto, cotiz
   const supabase = createClient();
   const router = useRouter();
   const { confirm, ConfirmDialog } = useConfirm();
+  const celular = useEsCelular();
 
   const [gastos, setGastos] = useState<Gasto[]>(initialExpenses);
   const [pagos, setPagos] = useState<Record<string, PagoGasto[]>>(pagosPorGasto);
@@ -216,6 +219,32 @@ export function ExpensesClient({ initialExpenses, deposits, pagosPorGasto, cotiz
 
   return (
     <div className="page">
+      {celular ? (
+        <GastosMobile
+          hayGastos={gastos.length > 0}
+          lista={lista}
+          resumen={resumen}
+          resumenAnterior={resumenAnterior}
+          cambio={cambio}
+          periodo={periodo}
+          setPeriodo={p => { setPeriodo(p); setVisibles(50); }}
+          etiquetaPeriodo={etiquetaPeriodo}
+          categoria={categoria}
+          setCategoria={setCategoria}
+          q={q}
+          setQ={v => { setQ(v); setVisibles(50); }}
+          deposits={deposits}
+          deposito={deposito}
+          setDeposito={d => { setDeposito(d); setVisibles(50); }}
+          cotizacion={cotizacion}
+          origenDe={g => origenDelGasto({ payments: pagos[String(g.id)] })}
+          nombreDeposito={nombreDeposito}
+          onNuevo={abrirNuevo}
+          onRepetir={abrirRepetir}
+          onEditar={abrirEditar}
+          onBorrar={borrar}
+        />
+      ) : (<>
       <div className="sh">
         <div>
           <h1 className="st">Gastos</h1>
@@ -373,6 +402,7 @@ export function ExpensesClient({ initialExpenses, deposits, pagosPorGasto, cotiz
           </aside>
         </div>
       )}
+      </>)}
 
       {ConfirmDialog}
 

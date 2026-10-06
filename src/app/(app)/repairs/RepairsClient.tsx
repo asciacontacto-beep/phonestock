@@ -531,7 +531,10 @@ function NewRepairModal({ onClose, onSave, user }: any) {
         customer_id: customerId, customer_name: cust.name, customer_phone: cust.phone,
         device_brand: f.device_brand, device_model: f.device_model, device_color: f.device_color, device_password: f.device_password,
         issue_description: f.issue_description, visual_condition: f.visual_condition,
-        budget, deposit_paid, deposit_id: deposit_paid > 0 ? parseInt(f.deposit_id) : null
+        // repairs.deposit_id es un número y los locales tienen id UUID: el
+        // parseInt guardaba un número sin sentido. De qué caja es la seña lo
+        // dice el movimiento de abajo (sales.deposit_id), que sí es UUID.
+        budget, deposit_paid, deposit_id: null
       }]).select();
       if (error) throw error;
 
@@ -546,7 +549,9 @@ function NewRepairModal({ onClose, onSave, user }: any) {
           payments: [{ id: 'ars_cash', amount: deposit_paid, original_amount: deposit_paid, label: 'Efectivo ARS (Seña)' }],
           customer: cust
         };
-        await supabase.from('sales').insert([saleData]);
+        const { error: senaErr } = await supabase.from('sales').insert([saleData]);
+        // La orden ya quedó creada: se avisa, pero no se frena el ticket.
+        if (senaErr) toast.error(`La orden se creó, pero la seña no entró a la caja: ${senaErr.message}. Cargala como ingreso en Cajas.`, { duration: 10000 });
       }
 
       toast.success('Orden creada');

@@ -91,7 +91,9 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
           initials,
           color: form.color,
           org_id: orgId,
-          deposit_ids: form.role === 'seller' ? form.deposit_ids : [],
+          // Con un solo local, el vendedor va a ése: sin local asignado, Vender
+          // no le muestra equipos.
+          deposit_ids: form.role !== 'seller' ? [] : form.deposit_ids.length === 0 && deposits.length === 1 ? [String(deposits[0].id)] : form.deposit_ids,
         });
         // Sin perfil el usuario no puede entrar a nada: es un error, no un aviso.
         if (profileError) throw new Error('Se creó el acceso pero no el perfil: ' + profileError.message);
@@ -208,7 +210,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
                         <Pencil size={14} />
                       </button>
                     )}
-                    <button className="btn-ghost" onClick={() => removeUser(u.id)} style={{ color: 'var(--red)' }}>
+                    <button className="btn-ghost" onClick={() => removeUser(u.id)} style={{ color: 'var(--red)' }} title="Eliminar usuario" aria-label={`Eliminar a ${u.name || 'este usuario'}`}>
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -327,6 +329,11 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
                       );
                     })}
                   </div>
+                  {form.deposit_ids.length === 0 && deposits.length > 1 && (
+                    <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--amber)', lineHeight: 1.45 }}>
+                      Elegí al menos un local: sin local asignado, el vendedor no ve equipos para vender.
+                    </div>
+                  )}
                 </div>
               )}
 

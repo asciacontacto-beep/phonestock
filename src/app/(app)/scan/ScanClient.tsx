@@ -162,7 +162,7 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onScan(); } }}
             placeholder="Pistoleá el código o escanea con la cámara..." style={{ fontSize: 16, padding: 16, flex: 1 }} autoComplete="off"
           />
-          <button className="btn btn-dark" onClick={onScan}><ScanLine size={18} /></button>
+          <button className="btn btn-dark" onClick={onScan} title="Buscar el código" aria-label="Buscar el código"><ScanLine size={18} /></button>
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 10 }}>Si el código no está registrado, se abrirá el formulario de carga manual automáticamente.</p>
         {scanning && (

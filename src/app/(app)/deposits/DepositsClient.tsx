@@ -125,10 +125,10 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn-pill" style={{ padding: '5px 8px' }} onClick={() => setEditDep({ ...d })}>
+                    <button className="btn-pill" style={{ padding: '5px 8px' }} onClick={() => setEditDep({ ...d })} title="Editar" aria-label={`Editar ${d.name}`}>
                       <Edit2 size={13} />
                     </button>
-                    <button className="btn-pill" style={{ padding: '5px 8px', color: 'var(--red)' }} onClick={() => deleteDeposit(d.id)}>
+                    <button className="btn-pill" style={{ padding: '5px 8px', color: 'var(--red)' }} onClick={() => deleteDeposit(d.id)} title="Borrar" aria-label={`Borrar ${d.name}`}>
                       <Trash2 size={13} />
                     </button>
                   </div>

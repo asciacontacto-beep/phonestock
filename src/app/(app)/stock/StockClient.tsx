@@ -557,8 +557,8 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
 
                   {/* Actions */}
                   <div className="inv-actions" onClick={e => e.stopPropagation()}>
-                    <button className="btn-icon" style={{ width: 28, height: 28 }} onClick={() => setEditItem(s)}><Edit2 size={13} /></button>
-                    <button className="btn-icon" style={{ width: 28, height: 28, color: 'var(--red)' }} onClick={() => handleDelete(s.id)}><Trash2 size={13} /></button>
+                    <button className="btn-icon" style={{ width: 28, height: 28 }} onClick={() => setEditItem(s)} title="Editar" aria-label={`Editar ${s.brand} ${s.model}`}><Edit2 size={13} /></button>
+                    <button className="btn-icon" style={{ width: 28, height: 28, color: 'var(--red)' }} onClick={() => handleDelete(s.id)} title="Borrar" aria-label={`Borrar ${s.brand} ${s.model}`}><Trash2 size={13} /></button>
                   </div>
                 </div>
               );

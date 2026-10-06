@@ -125,10 +125,10 @@ export function SuppliersClient({ initialSuppliers, initialPedidos = [], initial
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button className="btn-pill" style={{ padding: '5px 8px' }} onClick={() => setEditSup({ ...s })}>
+                <button className="btn-pill" style={{ padding: '5px 8px' }} onClick={() => setEditSup({ ...s })} title="Editar" aria-label={`Editar ${s.name}`}>
                   <Edit2 size={13} />
                 </button>
-                <button className="btn-pill" style={{ padding: '5px 8px', color: 'var(--red)' }} onClick={() => deleteSupplier(s.id)}>
+                <button className="btn-pill" style={{ padding: '5px 8px', color: 'var(--red)' }} onClick={() => deleteSupplier(s.id)} title="Borrar" aria-label={`Borrar ${s.name}`}>
                   <Trash2 size={13} />
                 </button>
               </div>

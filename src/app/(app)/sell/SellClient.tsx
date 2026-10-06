@@ -52,6 +52,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   const [sp, setSp] = useState('');
   const [q, setQ] = useState('');
   const [selectedDeposit, setSelectedDeposit] = useState<string | null>(null);
+  // La lista del paso 1 muestra de a 15; "Ver más" suma otros 15.
+  const [cuantos, setCuantos] = useState(15);
   const [sm, setSm] = useState<string | null>(null);
   const [ma, setMa] = useState('');
   const [exchangeRate, setExchangeRate] = useState('1000');
@@ -630,7 +632,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             <table className="table el-tabla">
               <thead><tr><th>Equipo</th><th>Precio</th><th>Ubicación</th><th style={{ width: 30 }}></th></tr></thead>
               <tbody>
-                {av.slice(0, 15).map((s: any) => (
+                {av.slice(0, cuantos).map((s: any) => (
                   <tr 
                     key={s.id} 
                     onClick={() => { setUnit(s); setSp(s.price); setSc(s.currency); setStep(2); }}
@@ -648,6 +650,11 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                 ))}
               </tbody>
             </table>
+            {av.length > cuantos && (
+              <button className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', marginTop: 12 }} onClick={() => setCuantos(c => c + 15)}>
+                Ver más equipos ({av.length - cuantos} más)
+              </button>
+            )}
           </div>}
         </div>
       )}

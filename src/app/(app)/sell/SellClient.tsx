@@ -112,7 +112,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       supabase.from('card_plans').select('*').eq('active', true).order('card_name'),
       cargarCuentas(supabase, { soloActivas: true }),
       supabase.from('tradein_values').select('*'),
-    ]).then(([{ data: { session } }, { data: stockData }, { data: depositsData }, { data: settingsData }, { data: accData }, { data: planesData }, cuentasRes, { data: tomaData }]: any) => {
+    ]).then(([{ data: { session } }, { data: stockData, error: stockErr }, { data: depositsData }, { data: settingsData }, { data: accData }, { data: planesData }, cuentasRes, { data: tomaData }]: any) => {
       const u = session?.user
       if (u) {
         const isSuperAdmin = u.email === 'asciacontacto@gmail.com'
@@ -124,6 +124,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         finalDeposits = finalDeposits.filter((d: any) => assignedDeposits.map(String).includes(String(d.id)));
       }
       
+      if (stockErr) toast.error(`No se pudo cargar el stock: ${stockErr.message}`, { duration: 10000 });
       setStock(stockData || []);
       setDeposits(finalDeposits);
       if (finalDeposits.length > 0) setSelectedDeposit(String(finalDeposits[0].id));
@@ -612,7 +613,15 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
               <span style={{ fontSize: 13, color: 'var(--amber)' }}>Stock bajo: solo quedan <strong>{av.length}</strong> equipos disponibles con este filtro.</span>
             </div>
           )}
-          <div className="tw">
+          {av.length === 0 && (
+            <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13.5, lineHeight: 1.5 }}>
+              {q
+                ? <>Ningún equipo coincide con “{q}”{deposits.length > 1 ? ' en este local' : ''}.</>
+                : <>No hay equipos disponibles en <strong style={{ color: 'var(--text-2)' }}>{deposits.find(d => String(d.id) === String(selectedDeposit))?.name || 'este local'}</strong>.</>}
+              {deposits.length > 1 && <><br />Probá en otro local con los botones de arriba.</>}
+            </div>
+          )}
+          {av.length > 0 && <div className="tw">
             <table className="table el-tabla">
               <thead><tr><th>Equipo</th><th>Precio</th><th>Ubicación</th><th style={{ width: 30 }}></th></tr></thead>
               <tbody>
@@ -634,7 +643,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                 ))}
               </tbody>
             </table>
-          </div>
+          </div>}
         </div>
       )}
 

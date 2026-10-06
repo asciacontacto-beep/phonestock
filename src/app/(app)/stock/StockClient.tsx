@@ -60,12 +60,15 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
 
   useEffect(() => {
     (async () => {
-      const [{ data: stockData }, { data: depositsData }, { data: settingsData }] = await Promise.all([
+      const [{ data: stockData, error: stockErr }, { data: depositsData }, { data: settingsData }] = await Promise.all([
         // Al vendedor el costo no le llega ni en los datos.
         supabase.from('stock').select((isOwner ? STOCK_FIELDS : STOCK_SIN_COSTO) as string).order('created_at', { ascending: false }),
         supabase.from('deposits').select('id,name,color').order('name'),
         configuracionDelLocal(supabase, orgId, 'exchange_rate'),
       ]);
+      // Si el stock no se pudo leer, se dice: una lista vacía en silencio
+      // parece "no hay equipos" y no deja ver qué pasó.
+      if (stockErr) toast.error(`No se pudo cargar el stock: ${stockErr.message}`, { duration: 10000 });
       setStock(stockData || []);
       setDeposits(depositsData || []);
       /* Datos extra de la ficha (catálogo y proveedor) en una consulta

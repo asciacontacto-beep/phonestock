@@ -1,5 +1,6 @@
 "use client"
 import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, type FuenteCotizacion } from '@/utils/cotizacion';
+import { totalAccesoriosEnPesos, enPesos, monedaAccesorio } from '@/utils/accesoriosVenta';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { ArrowRight, Plus, Printer, Search, AlertTriangle, FileText, X, MapPin, PackageOpen, CreditCard, ChevronRight, Receipt as ReceiptIcon, User as UserIcon, Loader2 } from 'lucide-react';
 import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
@@ -758,9 +759,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                       <div className="acc-dropdown">
                         {accessoriesList
                           .filter(a => {
-                            const baseFilter = accessoryOnly
-                              ? (a.currency || 'ARS') === 'ARS'
-                              : String(a.deposit_id) === String(unit?.deposit);
+                            // Venta suelta: todos (los de dólares se cobran convertidos).
+                            const baseFilter = accessoryOnly || String(a.deposit_id) === String(unit?.deposit);
                             if (!accSearch.trim()) return baseFilter;
                             return baseFilter && `${a.category} ${a.compatible_model || ''} ${a.color || ''}`.toLowerCase().includes(accSearch.toLowerCase());
                           })
@@ -778,13 +778,16 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                               >
                                 <span className="acc-option-name">{label}</span>
                                 <span className="acc-option-meta">
-                                  Stock {a.stock} · {a.currency === 'ARS' ? '$' : 'U$'} {(a.sale_price || 0).toLocaleString('es-AR')}
+                                  Stock {a.stock} · {monedaAccesorio(a.currency) === 'ARS' ? '$' : 'U$'} {(a.sale_price || 0).toLocaleString('es-AR')}
+                                  {accessoryOnly && monedaAccesorio(a.currency) === 'USD' && (parseFloat(exchangeRate) || 0) > 0 && (
+                                    <> · ≈ $ {enPesos(a.sale_price || 0, a.currency, parseFloat(exchangeRate)).toLocaleString('es-AR')}</>
+                                  )}
                                 </span>
                               </div>
                             );
                           })}
                         {accessoriesList.filter(a => {
-                          const base = accessoryOnly ? (a.currency || 'ARS') === 'ARS' : String(a.deposit_id) === String(unit?.deposit);
+                          const base = accessoryOnly || String(a.deposit_id) === String(unit?.deposit);
                           if (!accSearch.trim()) return base;
                           return base && `${a.category} ${a.compatible_model || ''} ${a.color || ''}`.toLowerCase().includes(accSearch.toLowerCase());
                         }).length === 0 && (
@@ -825,7 +828,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                   setSelectedAccessories(p => {
                     const existing = p.find(x => x.id === selectedAccId && x.is_gift === (accType === 'regalo'));
                     if (existing) return p.map(x => x === existing ? { ...x, qty: x.qty + accQty } : x);
-                    return [...p, { id: selectedAccId, name: `${acc.category} ${acc.compatible_model || ''} ${acc.color || ''}`.trim(), qty: accQty, price: accType === 'regalo' ? 0 : acc.sale_price, is_gift: accType === 'regalo', cost_price: acc.cost_price, currency: acc.currency || 'USD' }];
+                    return [...p, { id: selectedAccId, name: `${acc.category} ${acc.compatible_model || ''} ${acc.color || ''}`.trim(), qty: accQty, price: accType === 'regalo' ? 0 : acc.sale_price, is_gift: accType === 'regalo', cost_price: acc.cost_price, currency: monedaAccesorio(acc.currency) }];
                   });
                   setAccSearch(''); setSelectedAccId(''); setAccQty(1);
                 }}><Plus size={16}/> Agregar</button>
@@ -842,7 +845,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                       <div className="acc-added-meta">
                         {sa.is_gift
                           ? <span className="badge b-green">Regalo</span>
-                          : <>{sa.currency === 'ARS' ? '$' : 'U$'} {(sa.price || 0).toLocaleString('es-AR')} c/u</>}
+                          : <>{sa.currency === 'ARS' ? '$' : 'U$'} {(sa.price || 0).toLocaleString('es-AR')} c/u
+                              {accessoryOnly && sa.currency === 'USD' && (parseFloat(exchangeRate) || 0) > 0 && (
+                                <> · ≈ $ {enPesos(sa.price || 0, sa.currency, parseFloat(exchangeRate)).toLocaleString('es-AR')}</>
+                              )}</>}
                       </div>
                     </div>
                     <button className="btn-icon" title="Quitar" onClick={() => setSelectedAccessories(p => p.filter((_, j) => j !== i))}><X size={15} color="var(--red)"/></button>
@@ -857,7 +863,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             <button className="btn btn-dark btn-lg" style={{ flex: 1 }} onClick={() => {
                if (accessoryOnly) {
                  if (selectedAccessories.length === 0) { toast.error('Agregá al menos un accesorio'); return; }
-                 const total = selectedAccessories.reduce((acc, c) => acc + (c.is_gift ? 0 : c.price * c.qty), 0);
+                 const total = totalAccesoriosEnPesos(selectedAccessories, parseFloat(exchangeRate) || 0);
+                 if (total === null) { toast.error('Hay accesorios en dólares: cargá la cotización en Configuración'); return; }
                  setSp(String(total));
                  setSc('ARS');
                }

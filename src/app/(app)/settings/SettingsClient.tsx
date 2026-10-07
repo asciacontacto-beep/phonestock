@@ -58,7 +58,7 @@ const SECCIONES: { v: Seccion; l: string; desc: string; icon: React.ReactNode }[
   { v: 'negocio',    l: 'Negocio y recibo', desc: 'La identidad de tu negocio y el diseño del recibo.', icon: <Building2 size={16} /> },
   { v: 'cotizacion', l: 'Cotización',       desc: 'El dólar con el que se pasan precios y costos a pesos.', icon: <DollarSign size={16} /> },
   { v: 'cobros',     l: 'Cobros',           desc: 'Dónde entra la plata y los planes de tarjeta o financiera.', icon: <CreditCard size={16} /> },
-  { v: 'caja',       l: 'Caja',             desc: 'Cómo cierran el turno los vendedores.', icon: <Lock size={16} /> },
+  { v: 'caja',       l: 'Vendedores',       desc: 'Cómo cierran el turno y qué pueden cargar.', icon: <Lock size={16} /> },
   { v: 'toma',       l: 'Valores de toma',  desc: 'Cuánto pagás por un usado que entra en parte de pago.', icon: <Smartphone size={16} /> },
   { v: 'datos',      l: 'Datos y accesos',  desc: 'Respaldo, claves de acceso y tu link de invitación.', icon: <Database size={16} /> },
 ];
@@ -83,6 +83,9 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
   const [hayCuentas, setHayCuentas] = useState(false);
   /* Cierre a ciegas: sólo si la base ya tiene la columna. */
   const [hayCiegas, setHayCiegas] = useState(false);
+  /* Que el vendedor cargue el costo al ingresar equipos: sólo si la base
+     tiene la columna (migración 20261007_vendedor_carga_costo). */
+  const [hayCostoVendedor, setHayCostoVendedor] = useState(false);
   /* Link de referidos del negocio. Si la migración no está aplicada, la
      tarjeta simplemente no aparece. */
   const [referral, setReferral] = useState<{ code: string; invitados: number; pagos: number } | null>(null);
@@ -119,6 +122,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       setHayFuente(!sinColumna);
       const { error: sinCiegas } = await supabase.from('settings').select('cierre_a_ciegas').limit(0);
       setHayCiegas(!sinCiegas);
+      const { error: sinCostoVendedor } = await supabase.from('settings').select('vendedor_carga_costo').limit(0);
+      setHayCostoVendedor(!sinCostoVendedor);
       const { error: sinCuentas } = await supabase.from('accounts').select('id').limit(0);
       setHayCuentas(!sinCuentas);
       if (data && data.length > 0) {
@@ -153,6 +158,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       [...BASE_COLUMNS, ...EXTRA_COLUMNS].forEach(col => { full[col] = (form as Record<string, unknown>)[col]; });
       if (hayFuente) full.cotizacion_fuente = fuente;
       if (hayCiegas) full.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
+      if (hayCostoVendedor) full.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
 
       type WriteResult = { error: { message?: string; code?: string } | null; data?: { id?: string } | null };
       const write = async (payload: Record<string, unknown>): Promise<WriteResult> => {
@@ -174,6 +180,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
         BASE_COLUMNS.forEach(col => { baseOnly[col] = (form as Record<string, unknown>)[col]; });
         if (hayFuente) baseOnly.cotizacion_fuente = fuente;
         if (hayCiegas) baseOnly.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
+        if (hayCostoVendedor) baseOnly.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
         ({ error, data } = await write(baseOnly));
         if (!error) {
           toast.warning('Guardado. Para activar el logo y la personalización avanzada del recibo, aplicá la migración settings (docs/mejoras).', { duration: 9000 });
@@ -455,7 +462,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
             <CardPlansCard cuentas={cuentas} hayCuentas={hayCuentas} />
           </>}
 
-          {seccion === 'caja' && (
+          {seccion === 'caja' && <>
           <div className="card">
             <div className="lbl" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Lock size={15} /> Cierre de turno
@@ -480,7 +487,31 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
               </>
             )}
           </div>
+
+          {/* Por defecto el vendedor no ve ni escribe costos. Hay locales donde
+              el que compra el equipo es el vendedor: sin esto el equipo entraba
+              sin costo y la venta figuraba con 100% de ganancia. */}
+          {hayCostoVendedor && (
+          <div className="card">
+            <div className="lbl" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <DollarSign size={15} /> Costo al ingresar equipos
+            </div>
+            <label style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}>
+              <input type="checkbox" style={{ marginTop: 3 }} checked={Boolean(form.vendedor_carga_costo)}
+                onChange={e => setField('vendedor_carga_costo', e.target.checked)} />
+              <span>
+                <span style={{ fontWeight: 600, display: 'block' }}>Los vendedores pueden cargar el costo</span>
+                <span style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                  Al ingresar un equipo, el vendedor ve el campo de costo vacío y escribe lo que se pagó. Nunca ve
+                  los costos ya cargados, ni en el inventario ni en las ventas. Si lo dejás apagado, los equipos que
+                  carga un vendedor entran sin costo y se lo cargás vos (Inventario, o la venta en Historial).
+                </span>
+              </span>
+            </label>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 12 }}>Acordate de tocar <strong>Guardar</strong>.</div>
+          </div>
           )}
+          </>}
 
           {seccion === 'toma' && <ValoresTomaCard />}
 

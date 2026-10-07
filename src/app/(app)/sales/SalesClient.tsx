@@ -115,6 +115,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
       notes: sale.notes || '',
       customer: sale.customer || { name: '', dni: '', phone: '', email: '' },
       currency: sale.currency,
+      cost_price: sale.cost_price ?? '',
       payments: (sale.payments || []).map((p: any) => ({
         ...p,
         original_amount: p.original_amount ?? p.amount,
@@ -425,6 +426,22 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                     <label className="lbl">Notas / Garantía</label>
                     <textarea className="inp" value={editData.notes || ''} onChange={e => setEditData({...editData, notes: e.target.value})} rows={3} style={{ resize: 'none' }} />
                   </div>
+                  {/* Una venta cargada sin costo (p. ej. el vendedor ingresó el
+                      equipo sin costo) contaba como 100% de ganancia y no había
+                      dónde corregirlo. Va en la moneda de la venta. */}
+                  {!['ACCESORIOS', 'SERVICIO', 'MOVIMIENTO'].includes(String(selectedSale.brand || '').toUpperCase()) && (
+                    <div>
+                      <label className="lbl">Costo del equipo ({editData.currency === 'USD' ? 'U$' : '$'}, en la moneda de la venta)</label>
+                      <input className="inp" type="number" inputMode="decimal" placeholder="Sin costo cargado"
+                        value={editData.cost_price ?? ''}
+                        onChange={e => setEditData({ ...editData, cost_price: e.target.value })} />
+                      {!selectedSale.cost_price && (
+                        <div style={{ fontSize: 11, color: 'var(--amber)', marginTop: 4 }}>
+                          Esta venta no tiene costo: la ganancia la cuenta como 100%.
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div>
                     <label className="lbl">Moneda de la Venta</label>
                     <select className="inp" value={editData.currency || 'ARS'} onChange={e => setEditData({...editData, currency: e.target.value})}>
@@ -637,6 +654,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           return { ...p, original_amount: origAmt, amount, exchange_rate };
                         });
                         const newPrice = finalPayments.reduce((a: number, p: any) => a + p.amount, 0);
+                        const costoCrudo = String(editData.cost_price ?? '').trim();
+                        const newCost = costoCrudo === '' ? null : parseFloat(costoCrudo.replace(',', '.'));
+                        if (newCost !== null && !(newCost >= 0)) throw new Error('El costo no es un número válido');
 
                         /* Los canjes agregados recién ahora tienen que entrar al
                            inventario, igual que cuando se cargan en la venta. */
@@ -665,7 +685,8 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           notes: editData.notes,
                           price: newPrice,
                           currency: saleCurrency,
-                          payments: finalPayments
+                          payments: finalPayments,
+                          cost_price: newCost,
                         }).eq('id', selectedSale.id);
                         if (error) throw error;
 
@@ -674,17 +695,21 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           { precio: newPrice, moneda: saleCurrency, vendedor: sellerName, cliente: editData.customer?.name, garantia: editData.notes },
                           { precio: 'Precio', moneda: 'Moneda', vendedor: 'Vendedor', cliente: 'Cliente', garantia: 'Garantía' },
                         );
-                        if (cambios) {
+                        // El registro de auditoría lo leen también los vendedores:
+                        // se anota que cambió el costo, nunca el monto.
+                        const cambioCosto = (selectedSale.cost_price ?? null) !== newCost ? 'actualizó el costo' : '';
+                        const resumen = [cambios, cambioCosto].filter(Boolean).join(' · ');
+                        if (resumen) {
                           await logAudit(supabase, {
                             user, action: 'venta_editada', entity: 'sale', entityId: String(selectedSale.id),
-                            summary: `Editó la venta de ${selectedSale.brand} ${selectedSale.model} — ${cambios}`,
+                            summary: `Editó la venta de ${selectedSale.brand} ${selectedSale.model} — ${resumen}`,
                           });
                         }
 
                         toast.success(nuevosCanjes.length > 0
                           ? `Venta actualizada · ${nuevosCanjes.length === 1 ? 'el equipo del canje entró' : 'los equipos del canje entraron'} al inventario`
                           : 'Venta actualizada');
-                        setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes, price: newPrice, currency: saleCurrency, payments: finalPayments });
+                        setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes, price: newPrice, currency: saleCurrency, payments: finalPayments, cost_price: newCost });
                         setIsEditing(false);
                         router.refresh();
                       } catch(e: any) { toast.error(e.message); } finally { setEditLoading(false); }

@@ -57,6 +57,10 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
   const [loading, setLoading] = useState(false);
   const priceRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  /* El vendedor escribe el costo sólo si el local lo habilitó (Configuración
+     → Vendedores). Lo escribe, nunca lo lee: el campo arranca vacío. */
+  const [vendedorCargaCosto, setVendedorCargaCosto] = useState(false);
+  const verCampoCosto = isOwner || vendedorCargaCosto;
 
   useEffect(() => {
     if (open) {
@@ -67,6 +71,10 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
         if (data && data.length > 0) setDep(data[0].id);
         setDepositsLoaded(true);
       });
+      if (!isOwner) {
+        supabase.from('settings').select('vendedor_carga_costo').limit(1).maybeSingle()
+          .then(({ data, error }) => setVendedorCargaCosto(!error && Boolean((data as { vendedor_carga_costo?: boolean } | null)?.vendedor_carga_costo)));
+      }
       supabase.from('suppliers').select('*').order('name').then(({ data }) => {
         if (data && data.length > 0) {
           setSuppliers(data);
@@ -182,7 +190,10 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
             battery: v.condition === 'used' ? v.battery : null,
             imei: qty === 1 && limpiarImei(v.imei) ? limpiarImei(v.imei) : null,
             price: v.price ? parseFloat(v.price) : parseFloat(price), 
-            cost_price: !isOwner ? null : v.costPrice ? parseFloat(v.costPrice) : parseFloat(costPrice),
+            // Dueño: obligatorio. Vendedor habilitado: opcional. Si no, sin costo.
+            cost_price: !verCampoCosto ? null
+              : v.costPrice ? parseFloat(v.costPrice)
+              : costPrice ? parseFloat(costPrice) : null,
             currency: cur,
             deposit: dep, supplier_id: sup, status: 'available', upc: upc || null,
             notes: v.notes?.trim() || null
@@ -308,9 +319,9 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
                     : (MODELS[brand] || [])}
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: isOwner ? '1fr 1fr 100px' : '1fr 100px', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: verCampoCosto ? '1fr 1fr 100px' : '1fr 100px', gap: 12 }}>
                 <div><label className="lbl">Precio Venta</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
-                {isOwner && <div><label className="lbl">Precio Costo</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>}
+                {verCampoCosto && <div><label className="lbl">Precio Costo{!isOwner && ' (opcional)'}</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>}
                 <div><label className="lbl">Moneda</label><select className="inp" value={cur} onChange={e => setCur(e.target.value)}><option value="USD">USD $</option><option value="ARS">ARS $</option></select></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -437,12 +448,12 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
                       <input className="inp" list="battery-options" placeholder="Ej: 87%" value={v.battery} onChange={e => updV(i, 'battery', e.target.value)} />
                     </div>
                   )}
-                  <div style={{ display: 'grid', gridTemplateColumns: isOwner ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: verCampoCosto ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 12 }}>
                     <div>
                       <label className="lbl">Precio Venta (opcional)</label>
                       <input className="inp" type="text" inputMode="decimal" placeholder={`Base: $${price || '0'}`} value={v.price || ''} onChange={e => updV(i, 'price', e.target.value.replace(/[^0-9.]/g, ''))} />
                     </div>
-                    {isOwner && (
+                    {verCampoCosto && (
                     <div>
                       <label className="lbl">Precio Costo (opcional)</label>
                       <input className="inp" type="text" inputMode="decimal" placeholder={`Base: $${costPrice || '0'}`} value={v.costPrice || ''} onChange={e => updV(i, 'costPrice', e.target.value.replace(/[^0-9.]/g, ''))} />

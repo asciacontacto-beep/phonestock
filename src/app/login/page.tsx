@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { MetaPixel } from "@/components/MetaPixel";
 import { eventoMeta } from "@/utils/metaPixel";
+import { CapturarReferido } from "@/components/CapturarReferido";
+import { leerReferido, olvidarReferido } from "@/utils/referidos";
 
 const FEATURES = [
   { icon: <Package size={15} />, label: "Stock y ventas en tiempo real", color: "c-blue" },
@@ -72,10 +74,10 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
           /* Si llegó por el link de otro local, queda registrado quién lo trajo.
              Nunca frena el alta: si falla, la cuenta se crea igual. */
           try {
-            const ref = localStorage.getItem("stackr_ref");
+            const ref = leerReferido(localStorage);
             if (ref && orgId) {
               await supabase.rpc("set_referral", { p_org_id: orgId, p_code: ref });
-              localStorage.removeItem("stackr_ref");
+              olvidarReferido(localStorage);
             }
           } catch { /* noop */ }
 
@@ -114,6 +116,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
   return (
     <>
       <MetaPixel />
+      <CapturarReferido />
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

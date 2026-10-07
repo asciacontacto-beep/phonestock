@@ -1,6 +1,7 @@
 "use client"
 import s from './landing.module.css'
 import { MetaPixel } from '@/components/MetaPixel'
+import { CapturarReferido } from '@/components/CapturarReferido'
 import { Barra } from './secciones/Barra'
 import { Portada } from './secciones/Portada'
 import { Marcas } from './secciones/Marcas'
@@ -22,6 +23,7 @@ export default function LandingPage() {
   return (
     <div className={s.root}>
       <MetaPixel />
+      <CapturarReferido />
       <a href="#contenido" className={s.saltar}>Saltar al contenido</a>
       <Barra />
       <main id="contenido">

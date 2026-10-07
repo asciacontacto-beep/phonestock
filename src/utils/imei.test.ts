@@ -11,6 +11,17 @@ describe('limpiarImei', () => {
     expect(limpiarImei(undefined)).toBe('')
     expect(limpiarImei('   ')).toBe('')
   })
+
+  it('el IMEI escaneado de la caja, con rótulo, espacios o guiones, queda en dígitos', () => {
+    expect(limpiarImei('IMEI: 35 123456 789012 3')).toBe('351234567890123')
+    expect(limpiarImei('IMEI/MEID 351234567890123')).toBe('351234567890123')
+    expect(limpiarImei('35-123456-789012-3')).toBe('351234567890123')
+  })
+
+  it('un número de serie con letras no se toca', () => {
+    expect(limpiarImei('C02XK1JHJG5J')).toBe('C02XK1JHJG5J')
+    expect(limpiarImei('S/N-123')).toBe('S/N-123')
+  })
 })
 
 describe('repetidosEnLote', () => {

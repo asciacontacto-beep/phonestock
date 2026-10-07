@@ -18,7 +18,16 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 /** Espacios al final hacen que "123 " y "123" sean distintos para la base. */
 export function limpiarImei(imei: string | null | undefined): string {
-  return (imei || '').trim()
+  const s = (imei || '').trim()
+  /* Escaneado de la caja llega como "IMEI: 35 123456 789012 3" o con
+     guiones: si lo que queda es un IMEI (14 a 16 dígitos), sólo los
+     dígitos. Un número de serie con letras (AirPods, Mac) queda igual. */
+  const sinRotulo = s.replace(/^imei[\w\s/]*?[:\s]\s*/i, '')
+  if (/^[\d\s-]+$/.test(sinRotulo)) {
+    const d = sinRotulo.replace(/\D/g, '')
+    if (d.length >= 14 && d.length <= 16) return d
+  }
+  return s
 }
 
 /**

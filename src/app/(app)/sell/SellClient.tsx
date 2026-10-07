@@ -1,6 +1,7 @@
 "use client"
 import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, type FuenteCotizacion } from '@/utils/cotizacion';
 import { totalAccesoriosEnPesos, enPesos, monedaAccesorio } from '@/utils/accesoriosVenta';
+import { limpiarImei } from '@/utils/imei';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { ArrowRight, Plus, Printer, Search, AlertTriangle, FileText, X, MapPin, PackageOpen, CreditCard, ChevronRight, Receipt as ReceiptIcon, User as UserIcon, Loader2 } from 'lucide-react';
 import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
@@ -176,7 +177,9 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       if (!isOwner && selectedDeposit === null) return false;
       return selectedDeposit === null || String(s.deposit) === selectedDeposit;
     })
-    .filter((s: any) => !q || `${s.brand} ${s.model} ${s.color} ${s.storage}`.toLowerCase().includes(q.toLowerCase()));
+    // Con IMEI: el buscador lo prometía pero no lo miraba, y pistolear el
+    // IMEI para vender no encontraba nada.
+    .filter((s: any) => !q || `${s.brand} ${s.model} ${s.color} ${s.storage} ${s.imei || ''}`.toLowerCase().includes(limpiarImei(q).toLowerCase()));
   const price = parseFloat(sp) || 0;
   const paid = payments.reduce((a, p) => a + p.amount, 0);
   const rem = price - paid;
@@ -597,7 +600,18 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
               </button>
             ))}
           </div>
-          <input className="inp" placeholder="Filtrar por modelo, IMEI / N° Serie, color..." value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 16 }} />
+          <input className="inp" placeholder="Filtrar por modelo, IMEI / N° Serie, color..." value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 16 }}
+            onKeyDown={e => {
+              // Pistolear el IMEI y Enter: si es exactamente un equipo, se elige.
+              if (e.key !== 'Enter') return;
+              const buscado = limpiarImei(q);
+              const exacto = av.filter((s: any) => s.imei && limpiarImei(s.imei) === buscado);
+              if (exacto.length === 1) {
+                e.preventDefault();
+                const s = exacto[0];
+                setUnit(s); setSp(s.price); setSc(s.currency); setStep(2);
+              }
+            }} />
           <button
             className="btn btn-outline"
             style={{ width: '100%', marginBottom: 16, justifyContent: 'center' }}

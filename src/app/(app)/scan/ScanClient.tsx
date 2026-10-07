@@ -1,6 +1,6 @@
 "use client"
 import { useState, useRef, useEffect } from 'react';
-import { EAN_DB } from '@/constants/data';
+import { buscarEquipoPorCodigo, codigoCanonico, esImei, type EquipoDeCodigo } from '@/utils/codigos';
 import { ScanLine, Check, PenLine, Camera, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { ManualEntryModal } from '@/components/ManualEntryModal';
@@ -21,6 +21,14 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
   const [sup, setSup] = useState<any>(null);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [price, setPrice] = useState('');
+  const [costo, setCosto] = useState('');
+  /* El vendedor ve el costo sólo si el local lo habilitó (Configuración →
+     Vendedores); lo escribe, nunca lo lee. */
+  const [vendedorCargaCosto, setVendedorCargaCosto] = useState(false);
+  const verCosto = isOwner || vendedorCargaCosto;
+  const [buscando, setBuscando] = useState(false);
+  /* Código que no se reconoció: va a la carga manual y queda aprendido. */
+  const [codigoNuevo, setCodigoNuevo] = useState('');
   const [cur, setCur] = useState('USD');
   const [imei, setImei] = useState('');
   const [cond, setCond] = useState('new');
@@ -28,6 +36,11 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
   const [notes, setNotes] = useState('');
   const [showManual, setShowManual] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
+  /* Después de reconocer la caja, el siguiente código que se pistolea es el
+     IMEI: el cursor va ahí. Antes iba al precio y el IMEI terminaba
+     escrito en el campo de plata. */
+  const imeiRef = useRef<HTMLInputElement>(null);
+  const precioRef = useRef<HTMLInputElement>(null);
 
   const [scanning, setScanning] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -41,6 +54,10 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
       }
     });
     ref.current?.focus();
+    if (!isOwner) {
+      supabase.from('settings').select('vendedor_carga_costo').limit(1).maybeSingle()
+        .then(({ data, error }) => setVendedorCargaCosto(!error && Boolean((data as { vendedor_carga_costo?: boolean } | null)?.vendedor_carga_costo)));
+    }
     return () => {
       if (scannerRef.current && scannerRef.current.isScanning) {
         scannerRef.current.stop().catch(() => {});
@@ -48,18 +65,37 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
     };
   }, []);
 
-  const processCode = (scannedCode: string) => {
-    if (!scannedCode.trim()) return;
-    const found = EAN_DB[scannedCode.trim()];
+  const processCode = async (scannedCode: string) => {
+    const leido = scannedCode.trim();
+    setCode('');
+    if (!leido) return;
+
+    // Se pistoleó el IMEI en el campo del código.
+    if (esImei(leido)) {
+      if (mode === 'confirm' && det) {
+        setImei(limpiarImei(leido));
+        toast.success('IMEI cargado');
+        precioRef.current?.focus();
+      } else {
+        toast.error('Ese es el IMEI. Primero escaneá el código de barras del modelo (UPC/EAN) de la caja, y después el IMEI.');
+      }
+      return;
+    }
+
+    setBuscando(true);
+    const found: EquipoDeCodigo | null = await buscarEquipoPorCodigo(supabase, leido).catch(() => null);
+    setBuscando(false);
     if (found) {
       setDet(found);
       setCond(isOldPro(found.model) ? 'used' : 'new');
+      setImei('');
       setMode('confirm');
+      setTimeout(() => imeiRef.current?.focus(), 50);
     } else {
-      toast.error('EAN no reconocido — completá los datos manualmente');
+      toast.error('Código no registrado: completá el equipo una vez y la próxima lo reconoce solo.');
+      setCodigoNuevo(codigoCanonico(leido));
       setShowManual(true);
     }
-    setCode('');
   };
 
   const onScan = () => processCode(code);
@@ -102,7 +138,8 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
   };
 
   const confirm = async () => {
-    if (!det || !price || !dep) { toast.error('Datos incompletos'); return; }
+    if (!det || !price || !dep) { toast.error('Completá el precio de venta y el depósito'); return; }
+    if (isOwner && !costo) { toast.error('Completá el costo'); return; }
     try {
       // Mismo control que en la carga manual: el equipo no puede entrar dos
       // veces al stock disponible.
@@ -117,17 +154,21 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
         condition: cond,
         battery: cond === 'used' ? battery : null,
         imei: limpiarImei(imei) || `S/N-${Date.now()}`,
+        // Antes el campo decía "Precio Costo" pero se guardaba como precio de
+        // venta, y el costo quedaba vacío.
         price: parseFloat(price),
+        cost_price: verCosto && costo ? parseFloat(costo) : null,
         currency: cur,
+        upc: det.codigo || null,
         deposit: dep,
         supplier_id: sup,
         status: 'available',
         notes: notes.trim() || null
-      }]).select();
+      }]).select('id');
       if (error) throw error;
       if (inserted) {
         toast.success('✅ Equipo ingresado al stock');
-        setMode('idle'); setDet(null); setPrice(''); setImei(''); setCond('new'); setBattery('100%'); setNotes('');
+        setMode('idle'); setDet(null); setPrice(''); setCosto(''); setImei(''); setCond('new'); setBattery('100%'); setNotes('');
         ref.current?.focus();
       }
     } catch (e: any) {
@@ -162,9 +203,12 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onScan(); } }}
             placeholder="Pistoleá el código o escanea con la cámara..." style={{ fontSize: 16, padding: 16, flex: 1 }} autoComplete="off"
           />
-          <button className="btn btn-dark" onClick={onScan} title="Buscar el código" aria-label="Buscar el código"><ScanLine size={18} /></button>
+          <button className="btn btn-dark" onClick={onScan} disabled={buscando} title="Buscar el código" aria-label="Buscar el código"><ScanLine size={18} /></button>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 10 }}>Si el código no está registrado, se abrirá el formulario de carga manual automáticamente.</p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 10 }}>
+          Escaneá el código de barras del modelo (UPC/EAN) y después el IMEI. Si el código no está registrado se abre la
+          carga manual con el código puesto: lo completás una vez y la próxima lo reconoce solo.
+        </p>
         {scanning && (
           <div style={{ marginTop: 20, position: 'relative', borderRadius: 12, overflow: 'hidden', border: '2px solid var(--border)' }}>
             <div id="reader" style={{ width: '100%' }}></div>
@@ -184,19 +228,26 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div className="field" style={{ margin: 0 }}>
-              <label className="lbl">Precio Costo</label>
-              <input className="inp" type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0" autoFocus />
+              <label className="lbl">IMEI / Serie</label>
+              <input ref={imeiRef} className="inp" value={imei} onChange={e => setImei(e.target.value)} placeholder="Pistoleá el IMEI"
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); setImei(limpiarImei(imei)); precioRef.current?.focus(); } }} />
             </div>
+            <div className="field" style={{ margin: 0 }}>
+              <label className="lbl">Precio de venta</label>
+              <input ref={precioRef} className="inp" type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0" />
+            </div>
+            {verCosto && (
+              <div className="field" style={{ margin: 0 }}>
+                <label className="lbl">Costo{!isOwner && ' (opcional)'}</label>
+                <input className="inp" type="number" value={costo} onChange={e => setCosto(e.target.value)} placeholder="0" />
+              </div>
+            )}
             <div className="field" style={{ margin: 0 }}>
               <label className="lbl">Moneda</label>
               <select className="inp" value={cur} onChange={e => setCur(e.target.value)}>
                 <option value="USD">USD</option>
                 <option value="ARS">ARS</option>
               </select>
-            </div>
-            <div className="field" style={{ margin: 0 }}>
-              <label className="lbl">IMEI / Serie</label>
-              <input className="inp" value={imei} onChange={e => setImei(e.target.value)} placeholder="Opcional" />
             </div>
             <div className="field" style={{ margin: 0 }}>
               <label className="lbl">Condición</label>
@@ -242,11 +293,12 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
         </div>
       )}
 
-      <ManualEntryModal 
-        open={showManual} 
+      <ManualEntryModal
+        open={showManual}
         isOwner={isOwner}
-        onClose={() => setShowManual(false)} 
-        onSuccess={() => toast.success('Equipo ingresado.')} 
+        upcInicial={codigoNuevo}
+        onClose={() => { setShowManual(false); setCodigoNuevo(''); ref.current?.focus(); }}
+        onSuccess={() => toast.success('Equipo ingresado.')}
       />
     </div>
   );

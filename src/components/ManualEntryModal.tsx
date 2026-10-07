@@ -1,11 +1,12 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, EAN_DB, almacenamientosDe } from '@/constants/data';
+import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, almacenamientosDe } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
 import { registrarCompra } from '@/utils/compras';
 import { crearPedido, totalDelPedido } from '@/utils/proveedores';
 import { ModelPicker } from './ModelPicker';
 import { limpiarImei, repetidosEnLote, buscarImeisEnStock, avisoDuplicado, esErrorImeiRepetido } from '@/utils/imei';
+import { buscarEquipoPorCodigo, codigoCanonico, variantesDeCodigo, esImei } from '@/utils/codigos';
 import { Check, X, ChevronRight, ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,6 +18,8 @@ interface ManualEntryModalProps {
   onSuccess?: () => void;
   /** El vendedor carga equipos sin ver ni escribir costos. */
   isOwner?: boolean;
+  /** Código escaneado que no se reconoció: se precarga y queda aprendido al guardar. */
+  upcInicial?: string;
 }
 
 const isOldPro = (m: string) => {
@@ -28,7 +31,7 @@ function emptyVariant() {
   return { storage: '128GB', color: 'Negro', condition: 'new' as 'new' | 'used', battery: '100%', imei: '', qty: 1, price: '', costPrice: '', notes: '' };
 }
 
-export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: ManualEntryModalProps) {
+export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, upcInicial = '' }: ManualEntryModalProps) {
   const [step, setStep] = useState(1);
   const [upc, setUpc] = useState('');
   const [brand, setBrand] = useState('Apple');
@@ -65,6 +68,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
   useEffect(() => {
     if (open) {
       setStep(1);
+      if (upcInicial) setUpc(upcInicial);
       setDepositsLoaded(false);
       supabase.from('deposits').select('*').order('name').then(({ data }) => {
         setDeposits(data || []);
@@ -84,30 +88,35 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
     }
   }, [open]);
 
-  const handleUPCSearch = async (code: string) => {
+  /* Se busca cuando el código está completo (UPC 12, EAN 13, GTIN 14) o al
+     tocar Enter: la pistola tipea dígito por dígito y antes se consultaba la
+     base con cada uno. Ver utils/codigos.ts. */
+  const handleUPCSearch = async (code: string, forzar = false) => {
     setUpc(code);
-    if (code.length < 8) return;
-    try {
-      const sessionData = await supabase.auth.getSession()
-      // El vendedor no baja el costo del catálogo.
-      const { data } = await supabase.from('product_catalog').select((isOwner ? '*' : 'upc,brand,model,storage,color') as string).eq('upc', code).single();
-      let found: any = data;
-      if (!found && EAN_DB[code]) found = EAN_DB[code];
-      if (found) {
-        setBrand(found.brand);
-        setModel(found.model);
-        const colors = COLORS[found.model] || COLORS[found.brand] || ['Negro'];
-        const storages = almacenamientosDe(found.model);
-        const finalColor = found.color && colors.includes(found.color) ? found.color : colors[0];
-        const finalStorage = found.storage && storages.includes(found.storage) ? found.storage : storages[0];
-        if (found.price) {
-          setPrice(found.price.toString());
-          if (isOwner && found.cost_price) setCostPrice(found.cost_price.toString());
-        }
-        setVariants(vs => vs.map((v: any) => ({ ...v, color: finalColor, storage: finalStorage, condition: isOldPro(found.model) ? 'used' : 'new' })));
-        toast.success(`✓ ${found.brand} ${found.model}`);
-      }
-    } catch (_) {}
+    const d = code.replace(/\D/g, '');
+    if (!forzar && !(d.length >= 12 && d.length <= 14)) return;
+
+    // Se pistoleó el IMEI en el campo del código: va al IMEI del equipo.
+    if (esImei(code)) {
+      setUpc('');
+      setVariants(vs => vs.map((v, i) => i === 0 ? { ...v, imei: limpiarImei(code), qty: 1 } : v));
+      toast.success('Era el IMEI: lo cargué en el equipo. El código del modelo es otro (UPC/EAN).');
+      return;
+    }
+
+    const found = await buscarEquipoPorCodigo(supabase, code).catch(() => null);
+    if (!found) {
+      if (forzar) toast.message('Código nuevo: completá el equipo y queda guardado para la próxima.');
+      return;
+    }
+    setBrand(found.brand);
+    if (found.brand === 'Apple') {
+      const linea = ['iPhone', 'iPad', 'MacBook', 'AirPods', 'Apple Watch'].find(l => found.model.startsWith(l));
+      if (linea) setAppleCategory(linea);
+    }
+    setModel(found.model);
+    setVariants(vs => vs.map((v: any) => ({ ...v, color: found.color, storage: found.storage, condition: isOldPro(found.model) ? 'used' : 'new' })));
+    toast.success(`✓ ${found.brand} ${found.model} ${found.storage} ${found.color}`.trim());
   };
 
   const handleBrand = (b: string) => {
@@ -155,9 +164,19 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
     if (pagoCompra === 'cuenta' && !sup) { toast.error('Elegí el proveedor al que le debés el pedido'); return; }
     setLoading(true);
     try {
-      if (upc.length > 5) {
-        const { data: exists } = await supabase.from('product_catalog').select('id').eq('upc', upc).maybeSingle();
-        if (!exists) await supabase.from('product_catalog').insert({ upc, brand, model });
+      /* El código queda aprendido (en su forma de 12 dígitos) con modelo,
+         memoria y color: la próxima vez el lector lo reconoce. Con varias
+         variantes en una carga, el código no dice cuál es: sólo el modelo. */
+      if (upc.trim().length > 5 && !esImei(upc)) {
+        const canonico = codigoCanonico(upc);
+        const { data: exists } = await supabase.from('product_catalog').select('id').in('upc', variantesDeCodigo(upc)).limit(1);
+        if (!exists || exists.length === 0) {
+          const unica = variants.length === 1 ? variants[0] : null;
+          await supabase.from('product_catalog').insert({
+            upc: canonico, brand, model,
+            ...(unica ? { storage: unica.storage, color: unica.color } : {}),
+          });
+        }
       }
       // El IMEI identifica al aparato: dos disponibles con el mismo número
       // son el mismo teléfono contado dos veces. Se avisa antes de guardar,
@@ -294,7 +313,8 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false }: 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '12px 14px' }}>
                 <label style={labelStyle}>Escanear código UPC (opcional)</label>
-                <input className="inp" style={{ textAlign: 'center', letterSpacing: 2, fontFamily: 'monospace', background: 'transparent', border: 'none', boxShadow: 'none', padding: '8px 0' }} placeholder="Hacé clic y escaneá…" value={upc} onChange={e => handleUPCSearch(e.target.value)} />
+                <input className="inp" style={{ textAlign: 'center', letterSpacing: 2, fontFamily: 'monospace', background: 'transparent', border: 'none', boxShadow: 'none', padding: '8px 0' }} placeholder="Hacé clic y escaneá…" value={upc} onChange={e => handleUPCSearch(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleUPCSearch(upc, true); } }} />
               </div>
               <div><label className="lbl">Marca</label><select className="inp" value={brand} onChange={e => handleBrand(e.target.value)}>{BRANDS.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
               {brand === 'Apple' && (

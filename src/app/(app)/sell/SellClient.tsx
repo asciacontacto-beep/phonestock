@@ -180,6 +180,15 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
     // Con IMEI: el buscador lo prometía pero no lo miraba, y pistolear el
     // IMEI para vender no encontraba nada.
     .filter((s: any) => !q || `${s.brand} ${s.model} ${s.color} ${s.storage} ${s.imei || ''}`.toLowerCase().includes(limpiarImei(q).toLowerCase()));
+  /* Accesorios para elegir. Antes, al vender un equipo, sólo aparecían los
+     del mismo depósito que el teléfono: un local con los teléfonos en
+     "Depósito" y los accesorios en el local no veía ninguno. Ahora están
+     todos; primero los del depósito del equipo. */
+  const accDelDeposito = (a: any) => accessoryOnly || !unit || String(a.deposit_id) === String(unit.deposit);
+  const accVisibles = accessoriesList
+    .filter((a: any) => !accSearch.trim() || `${a.category} ${a.compatible_model || ''} ${a.color || ''}`.toLowerCase().includes(accSearch.toLowerCase()))
+    .sort((a: any, b: any) => Number(accDelDeposito(b)) - Number(accDelDeposito(a)));
+
   const price = parseFloat(sp) || 0;
   const paid = payments.reduce((a, p) => a + p.amount, 0);
   const rem = price - paid;
@@ -771,28 +780,28 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                     />
                     {accSearchOpen && (
                       <div className="acc-dropdown">
-                        {accessoriesList
-                          .filter(a => {
-                            // Venta suelta: todos (los de dólares se cobran convertidos).
-                            const baseFilter = accessoryOnly || String(a.deposit_id) === String(unit?.deposit);
-                            if (!accSearch.trim()) return baseFilter;
-                            return baseFilter && `${a.category} ${a.compatible_model || ''} ${a.color || ''}`.toLowerCase().includes(accSearch.toLowerCase());
-                          })
-                          .map(a => {
+                        {accVisibles.map(a => {
                             const label = `${a.category}${a.compatible_model ? ' ' + a.compatible_model : ''}${a.color ? ' ' + a.color : ''}`;
+                            const elegir = () => {
+                              setSelectedAccId(a.id);
+                              setAccSearch('');
+                              setAccSearchOpen(false);
+                            };
                             return (
                               <div
                                 key={a.id}
                                 className="pick-row acc-option"
-                                onMouseDown={() => {
-                                  setSelectedAccId(a.id);
-                                  setAccSearch('');
-                                  setAccSearchOpen(false);
-                                }}
+                                // onMouseDown gana al cierre de la lista; onClick por si el
+                                // táctil no manda mousedown. Elegir dos veces es lo mismo.
+                                onMouseDown={elegir}
+                                onClick={elegir}
                               >
                                 <span className="acc-option-name">{label}</span>
                                 <span className="acc-option-meta">
                                   Stock {a.stock} · {monedaAccesorio(a.currency) === 'ARS' ? '$' : 'U$'} {(a.sale_price || 0).toLocaleString('es-AR')}
+                                  {!accessoryOnly && unit && String(a.deposit_id) !== String(unit.deposit) && (
+                                    <> · {deposits.find((d: any) => String(d.id) === String(a.deposit_id))?.name || 'otro depósito'}</>
+                                  )}
                                   {accessoryOnly && monedaAccesorio(a.currency) === 'USD' && (parseFloat(exchangeRate) || 0) > 0 && (
                                     <> · ≈ $ {enPesos(a.sale_price || 0, a.currency, parseFloat(exchangeRate)).toLocaleString('es-AR')}</>
                                   )}
@@ -800,11 +809,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                               </div>
                             );
                           })}
-                        {accessoriesList.filter(a => {
-                          const base = accessoryOnly || String(a.deposit_id) === String(unit?.deposit);
-                          if (!accSearch.trim()) return base;
-                          return base && `${a.category} ${a.compatible_model || ''} ${a.color || ''}`.toLowerCase().includes(accSearch.toLowerCase());
-                        }).length === 0 && (
+                        {accVisibles.length === 0 && (
                           <div style={{ padding: '14px', fontSize: 13, color: 'var(--text-3)' }}>Sin resultados</div>
                         )}
                       </div>

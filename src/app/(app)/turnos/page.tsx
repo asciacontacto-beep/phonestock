@@ -1,12 +1,12 @@
 import { createClient, getUser, getProfile } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { TurnosClient } from "./TurnosClient"
-import { soloDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
+// Turnos lo usan también los vendedores: agendan y concretan la venta. Lo
+// que no ven es el costo (ver TurnosClient).
 export default async function TurnosPage() {
-  await soloDueno()
   const user = await getUser()
   if (!user) redirect("/login")
 

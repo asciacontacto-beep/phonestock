@@ -73,7 +73,8 @@ export function TurnosClient({ isOwner, user }: { isOwner: boolean; user: any })
     setLoading(true);
     const [apptRes, stockRes, depRes] = await Promise.all([
       traerTodo(() => supabase.from('appointments').select('*').order('scheduled_at').order('id')),
-      traerTodo(() => supabase.from('stock').select('id,brand,model,storage,color,imei,price,currency,cost_price,deposit').eq('status', 'available').order('brand').order('id')),
+      // El vendedor no baja el costo de los equipos.
+      traerTodo(() => supabase.from('stock').select(isOwner ? 'id,brand,model,storage,color,imei,price,currency,cost_price,deposit' : 'id,brand,model,storage,color,imei,price,currency,deposit').eq('status', 'available').order('brand').order('id')),
       supabase.from('deposits').select('id,name,color').order('name'),
     ]);
     if (apptRes.data) setAppointments(apptRes.data);
@@ -189,6 +190,7 @@ export function TurnosClient({ isOwner, user }: { isOwner: boolean; user: any })
           appt={confirmItem}
           deposits={deposits}
           user={user}
+          isOwner={isOwner}
           onClose={() => setConfirmItem(null)}
           onSave={() => { setConfirmItem(null); fetchAll(); }}
           supabase={supabase}
@@ -890,13 +892,22 @@ function AppointmentModal({ appt, stockPhones, onClose, onSave, supabase }: any)
 
 // ─── Confirm Sale Modal ────────────────────────────────────────────────────────
 
-function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase }: any) {
+function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase, isOwner }: any) {
   const [payments, setPayments] = useState<any[]>([]);
   const [sm, setSm] = useState<string | null>(null);
   const [ma, setMa] = useState('');
   const [exchangeRate, setExchangeRate] = useState('1000');
   const [depositId, setDepositId] = useState<string>(deposits[0]?.id ? String(deposits[0].id) : '');
   const [saving, setSaving] = useState(false);
+
+  // La cotización del local, no un 1000 fijo (convierte pagos y el costo).
+  useEffect(() => {
+    supabase.from('settings').select('exchange_rate').limit(1).maybeSingle()
+      .then(({ data }: { data: { exchange_rate?: number | string } | null }) => {
+        const c = parseFloat(String(data?.exchange_rate));
+        if (c > 0) setExchangeRate(String(c));
+      });
+  }, [supabase]);
 
   const salePrice = appt.phone_price || 0;
   const tradeInValue = appt.trade_in_brand ? (appt.trade_in_price || 0) : 0;
@@ -950,6 +961,31 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase }: a
         });
       }
 
+      /* El costo del equipo. Antes iba 0 y la venta contaba como 100% de
+         ganancia. El dueño lo toma del equipo; para el vendedor lo completa
+         la base después (fijar_costo_venta): el costo no pasa por su
+         navegador. */
+      let costo: number | null = null;
+      if (isOwner && appt.phone_id) {
+        const { data: eq } = await supabase.from('stock').select('cost_price,currency').eq('id', appt.phone_id).maybeSingle();
+        if (eq?.cost_price) {
+          const r = parseFloat(exchangeRate) || 1;
+          costo = eq.currency === currency ? eq.cost_price
+            : eq.currency === 'USD' ? eq.cost_price * r : eq.cost_price / r;
+        }
+      }
+
+      // El equipo se toma primero y sólo si sigue disponible (como en Vender).
+      if (appt.phone_id) {
+        const { data: tomado, error: uErr } = await supabase.from('stock')
+          .update({ status: 'sold' }).eq('id', appt.phone_id).eq('status', 'available').select('id');
+        if (uErr) throw uErr;
+        if (!tomado || tomado.length === 0) {
+          toast.error('Ese equipo ya no está disponible: se vendió o se movió.');
+          return;
+        }
+      }
+
       const saleData = {
         seller_id: user.id,
         seller_name: user.name,
@@ -959,19 +995,21 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase }: a
         storage: appt.phone_storage,
         color: appt.phone_color,
         imei: appt.phone_imei || `APT-${appt.id.split('-')[0]}`,
-        cost_price: 0,
+        cost_price: costo,
         price: salePrice,
         currency,
         payments: finalPayments,
         customer: { name: appt.customer_name || appt.customer_instagram, phone: appt.customer_phone },
         notes: `Turno ${new Date(appt.scheduled_at).toLocaleDateString('es-AR')}`,
       };
-      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select();
-      if (sErr) throw sErr;
-
-      if (appt.phone_id) {
-        const { error: uErr } = await supabase.from('stock').update({ status: 'sold' }).eq('id', appt.phone_id);
-        if (uErr) throw uErr;
+      // Sólo el id: lo que vuelve lo ve el navegador.
+      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select('id');
+      if (sErr) {
+        if (appt.phone_id) await supabase.from('stock').update({ status: 'available' }).eq('id', appt.phone_id).eq('status', 'sold');
+        throw sErr;
+      }
+      if (!isOwner && appt.phone_id && saleRow?.[0]?.id) {
+        await supabase.rpc('fijar_costo_venta', { p_sale_id: String(saleRow[0].id), p_stock_id: String(appt.phone_id) });
       }
 
       if (appt.trade_in_brand) {

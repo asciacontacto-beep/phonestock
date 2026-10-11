@@ -36,7 +36,56 @@ interface TopbarProps {
   onLogout?: () => void;
 }
 
-const NOTIFICATIONS = [
+/* `soloDueno`: avisos de pantallas que el vendedor no ve (lo mandarían a
+   una página que lo devuelve a Vender). */
+const NOTIFICATIONS: { id: string; icon: React.ReactNode; color: string; title: string; body: string; href?: string; cta?: string; soloDueno?: boolean }[] = [
+  {
+    id: 'analisis-2026-10-11',
+    icon: <Sparkles size={16} />,
+    color: '#7c3aed',
+    title: 'Nuevo: Análisis de tu negocio',
+    body: 'Stackr ahora mira tus números y te dice qué hacer: qué equipos están quietos hace mucho, qué modelos se te están por acabar, qué te deja poco margen, si te conviene ofrecer más accesorios, cuántos equipos necesitás vender para cubrir los gastos y si tus ventas vienen bajando de verdad. Cada consejo muestra con qué datos se calculó, y algunos traen un simulador para probar qué pasa si cambiás algo. Los más importantes aparecen en Inicio.',
+    href: '/analisis',
+    cta: 'Ver mi análisis',
+  },
+  {
+    id: 'intereses-cuotas-2026-10-11',
+    icon: <Calculator size={16} />,
+    color: '#7c3aed',
+    title: 'Los intereses de cuotas, aparte',
+    body: 'Cuando vendés en cuotas con interés, ese interés ya no se mezcla con la ganancia del equipo: en Rentabilidad tenés una tarjeta que dice cuánto te dejó financiar, y en Ventas cada venta en cuotas marca cuánto fue de interés. Así el margen de cada equipo es el real.',
+    href: '/reports',
+    cta: 'Ver Rentabilidad',
+    soloDueno: true,
+  },
+  {
+    id: 'cargar-varios-2026-10-11',
+    icon: <Smartphone size={16} />,
+    color: '#0f766e',
+    title: 'Cargá un pedido entero de una',
+    body: 'En Ingresar equipo, cuando terminás las variantes de un modelo, tocá "Ingresar y seguir": se guarda y volvés al principio para cargar el siguiente modelo del mismo pedido, sin cerrar nada. Arriba te va contando cuántos equipos llevás.',
+    href: '/scan',
+    cta: 'Ingresar equipos',
+  },
+  {
+    id: 'mayoristas-unidades-2026-10-11',
+    icon: <ShoppingBag size={16} />,
+    color: '#ea580c',
+    title: 'Pedidos mayoristas más claros',
+    body: 'Cada renglón elegido del stock es una unidad, y con "Sumar otra igual" agregás la siguiente del mismo modelo, capacidad y color. Antes se podía poner cantidad 3 sobre un solo equipo y el stock quedaba mal.',
+    href: '/mayoristas',
+    cta: 'Ver mayoristas',
+    soloDueno: true,
+  },
+  {
+    id: 'catalogo-vendedor-2026-10-11',
+    icon: <Store size={16} />,
+    color: '#0f766e',
+    title: 'El vendedor también arma el catálogo',
+    body: 'Quien tiene el equipo en la mano puede sacarle las fotos: los vendedores ya pueden subir fotos y elegir qué equipos se ven en el catálogo. Prenderlo o cambiar el link sigue siendo cosa del dueño.',
+    href: '/catalogo',
+    cta: 'Ir al catálogo',
+  },
   {
     id: 'catalogo-2026-09-19',
     icon: <Store size={16} />,
@@ -273,7 +322,8 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
   const toggle = (panel: 'bell' | 'rate' | 'avatar' | 'help') =>
     setOpenPanel(v => v === panel ? null : panel)
 
-  const unread = NOTIFICATIONS.filter(n => !read.includes(n.id))
+  const avisos = NOTIFICATIONS.filter(n => !n.soloDueno || user?.role === 'owner' || user?.role === 'admin')
+  const unread = avisos.filter(n => !read.includes(n.id))
   const hasUnread = unread.length > 0
 
   const dismiss = (id: string) => {
@@ -283,7 +333,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
   }
 
   const dismissAll = () => {
-    const next = NOTIFICATIONS.map(n => n.id)
+    const next = avisos.map(n => n.id)
     setRead(next)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     setOpenPanel(null)
@@ -516,13 +566,13 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
                 )}
               </div>
 
-              {NOTIFICATIONS.length === 0 ? (
+              {avisos.length === 0 ? (
                 <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
                   Sin novedades
                 </div>
               ) : (
                 <div style={{ overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
-                  {NOTIFICATIONS.map(n => {
+                  {avisos.map(n => {
                     const isRead = read.includes(n.id)
                     return (
                       <div key={n.id} style={{

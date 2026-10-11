@@ -451,7 +451,8 @@ export function equilibrio(d: DatosAnalisis): Consejo | null {
   const reps90 = (d.reparaciones || []).filter(r => entre(r.updated_at || r.created_at, desde90, d.hoy))
   const b = categoryBreakdown(ventas90, reps90 as Repair[], d.cotizacion)
   const gananciaPorEquipo = (b.device.revenue - b.device.cost + b.accessory.revenue - b.accessory.cost) / Math.max(1, b.device.units)
-  const otrasGananciasMes = (b.service.revenue - b.service.cost) / 3
+  // Servicio técnico e intereses de cuotas: ganancia que no depende de vender un equipo más.
+  const otrasGananciasMes = (b.service.revenue - b.service.cost + b.interest.revenue) / 3
   if (gananciaPorEquipo <= 0) return null
   const necesarios = Math.max(0, Math.ceil((gastosMes - otrasGananciasMes) / gananciaPorEquipo))
 
@@ -462,7 +463,7 @@ export function equilibrio(d: DatosAnalisis): Consejo | null {
   const ventasMes = d.ventas.filter(s => entre(s.created_at, inicioMes, d.hoy))
   const repsMes = (d.reparaciones || []).filter(r => entre(r.updated_at || r.created_at, inicioMes, d.hoy))
   const bm = categoryBreakdown(ventasMes, repsMes as Repair[], d.cotizacion)
-  const gananciaMes = bm.device.revenue - bm.device.cost + bm.accessory.revenue - bm.accessory.cost + bm.service.revenue - bm.service.cost
+  const gananciaMes = bm.device.revenue - bm.device.cost + bm.accessory.revenue - bm.accessory.cost + bm.service.revenue - bm.service.cost + bm.interest.revenue
   const proyeccion = gananciaMes / diaHoy * diasMes
   const equiposMes = bm.device.units
   const quedan = diasMes - diaHoy

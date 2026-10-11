@@ -260,6 +260,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
           margen={margin}
           gastos={totalExpensesUSD}
           rubros={{ device: breakdown.device, accessory: breakdown.accessory, service: breakdown.service }}
+          intereses={breakdown.interest}
           modelos={modelRanking}
           vendedores={sellerRanking}
           tendencia={dailyTrend.map(d => d.profit)}
@@ -386,6 +387,19 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
             </div>
           </div>
         ))}
+        {/* Intereses de las ventas en cuotas: plata por financiar, aparte de
+            la ganancia del equipo (si no, el margen del equipo se infla). */}
+        {breakdown.interest.units > 0 && (
+          <div className="sc" title="Lo que sumaron los intereses de las ventas en cuotas del local. Ya está incluido en la ganancia total.">
+            <div className="sl">Intereses de cuotas</div>
+            <div className="sv" style={{ color: 'var(--purple)' }}>
+              U$ {Math.round(breakdown.interest.revenue).toLocaleString('es-AR')}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+              {plural(breakdown.interest.units, 'venta')} en cuotas con interés
+            </div>
+          </div>
+        )}
       </div>
 
       {totals.missingCost > 0 && (

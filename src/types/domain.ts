@@ -84,6 +84,8 @@ export interface Sale {
   seller_id?: string | null
   seller_name?: string | null
   customer_id?: string | null
+  /** Interés de la venta en cuotas del local, en la moneda de la venta (ya incluido en `price`). */
+  financing_interest?: number | null
   created_at?: string
   [key: string]: unknown
 }

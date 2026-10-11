@@ -358,9 +358,16 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           const titulo = r.pendiente > 0 ? 'Pendiente de cobro: la ganancia todavía no entró entera'
                             : r.costoIncompleto ? 'Falta el costo: ganancia provisoria' : 'Ganancia de la venta';
                           return (
+                            <>
                             <div title={titulo} style={{ fontSize: 11, fontWeight: 700, color, marginTop: 3, fontFamily: 'JetBrains Mono' }}>
                               {r.gananciaUSD >= 0 ? '+' : ''}{r.moneda === 'USD' ? 'U$' : '$'} {Math.round(r.ganancia ?? r.gananciaUSD).toLocaleString('es-AR')}{r.costoIncompleto ? ' *' : ''}
                             </div>
+                            {Number(sale.financing_interest) > 0 && (
+                              <div title="Interés de las cuotas: está dentro del precio y de la ganancia" style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--purple)', marginTop: 2 }}>
+                                incl. interés {r.moneda === 'USD' ? 'U$' : '$'} {Math.round(Number(sale.financing_interest)).toLocaleString('es-AR')}
+                              </div>
+                            )}
+                            </>
                           );
                         })()}
                       </td>

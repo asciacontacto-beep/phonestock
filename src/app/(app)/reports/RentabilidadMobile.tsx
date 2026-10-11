@@ -18,7 +18,7 @@ const PERIODOS: [Periodo, string][] = [['7d', '7 días'], ['30d', '30 días'], [
 const usd = (n: number) => `U$ ${Math.round(n).toLocaleString('es-AR')}`
 
 export function RentabilidadMobile({
-  periodo, setPeriodo, neta, delta, facturacion, bruta, margen, gastos, rubros, modelos, vendedores, tendencia, cotizacion, onRubro,
+  periodo, setPeriodo, neta, delta, facturacion, bruta, margen, gastos, rubros, modelos, vendedores, tendencia, cotizacion, onRubro, intereses,
 }: {
   periodo: Periodo
   setPeriodo: (p: Periodo) => void
@@ -29,6 +29,8 @@ export function RentabilidadMobile({
   margen: number
   gastos: number
   rubros: Record<Rubro, CategoryStats>
+  /** Intereses de las ventas en cuotas, aparte de los rubros. */
+  intereses?: CategoryStats
   modelos: { model: string; profit: number; count: number; avg: number }[]
   vendedores: { name: string; profit: number; count: number; revenue: number }[]
   tendencia: number[]
@@ -96,6 +98,17 @@ export function RentabilidadMobile({
               </button>
             )
           })}
+          {intereses && intereses.units > 0 && (
+            <div className="m-row">
+              <div className="m-row-main">
+                <div className="m-row-t">Intereses de cuotas</div>
+                <div className="m-row-s">{intereses.units} {intereses.units === 1 ? 'venta' : 'ventas'} en cuotas con interés</div>
+              </div>
+              <div className="m-row-der">
+                <span className="m-row-num pos">{usd(intereses.revenue)}</span>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

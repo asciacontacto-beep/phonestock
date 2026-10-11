@@ -63,6 +63,13 @@ export type CategoryBreakdown = {
   device: CategoryStats
   accessory: CategoryStats
   service: CategoryStats
+  /**
+   * Intereses de las ventas en cuotas del local. Están adentro del precio de
+   * la venta, pero no son ganancia del equipo: es plata por financiar. Se
+   * separan para que el margen del equipo sea el real y se vea cuánto deja
+   * financiar.
+   */
+  interest: CategoryStats
   /** Reparaciones abiertas cuyo costo todavía no se imputó (no fueron entregadas). */
   pendingRepairs: number
 }
@@ -86,12 +93,16 @@ export function categoryBreakdown(sales: Sale[], repairs: Repair[], exchangeRate
   const device = emptyStats()
   const accessory = emptyStats()
   const service = emptyStats()
+  const interest = emptyStats()
 
   for (const s of sales) {
     const cat = saleCategory(s)
     if (cat === 'movement') continue
 
     const rate = saleExchangeRate(s, exchangeRate)
+
+    const interes = toUSD(Number(s.financing_interest) || 0, s.currency, rate)
+    if (interes > 0) { interest.revenue += interes; interest.units += 1 }
 
     // Accesorios: siempre del JSON, tanto los vendidos sueltos como los que
     // acompañan a un equipo. Nunca de price/cost_price, para no duplicar.
@@ -104,12 +115,13 @@ export function categoryBreakdown(sales: Sale[], repairs: Repair[], exchangeRate
     }
 
     if (cat === 'device') {
-      device.revenue += toUSD(s.price || 0, s.currency, rate)
+      // El precio guardado trae el interés de las cuotas adentro: va aparte.
+      device.revenue += toUSD(s.price || 0, s.currency, rate) - interes
       device.cost += toUSD(s.cost_price || 0, s.currency, rate)
       device.units += 1
       if (!s.cost_price) device.missingCost += 1
     } else if (cat === 'service') {
-      service.revenue += toUSD(s.price || 0, s.currency, rate)
+      service.revenue += toUSD(s.price || 0, s.currency, rate) - interes
       service.units += 1
     }
     // cat === 'accessory': su price/cost NO se usan (ya se contaron vía JSON arriba)
@@ -142,14 +154,15 @@ export function categoryBreakdown(sales: Sale[], repairs: Repair[], exchangeRate
     device: finalize(device),
     accessory: finalize(accessory),
     service: finalize(service),
+    interest: finalize(interest),
     pendingRepairs,
   }
 }
 
 /** Totales del negocio, derivados del mismo desglose que ven las tarjetas. */
 export function totalsFromBreakdown(b: CategoryBreakdown) {
-  const revenue = b.device.revenue + b.accessory.revenue + b.service.revenue
-  const cost = b.device.cost + b.accessory.cost + b.service.cost
+  const revenue = b.device.revenue + b.accessory.revenue + b.service.revenue + b.interest.revenue
+  const cost = b.device.cost + b.accessory.cost + b.service.cost + b.interest.cost
   const profit = revenue - cost
   return {
     revenue,

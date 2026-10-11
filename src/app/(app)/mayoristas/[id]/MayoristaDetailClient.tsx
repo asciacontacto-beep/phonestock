@@ -539,9 +539,11 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
   const total = lines.reduce((s, l) => s + l.qty * l.unit_price, 0)
 
   const selectStock = (idx: number, item: StockItem) => {
+    // Un renglón del stock es UNA unidad: con cantidad 3 se vendían tres
+    // pero sólo una salía del stock. Para más, "Sumar otra igual".
     setLines(prev => prev.map((l, i) => i === idx ? {
       ...l, stock_id: item.id, brand: item.brand, model: item.model,
-      storage: item.storage, color: item.color, unit_price: item.price
+      storage: item.storage, color: item.color, unit_price: item.price, qty: 1,
     } : l))
     setStockQ(prev => prev.map((q, i) => i === idx ? [item.brand, item.model, item.storage].filter(Boolean).join(' ') : q))
     setAbierta(null)
@@ -556,6 +558,25 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
       .filter(s => !usadas.has(s.id))
       .filter(s => [s.brand, s.model, s.storage, s.color].filter(Boolean).join(' ').toLowerCase().includes(q))
       .slice(0, 8)
+  }
+
+  /* Otras unidades disponibles idénticas a la del renglón (mismo modelo,
+     capacidad y color), que todavía no están en el pedido. */
+  const iguales = (idx: number) => {
+    const l = lines[idx]
+    if (!l.stock_id || l.is_backorder) return []
+    const usadas = new Set(lines.filter(x => x.stock_id != null).map(x => x.stock_id))
+    return availableStock.filter(s => !usadas.has(s.id) &&
+      s.brand === l.brand && s.model === l.model && s.storage === l.storage && s.color === l.color)
+  }
+  const sumarIgual = (idx: number) => {
+    const otra = iguales(idx)[0]
+    if (!otra) return
+    const l = lines[idx]
+    setLines(prev => [...prev.slice(0, idx + 1),
+      { ...l, stock_id: otra.id, qty: 1 },
+      ...prev.slice(idx + 1)])
+    setStockQ(prev => [...prev.slice(0, idx + 1), prev[idx], ...prev.slice(idx + 1)])
   }
 
   const addLine = () => {
@@ -676,13 +697,17 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                   <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 120px', gap: 8, alignItems: 'center' }}>
                     <div>
                       <label className="lbl">Cant.</label>
-                      <input
-                        className="inp"
-                        type="number"
-                        min={1}
-                        value={line.qty}
-                        onChange={e => setLines(prev => prev.map((l, i) => i === idx ? { ...l, qty: parseInt(e.target.value) || 1 } : l))}
-                      />
+                      {line.stock_id && !line.is_backorder ? (
+                        <div className="inp" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-2)' }} title="Cada renglón del stock es una unidad">1</div>
+                      ) : (
+                        <input
+                          className="inp"
+                          type="number"
+                          min={1}
+                          value={line.qty}
+                          onChange={e => setLines(prev => prev.map((l, i) => i === idx ? { ...l, qty: parseInt(e.target.value) || 1 } : l))}
+                        />
+                      )}
                     </div>
                     <div>
                       <label className="lbl">Precio mayorista</label>
@@ -714,10 +739,18 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                       </label>
                     </div>
                   </div>
+                  {(() => {
+                    const quedan = iguales(idx).length
+                    return quedan > 0 ? (
+                      <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => sumarIgual(idx)}>
+                        <Plus size={13} /> Sumar otra igual <span style={{ color: 'var(--text-3)' }}>(quedan {quedan})</span>
+                      </button>
+                    ) : null
+                  })()}
                 </div>
               ))}
               <button className="btn btn-outline btn-sm" onClick={addLine} style={{ alignSelf: 'flex-start' }}>
-                <Plus size={13} /> Agregar ítem
+                <Plus size={13} /> Agregar otro modelo
               </button>
             </div>
           </div>

@@ -74,6 +74,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
   useEffect(() => {
     if (open) {
       setStep(1);
+      setEnTanda(0);
       if (upcInicial) setUpc(upcInicial);
       setDepositsLoaded(false);
       supabase.from('deposits').select('*').order('name').then(({ data }) => {
@@ -171,7 +172,10 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
   const removeVariant = (i: number) =>
     setVariants(vs => vs.filter((_, idx) => idx !== i));
 
-  const handleSubmit = async () => {
+  /* Un pedido trae varios modelos: "Ingresar y seguir" guarda este y vuelve
+     al paso 1 con el mismo depósito, proveedor y moneda, sin cerrar. */
+  const [enTanda, setEnTanda] = useState(0);
+  const handleSubmit = async (seguir = false) => {
     if (!model || !price || (isOwner && !costPrice) || !dep) { toast.error('Completá todos los campos'); return; }
     if (pagoCompra === 'cuenta' && !sup) { toast.error('Elegí el proveedor al que le debés el pedido'); return; }
     setLoading(true);
@@ -268,9 +272,15 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
             toast.warning(`Los equipos se cargaron, pero no se anotó la deuda con el proveedor: ${r.error}`, { duration: 9000 });
           }
         }
-        setVariants([emptyVariant()]); setPrice(''); setCostPrice(''); setUpc(''); setPagoCompra('no');
+        setVariants([emptyVariant()]); setPrice(''); setCostPrice(''); setUpc('');
         if (onSuccess) onSuccess();
-        onClose();
+        if (seguir) {
+          setEnTanda(n => n + total);
+          setStep(1);
+        } else {
+          setPagoCompra('no'); setEnTanda(0);
+          onClose();
+        }
       }
     } catch (e: any) {
       if (esErrorImeiRepetido(e)) {
@@ -306,6 +316,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
             <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Ingresar equipo</div>
             <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
               {step === 1 ? 'Producto y precio' : `${totalUnits} unidad${totalUnits !== 1 ? 'es' : ''}`}
+              {enTanda > 0 && <span style={{ color: 'var(--green)', fontWeight: 600 }}> · ya ingresaste {enTanda} en esta tanda</span>}
             </div>
           </div>
           <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
@@ -553,7 +564,13 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
 
         <div style={{ padding: '12px 20px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, background: 'var(--surface)', flexShrink: 0 }}>
           {step > 1 ? (<button className="btn btn-outline btn-sm" style={{ gap: 5 }} onClick={() => setStep(1)}><ChevronLeft size={15} /> Atrás</button>) : (<button className="btn btn-ghost btn-sm" style={{ color: 'var(--text-2)' }} onClick={onClose}>Cancelar</button>)}
-          {step < 2 ? (<button className="btn btn-dark" style={{ flex: 1 }} onClick={() => { if (isStep1Valid) setStep(2); }} disabled={!isStep1Valid}>Continuar <ChevronRight size={15} /></button>) : (<button className="btn btn-dark" style={{ flex: 1 }} onClick={handleSubmit} disabled={loading}>{loading ? 'Guardando…' : <><Check size={15} /> Ingresar {totalUnits} ud.</>}</button>)}
+          {step < 2 ? (<button className="btn btn-dark" style={{ flex: 1 }} onClick={() => { if (isStep1Valid) setStep(2); }} disabled={!isStep1Valid}>Continuar <ChevronRight size={15} /></button>) : (<>
+            <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => handleSubmit(true)} disabled={loading}
+              title="Ingresa estas unidades y vuelve al paso 1 para cargar otro modelo del mismo pedido">
+              <Plus size={15} /> Ingresar y seguir
+            </button>
+            <button className="btn btn-dark" style={{ flex: 1 }} onClick={() => handleSubmit()} disabled={loading}>{loading ? 'Guardando…' : <><Check size={15} /> Ingresar {totalUnits} ud.</>}</button>
+          </>)}
         </div>
       </div>
     </div>

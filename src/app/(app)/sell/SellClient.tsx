@@ -11,7 +11,7 @@ import { ModelPicker } from '@/components/ModelPicker';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Receipt } from '@/components/Receipt';
-import { upsertCustomer, CLIENTE_ANONIMO } from '@/utils/customers';
+import { upsertCustomer, CLIENTE_ANONIMO, faltaColumna } from '@/utils/customers';
 import { generarPlanCuotas, guardarPlanCuotas, vencimientoMensual, interesPctDesdeCuota } from '@/utils/cuotas';
 import { STOCK_SIN_COSTO, ACCESORIOS_SIN_COSTO, VENTA_SIN_COSTO } from '@/utils/sinCostos';
 import { calcularPagoTarjeta, resumenPlan, etiquetaPlan, opcionesDePlanes, costoDeFinanciacion, type PlanTarjeta, type QuienPaga } from '@/utils/tarjetas';
@@ -272,6 +272,19 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
      reporte de ganancia no lo vería nunca. */
   const interesPlan = planPreview?.interes || 0;
   const precioAGuardar = finalPrice + interesPlan;
+
+  /* El interés de las cuotas va también aparte (financing_interest), para que
+     Rentabilidad lo separe de la ganancia del equipo. Si la base todavía no
+     tiene esa columna, la venta se guarda igual, sin el dato. */
+  const insertarVenta = async (datos: Record<string, unknown>) => {
+    const sel = (isOwner ? '*' : VENTA_SIN_COSTO) as string;
+    const r = await supabase.from('sales').insert([datos]).select(sel) as unknown as { data: any[]; error: any };
+    if (r.error && 'financing_interest' in datos && faltaColumna(r.error)) {
+      const { financing_interest: _sinColumna, ...resto } = datos;
+      return await supabase.from('sales').insert([resto]).select(sel) as unknown as { data: any[]; error: any };
+    }
+    return r;
+  };
   const saldoAGuardar = balanceDue + interesPlan;
 
   const sellingBelowCost = unitCostInSaleCurrency != null && finalPrice > 0 && finalPrice < unitCostInSaleCurrency;
@@ -422,13 +435,14 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         cost_price: totalCost,
         price: precioAGuardar,
         balance_due: saldoAGuardar || null,
+        ...(interesPlan > 0 ? { financing_interest: interesPlan } : {}),
         currency: 'ARS',
         payments: paymentsToSave(),
         customer: cust.name.trim() ? cust : { name: CLIENTE_ANONIMO },
         notes: notes.trim() || null,
         accessories: selectedAccessories,
       };
-      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select((isOwner ? '*' : VENTA_SIN_COSTO) as string) as unknown as { data: any[]; error: any };
+      const { data: saleRow, error: sErr } = await insertarVenta(saleData);
       if (sErr) throw sErr;
 
       for (const acc of selectedAccessories) {
@@ -497,6 +511,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         })(),
         price: precioAGuardar,
         balance_due: saldoAGuardar || null,
+        ...(interesPlan > 0 ? { financing_interest: interesPlan } : {}),
         currency: sc,
         payments: paymentsToSave(),
         // Misma forma que la venta de accesorios: sin cliente va el relleno,
@@ -519,7 +534,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         throw new Error('Este equipo ya no está disponible: se vendió o se movió. Actualizá la pantalla.');
       }
 
-      const { data: saleRow, error: sErr } = await supabase.from('sales').insert([saleData]).select((isOwner ? '*' : VENTA_SIN_COSTO) as string) as unknown as { data: any[]; error: any };
+      const { data: saleRow, error: sErr } = await insertarVenta(saleData);
       if (sErr) {
         // La venta no se registró: el equipo vuelve a estar disponible.
         await supabase.from('stock').update({ status: 'available' }).eq('id', unit.id).eq('status', 'sold');

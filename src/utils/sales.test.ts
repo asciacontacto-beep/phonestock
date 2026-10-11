@@ -187,6 +187,33 @@ describe('totalsFromBreakdown', () => {
   })
 })
 
+describe('categoryBreakdown · intereses de cuotas', () => {
+  it('separa el interés del equipo y lo suma aparte', () => {
+    // Equipo de U$1.000 financiado: el cliente paga U$1.200; U$200 son interés.
+    const b = categoryBreakdown([{ brand: 'Apple', price: 1200, cost_price: 800, currency: 'USD', financing_interest: 200 }], [], RATE)
+    expect(b.device.revenue).toBe(1000)
+    expect(b.device.profit).toBe(200)
+    expect(b.interest.revenue).toBe(200)
+    expect(b.interest.units).toBe(1)
+    expect(totalsFromBreakdown(b).profit).toBe(400)
+  })
+  it('en pesos lo pasa a dólares con la cotización de la venta', () => {
+    const b = categoryBreakdown([{ brand: 'Apple', price: 1_300_000, cost_price: 1_000_000, currency: 'ARS', financing_interest: 130_000 }], [], 1300)
+    expect(b.interest.revenue).toBeCloseTo(100)
+    expect(b.device.revenue).toBeCloseTo(900)
+  })
+  it('en una venta de accesorios el interés no se perdía: ahora cuenta', () => {
+    const b = categoryBreakdown([{ brand: 'ACCESORIOS', price: 60, currency: 'USD', financing_interest: 10, accessories: [{ price: 50, cost_price: 20, qty: 1, currency: 'USD' }] }], [], RATE)
+    expect(b.accessory.revenue).toBe(50)
+    expect(totalsFromBreakdown(b).profit).toBe(40)
+  })
+  it('sin interés no cambia nada', () => {
+    const b = categoryBreakdown([{ brand: 'Apple', price: 1000, cost_price: 800, currency: 'USD' }], [], RATE)
+    expect(b.interest.revenue).toBe(0)
+    expect(b.device.revenue).toBe(1000)
+  })
+})
+
 describe('categoryBreakdown · tarjeta o financiera que absorbe el local', () => {
   const venta = (payments: unknown[]) => ({
     id: 1, brand: 'Apple', model: 'iPhone 15', currency: 'ARS', price: 600000, cost_price: 450000, payments,

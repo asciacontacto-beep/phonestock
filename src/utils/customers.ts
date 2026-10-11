@@ -125,12 +125,25 @@ export async function upsertCustomer(supabase: SupabaseClient, cust: CustomerInp
   const cumple = cumpleValido(cust.birth_day, cust.birth_month)
   if (cumple) { payload.birth_day = cumple.dia; payload.birth_month = cumple.mes }
 
+  /* Si la base todavía no tiene las columnas del cumpleaños, se guarda el
+     cliente sin él: un dato opcional no puede frenar la venta. */
+  const sinCumple = (p: Record<string, any>) => { const { birth_day: _d, birth_month: _m, ...resto } = p; return resto }
+
   if (existing) {
-    await supabase.from('customers').update(payload).eq('id', existing.id)
+    const { error } = await supabase.from('customers').update(payload).eq('id', existing.id)
+    if (error && cumple && faltaColumna(error)) await supabase.from('customers').update(sinCumple(payload)).eq('id', existing.id)
     return existing.id
   }
 
-  const { data: created, error } = await supabase.from('customers').insert([payload]).select('id').single()
+  let { data: created, error } = await supabase.from('customers').insert([payload]).select('id').single()
+  if (error && cumple && faltaColumna(error)) {
+    ({ data: created, error } = await supabase.from('customers').insert([sinCumple(payload)]).select('id').single())
+  }
   if (error) throw error
   return created?.id || null
+}
+
+/** El error es porque la base no tiene una columna (migración sin aplicar). */
+export function faltaColumna(error: { code?: string; message?: string } | null | undefined): boolean {
+  return !!error && (error.code === '42703' || error.code === 'PGRST204' || /column .* does not exist|could not find the .* column/i.test(error.message || ''))
 }

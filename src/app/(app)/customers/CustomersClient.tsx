@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { CampoCumple } from '@/components/CampoCumple';
 import { cumpleValido, textoCumple } from '@/utils/cumpleanos';
+import { faltaColumna } from '@/utils/customers';
 import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, TrendingUp, AtSign, Edit2, Trash2, Cake } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { ventaEsDe } from '@/utils/customers';
@@ -77,14 +78,22 @@ export function CustomersClient({
       if (cumpleCambio && !cumple && (editData.birth_day || editData.birth_month)) {
         toast.error('El cumpleaños no es una fecha válida'); setLoading(false); return;
       }
-      const { error } = await supabase.from('customers').update({
+      const basico = {
         name: editData.name,
         dni: editData.dni || null,
         phone: editData.phone || null,
         email: editData.email || null,
         instagram: editData.instagram || null,
+      };
+      let { error } = await supabase.from('customers').update({
+        ...basico,
         ...(cumpleCambio ? { birth_day: cumple?.dia ?? null, birth_month: cumple?.mes ?? null } : {}),
       }).eq('id', selected.id);
+      // Sin la migración del cumpleaños: se guarda lo demás y se avisa.
+      if (error && cumpleCambio && faltaColumna(error)) {
+        ({ error } = await supabase.from('customers').update(basico).eq('id', selected.id));
+        if (!error) toast.warning('Se guardó el cliente. El cumpleaños todavía no está activo en tu cuenta.');
+      }
       
       if (error) throw error;
       

@@ -50,6 +50,43 @@ function fakeDB(rows: any[] = []): any {
   return db
 }
 
+describe('upsertCustomer con cumpleaños', () => {
+  it('guarda el cumpleaños si es una fecha real', async () => {
+    const db = fakeDB()
+    await upsertCustomer(db, { name: 'Ana', birth_day: 14, birth_month: 3 })
+    expect(db.rows[0]).toMatchObject({ birth_day: 14, birth_month: 3 })
+  })
+
+  it('un cumpleaños imposible no se guarda', async () => {
+    const db = fakeDB()
+    await upsertCustomer(db, { name: 'Ana', birth_day: 31, birth_month: 4 })
+    expect(db.rows[0].birth_day).toBeUndefined()
+  })
+
+  it('sin la columna en la base, el cliente se guarda igual (sin el cumpleaños)', async () => {
+    const db = fakeDB()
+    const base = db.from()
+    let intentos = 0
+    db.from = () => ({
+      ...base,
+      insert: (payload: any[]) => ({
+        select: () => ({
+          single: async () => {
+            intentos++
+            if ('birth_day' in payload[0]) return { data: null, error: { code: 'PGRST204', message: "Could not find the 'birth_day' column" } }
+            db.rows.push({ id: 'c1', ...payload[0] })
+            return { data: { id: 'c1' }, error: null }
+          },
+        }),
+      }),
+    })
+    const id = await upsertCustomer(db, { name: 'Ana', birth_day: 14, birth_month: 3 })
+    expect(id).toBe('c1')
+    expect(intentos).toBe(2)
+    expect(db.rows[0].birth_day).toBeUndefined()
+  })
+})
+
 describe('upsertCustomer', () => {
   it('crea el cliente si no existe', async () => {
     const db = fakeDB()

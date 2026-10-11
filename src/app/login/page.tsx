@@ -543,11 +543,8 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
         {/* Mobile top bar */}
         <div className="lp-mobile-top">
           <div className="lp-mobile-brand">
-            <svg className="lp-glifo" width="16" height="16" viewBox="0 0 17 17" fill="none" aria-hidden>
-              <rect y="1.5" width="17" height="3" rx="1.5" fill="currentColor" />
-              <rect y="7" width="12" height="3" rx="1.5" fill="currentColor" opacity=".7" />
-              <rect y="12.5" width="7" height="3" rx="1.5" fill="currentColor" opacity=".45" />
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-marca.png" alt="" width={20} height={20} />
             <span className="lp-mobile-name">Stackr</span>
           </div>
           <div className="lp-mobile-tagline">Sabé exactamente cuánto ganás con cada equipo</div>
@@ -559,11 +556,9 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
 
           <div className="lp-left-inner">
             <Link href="/" className="lp-brand">
-              <svg className="lp-glifo" width="19" height="19" viewBox="0 0 17 17" fill="none" aria-hidden>
-                <rect y="1.5" width="17" height="3" rx="1.5" fill="currentColor" />
-                <rect y="7" width="12" height="3" rx="1.5" fill="currentColor" opacity=".7" />
-                <rect y="12.5" width="7" height="3" rx="1.5" fill="currentColor" opacity=".45" />
-              </svg>
+              {/* El logo es negro: sobre el panel oscuro va invertido. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-marca.png" alt="" width={22} height={22} style={{ filter: 'invert(1)' }} />
               <span className="lp-brand-name">Stackr</span>
             </Link>
 
@@ -701,10 +696,6 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ re
             </div>
           </div>
 
-          <div className="lp-mobile-trust">
-            <span><i /> 48 horas gratis</span>
-            <span><i /> Sin tarjeta</span>
-          </div>
         </div>
 
       </div>

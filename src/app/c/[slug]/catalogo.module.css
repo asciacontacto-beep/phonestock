@@ -171,6 +171,7 @@
   font-size: 25px; font-weight: 700; letter-spacing: -0.04em;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .consultar {
@@ -452,8 +453,14 @@
 
 @media (max-width: 560px) {
   .cabecera { padding: 48px 0 26px; }
-  .grilla { grid-template-columns: 1fr 1fr; gap: 12px; }
-  .tarjeta { padding: 16px; border-radius: 16px; }
+  /* minmax(0, 1fr) y no 1fr: con 1fr la columna no baja del ancho de su
+     contenido, y una etiqueta larga ("Desert Titanium") empujaba la
+     segunda columna fuera de la pantalla. */
+  .grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .tarjeta { padding: 16px; border-radius: 16px; min-width: 0; }
+  /* El precio no se parte ("U$" arriba, "790" abajo): precio y "Ver
+     detalle" van uno debajo del otro. */
+  .pie2 { flex-direction: column; align-items: flex-start; gap: 6px; }
   .fotos { margin: -16px -16px 2px; border-radius: 15px 15px 0 0; }
   .precio { font-size: 21px; }
   .equipoTitulo { font-size: 14.5px; }

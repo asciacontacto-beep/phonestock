@@ -224,7 +224,7 @@ function Detalle({
         )}
 
         <div className={s.detalleInfo}>
-          {equipo.brand && <div className={s.detalleMarca}>{equipo.brand}</div>}
+          {equipo.brand && equipo.brand !== 'Otra' && <div className={s.detalleMarca}>{equipo.brand}</div>}
           <h2 className={s.detalleTitulo}>{equipo.model}</h2>
           <div className={s.detallePrecio}>{money(equipo.price ?? null, equipo.currency ?? null)}</div>
 
@@ -325,7 +325,9 @@ export function CatalogoClient({
   const hayFotos = equipos.some(e => (e.fotos || []).length > 0)
 
   const marcas = useMemo(
-    () => [...new Set(equipos.map(e => e.brand).filter(Boolean))] as string[],
+    // "Otra" (Otras marcas) va al final.
+    () => ([...new Set(equipos.map(e => e.brand).filter(Boolean))] as string[])
+      .sort((a, b) => Number(a === 'Otra') - Number(b === 'Otra')),
     [equipos],
   )
 
@@ -387,7 +389,7 @@ export function CatalogoClient({
                     key={m}
                     className={`${s.chip} ${marca === m ? s.chipOn : ''}`}
                     onClick={() => setMarca(m)}
-                  >{m}</button>
+                  >{m === 'Otra' ? 'Otras marcas' : m}</button>
                 ))}
               </div>
             )}
@@ -426,7 +428,8 @@ export function CatalogoClient({
                   ))}
 
                   <div className={s.equipoTitulo}>
-                    {[e.brand, e.model].filter(Boolean).join(' ')}
+                    {/* "Otra" es la marca de relleno de la carga: no va en el título. */}
+                    {[e.brand === 'Otra' ? null : e.brand, e.model].filter(Boolean).join(' ')}
                   </div>
 
                   <div className={s.specs}>

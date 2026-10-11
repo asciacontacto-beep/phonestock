@@ -351,7 +351,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
     const amt = parseFloat(data.value);
     setPayments(p => [...p, { 
       id: 'tradein', 
-      label: `TI: ${data.brand} ${data.model}`, 
+      label: `Canje: ${data.brand} ${data.model}`, 
       amount: amt, 
       original_amount: amt,
       currency: data.valueCurrency || sc,

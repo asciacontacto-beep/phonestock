@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react';
+import { plural } from '@/utils/texto';
 import { Warehouse, Plus, Trash2, Edit2, ArrowLeftRight, Loader2, Check, X, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
@@ -53,7 +54,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
   async function deleteDeposit(id: number) {
     const count = stock.filter((s: any) => s.deposit === id && s.status === 'available').length;
     if (count > 0) {
-      toast.error(`Este depósito tiene ${count} equipos. Transferilos antes de eliminarlo.`);
+      toast.error(`Este depósito tiene ${plural(count, 'equipo')}. Transferilos antes de eliminarlo.`);
       return;
     }
     if (!await confirm('¿Eliminar este depósito?')) return;
@@ -114,7 +115,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                     </div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 15 }}>{d.name}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{items.length} equipos disponibles</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{plural(items.length, 'equipo disponible', 'equipos disponibles')}</div>
                       {(valUsd > 0 || valArs > 0) && (
                         <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4 }}>
                           Capital: {valUsd > 0 ? `U$ ${valUsd.toLocaleString('es-AR')}` : ''}
@@ -149,7 +150,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div className="sl">
           {selectedDep === 'all' ? 'Todo el Stock' : `Stock en: ${deposits.find((d: any) => d.id === selectedDep)?.name}`}
-          <span style={{ marginLeft: 8, color: 'var(--text-3)', fontSize: 13 }}>({filteredStock.length} equipos)</span>
+          <span style={{ marginLeft: 8, color: 'var(--text-3)', fontSize: 13 }}>({plural(filteredStock.length, 'equipo')})</span>
         </div>
         {selectedDep !== 'all' && (
           <button className="btn-pill" onClick={() => setSelectedDep('all')}>Ver todos</button>
@@ -297,7 +298,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                       <div style={{ width: 12, height: 12, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
                       <span style={{ fontWeight: 600 }}>{d.name}</span>
                       <span style={{ marginLeft: 'auto', color: 'var(--text-3)', fontSize: 12 }}>
-                        {depStock(d.id).length} equipos
+                        {plural(depStock(d.id).length, 'equipo')}
                       </span>
                     </button>
                   ))}

@@ -201,7 +201,7 @@ export function MayoristaDetailClient({
     if (parts.length === 0) {
       return (
         <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 20, color: 'var(--green)' }}>
-          Al día ✓
+          Al día
         </div>
       )
     }
@@ -302,10 +302,10 @@ export function MayoristaDetailClient({
                           )}
                         </span>
                       </td>
-                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>{o.currency === 'USD' ? 'U$' : '$'}{o.total.toLocaleString('es-AR')}</td>
-                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: 'var(--green)' }}>{o.currency === 'USD' ? 'U$' : '$'}{o.paid.toLocaleString('es-AR')}</td>
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>{o.currency === 'USD' ? 'U$' : '$'} {o.total.toLocaleString('es-AR')}</td>
+                      <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: 'var(--green)' }}>{o.currency === 'USD' ? 'U$' : '$'} {o.paid.toLocaleString('es-AR')}</td>
                       <td style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: o.balance > 0 ? 'var(--red)' : 'var(--green)' }}>
-                        {o.balance > 0 ? `-${o.currency === 'USD' ? 'U$' : '$'}${o.balance.toLocaleString('es-AR')}` : '✓'}
+                        {o.balance > 0 ? `-${o.currency === 'USD' ? 'U$' : '$'} ${o.balance.toLocaleString('es-AR')}` : 'Pagado'}
                       </td>
                       <td><span className={`badge ${STATUS_CLASS[o.status]}`}>{STATUS_LABEL[o.status]}</span></td>
                       <td>
@@ -381,7 +381,7 @@ export function MayoristaDetailClient({
               {payments.map(p => (
                 <tr key={p.id}>
                   <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(p.created_at).toLocaleDateString('es-AR')}</td>
-                  <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--green)' }}>+{p.currency === 'USD' ? 'U$' : '$'}{p.amount.toLocaleString('es-AR')}</td>
+                  <td style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--green)' }}>+{p.currency === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString('es-AR')}</td>
                   <td><span className="badge b-neu">{METHOD_LABEL[p.method]}</span></td>
                   <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{p.notes || '—'}</td>
                 </tr>
@@ -410,7 +410,7 @@ export function MayoristaDetailClient({
                     <tr key={`o-${o.id}`}>
                       <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(o.created_at).toLocaleDateString('es-AR')}</td>
                       <td>Pedido — {o.items.length} item{o.items.length !== 1 ? 's' : ''} <span className={`badge ${STATUS_CLASS[o.status]}`} style={{ marginLeft: 6 }}>{STATUS_LABEL[o.status]}</span></td>
-                      <td style={{ fontFamily: 'JetBrains Mono', color: 'var(--red)' }}>{o.currency === 'USD' ? 'U$' : '$'}{o.total.toLocaleString('es-AR')}</td>
+                      <td style={{ fontFamily: 'JetBrains Mono', color: 'var(--red)' }}>{o.currency === 'USD' ? 'U$' : '$'} {o.total.toLocaleString('es-AR')}</td>
                       <td>—</td>
                       <td style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: runningUSD > 0 ? 'var(--red)' : 'var(--green)' }}>
                         {runningUSD > 0 ? `-U$${runningUSD.toLocaleString('es-AR')}` : runningUSD === 0 ? '—' : `U$${Math.abs(runningUSD).toLocaleString('es-AR')}`}
@@ -429,7 +429,7 @@ export function MayoristaDetailClient({
                       <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(p.created_at).toLocaleDateString('es-AR')}</td>
                       <td>Pago — {METHOD_LABEL[p.method]}{p.notes ? ` (${p.notes})` : ''}</td>
                       <td>—</td>
-                      <td style={{ fontFamily: 'JetBrains Mono', color: 'var(--green)' }}>+{p.currency === 'USD' ? 'U$' : '$'}{p.amount.toLocaleString('es-AR')}</td>
+                      <td style={{ fontFamily: 'JetBrains Mono', color: 'var(--green)' }}>+{p.currency === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString('es-AR')}</td>
                       <td style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: runningUSD > 0 ? 'var(--red)' : 'var(--green)' }}>
                         {runningUSD > 0 ? `-U$${runningUSD.toLocaleString('es-AR')}` : runningUSD === 0 ? '—' : `U$${Math.abs(runningUSD).toLocaleString('es-AR')}`}
                       </td>
@@ -728,7 +728,7 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>Total: <span style={{ fontFamily: 'JetBrains Mono' }}>{currency === 'USD' ? 'U$' : '$'}{total.toLocaleString('es-AR')}</span></span>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>Total: <span style={{ fontFamily: 'JetBrains Mono' }}>{currency === 'USD' ? 'U$' : '$'} {total.toLocaleString('es-AR')}</span></span>
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
               <button className="btn btn-dark" onClick={handleCreate} disabled={loading}>
@@ -760,7 +760,7 @@ function PaymentModal({ order, wholesalerId, orgId, onClose, onPaid }: {
     if (!amt || amt <= 0) { toast.error('Ingresá un monto válido'); return }
     // Fix 3: payment cap validation
     if (amt > order.balance) {
-      toast.error(`El monto supera el saldo pendiente (${order.currency === 'USD' ? 'U$' : '$'}${order.balance.toLocaleString('es-AR')})`)
+      toast.error(`El monto supera el saldo pendiente (${order.currency === 'USD' ? 'U$' : '$'} ${order.balance.toLocaleString('es-AR')})`)
       return
     }
     setLoading(true)
@@ -792,15 +792,15 @@ function PaymentModal({ order, wholesalerId, orgId, onClose, onPaid }: {
           <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: 14, border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Total pedido</span>
-              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>{order.currency === 'USD' ? 'U$' : '$'}{order.total.toLocaleString('es-AR')}</span>
+              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 13 }}>{order.currency === 'USD' ? 'U$' : '$'} {order.total.toLocaleString('es-AR')}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Ya pagado</span>
-              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: 'var(--green)' }}>{order.currency === 'USD' ? 'U$' : '$'}{order.paid.toLocaleString('es-AR')}</span>
+              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 13, color: 'var(--green)' }}>{order.currency === 'USD' ? 'U$' : '$'} {order.paid.toLocaleString('es-AR')}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 4 }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>Saldo pendiente</span>
-              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 14, fontWeight: 700, color: 'var(--red)' }}>{order.currency === 'USD' ? 'U$' : '$'}{order.balance.toLocaleString('es-AR')}</span>
+              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 14, fontWeight: 700, color: 'var(--red)' }}>{order.currency === 'USD' ? 'U$' : '$'} {order.balance.toLocaleString('es-AR')}</span>
             </div>
           </div>
           <div>

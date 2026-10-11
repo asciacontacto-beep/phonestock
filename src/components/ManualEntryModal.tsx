@@ -128,7 +128,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
     }
     setModel(found.model);
     setVariants(vs => vs.map((v: any) => ({ ...v, color: found.color, storage: found.storage, condition: isOldPro(found.model) ? 'used' : 'new' })));
-    toast.success(`✓ ${found.brand} ${found.model} ${found.storage} ${found.color}`.trim());
+    toast.success(`Reconocido: ${found.brand} ${found.model} ${found.storage} ${found.color}`.trim());
   };
 
   const handleBrand = (b: string) => {
@@ -247,7 +247,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
             cotizacion: parseFloat(cotizacionCompra) || 0,
           });
           if (r.ok) {
-            toast.success(`Salieron ${r.moneda === 'USD' ? 'U$' : '$'}${r.total.toLocaleString('es-AR')} de la caja`);
+            toast.success(`Salieron ${r.moneda === 'USD' ? 'U$' : '$'} ${r.total.toLocaleString('es-AR')} de la caja`);
           } else {
             toast.warning(`Los equipos se cargaron, pero no se registró la salida de caja: ${r.error}`, { duration: 9000 });
           }

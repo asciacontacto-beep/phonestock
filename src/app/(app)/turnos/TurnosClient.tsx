@@ -307,7 +307,7 @@ function AppointmentCard({ appt, index, onEdit, onConfirm, onCancel, onDelete }:
             fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
             background: st.bg, color: isPast ? 'var(--amber)' : st.color, flexShrink: 0,
           }}>
-            {isPast ? '⚠ Vencido' : st.label}
+            {isPast ? 'Vencido' : st.label}
           </span>
         </div>
 
@@ -1147,7 +1147,7 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase, isO
               <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
                 <span>Saldo</span>
                 <span style={{ color: rem <= 0.01 ? 'var(--green)' : 'var(--amber)' }}>
-                  {rem <= 0.01 ? '✓ Cubierto' : `${currency === 'USD' ? 'U$' : '$'} ${rem.toLocaleString('es-AR', { maximumFractionDigits: 0 })} pendiente`}
+                  {rem <= 0.01 ? 'Cubierto' : `${currency === 'USD' ? 'U$' : '$'} ${rem.toLocaleString('es-AR', { maximumFractionDigits: 0 })} pendiente`}
                 </span>
               </div>
             </div>

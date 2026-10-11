@@ -61,7 +61,7 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
     const parts: string[] = []
     if (b.USD > 0) parts.push(`-U$${b.USD.toLocaleString('es-AR')}`)
     if (b.ARS > 0) parts.push(`-$${b.ARS.toLocaleString('es-AR')}`)
-    if (parts.length === 0) return <span style={{ color: 'var(--green)' }}>Al día ✓</span>
+    if (parts.length === 0) return <span style={{ color: 'var(--green)' }}>Al día</span>
     return <span style={{ color: 'var(--red)' }}>{parts.join(' / ')}</span>
   }
 

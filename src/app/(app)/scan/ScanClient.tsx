@@ -167,7 +167,7 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
       }]).select('id');
       if (error) throw error;
       if (inserted) {
-        toast.success('✅ Equipo ingresado al stock');
+        toast.success('Equipo ingresado al stock');
         setMode('idle'); setDet(null); setPrice(''); setCosto(''); setImei(''); setCond('new'); setBattery('100%'); setNotes('');
         ref.current?.focus();
       }
@@ -221,7 +221,7 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
 
       {mode === 'confirm' && det && (
         <div className="card">
-          <div className="lbl">✅ Equipo Detectado — Confirmar Ingreso</div>
+          <div className="lbl">Equipo reconocido · confirmá el ingreso</div>
           <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 8, marginBottom: 20 }}>
             <div style={{ fontWeight: 700, fontSize: 16 }}>{det.brand} {det.model}</div>
             <div style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 4 }}>{det.storage} · {det.color}</div>

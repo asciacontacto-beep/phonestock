@@ -245,7 +245,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
         <div className="mo">
           <div className="mb" style={{ maxWidth: 480 }}>
             <div className="mh">
-              <div className="mh-title">Alta de Nuevo Acceso</div>
+              <div className="mh-title">Nuevo usuario</div>
               <button className="btn-icon" aria-label="Cerrar" onClick={() => setShowAdd(false)}><X size={18} /></button>
             </div>
             <div className="mbd">
@@ -273,7 +273,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
 
               {form.role === 'seller' && deposits.length > 0 && (
                 <div className="field">
-                  <label className="lbl">Depósitos asignados <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(puede ser más de uno)</span></label>
+                  <label className="lbl">Depósitos asignados <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(podés elegir varios)</span></label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
                     {deposits.map(d => {
                       const selected = form.deposit_ids.includes(String(d.id));

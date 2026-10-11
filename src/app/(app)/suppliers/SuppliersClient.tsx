@@ -10,7 +10,7 @@ import { PedidoModal } from './PedidoModal';
 import { PagoModal } from './PagoModal';
 import { traerTodo } from '@/utils/supabase/todo';
 
-const plata = (moneda: string, n: number) => `${moneda === 'USD' ? 'U$' : '$'}${n.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
+const plata = (moneda: string, n: number) => `${moneda === 'USD' ? 'U$' : '$'} ${n.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 
 export function SuppliersClient({ initialSuppliers, initialPedidos = [], initialPagos = [], deposits = [], ctaCteActiva = false }: {
   initialSuppliers: any[];

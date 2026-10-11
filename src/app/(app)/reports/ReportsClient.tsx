@@ -1,5 +1,6 @@
 "use client"
 import { useState, useMemo } from 'react';
+import { plural } from '@/utils/texto';
 import { TrendingUp, TrendingDown, DollarSign, Users, Smartphone, Warehouse, Calendar, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area, Legend } from 'recharts';
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
@@ -60,7 +61,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
       const costUSD = toUSD(s.cost_price || 0, s.currency, rate);
       return {
         id: String(s.id),
-        label: `${s.brand} ${s.model}${s.cost_price ? '' : '  ⚠ sin costo cargado'}`,
+        label: `${s.brand} ${s.model}${s.cost_price ? '' : ' · sin costo cargado'}`,
         costUSD, priceUSD, profitUSD: priceUSD - costUSD, time: s.created_at,
       };
     })
@@ -354,7 +355,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
             <div className="sc">
               <div className="sl">Mejor vendedor</div>
               <div className="sv" style={{ fontSize: 18 }}>{bestSeller.name}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>{bestSeller.count} ventas · U$ {Math.round(bestSeller.profit).toLocaleString('es-AR')} de utilidad</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>{plural(bestSeller.count, 'venta')} · U$ {Math.round(bestSeller.profit).toLocaleString('es-AR')} de utilidad</div>
             </div>
           )}
         </div>
@@ -483,7 +484,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
                     </div>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{s.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{s.count} ventas</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{plural(s.count, 'venta')}</div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>

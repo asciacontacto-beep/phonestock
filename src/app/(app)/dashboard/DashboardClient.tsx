@@ -1,5 +1,6 @@
 "use client"
 import { filaCsv } from '@/utils/csv';
+import { plural } from '@/utils/texto';
 import { useState, useMemo } from 'react';
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
@@ -336,7 +337,7 @@ export function DashboardClient({
       const costUSD = toUSD(s.cost_price || 0, s.currency, rate);
       return {
         id: String(s.id),
-        label: `${s.brand} ${s.model}${s.cost_price ? '' : '  ⚠ sin costo cargado'}`,
+        label: `${s.brand} ${s.model}${s.cost_price ? '' : ' · sin costo cargado'}`,
         costUSD, priceUSD, profitUSD: priceUSD - costUSD,
         time: s.created_at,
       };
@@ -509,7 +510,7 @@ export function DashboardClient({
             </div>
           ) : (
             <div className="d-hero-quiet">
-              <div className="d-hero-quiet-num">{av.length} equipos</div>
+              <div className="d-hero-quiet-num">{plural(av.length, 'equipo')}</div>
               <div className="d-hero-quiet-lbl">
                 esperando en el stock · U$ {Math.round(capitalUSD).toLocaleString('es-AR')} invertidos
               </div>
@@ -556,7 +557,7 @@ export function DashboardClient({
                 ))}
               </div>
 
-              <div className="d-hint">Tocá cualquiera para ver cómo se calcula →</div>
+              <div className="d-hint">Hacé clic en cualquiera para ver cómo se calcula →</div>
             </>
           );
         })()}

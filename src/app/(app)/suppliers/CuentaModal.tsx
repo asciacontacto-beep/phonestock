@@ -4,7 +4,7 @@ import { X, ChevronDown, ChevronRight, Plus, Wallet } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { saldoConProveedor, pendienteDelPedido, type Pedido, type PagoProveedor } from '@/utils/proveedores';
 
-const plata = (moneda: string, n: number) => `${moneda === 'USD' ? 'U$' : '$'}${n.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
+const plata = (moneda: string, n: number) => `${moneda === 'USD' ? 'U$' : '$'} ${n.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 const dia = (f: string) => new Date(f.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-AR');
 
 /** La cuenta corriente con un proveedor: pedidos, pagos y lo que se debe. */

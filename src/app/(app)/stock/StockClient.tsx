@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
+import { plural } from '@/utils/texto';
 import { BRANDS, STORAGES, COLORS, almacenamientosDe, tieneAlmacenamiento } from '@/constants/data';
 import { Edit2, Trash2, X, Search, PenLine, Package, Clock, Plus, ScanLine } from 'lucide-react';
 import Link from 'next/link';
@@ -232,7 +233,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
 
   const handleBulkTransfer = async () => {
     if (!bulkDeposit || selectedItems.length === 0) return;
-    if (!await confirm(`¿Transferir ${selectedItems.length} equipos al depósito seleccionado?`)) return;
+    if (!await confirm(`¿Transferir ${plural(selectedItems.length, 'equipo')} al depósito seleccionado?`)) return;
     
     setBulkTransferring(true);
     try {
@@ -242,7 +243,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
       setStock(p => p.map(s => selectedItems.includes(s.id) ? { ...s, deposit: bulkDeposit } : s));
       setSelectedItems([]);
       setBulkDeposit('');
-      toast.success(`${selectedItems.length} equipos transferidos`);
+      toast.success(`${plural(selectedItems.length, 'equipo transferido', 'equipos transferidos')}`);
     } catch (e: any) {
       toast.error('Error: ' + e.message);
     } finally {
@@ -535,11 +536,11 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
                   {/* Price */}
                   <div style={{ flex: '0 0 auto', textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>
-                      {s.currency === 'USD' ? 'U$' : '$'}{s.price?.toLocaleString('es-AR')}
+                      {s.currency === 'USD' ? 'U$' : '$'} {s.price?.toLocaleString('es-AR')}
                     </div>
                     {isOwner && s.cost_price ? (
                       <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
-                        costo {s.currency === 'USD' ? 'U$' : '$'}{s.cost_price.toLocaleString('es-AR')}
+                        costo {s.currency === 'USD' ? 'U$' : '$'} {s.cost_price.toLocaleString('es-AR')}
                         {s.price > 0 && <span style={{ color: s.price - s.cost_price >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}> · {Math.round(((s.price - s.cost_price) / s.price) * 100)}%</span>}
                       </div>
                     ) : isOwner ? (

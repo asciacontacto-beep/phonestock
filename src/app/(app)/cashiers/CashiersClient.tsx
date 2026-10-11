@@ -1,5 +1,6 @@
 "use client"
 import { useState } from 'react';
+import { plural } from '@/utils/texto';
 import { PAY } from '@/constants/data';
 import {
   Lock, AlertTriangle, CheckCircle2, Wallet,
@@ -431,7 +432,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
         if (!hayTotalesGenerales) return null;
         return (
           <div className="card" style={{ marginBottom: 28, padding: 20 }}>
-            <div className="sl" style={{ marginBottom: 16 }}>Resumen General — {ventasDelPeriodo} ventas</div>
+            <div className="sl" style={{ marginBottom: 16 }}>Resumen general · {plural(ventasDelPeriodo, 'venta')}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
               {PAY_LABELS.map(it => totals[it.id] !== 0 ? (
                 <div key={it.id} style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 16px' }}>
@@ -548,7 +549,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                     {depSellers.length > 0
                       ? depSellers.map((s: any) => s.name).join(', ')
                       : 'Sin vendedores asignados'}
-                    {' · '}{depSales.filter((s: any) => s.brand !== 'MOVIMIENTO').length} ventas
+                    {' · '}{plural(depSales.filter((s: any) => s.brand !== 'MOVIMIENTO').length, 'venta')}
                   </div>
                 </div>
               </div>
@@ -596,7 +597,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                           <div className="av" style={{ background: s.color, color: '#000', width: 32, height: 32, fontSize: 12, flexShrink: 0 }}>{s.initials}</div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 600, fontSize: 13 }}>{s.name}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{sellerSales.filter(s => s.brand !== 'MOVIMIENTO').length} ventas</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{plural(sellerSales.filter(s => s.brand !== 'MOVIMIENTO').length, 'venta')}</div>
                           </div>
                           {sellerHasAny && (
                             <div style={{ display: 'flex', gap: 12, fontFamily: 'JetBrains Mono', fontSize: 13 }}>

@@ -744,7 +744,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
     setCerrando(false);
     if (!r.ok) { toast.error(r.error); return; }
     toast.success(aplicarCosto
-      ? `Equipo devuelto al inventario · costo actualizado a ${equipo.currency === 'USD' ? 'U$' : '$'}${costoEquipo.costoNuevo.toLocaleString('es-AR')}`
+      ? `Equipo devuelto al inventario · costo actualizado a ${equipo.currency === 'USD' ? 'U$' : '$'} ${costoEquipo.costoNuevo.toLocaleString('es-AR')}`
       : 'Reparación cancelada · el equipo vuelve al inventario sin cambios de costo');
     onSave();
   };
@@ -1037,7 +1037,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
               {isOwner && costoEquipo.margen !== null && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 6, paddingTop: 6,
                   borderTop: '1px solid var(--border)', fontWeight: 700, color: costoEquipo.daPerdida ? 'var(--red)' : 'var(--green)' }}>
-                  <span>Margen al venderlo a {equipo.currency === 'USD' ? 'U$' : '$'}{equipo.price?.toLocaleString('es-AR')}</span>
+                  <span>Margen al venderlo a {equipo.currency === 'USD' ? 'U$' : '$'} {equipo.price?.toLocaleString('es-AR')}</span>
                   <span style={{ fontFamily: 'JetBrains Mono' }}>
                     {equipo.currency === 'USD' ? 'U$' : '$'} {costoEquipo.margen.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                   </span>

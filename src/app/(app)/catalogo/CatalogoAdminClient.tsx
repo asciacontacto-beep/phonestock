@@ -24,11 +24,13 @@ const money = (n: number | null | undefined, m: string | null | undefined) =>
  * interruptor por equipo, en el mismo lugar.
  */
 export function CatalogoAdminClient({
-  org, stockInicial, nombreLocal,
+  org, stockInicial, nombreLocal, dueno = true,
 }: {
   org: Org
   stockInicial: EquipoStock[]
   nombreLocal: string
+  /** El vendedor suma fotos y elige equipos; el link y prenderlo son del dueño. */
+  dueno?: boolean
 }) {
   const supabase = createClient()
   const [stock, setStock] = useState(stockInicial)
@@ -43,6 +45,7 @@ export function CatalogoAdminClient({
   // Un equipo vendido no vuelve a la vidriera: sus fotos sólo ocupan lugar.
   // Se limpian al entrar acá, sin esperar ni avisar.
   useEffect(() => {
+    if (!dueno) return
     let cancelado = false
     ;(async () => {
       const { data } = await supabase.from('stock')
@@ -136,6 +139,23 @@ export function CatalogoAdminClient({
       </div>
 
       {/* ── El link ── */}
+      {!dueno ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.55, flex: '1 1 260px', minWidth: 0 }}>
+              {activo
+                ? <>Publicado en <strong style={{ fontFamily: 'JetBrains Mono, monospace', wordBreak: 'break-all' }}>{url}</strong> · {publicados} {publicados === 1 ? 'equipo visible' : 'equipos visibles'}</>
+                : <>El catálogo todavía no está publicado: lo prende el dueño. Igual podés ir sumando fotos y eligiendo equipos.</>}
+            </div>
+            {activo && (
+              <button className="btn btn-outline"
+                onClick={() => { navigator.clipboard?.writeText(url); toast.success('Link copiado') }}>
+                <Copy size={15} /> Copiar link
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ flex: '1 1 280px' }}>
@@ -180,6 +200,7 @@ export function CatalogoAdminClient({
             : <>Todavía no está publicado. Cuando lo prendas, cualquiera con el link va a ver los equipos que marques acá abajo — con precio, sin el IMEI ni lo que te costó.</>}
         </div>
       </div>
+      )}
 
       {/* ── Los equipos ── */}
       <div className="search-bar no-print" style={{ marginBottom: 14 }}>

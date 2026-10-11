@@ -68,6 +68,7 @@ export const VENDEDOR: Rama[] = [
     { id: 'cashier_me', label: 'Mi caja', icon: <CreditCard size={I} /> },
     { id: 'repairs', label: 'Servicio técnico', icon: <Wrench size={I} /> },
     { id: 'turnos', label: 'Turnos', icon: <CalendarDays size={I} /> },
+    { id: 'catalogo', label: 'Catálogo', icon: <Store size={I} /> },
   ] },
 ];
 

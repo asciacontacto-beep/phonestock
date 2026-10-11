@@ -5,6 +5,14 @@ import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 import { MAX_FOTOS, subirFoto, borrarFotos, urlFoto } from '@/utils/fotos'
 
+/** El depósito rechazó por permisos: a un vendedor, antes de habilitarlo. */
+const sinPermiso = (e: unknown) => e instanceof Error && /row-level security|permission|unauthorized|403/i.test(e.message)
+
+const mensaje = (e: unknown, otro: string) =>
+  sinPermiso(e)
+    ? 'Tu usuario todavía no puede subir fotos. Avisale al dueño del local.'
+    : e instanceof Error ? e.message : otro
+
 /**
  * Las fotos de un equipo: miniaturas, agregar y sacar.
  *
@@ -42,7 +50,9 @@ export function FotosEquipo({
       try {
         subidas.push(await subirFoto(supabase, orgId, stockId, f))
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'No se pudo subir la foto')
+        toast.error(mensaje(e, 'No se pudo subir la foto'))
+        // Sin permiso fallan todas igual: un aviso alcanza.
+        if (sinPermiso(e)) { setSubiendo(0); break }
       }
       setSubiendo(n => n - 1)
     }
@@ -53,7 +63,7 @@ export function FotosEquipo({
     } catch (e) {
       // Sin la fila actualizada, los archivos quedarían huérfanos ocupando lugar.
       await borrarFotos(supabase, subidas).catch(() => {})
-      toast.error(e instanceof Error ? e.message : 'No se pudieron guardar las fotos')
+      toast.error(mensaje(e, 'No se pudieron guardar las fotos'))
     }
   }
 
@@ -61,7 +71,7 @@ export function FotosEquipo({
     try {
       await guardar(fotos.filter(r => r !== ruta))
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No se pudo sacar la foto')
+      toast.error(mensaje(e, 'No se pudo sacar la foto'))
       return
     }
     // Si falla el borrado del archivo, la foto igual ya no se muestra.
@@ -73,7 +83,7 @@ export function FotosEquipo({
     try {
       await guardar([ruta, ...fotos.filter(r => r !== ruta)])
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No se pudo cambiar la portada')
+      toast.error(mensaje(e, 'No se pudo cambiar la portada'))
     }
   }
 

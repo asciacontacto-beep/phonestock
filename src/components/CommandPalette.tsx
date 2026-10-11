@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
   Search, LayoutDashboard, BarChart3, Package, Headphones, Warehouse, ScanLine,
   ShoppingCart, FileText, Receipt, Wrench, CalendarDays, CreditCard, Wallet,
-  Users2, ShoppingBag, Truck, User as UserIcon, Settings, CornerDownLeft,
+  Users2, ShoppingBag, Truck, User as UserIcon, Settings, CornerDownLeft, Store,
 } from 'lucide-react';
 
 type Cmd = {
@@ -36,10 +36,11 @@ const ALL_COMMANDS: Cmd[] = [
   { id: 'suppliers',   label: 'Proveedores',       route: '/suppliers',   icon: <Truck size={16} />,      keywords: 'proveedores compras' },
   { id: 'users',       label: 'Usuarios',          route: '/users',       icon: <UserIcon size={16} />,   keywords: 'usuarios empleados equipo permisos' },
   { id: 'settings',    label: 'Configuración',     route: '/settings',    icon: <Settings size={16} />,   keywords: 'configuracion ajustes settings negocio' },
+  { id: 'catalogo',    label: 'Catálogo',          hint: 'Fotos y vidriera', route: '/catalogo', icon: <Store size={16} />,  keywords: 'catalogo vidriera fotos publicar link' },
 ];
 
 /** Rutas que ve un vendedor (mismo criterio que el sidebar). */
-const SELLER_IDS = new Set(['dashboard', 'sell', 'stock', 'scan', 'repairs']);
+const SELLER_IDS = new Set(['dashboard', 'sell', 'stock', 'scan', 'repairs', 'turnos', 'catalogo']);
 
 export function CommandPalette({ role }: { role?: string }) {
   const router = useRouter();

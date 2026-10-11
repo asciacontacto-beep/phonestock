@@ -3,14 +3,16 @@ import { redirect } from "next/navigation"
 import { CatalogoAdminClient } from "./CatalogoAdminClient"
 import { configuracionDelLocal } from '@/utils/configuracion'
 import type { EquipoStock } from "@/utils/catalogo"
-import { soloDueno } from "@/utils/permisos"
+import { esDueno } from "@/utils/permisos"
 
 export const dynamic = 'force-dynamic'
 
 export default async function CatalogoPage() {
-  await soloDueno()
+  // Dueño y vendedor: el vendedor suma fotos y elige qué equipos se ven.
+  // Prender el catálogo y cambiar el link sigue siendo del dueño.
   const user = await getUser()
   if (!user) redirect("/login")
+  const dueno = await esDueno()
 
   const profile = await getProfile(user.id)
   const supabase = await createClient()
@@ -31,6 +33,7 @@ export default async function CatalogoPage() {
       org={org || null}
       stockInicial={(stock || []) as unknown as EquipoStock[]}
       nombreLocal={settings?.shop_name || org?.name || ''}
+      dueno={dueno}
     />
   )
 }

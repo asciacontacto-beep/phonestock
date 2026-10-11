@@ -762,7 +762,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
           <div className="mb" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="mh">
               <div className="mh-title">Cambio de Divisa</div>
-              <button className="btn-icon" onClick={() => setShowExchange(false)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setShowExchange(false)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {deposits.length > 0 && (
@@ -817,7 +817,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                 <div className="mh-title">Transferir Efectivo entre Cajas</div>
                 <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>Registra el movimiento físico de dinero entre depósitos</div>
               </div>
-              <button className="btn-icon" onClick={() => setShowTransfer(false)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setShowTransfer(false)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* From / To */}
@@ -893,7 +893,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                 <div className="mh-title">Ingreso / Egreso Manual</div>
                 <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>Registrar entrada o salida de efectivo (Ej: Inicio de caja)</div>
               </div>
-              <button className="btn-icon" onClick={() => setShowMovement(false)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setShowMovement(false)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

@@ -91,7 +91,7 @@ export function SuppliersClient({ initialSuppliers, initialPedidos = [], initial
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <div className="st">Gestión de Proveedores</div>
+          <div className="st">Proveedores</div>
           <div className="ss2">{ctaCteActiva
             ? 'Tus proveedores, los pedidos que les hiciste y cuánto les debés'
             : 'Administra los proveedores disponibles para la carga de productos'}</div>

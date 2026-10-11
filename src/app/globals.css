@@ -20,7 +20,7 @@
   /* Text */
   --text:      #111111;
   --text-2:    #666666;
-  --text-3:    #999999;
+  --text-3:    #767676;
   --text-dim:  #999999;
 
   /* Accent (black on light) */
@@ -93,7 +93,7 @@
 
   --text:      #ededeb;
   --text-2:    #a3a3a0;
-  --text-3:    #6f6f6d;
+  --text-3:    #82827f;
   --text-dim:  #6f6f6d;
 
   --accent:    #ededeb;
@@ -2832,3 +2832,11 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 
 .lista-con-tope { max-height: 220px; }
 @media (max-width: 768px) { .lista-con-tope { max-height: none; } }
+
+@media (max-width: 768px) {
+  .cfg-guardar-movil {
+    position: sticky; bottom: 0; z-index: 6;
+    margin: 16px -16px -16px; padding: 12px 16px;
+    background: var(--surface); border-top: 1px solid var(--border);
+  }
+}

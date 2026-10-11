@@ -164,7 +164,7 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
           <div className="mb" onClick={e => e.stopPropagation()}>
             <div className="mh">
               <div className="mh-title">Nuevo revendedor</div>
-              <button className="btn-icon" onClick={() => setShowNew(false)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setShowNew(false)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>

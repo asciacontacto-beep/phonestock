@@ -122,7 +122,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <div className="st">Gestión de Usuarios</div>
+          <div className="st">Usuarios</div>
           <div className="ss2">Control de acceso y asignación de depósitos</div>
         </div>
         <button className="btn btn-dark" onClick={() => setShowAdd(true)}>
@@ -193,7 +193,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
           <div className="mb" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
             <div className="mh">
               <div className="mh-title">Depósitos de {editingUser.name}</div>
-              <button className="btn-icon" onClick={() => setEditingUser(null)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setEditingUser(null)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Seleccioná uno o más depósitos donde opera este vendedor.</div>

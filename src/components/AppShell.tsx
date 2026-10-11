@@ -6,6 +6,7 @@ import { MobileHeader, TabBar } from './mobile/MobileShell'
 import { CommandPalette } from './CommandPalette'
 import { AvisoDeCuenta } from '@/components/AvisoDeCuenta'
 import { SectionTabs } from './SectionTabs'
+import { CerrarConEsc } from './CerrarConEsc'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -52,6 +53,7 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
 
   return (
     <div className="app">
+      <CerrarConEsc />
       <Sidebar
         user={mergedUser}
         page={page}

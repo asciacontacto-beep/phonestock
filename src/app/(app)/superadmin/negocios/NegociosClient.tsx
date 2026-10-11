@@ -236,7 +236,7 @@ export function NegociosClient() {
                   <div className="mh-title">{detail.name}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Cliente desde {fmtDate(detail.created_at)}</div>
                 </div>
-                <button className="btn-icon" onClick={() => setDetail(null)}><X size={18} /></button>
+                <button aria-label="Cerrar" className="btn-icon" onClick={() => setDetail(null)}><X size={18} /></button>
               </div>
 
               <div className="mbd" style={{ maxHeight: '70vh', overflowY: 'auto' }}>

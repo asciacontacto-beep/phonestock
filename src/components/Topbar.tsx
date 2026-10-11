@@ -555,7 +555,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
                             )}
                           </div>
                           {!isRead && (
-                            <button
+                            <button aria-label="Descartar aviso"
                               className="btn-icon"
                               onClick={() => dismiss(n.id)}
                               style={{ flexShrink: 0, color: 'var(--text-3)' }}

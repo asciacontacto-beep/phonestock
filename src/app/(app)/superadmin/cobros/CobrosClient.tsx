@@ -205,7 +205,7 @@ export function CobrosClient() {
             <div className="panel-right">
               <div className="panel-amount" style={{ color: 'var(--green)' }}>{money(p.amount, p.currency)}</div>
             </div>
-            <button className="btn-icon" title="Borrar" onClick={() => remove(p)}>
+            <button aria-label="Borrar" className="btn-icon" title="Borrar" onClick={() => remove(p)}>
               <Trash2 size={14} color="var(--red)" />
             </button>
           </div>
@@ -217,7 +217,7 @@ export function CobrosClient() {
           <div className="mb" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
             <div className="mh">
               <div className="mh-title">Registrar cobro</div>
-              <button className="btn-icon" onClick={() => setOpen(false)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setOpen(false)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div className="field">

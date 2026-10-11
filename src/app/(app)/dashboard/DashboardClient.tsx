@@ -782,7 +782,7 @@ export function DashboardClient({
                   </div>
                   <span className="panel-time">{when}</span>
                   {e.type === 'sale' && (
-                    <button className="btn-icon" style={{ color: 'var(--red)', opacity: 0.55, flexShrink: 0 }}
+                    <button aria-label="Anular venta" className="btn-icon" style={{ color: 'var(--red)', opacity: 0.55, flexShrink: 0 }}
                       title="Anular venta" onClick={() => deleteSale(e.id)}>
                       <Trash2 size={13} />
                     </button>

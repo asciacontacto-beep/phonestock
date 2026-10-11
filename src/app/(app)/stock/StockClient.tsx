@@ -301,7 +301,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
         </>
       ) : <>
       <div className="sh">
-        <h1 className="st">Inventario Global</h1>
+        <h1 className="st">Equipos</h1>
         {/* La carga por código (EAN / IMEI) era una entrada aparte del menú. */}
         <div style={{ display: 'flex', gap: 8 }} className="no-print">
           <Link href="/scan" className="btn btn-outline" aria-label="Cargar por código" title="Cargar por código"><ScanLine size={15} /> <span className="inv-desk">Cargar por código</span></Link>
@@ -608,7 +608,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
           <button className="btn btn-ghost btn-sm" disabled={publicando} onClick={() => cambiarCatalogo(false)}>
             Sacar
           </button>
-          <button className="btn-icon" onClick={() => setSelectedItems([])}><X size={16} /></button>
+          <button aria-label="Quitar selección" className="btn-icon" onClick={() => setSelectedItems([])}><X size={16} /></button>
         </div>
       )}
 
@@ -622,7 +622,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
                   {editItem.brand} {editItem.model}
                 </div>
               </div>
-              <button className="btn-icon" onClick={() => setEditItem(null)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setEditItem(null)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

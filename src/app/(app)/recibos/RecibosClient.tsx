@@ -196,7 +196,7 @@ export function RecibosClient({ sales, shop }: { sales: Sale[]; shop: ShopSettin
           <div className="mb receipt-editor" onClick={e => e.stopPropagation()}>
             <div className="mh no-print">
               <div className="mh-title">Personalizar recibo</div>
-              <button className="btn-icon" onClick={() => setSelected(null)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setSelected(null)}><X size={18} /></button>
             </div>
 
             <div className="receipt-editor-body">
@@ -257,7 +257,7 @@ export function RecibosClient({ sales, shop }: { sales: Sale[]; shop: ShopSettin
                     </div>
                     <input className="inp" type="number" title="Cantidad" style={{ width: 56 }} value={l.qty} onChange={e => updateLine(l.id, { qty: Number(e.target.value) || 1 })} />
                     <input className="inp" type="number" title="Importe" style={{ width: 100 }} value={l.amount} onChange={e => updateLine(l.id, { amount: Number(e.target.value) || 0 })} />
-                    <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removeLine(l.id)}><Trash2 size={14} /></button>
+                    <button aria-label="Eliminar" className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removeLine(l.id)}><Trash2 size={14} /></button>
                   </div>
                 ))}
 
@@ -285,7 +285,7 @@ export function RecibosClient({ sales, shop }: { sales: Sale[]; shop: ShopSettin
                       <div key={i} className="receipt-line-edit">
                         <input className="inp" style={{ flex: 1 }} placeholder="Medio de pago" value={p.label} onChange={e => updatePayment(i, { label: e.target.value })} />
                         <input className="inp" type="number" style={{ width: 110 }} value={p.amount} onChange={e => updatePayment(i, { amount: Number(e.target.value) || 0 })} />
-                        <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removePayment(i)}><Trash2 size={14} /></button>
+                        <button aria-label="Eliminar" className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removePayment(i)}><Trash2 size={14} /></button>
                       </div>
                     ))}
                   </>
@@ -307,7 +307,7 @@ export function RecibosClient({ sales, shop }: { sales: Sale[]; shop: ShopSettin
                   <div key={f.id} className="receipt-line-edit">
                     <input className="inp" style={{ flex: 1 }} placeholder="Etiqueta" value={f.label} onChange={e => updateExtra(f.id, { label: e.target.value })} />
                     <input className="inp" style={{ flex: 1 }} placeholder="Valor" value={f.value} onChange={e => updateExtra(f.id, { value: e.target.value })} />
-                    <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removeExtra(f.id)}><Trash2 size={14} /></button>
+                    <button aria-label="Eliminar" className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removeExtra(f.id)}><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>

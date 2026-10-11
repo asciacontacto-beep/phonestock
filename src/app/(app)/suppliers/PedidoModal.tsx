@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { createClient } from '@/utils/supabase/client';
 import { BRANDS, MODELS, COLORS, almacenamientosDe } from '@/constants/data';
 import { ModelPicker } from '@/components/ModelPicker';
-import { limpiarImei, repetidosEnLote, buscarImeisEnStock, avisoDuplicado } from '@/utils/imei';
+import { repetidosEnLote, buscarImeisEnStock, avisoDuplicado } from '@/utils/imei';
+import { imeiDeUnidad, imeisDeLaCarga } from '@/utils/cargaEquipos';
 import { crearPedidoConEquipos, registrarPagoProveedor, type Moneda } from '@/utils/proveedores';
 import { aceptaCuenta, cuentasDelMetodo, type Cuenta } from '@/utils/cuentas';
 import { cargarCuentas } from '@/utils/cuentasDb';
@@ -20,7 +21,7 @@ import { cargarCuentas } from '@/utils/cuentasDb';
 type Linea = {
   brand: string; model: string; storage: string; color: string;
   condition: 'new' | 'used'; battery: string;
-  qty: string; costo: string; precio: string; imei: string;
+  qty: string; costo: string; precio: string; imeis: string[];
 };
 
 function lineaNueva(brand = 'Apple'): Linea {
@@ -30,7 +31,7 @@ function lineaNueva(brand = 'Apple'): Linea {
     storage: almacenamientosDe(model)[0] || '',
     color: (COLORS[model] || COLORS[brand] || ['Negro'])[0],
     condition: 'new', battery: '100%',
-    qty: '1', costo: '', precio: '', imei: '',
+    qty: '1', costo: '', precio: '', imeis: [],
   };
 }
 
@@ -96,7 +97,7 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
 
     setGuardando(true);
     try {
-      const imeis = lineas.filter(l => parseInt(l.qty, 10) === 1).map(l => limpiarImei(l.imei));
+      const imeis = imeisDeLaCarga(lineas);
       const repes = repetidosEnLote(imeis);
       if (repes.length > 0) { toast.error(`Repetiste el IMEI ${repes.join(', ')} en este pedido.`); return; }
       const yaEstan = await buscarImeisEnStock(supabase, imeis);
@@ -110,7 +111,8 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
             brand: l.brand, model: l.model, storage: l.storage, color: l.color,
             condition: l.condition,
             battery: l.condition === 'used' ? l.battery : null,
-            imei: qty === 1 && limpiarImei(l.imei) ? limpiarImei(l.imei) : null,
+            // Cada unidad con su IMEI (antes sólo con cantidad 1).
+            imei: imeiDeUnidad(l, k),
             price: num(l.precio), cost_price: num(l.costo), currency: moneda,
             deposit: dep, status: 'available',
           });
@@ -181,7 +183,7 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
                     Línea {i + 1}{qty > 0 && num(l.costo) > 0 ? ` · ${simbolo}${(qty * num(l.costo)).toLocaleString('es-AR')}` : ''}
                   </span>
                   {lineas.length > 1 && (
-                    <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => setLineas(ls => ls.filter((_, idx) => idx !== i))}><Trash2 size={14} /></button>
+                    <button aria-label="Eliminar" className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => setLineas(ls => ls.filter((_, idx) => idx !== i))}><Trash2 size={14} /></button>
                   )}
                 </div>
                 <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 10, marginBottom: 10 }}>
@@ -217,14 +219,29 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
                     <input className="inp" inputMode="decimal" placeholder="0" value={l.precio} onChange={e => upd(i, { precio: solo(e.target.value) })} />
                   </div>
                 </div>
-                {(qty === 1 || l.condition === 'used') && (
-                  <div style={{ display: 'grid', gridTemplateColumns: l.condition === 'used' ? '1fr 110px' : '1fr', gap: 10, marginTop: 10 }}>
-                    {qty === 1 && <div><label className="lbl">IMEI (opcional)</label>
-                      <input className="inp" inputMode="numeric" placeholder="15 dígitos" value={l.imei} onChange={e => upd(i, { imei: e.target.value })} />
-                    </div>}
-                    {l.condition === 'used' && <div><label className="lbl">Batería</label>
-                      <input className="inp" value={l.battery} onChange={e => upd(i, { battery: e.target.value })} />
-                    </div>}
+                {l.condition === 'used' && (
+                  <div style={{ marginTop: 10, maxWidth: 140 }}>
+                    <label className="lbl">Batería</label>
+                    <input className="inp" value={l.battery} onChange={e => upd(i, { battery: e.target.value })} />
+                  </div>
+                )}
+                {/* Un IMEI por unidad. Con la pistola: escaneás, Enter, y pasa al siguiente. */}
+                {qty > 0 && (
+                  <div style={{ marginTop: 10 }}>
+                    <label className="lbl">{qty === 1 ? 'IMEI (opcional)' : `IMEI de cada unidad (opcional · ${imeisDeLaCarga([l]).length} de ${qty})`}</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))', gap: 8 }}>
+                      {Array.from({ length: Math.min(qty, 200) }, (_, k) => (
+                        <input key={k} className="inp" inputMode="numeric" autoComplete="off" data-imei-ped={`${i}-${k}`}
+                          placeholder={qty === 1 ? '15 dígitos' : `Unidad ${k + 1}`}
+                          value={l.imeis[k] || ''}
+                          onChange={e => { const imeis = [...l.imeis]; imeis[k] = e.target.value; upd(i, { imeis }); }}
+                          onKeyDown={e => {
+                            if (e.key !== 'Enter') return;
+                            e.preventDefault();
+                            document.querySelector<HTMLInputElement>(`[data-imei-ped="${i}-${k + 1}"]`)?.focus();
+                          }} />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

@@ -172,7 +172,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
       ) : <>
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <div className="st">Historial de Ventas</div>
+          <div className="st">Ventas</div>
           <div className="ss2">Revisá todas las operaciones y facturas</div>
         </div>
         {isOwner && (
@@ -466,7 +466,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                                   </span>
                                 )}
                               </div>
-                              <button
+                              <button aria-label="Quitar este pago"
                                 className="btn-icon"
                                 title="Quitar este pago"
                                 style={{ color: 'var(--red)' }}
@@ -553,7 +553,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                     <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-md)', borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 12, fontWeight: 700 }}>{newPay.id === 'tradein' ? 'Equipo recibido en canje' : 'Pago que faltaba'}</span>
-                        <button className="btn-icon" onClick={() => setNewPay(null)}><X size={15} /></button>
+                        <button aria-label="Cancelar este pago" className="btn-icon" onClick={() => setNewPay(null)}><X size={15} /></button>
                       </div>
 
                       {newPay.id !== 'tradein' && (

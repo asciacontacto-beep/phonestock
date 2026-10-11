@@ -308,7 +308,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
               {step === 1 ? 'Producto y precio' : `${totalUnits} unidad${totalUnits !== 1 ? 'es' : ''}`}
             </div>
           </div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div style={{ display: 'flex', gap: 4, padding: '10px 20px 0', flexShrink: 0 }}>
@@ -435,7 +435,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
                 <div key={i} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                     <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Variante {i + 1}</span>
-                    {variants.length > 1 && (<button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removeVariant(i)}><Trash2 size={14} /></button>)}
+                    {variants.length > 1 && (<button aria-label="Eliminar" className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => removeVariant(i)}><Trash2 size={14} /></button>)}
                   </div>
                   {model.startsWith('Apple Watch') ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>

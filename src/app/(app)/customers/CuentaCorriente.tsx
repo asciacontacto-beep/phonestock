@@ -234,7 +234,7 @@ export function CuentaCorriente({
                       <td style={{ textAlign: 'right', fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{money(mv.saldo, m)}</td>
                       <td style={{ textAlign: 'right' }}>
                         {cobro && (
-                          <button className="btn-icon" style={{ color: 'var(--red)' }} disabled={loading}
+                          <button aria-label="Eliminar cobro" className="btn-icon" style={{ color: 'var(--red)' }} disabled={loading}
                             onClick={() => borrar(cobro as Cobro & { id: Id })} title="Eliminar cobro">
                             <Trash2 size={13} />
                           </button>

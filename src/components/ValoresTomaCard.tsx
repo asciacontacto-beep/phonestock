@@ -90,7 +90,7 @@ export function ValoresTomaCard() {
                       <td>{describirTramo(f)}</td>
                       <td style={{ textAlign: 'right', fontFamily: 'JetBrains Mono' }}>{f.currency === 'USD' ? 'U$' : '$'} {Number(f.value).toLocaleString('es-AR')}</td>
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => borrar(f)} title="Eliminar"><Trash2 size={13} /></button>
+                        <button aria-label="Eliminar" className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => borrar(f)} title="Eliminar"><Trash2 size={13} /></button>
                       </td>
                     </tr>
                   ))}

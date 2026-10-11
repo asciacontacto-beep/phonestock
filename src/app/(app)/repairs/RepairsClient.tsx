@@ -230,7 +230,7 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
                           {getStatus(r.status).label}
                         </span>
                       </td>
-                      <td><button className="btn-icon" onClick={e => { e.stopPropagation(); setDetailItem(r); }}><Edit2 size={16} /></button></td>
+                      <td><button aria-label="Editar" className="btn-icon" onClick={e => { e.stopPropagation(); setDetailItem(r); }}><Edit2 size={16} /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -344,8 +344,8 @@ function SparePartsTab() {
                   <td style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.deposits?.name || '—'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="btn-icon" onClick={() => { setEditingPart(p); setShowModal(true); }}><Edit2 size={15} /></button>
-                      <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => setConfirmDialog({ open: true, partId: p.id })}><Trash2 size={15} /></button>
+                      <button aria-label="Editar" className="btn-icon" onClick={() => { setEditingPart(p); setShowModal(true); }}><Edit2 size={15} /></button>
+                      <button aria-label="Eliminar" className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => setConfirmDialog({ open: true, partId: p.id })}><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -369,7 +369,7 @@ function SparePartsTab() {
           <div className="mb" style={{ maxWidth: 400 }}>
             <div className="mh">
               <div className="mh-title">Eliminar repuesto</div>
-              <button className="btn-icon" onClick={() => setConfirmDialog({ open: false, partId: null })}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setConfirmDialog({ open: false, partId: null })}><X size={18} /></button>
             </div>
             <div className="mbd">
               <p style={{ marginBottom: 20, color: 'var(--text-2)' }}>¿Confirmás que querés eliminar este repuesto? Esta acción no se puede deshacer.</p>
@@ -433,7 +433,7 @@ function SparePartModal({ part, deposits, onClose, onSave }: any) {
       <div className="mb" style={{ maxWidth: 480 }}>
         <div className="mh">
           <div className="mh-title">{isEdit ? 'Editar repuesto' : 'Nuevo repuesto'}</div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="field">
@@ -596,7 +596,7 @@ function NewRepairModal({ onClose, onSave, user }: any) {
       <div className="mb" style={{ maxWidth: 600 }}>
         <div className="mh">
           <div className="mh-title">Nueva Reparación</div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
@@ -891,8 +891,8 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
         <div className="mh">
           <div className="mh-title">Orden #{repair.id.split('-')[0]}</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-icon" onClick={printTicket} title="Imprimir Ticket"><Printer size={16} /></button>
-            <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+            <button aria-label="Imprimir Ticket" className="btn-icon" onClick={printTicket} title="Imprimir Ticket"><Printer size={16} /></button>
+            <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
           </div>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -954,7 +954,7 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
                         </span>
                       )}
                     </div>}
-                    <button
+                    <button aria-label="Quitar repuesto"
                       className="btn-icon"
                       style={{ color: 'var(--red)' }}
                       onClick={() => handleRemovePart(rp)}

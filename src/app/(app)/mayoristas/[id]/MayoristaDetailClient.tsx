@@ -492,7 +492,7 @@ export function MayoristaDetailClient({
           <div className="mb" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="mh">
               <div className="mh-title">{confirmDialog.message}</div>
-              <button className="btn-icon" onClick={() => setConfirmDialog(null)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setConfirmDialog(null)}><X size={18} /></button>
             </div>
             {confirmDialog.detail && (
               <div style={{ padding: '12px 20px 0', fontSize: 13, color: 'var(--text-3)' }}>
@@ -600,7 +600,7 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
       <div className="mb" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
         <div className="mh">
           <div className="mh-title">Nuevo pedido — {wholesaler.name}</div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -668,7 +668,7 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                       })()}
                     </div>
                     {lines.length > 1 && (
-                      <button className="btn-icon" style={{ color: 'var(--red)', flexShrink: 0 }} onClick={() => removeLine(idx)}>
+                      <button aria-label="Quitar línea" className="btn-icon" style={{ color: 'var(--red)', flexShrink: 0 }} onClick={() => removeLine(idx)}>
                         <X size={16} />
                       </button>
                     )}
@@ -786,7 +786,7 @@ function PaymentModal({ order, wholesalerId, orgId, onClose, onPaid }: {
       <div className="mb" onClick={e => e.stopPropagation()}>
         <div className="mh">
           <div className="mh-title">Registrar pago</div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: 14, border: '1px solid var(--border)' }}>
@@ -875,7 +875,7 @@ function EditWholesalerModal({ wholesaler, onClose, onSaved }: {
       <div className="mb" onClick={e => e.stopPropagation()}>
         <div className="mh">
           <div className="mh-title">Editar revendedor</div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>

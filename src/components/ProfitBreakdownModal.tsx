@@ -69,7 +69,7 @@ export function ProfitBreakdownModal({
             <div className="mh-title">{c.title}</div>
             <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{periodLabel}</div>
           </div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div className="mbd" style={{ maxHeight: '70vh', overflowY: 'auto' }}>

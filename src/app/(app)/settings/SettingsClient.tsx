@@ -265,11 +265,11 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
     <div className="page">
       <div className="sh" style={{ marginBottom: 16 }}>
         <div>
-          <div className="st">Configuración</div>
+          <div className="st">Ajustes</div>
           <div className="helper-text">{actual.desc}</div>
         </div>
         {guardaAjustes && (
-          <button className="btn btn-dark" onClick={save} disabled={loading}>
+          <button className="btn btn-dark solo-desk" onClick={save} disabled={loading}>
             {loading ? <Loader2 className="spin" size={18} /> : <><Save size={17} style={{ marginRight: 8 }} /> Guardar</>}
           </button>
         )}
@@ -278,7 +278,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       <div className="cfg-layout">
         {/* ── Menú de secciones. Al pie, la versión: es lo que se pregunta en soporte. ── */}
         <nav className="cfg-nav no-print" aria-label="Secciones de configuración">
-          <div className="cfg-nav-title">Configuración</div>
+          <div className="cfg-nav-title">Ajustes</div>
           {SECCIONES.map(opt => (
             <button key={opt.v} className="cfg-nav-item" aria-current={seccion === opt.v ? 'page' : undefined}
               onClick={() => setSeccion(opt.v)}>
@@ -639,6 +639,15 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
         )}
         </div>
       </div>
+      {/* En el celular el Guardar de arriba queda lejos después de bajar: va
+          fijo abajo, como los botones de Vender. */}
+      {guardaAjustes && (
+        <div className="cfg-guardar-movil solo-mob">
+          <button className="btn btn-dark" style={{ width: '100%' }} onClick={save} disabled={loading}>
+            {loading ? <Loader2 className="spin" size={18} /> : <><Save size={17} style={{ marginRight: 8 }} /> Guardar cambios</>}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

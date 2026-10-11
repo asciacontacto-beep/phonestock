@@ -151,9 +151,9 @@ export function SellAccessoriesModal({ accessories, onClose, onSold }: {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     {inCart ? (
                       <>
-                        <button className="btn-icon" onClick={() => removeOne(a.id)}><Minus size={14} /></button>
+                        <button aria-label="Quitar" className="btn-icon" onClick={() => removeOne(a.id)}><Minus size={14} /></button>
                         <span style={{ fontWeight: 700, minWidth: 20, textAlign: 'center' }}>{inCart.qty}</span>
-                        <button className="btn-icon" onClick={() => addToCart(a)}><Plus size={14} /></button>
+                        <button aria-label="Agregar" className="btn-icon" onClick={() => addToCart(a)}><Plus size={14} /></button>
                       </>
                     ) : (
                       <button className="btn btn-outline btn-sm" onClick={() => addToCart(a)}>Agregar</button>
@@ -175,7 +175,7 @@ export function SellAccessoriesModal({ accessories, onClose, onSold }: {
                       <div style={{ fontSize: 13 }}>{item.qty}x {item.name}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 13, fontWeight: 600 }}>{sym} {(item.sale_price * item.qty).toLocaleString('es-AR')}</span>
-                        <button className="btn-icon" onClick={() => removeItem(item.id)}><Trash2 size={13} color="var(--red)" /></button>
+                        <button aria-label="Eliminar" className="btn-icon" onClick={() => removeItem(item.id)}><Trash2 size={13} color="var(--red)" /></button>
                       </div>
                     </div>
                   );

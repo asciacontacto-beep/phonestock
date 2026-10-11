@@ -160,11 +160,11 @@ export function SeguimientoClient() {
                   </div>
                 </div>
                 {n.follow_up_at && (
-                  <button className="btn-icon" title={n.done ? 'Reabrir' : 'Marcar como hecho'} onClick={() => toggleDone(n)}>
+                  <button aria-label="Marcar como hecho" className="btn-icon" title={n.done ? 'Reabrir' : 'Marcar como hecho'} onClick={() => toggleDone(n)}>
                     <CheckCircle size={15} color={n.done ? 'var(--text-3)' : 'var(--green)'} />
                   </button>
                 )}
-                <button className="btn-icon" title="Borrar" onClick={() => remove(n)}>
+                <button aria-label="Borrar" className="btn-icon" title="Borrar" onClick={() => remove(n)}>
                   <Trash2 size={14} color="var(--red)" />
                 </button>
               </div>
@@ -178,7 +178,7 @@ export function SeguimientoClient() {
           <div className="mb" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
             <div className="mh">
               <div className="mh-title">Anotar en {orgs.find(o => o.id === openFor)?.name}</div>
-              <button className="btn-icon" onClick={() => setOpenFor(null)}><X size={18} /></button>
+              <button aria-label="Cerrar" className="btn-icon" onClick={() => setOpenFor(null)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div className="field">

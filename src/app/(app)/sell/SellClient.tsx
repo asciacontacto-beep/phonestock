@@ -401,7 +401,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 
   const confirmAccessoryOnly = async () => {
     if (selectedAccessories.length === 0) { toast.error('Agregá al menos un accesorio'); return; }
-    if (!price) { toast.error('Datos incompletos'); return; }
+    if (!price) { toast.error('Falta el precio de la venta'); return; }
     // Sin pagos queda todo debiendo: la deuda tiene que tener a quién.
     if (sinPagos && !cust.name.trim()) { toast.error('Para dejar el saldo pendiente cargá el cliente'); return; }
     if (cuotaNoAlcanza || (enCuotas && modoFaltante === 'debe' && !planPreview)) { toast.error('Revisá el plan de cuotas'); return; }
@@ -460,7 +460,10 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 
   const confirm = async () => {
     if (accessoryOnly) { await confirmAccessoryOnly(); return; }
-    if (!unit || !price || !cust.name) { toast.error('Datos incompletos'); return; }
+    // Qué falta, con nombre: "Datos incompletos" no decía nada.
+    if (!unit) { toast.error('Elegí el equipo que se vende'); return; }
+    if (!price) { toast.error('Falta el precio de la venta'); return; }
+    if (!cust.name.trim()) { toast.error('Falta el nombre del cliente'); return; }
     if (cuotaNoAlcanza || (enCuotas && modoFaltante === 'debe' && !planPreview)) { toast.error('Revisá el plan de cuotas'); return; }
     
     try {
@@ -745,8 +748,12 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           <div className="divider" />
           <div className="paso-acciones" style={{ display: 'flex', gap: 12 }}>
             <button className="btn btn-ghost" onClick={() => setStep(2)}>Volver</button>
-            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!accessoryOnly && !cust.name} onClick={() => setStep(4)}>Continuar al Pago</button>
+            <button className="btn btn-dark btn-lg" style={{ flex: 1 }} disabled={!accessoryOnly && !cust.name.trim()} onClick={() => setStep(4)}>Continuar al pago</button>
           </div>
+          {/* El botón se deshabilitaba sin explicar por qué. */}
+          {!accessoryOnly && !cust.name.trim() && (
+            <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', marginTop: 8 }}>Para seguir, poné el nombre del cliente.</div>
+          )}
         </div>
       )}
 
@@ -774,7 +781,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                           Stock {picked.stock} · {picked.currency === 'ARS' ? '$' : 'U$'} {(picked.sale_price || 0).toLocaleString('es-AR')}
                         </div>
                       </div>
-                      <button
+                      <button aria-label="Elegir otro"
                         className="btn-icon"
                         title="Elegir otro"
                         onClick={() => { setSelectedAccId(''); setAccSearch(''); setAccSearchOpen(true); }}
@@ -887,7 +894,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                               )}</>}
                       </div>
                     </div>
-                    <button className="btn-icon" title="Quitar" onClick={() => setSelectedAccessories(p => p.filter((_, j) => j !== i))}><X size={15} color="var(--red)"/></button>
+                    <button aria-label="Quitar" className="btn-icon" title="Quitar" onClick={() => setSelectedAccessories(p => p.filter((_, j) => j !== i))}><X size={15} color="var(--red)"/></button>
                   </div>
                 ))}
               </div>
@@ -1420,7 +1427,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       {showTI && (
         <div className="mo" style={{ zIndex: 1000 }}>
           <div className="mb">
-            <div className="mh"><div className="mh-title">Tomar equipo usado</div><button className="btn-icon" onClick={() => setShowTI(false)}><X size={18}/></button></div>
+            <div className="mh"><div className="mh-title">Tomar equipo usado</div><button aria-label="Cerrar" className="btn-icon" onClick={() => setShowTI(false)}><X size={18}/></button></div>
             <div className="mbd">
               <TradeInForm currency={sc} onConfirm={handleTI} valores={valoresToma} />
             </div>

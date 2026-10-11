@@ -293,8 +293,8 @@ export function CustomersClient({
               <div style={{ display: 'flex', gap: 10 }}>
                 {!isEditing && (
                   <>
-                    <button className="btn-icon" onClick={() => { setEditData(selected); setIsEditing(true); }}><Edit2 size={16} /></button>
-                    <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={handleDelete}><Trash2 size={16} /></button>
+                    <button aria-label="Editar" className="btn-icon" onClick={() => { setEditData(selected); setIsEditing(true); }}><Edit2 size={16} /></button>
+                    <button aria-label="Eliminar" className="btn-icon" style={{ color: 'var(--red)' }} onClick={handleDelete}><Trash2 size={16} /></button>
                   </>
                 )}
                 <button className="btn-ghost" onClick={() => { setSelected(null); setIsEditing(false); }} style={{ padding: '6px' }}><X size={18} /></button>

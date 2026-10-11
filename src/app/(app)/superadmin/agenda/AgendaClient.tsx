@@ -111,7 +111,7 @@ export function AgendaClient() {
         </a>
       )}
       {i.note && (
-        <button className="btn-icon" title="Marcar como hecho" onClick={() => markDone(i.note!)}>
+        <button aria-label="Marcar como hecho" className="btn-icon" title="Marcar como hecho" onClick={() => markDone(i.note!)}>
           <CheckCircle size={16} color="var(--green)" />
         </button>
       )}

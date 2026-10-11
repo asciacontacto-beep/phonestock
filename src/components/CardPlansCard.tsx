@@ -148,7 +148,7 @@ export function CardPlansCard({ cuentas = [], hayCuentas = false }: { cuentas?: 
                         </td>
                       )}
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => borrar(p)} title="Eliminar plan">
+                        <button aria-label="Eliminar plan" className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => borrar(p)} title="Eliminar plan">
                           <Trash2 size={13} />
                         </button>
                       </td>

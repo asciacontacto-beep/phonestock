@@ -765,7 +765,7 @@ function AppointmentModal({ appt, stockPhones, onClose, onSave, supabase }: any)
       <div className="mb">
         <div className="mh">
           <div className="mh-title">{isEdit ? 'Editar Turno' : 'Nuevo Turno'}</div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div className="mbd">
@@ -814,7 +814,7 @@ function AppointmentModal({ appt, stockPhones, onClose, onSave, supabase }: any)
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{selectedPhone.brand} {selectedPhone.model} {selectedPhone.storage}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{selectedPhone.color} · {selectedPhone.currency} {selectedPhone.price?.toLocaleString('es-AR')}</div>
                 </div>
-                <button className="btn-icon" onClick={() => setF({ ...f, phone_id: '' })}><X size={14} /></button>
+                <button aria-label="Quitar equipo" className="btn-icon" onClick={() => setF({ ...f, phone_id: '' })}><X size={14} /></button>
               </div>
             ) : (
               <div>
@@ -1050,7 +1050,7 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase, isO
       <div className="mb" style={{ maxWidth: 480 }}>
         <div className="mh">
           <div className="mh-title">Confirmar Venta</div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button aria-label="Cerrar" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div className="mbd">

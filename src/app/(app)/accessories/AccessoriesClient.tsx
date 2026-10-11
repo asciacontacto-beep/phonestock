@@ -166,8 +166,8 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
                 {(user.role === 'owner' || user.role === 'admin') && (
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn-icon" onClick={() => openEdit(a)}><Edit2 size={14} /></button>
-                      <button className="btn-icon" onClick={() => handleDelete(a.id)}><Trash2 size={14} color="var(--red)" /></button>
+                      <button aria-label="Editar" className="btn-icon" onClick={() => openEdit(a)}><Edit2 size={14} /></button>
+                      <button aria-label="Eliminar" className="btn-icon" onClick={() => handleDelete(a.id)}><Trash2 size={14} color="var(--red)" /></button>
                     </div>
                   </td>
                 )}

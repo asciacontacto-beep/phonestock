@@ -91,7 +91,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
     <div className="page">
       <div className="sh" style={{ marginBottom: 24 }}>
         <div>
-          <div className="st">Gestión de Depósitos</div>
+          <div className="st">Depósitos</div>
           <div className="ss2">Ubicaciones, transferencias y distribución de stock</div>
         </div>
         <button className="btn btn-dark" onClick={() => setShowAdd(true)}>

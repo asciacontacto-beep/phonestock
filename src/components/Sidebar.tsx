@@ -1,5 +1,5 @@
 "use client"
-import { Bug, Gift,
+import { Bug, Gift, History,
   LayoutDashboard, BarChart3, Package, Headphones, Warehouse, ScanLine, ShoppingCart, FileText, Receipt,
   CreditCard, Wallet, Wrench, CalendarDays, Users2, ShoppingBag, Truck, Settings, User as UserIcon, Store,
 } from 'lucide-react';
@@ -36,6 +36,7 @@ export const DUENO: Rama[] = [
     { id: 'accessories', label: 'Accesorios', icon: <Headphones size={I} /> },
     { id: 'deposits', label: 'Depósitos', icon: <Warehouse size={I} /> },
     { id: 'scan', label: 'Carga EAN', icon: <ScanLine size={I} /> },
+    { id: 'historial', label: 'Historial IMEI', icon: <History size={I} /> },
   ] },
   { label: 'Caja', hijos: [
     { id: 'cashiers', label: 'Cajas', icon: <CreditCard size={I} /> },
@@ -63,6 +64,7 @@ export const VENDEDOR: Rama[] = [
     { id: 'sell', label: 'Nueva operación', icon: <ShoppingCart size={I} /> },
     { id: 'stock', label: 'Ver stock', icon: <Package size={I} /> },
     { id: 'scan', label: 'Ingresar equipo', icon: <ScanLine size={I} /> },
+    { id: 'historial', label: 'Historial IMEI', icon: <History size={I} /> },
     { id: 'cashier_me', label: 'Mi caja', icon: <CreditCard size={I} /> },
     { id: 'repairs', label: 'Servicio técnico', icon: <Wrench size={I} /> },
     { id: 'turnos', label: 'Turnos', icon: <CalendarDays size={I} /> },

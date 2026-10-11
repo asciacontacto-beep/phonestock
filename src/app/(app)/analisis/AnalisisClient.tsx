@@ -4,10 +4,11 @@ import { ArrowUpRight, ArrowDownRight, Info, Sparkles } from 'lucide-react'
 import type { Sale, Repair } from '@/types/domain'
 import type { CuotaGuardada } from '@/utils/cuotas'
 import {
-  analizar, indicadores, usd, AREAS, type Area, type Nivel, type Indicador, type DatosAnalisis, type EquipoAnalisis, type GastoAnalisis,
+  analizar, indicadores, usd, AREAS, type Area, type Nivel, type Indicador, type DatosAnalisis, type EquipoAnalisis, type GastoAnalisis, type PorCobrar,
 } from '@/utils/analisis/analisis'
 import type { VentaPostventa } from '@/utils/postventa'
 import { TarjetaConsejo } from './TarjetaConsejo'
+import { createClient } from '@/utils/supabase/client'
 
 const PERIODOS = [30, 60, 90] as const
 const CLAVE = 'stackr:analisis:vistos'
@@ -19,7 +20,7 @@ function leerVistos(): Record<string, string> {
 }
 
 export function AnalisisClient({
-  ahora, dueno, cotizacion, stock, ventas, ventasDeCuotas, gastos, reparaciones, cuotas, cobros,
+  ahora, dueno, cotizacion, stock, ventas, ventasDeCuotas, gastos, reparaciones, cuotas, cobros, porCobrar = null,
 }: {
   ahora: string
   dueno: boolean
@@ -31,6 +32,7 @@ export function AnalisisClient({
   reparaciones: Pick<Repair, 'id' | 'cost' | 'status' | 'created_at' | 'updated_at'>[]
   cuotas: CuotaGuardada[]
   cobros: DatosAnalisis['cobros']
+  porCobrar?: PorCobrar | null
 }) {
   const [dias, setDias] = useState<number>(30)
   const [area, setArea] = useState<Area | 'todas'>('todas')
@@ -42,13 +44,26 @@ export function AnalisisClient({
   // Fechas y zona horaria del navegador: se calcula recién en el navegador
   // para que el servidor y la pantalla no pinten números distintos.
   const listo = useSyncExternalStore(sinCambios, () => true, () => false)
-  useEffect(() => { setVistos(leerVistos()) }, [])
+  // Lo descartado se guarda en el usuario (vale en la compu y en el celular)
+  // y también en este dispositivo, que responde al instante.
+  useEffect(() => {
+    setVistos(leerVistos())
+    let vivo = true
+    createClient().auth.getUser().then(({ data }) => {
+      const remotos = data.user?.user_metadata?.analisis_vistos as Record<string, string> | undefined
+      if (!vivo || !remotos) return
+      // Lo del usuario manda: si en otro dispositivo se volvió a mostrar algo, acá también.
+      setVistos(remotos)
+      try { localStorage.setItem(CLAVE, JSON.stringify(remotos)) } catch { /* modo privado */ }
+    }).catch(() => {})
+    return () => { vivo = false }
+  }, [])
 
   const datos: DatosAnalisis = useMemo(() => ({
     hoy: new Date(ahora), dias, verPlata: dueno, cotizacion, stock, ventas,
     ventasDeCuotas: ventasDeCuotas as unknown as VentaPostventa[],
-    gastos, reparaciones, cuotas, cobros,
-  }), [ahora, dias, dueno, cotizacion, stock, ventas, ventasDeCuotas, gastos, reparaciones, cuotas, cobros])
+    gastos, reparaciones, cuotas, cobros, porCobrar: porCobrar || undefined,
+  }), [ahora, dias, dueno, cotizacion, stock, ventas, ventasDeCuotas, gastos, reparaciones, cuotas, cobros, porCobrar])
 
   const consejos = useMemo(() => listo ? analizar(datos) : [], [listo, datos])
   const kpis = useMemo(() => listo ? indicadores(datos) : [], [listo, datos])
@@ -74,6 +89,7 @@ export function AnalisisClient({
     if (v[id] === firma) delete v[id]; else v[id] = firma
     setVistos(v)
     try { localStorage.setItem(CLAVE, JSON.stringify(v)) } catch { /* modo privado */ }
+    createClient().auth.updateUser({ data: { analisis_vistos: v } }).catch(() => {})
   }
 
   const alertas = cuenta('alerta'), oportunidades = cuenta('oportunidad'), bien = cuenta('bien')
@@ -196,7 +212,7 @@ function Kpi({ k, dias }: { k: Indicador; dias: number }) {
             {delta.sube ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />} {delta.txt}
           </span>
         ) : k.anterior != null && k.valor != null ? <span className="an-delta">Igual</span> : null}
-        <span>{k.anterior != null ? `vs ${dias} días anteriores` : k.id === 'dias' ? 'mediana' : 'hoy'}</span>
+        <span>{k.anterior != null ? `vs ${dias} días anteriores` : k.nota || (k.id === 'dias' ? 'mediana' : 'hoy')}</span>
       </div>
     </div>
   )

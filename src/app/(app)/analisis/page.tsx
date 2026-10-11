@@ -4,6 +4,7 @@ import { AnalisisClient } from "./AnalisisClient"
 import { configuracionDelLocal } from '@/utils/configuracion'
 import { traerTodo } from '@/utils/supabase/todo'
 import { esDueno } from '@/utils/permisos'
+import { calcularPorCobrar } from '@/utils/analisis/analisis'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +53,22 @@ export default async function AnalisisPage() {
     }
   }
 
+  // Plata en la calle: saldos de clientes de cualquier fecha y deudas de
+  // mayoristas. Se calcula acá y viaja sólo el resultado.
+  let porCobrar = null
+  if (dueno) {
+    const [conSaldo, pedidos, items, pagos] = await Promise.all([
+      traerTodo(() => supabase.from('sales').select('id,balance_due,currency,customer_id,customer').gt('balance_due', 0).order('id')),
+      traerTodo(() => supabase.from('wholesale_orders').select('id,wholesaler_id,status,currency').order('id')),
+      traerTodo(() => supabase.from('wholesale_order_items').select('id,order_id,qty,unit_price').order('id')),
+      traerTodo(() => supabase.from('wholesale_payments').select('id,wholesaler_id,amount,currency').order('id')),
+    ])
+    porCobrar = calcularPorCobrar({
+      ventasConSaldo: conSaldo.data || [], pedidos: pedidos.data || [], items: items.data || [], pagos: pagos.data || [],
+      cotizacion: Number(ajustes.data?.exchange_rate) || 1200,
+    })
+  }
+
   return (
     <AnalisisClient
       ahora={new Date().toISOString()}
@@ -64,6 +81,7 @@ export default async function AnalisisPage() {
       reparaciones={reparaciones.data || []}
       cuotas={cuotas.data || []}
       cobros={cobros.data || []}
+      porCobrar={porCobrar}
     />
   )
 }

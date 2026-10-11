@@ -45,6 +45,30 @@ export function pValorBinomial(a: number, b: number): number {
   return Math.min(1, p)
 }
 
+/** Probabilidad acumulada de la normal estándar (aproximación de Abramowitz-Stegun, error < 1e-7). */
+export function normalAcumulada(z: number): number {
+  const t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2)
+  const erf = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(z * z) / 2)
+  return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2
+}
+
+/**
+ * ¿Las ventas se reparten parejo entre los días, o hay días que venden más
+ * de verdad? Test chi-cuadrado de bondad de ajuste contra un reparto
+ * parejo. Devuelve el p-valor (chico = la diferencia no es azar), con la
+ * aproximación de Wilson-Hilferty, de sobra precisa para decidir.
+ */
+export function pValorParejo(conteos: number[]): number {
+  const k = conteos.length
+  const n = conteos.reduce((a, b) => a + b, 0)
+  if (k < 2 || n === 0) return 1
+  const e = n / k
+  const x2 = conteos.reduce((a, o) => a + (o - e) ** 2 / e, 0)
+  const df = k - 1
+  const z = (Math.cbrt(x2 / df) - (1 - 2 / (9 * df))) / Math.sqrt(2 / (9 * df))
+  return Math.min(1, Math.max(0, 1 - normalAcumulada(z)))
+}
+
 /** Cuánto se puede confiar según la cantidad de casos. */
 export type Confianza = 'alta' | 'media' | 'baja'
 export function confianzaPorCasos(n: number, alta = 30, media = 10): Confianza {

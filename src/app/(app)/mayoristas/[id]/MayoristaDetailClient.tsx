@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
-import { buildWholesaleSaleItems } from '@/utils/wholesaleSale'
+import { buildWholesaleSaleItems, completarUnidades, type UnidadDisponible } from '@/utils/wholesaleSale'
 
 type Item = { id: string; stock_id: number | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean; received?: boolean }
 type Order = { id: string; status: string; currency: string; notes: string | null; created_at: string; items: Item[]; total: number; paid: number; balance: number }
@@ -66,7 +66,17 @@ export function MayoristaDetailClient({
     })
   }
 
-  const doDeliver = async (order: Order) => {
+  const doDeliver = async (pedido: Order) => {
+    // Pedidos viejos con cantidad sobre un solo equipo: se completan con
+    // unidades idénticas antes de tocar nada (ver completarUnidades).
+    const propias = new Set(pedido.items.map(i => i.stock_id).filter((x): x is number => x != null))
+    const comprometidas = new Set([...enPedidoAbierto].filter(id => !propias.has(id)))
+    const completo = completarUnidades(pedido.items, availableStock as UnidadDisponible[], comprometidas)
+    if (!completo.ok) {
+      toast.error(`No alcanza el stock para entregar este pedido: faltan ${completo.faltan.map(f => `${f.faltan} ${f.nombre}`).join(', ')}.`, { duration: 9000 })
+      return
+    }
+    const order: Order = { ...pedido, items: completo.items }
     setDelivering(order.id)
     try {
       const { error: oErr } = await supabase.from('wholesale_orders').update({ status: 'delivered' }).eq('id', order.id)

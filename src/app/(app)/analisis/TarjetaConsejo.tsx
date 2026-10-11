@@ -3,13 +3,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   AlertTriangle, Lightbulb, CheckCircle2, ChevronDown, Package, Percent, TrendingUp, Wallet, Receipt,
-  FlaskConical, ArrowRight, EyeOff, Eye, SlidersHorizontal,
+  FlaskConical, ArrowRight, EyeOff, Eye, SlidersHorizontal, Users,
 } from 'lucide-react'
 import { usd, pct, AREAS, type Consejo, type Evidencia, type Simulador, type Area, type Nivel } from '@/utils/analisis/analisis'
 
 const ICONO_AREA: Record<Area, React.ReactNode> = {
   stock: <Package size={13} />, margen: <Percent size={13} />, ventas: <TrendingUp size={13} />,
-  gastos: <Wallet size={13} />, cobranza: <Receipt size={13} />,
+  equipo: <Users size={13} />, gastos: <Wallet size={13} />, cobranza: <Receipt size={13} />,
 }
 const NIVEL: Record<Nivel, { label: string; icono: React.ReactNode }> = {
   alerta: { label: 'Atención', icono: <AlertTriangle size={16} /> },
@@ -101,7 +101,7 @@ function VerEvidencia({ e }: { e: Evidencia }) {
 
   if (e.tipo === 'barras') {
     const max = Math.max(1, ...e.datos.map(d => d.valor), e.referencia?.valor || 0) * 1.08
-    const fmt = (v: number) => e.unidad === '%' ? `${v.toLocaleString('es-AR')}%` : usd(v)
+    const fmt = (v: number) => e.unidad === '%' ? `${v.toLocaleString('es-AR')}%` : e.unidad === 'u' ? v.toLocaleString('es-AR') : usd(v)
     return (
       <div className="an-barras">
         {e.datos.map(d => (

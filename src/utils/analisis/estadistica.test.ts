@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { percentil, mediana, pValorBinomial, confianzaPorCasos, diasEntre, claveModelo, nombreModelo } from './estadistica'
+import { percentil, mediana, pValorBinomial, confianzaPorCasos, diasEntre, claveModelo, nombreModelo, normalAcumulada, pValorParejo } from './estadistica'
 
 describe('percentil y mediana', () => {
   it('interpola entre valores', () => {
@@ -31,6 +31,26 @@ describe('pValorBinomial', () => {
   })
   it('sin ventas: 1', () => {
     expect(pValorBinomial(0, 0)).toBe(1)
+  })
+})
+
+describe('normal y chi-cuadrado', () => {
+  it('normal acumulada en puntos conocidos', () => {
+    expect(normalAcumulada(0)).toBeCloseTo(0.5, 6)
+    expect(normalAcumulada(1.96)).toBeCloseTo(0.975, 3)
+    expect(normalAcumulada(-1.645)).toBeCloseTo(0.05, 3)
+  })
+  it('reparto parejo: azar', () => {
+    expect(pValorParejo([10, 11, 9, 10, 10, 10])).toBeGreaterThan(0.9)
+  })
+  it('un día que vende el triple no es azar', () => {
+    expect(pValorParejo([8, 7, 9, 8, 24, 8])).toBeLessThan(0.01)
+  })
+  it('valor de tabla: x² = 11,07 con 5 grados da ~0,05', () => {
+    // Conteos armados para x² = 11,07 aprox. con n = 60, k = 6 (e = 10).
+    const p = pValorParejo([10 + 7.44, 10 - 7.44, 10, 10, 10, 10])
+    expect(p).toBeGreaterThan(0.04)
+    expect(p).toBeLessThan(0.06)
   })
 })
 

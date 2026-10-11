@@ -111,3 +111,46 @@ export function buildWholesaleSaleItems({
       }
     })
 }
+
+/** Una unidad del stock disponible, para completar pedidos. */
+export interface UnidadDisponible {
+  id: number
+  brand?: string | null
+  model?: string | null
+  storage?: string | null
+  color?: string | null
+}
+
+/**
+ * Pedidos viejos: un renglón elegido del stock admitía cantidad 3, pero era
+ * UN equipo; al entregarlo se vendían tres y salía uno solo del stock.
+ *
+ * Al entregar, cada renglón así se completa con unidades idénticas (mismo
+ * modelo, capacidad y color) que estén disponibles y no comprometidas en
+ * otro pedido, y queda una unidad por renglón. Si no alcanzan, no se toca
+ * nada y se dice cuántas faltan.
+ */
+export function completarUnidades<T extends WholesaleItem>(
+  items: T[],
+  disponibles: UnidadDisponible[],
+  comprometidas: Set<number> = new Set(),
+): { ok: true; items: T[] } | { ok: false; faltan: { nombre: string; faltan: number }[] } {
+  const usadas = new Set<number>([...comprometidas, ...items.map(i => i.stock_id).filter((x): x is number => x != null)])
+  const out: T[] = []
+  const faltan: { nombre: string; faltan: number }[] = []
+  for (const i of items) {
+    if (i.is_backorder || !i.stock_id || !(i.qty > 1)) { out.push(i); continue }
+    out.push({ ...i, qty: 1 })
+    let resta = i.qty - 1
+    for (const u of disponibles) {
+      if (resta === 0) break
+      if (usadas.has(u.id)) continue
+      if (u.brand !== i.brand || u.model !== i.model || (u.storage || '') !== (i.storage || '') || (u.color || '') !== (i.color || '')) continue
+      usadas.add(u.id)
+      out.push({ ...i, stock_id: u.id, qty: 1 })
+      resta -= 1
+    }
+    if (resta > 0) faltan.push({ nombre: [i.brand, i.model, i.storage, i.color].filter(Boolean).join(' '), faltan: resta })
+  }
+  return faltan.length ? { ok: false, faltan } : { ok: true, items: out }
+}

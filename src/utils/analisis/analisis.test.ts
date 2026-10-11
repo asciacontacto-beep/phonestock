@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { Sale } from '@/types/domain'
 import {
   stockQuieto, seAcaba, margen, accesorios, equilibrio, tendencia, cobranza, analizar, indicadores, tiemposDeVenta,
+  diasFuertes, vendedores, canjeVsProveedor, recargosAbsorbidos, calcularPorCobrar,
   type DatosAnalisis, type EquipoAnalisis,
 } from './analisis'
 
@@ -209,5 +210,103 @@ describe('analizar e indicadores', () => {
     const u = i.find(x => x.id === 'unidades')!
     expect([u.valor, u.anterior]).toEqual([2, 1])
     expect(i.find(x => x.id === 'margen')!.valor).toBeCloseTo(0.2)
+  })
+})
+
+/** Una fecha local a las 15 h, `dias` días antes de HOY. */
+const alas15 = (dias: number) => { const f = new Date(HOY.getTime() - dias * 86_400_000); f.setHours(15, 0, 0, 0); return f.toISOString() }
+
+describe('días fuertes', () => {
+  it('detecta el día que vende de más', () => {
+    const ventas: Sale[] = []
+    for (let i = 1; i <= 84; i++) {
+      const f = new Date(HOY.getTime() - i * 86_400_000)
+      if (f.getDay() === 0) continue // domingo cerrado
+      const n = f.getDay() === 6 ? 4 : 1 // los sábados, cuatro
+      for (let k = 0; k < n; k++) ventas.push(venta(0, { created_at: alas15(i) }))
+    }
+    const c = diasFuertes(datos({ ventas }))!
+    expect(c.titulo).toMatch(/^Los sábados vendés 4 veces más que los (lunes|martes|miércoles|jueves|viernes)$/)
+    expect(c.evidencia?.tipo === 'barras' && c.evidencia.datos.map(x => x.etiqueta)).not.toContain('Domingo')
+    expect(c.detalle).toContain('de 15 a 17 h')
+  })
+  it('reparto parejo: no dice nada', () => {
+    const ventas = Array.from({ length: 70 }, (_, i) => venta(0, { created_at: alas15(i + 1) }))
+    expect(diasFuertes(datos({ ventas }))).toBeNull()
+  })
+})
+
+describe('vendedores', () => {
+  const de = (quien: string, n: number, extra: Partial<Sale> = {}) =>
+    Array.from({ length: n }, (_, i) => venta(i + 1, { seller_name: quien, ...extra }))
+  it('marca al que vende con mucho menos margen', () => {
+    const c = vendedores(datos({ ventas: [...de('Ana', 10), ...de('Beto', 10, { price: 430 })] }))!
+    expect(c.titulo).toMatch(/^Beto vende con 7% de margen; el resto del equipo, 20%/)
+    expect(c.evidencia?.tipo).toBe('tabla')
+  })
+  it('equipo parejo: bien', () => {
+    expect(vendedores(datos({ ventas: [...de('Ana', 10), ...de('Beto', 10)] }))!.nivel).toBe('bien')
+  })
+  it('con un solo vendedor, o pocos casos, no compara', () => {
+    expect(vendedores(datos({ ventas: [...de('Ana', 20), ...de('Beto', 3)] }))).toBeNull()
+  })
+})
+
+describe('canje o proveedor', () => {
+  it('compara el margen de lo que entró por canje', () => {
+    // Las ventas donde se tomó el canje quedan fuera de los 180 días: sólo aportan el IMEI.
+    const canjes = Array.from({ length: 6 }, (_, i) => venta(200 + i, { payments: [{ id: 'tradein', device: { imei: `C${i}` } }] as never }))
+    const ventasCanje = Array.from({ length: 6 }, (_, i) => venta(i + 1, { imei: `C${i}`, price: 300, cost_price: 200 }))
+    const ventasProv = Array.from({ length: 6 }, (_, i) => venta(i + 1, { imei: `P${i}`, price: 500, cost_price: 425 }))
+    const c = canjeVsProveedor(datos({ ventas: [...canjes, ...ventasCanje, ...ventasProv] }))!
+    expect(c.titulo).toBe('Los equipos que tomás en canje te dejan 33%; los de proveedor, 15%')
+  })
+  it('sin canjes no opina', () => {
+    expect(canjeVsProveedor(datos({ ventas: [venta(1)] }))).toBeNull()
+  })
+})
+
+describe('recargos absorbidos', () => {
+  it('suma lo que se quedó la tarjeta y nombra el plan que más cuesta', () => {
+    const pago = (cobrado: number, entra: number) => ({ id: 'tarjeta', label: 'Visa 12 cuotas', amount: cobrado / 1000, original_amount: entra, exchange_rate: 1000, card_charged: cobrado })
+    const ventas = [1, 2, 3].map(n => venta(n, { payments: [pago(500_000, 450_000)] as never }))
+    const c = recargosAbsorbidos(datos({ ventas }))!
+    expect(c.titulo).toBe('Absorber recargos de tarjeta te costó U$150')
+    expect(c.detalle).toContain('Visa 12 cuotas')
+  })
+  it('sin recargos absorbidos, nada', () => {
+    expect(recargosAbsorbidos(datos({ ventas: [venta(1)] }))).toBeNull()
+  })
+})
+
+describe('plata por cobrar', () => {
+  it('suma saldos de clientes y deudas de mayoristas, en dólares', () => {
+    const r = calcularPorCobrar({
+      ventasConSaldo: [
+        { balance_due: 100, currency: 'USD', customer_id: 1 },
+        { balance_due: 130_000, currency: 'ARS', customer_id: 1 },
+        { balance_due: 50, currency: 'USD', customer: { name: 'Beto' } },
+        { balance_due: 0, currency: 'USD', customer_id: 3 },
+      ],
+      pedidos: [
+        { id: 'a', wholesaler_id: 'w1', status: 'delivered', currency: 'USD' },
+        { id: 'b', wholesaler_id: 'w1', status: 'cancelled', currency: 'USD' },
+        { id: 'c', wholesaler_id: 'w2', status: 'confirmed', currency: 'USD' },
+      ],
+      items: [{ order_id: 'a', qty: 2, unit_price: 400 }, { order_id: 'b', qty: 1, unit_price: 999 }, { order_id: 'c', qty: 1, unit_price: 300 }],
+      pagos: [{ wholesaler_id: 'w1', amount: 500, currency: 'USD' }, { wholesaler_id: 'w2', amount: 300, currency: 'USD' }],
+      cotizacion: 1300,
+    })
+    expect(r.clientesUSD).toBe(250)
+    expect(r.clientes).toBe(2)
+    expect(r.mayoristasUSD).toBe(300) // w1 debe 300; w2 pagó todo
+    expect(r.mayoristas).toBe(1)
+    expect(r.totalUSD).toBe(550)
+  })
+  it('aparece entre los indicadores del dueño, con a quién', () => {
+    const porCobrar = { clientesUSD: 250, clientes: 2, mayoristasUSD: 300, mayoristas: 1, totalUSD: 550 }
+    const k = indicadores(datos({ porCobrar })).find(i => i.id === 'por-cobrar')!
+    expect(k.valor).toBe(550)
+    expect(k.nota).toBe('2 clientes · 1 mayorista')
   })
 })

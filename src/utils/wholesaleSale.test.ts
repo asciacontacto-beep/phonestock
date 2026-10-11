@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { costoEnMonedaDeVenta, buildWholesaleSaleItems } from './wholesaleSale'
+import { costoEnMonedaDeVenta, buildWholesaleSaleItems, completarUnidades } from './wholesaleSale'
 
 describe('costoEnMonedaDeVenta', () => {
   it('deja el costo igual cuando el equipo y el pedido usan la misma moneda', () => {
@@ -98,5 +98,32 @@ describe('buildWholesaleSaleItems', () => {
     expect(rows[0].customer).toEqual({ name: 'Revende SRL', phone: '1122334455' })
     expect(rows[0].payments[0]).toMatchObject({ id: 'wholesale', amount: 620 })
     expect(rows[0].notes).toContain('aaaaaaaa')
+  })
+})
+
+describe('completarUnidades (pedidos viejos con cantidad sobre un equipo)', () => {
+  const item = (o: object) => ({ stock_id: 1, brand: 'Apple', model: 'iPhone 13', storage: '128GB', color: 'Negro', qty: 1, unit_price: 500, is_backorder: false, ...o })
+  const u = (id: number, o: object = {}) => ({ id, brand: 'Apple', model: 'iPhone 13', storage: '128GB', color: 'Negro', ...o })
+
+  it('completa con unidades idénticas, una por renglón', () => {
+    const r = completarUnidades([item({ qty: 3 })], [u(1), u(2), u(5, { color: 'Azul' }), u(7)])
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.items.map(i => [i.stock_id, i.qty])).toEqual([[1, 1], [2, 1], [7, 1]])
+      expect(r.items.every(i => i.unit_price === 500)).toBe(true)
+    }
+  })
+  it('no usa unidades comprometidas en otro pedido ni las del mismo pedido', () => {
+    const r = completarUnidades([item({ qty: 2 }), item({ stock_id: 2 })], [u(1), u(2), u(3), u(4)], new Set([3]))
+    expect(r.ok && r.items.map(i => i.stock_id)).toEqual([1, 4, 2])
+  })
+  it('si no alcanzan, dice cuántas faltan', () => {
+    const r = completarUnidades([item({ qty: 4 })], [u(1), u(2)])
+    expect(r).toEqual({ ok: false, faltan: [{ nombre: 'Apple iPhone 13 128GB Negro', faltan: 2 }] })
+  })
+  it('renglones normales y encargues quedan igual', () => {
+    const items = [item({}), item({ stock_id: null, is_backorder: true, qty: 5 })]
+    const r = completarUnidades(items, [])
+    expect(r.ok && r.items).toEqual(items)
   })
 })

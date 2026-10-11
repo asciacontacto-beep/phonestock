@@ -10,24 +10,25 @@
  */
 
 import type { Sale, Repair } from '@/types/domain'
-import { categoryBreakdown, saleCategory, saleExchangeRate, toUSD } from '../sales'
+import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD } from '../sales'
 import { cuotasVencidas, type VentaPostventa } from '../postventa'
 import type { CuotaGuardada } from '../cuotas'
 import type { Cobro } from '../cuentaCorriente'
-import { percentil, mediana, pValorBinomial, confianzaPorCasos, diasEntre, claveModelo, nombreModelo, type Confianza } from './estadistica'
+import { percentil, mediana, pValorBinomial, pValorParejo, confianzaPorCasos, diasEntre, claveModelo, nombreModelo, type Confianza } from './estadistica'
+import { desglosePagoTarjeta, type PagoGuardado } from '../tarjetas'
 
 /* ── Tipos ───────────────────────────────────────────────────────────── */
 
 export type Nivel = 'alerta' | 'oportunidad' | 'bien'
-export type Area = 'stock' | 'margen' | 'ventas' | 'gastos' | 'cobranza'
+export type Area = 'stock' | 'margen' | 'ventas' | 'equipo' | 'gastos' | 'cobranza'
 
 export const AREAS: Record<Area, string> = {
-  stock: 'Stock', margen: 'Margen', ventas: 'Ventas', gastos: 'Gastos', cobranza: 'Cobranza',
+  stock: 'Stock', margen: 'Margen', ventas: 'Ventas', equipo: 'Vendedores', gastos: 'Gastos', cobranza: 'Cobranza',
 }
 
 export type Evidencia =
   | { tipo: 'tabla'; columnas: string[]; filas: (string | number)[][]; numericas?: number[] }
-  | { tipo: 'barras'; unidad: '%' | 'U$'; datos: { etiqueta: string; valor: number; destacado?: boolean }[]; referencia?: { valor: number; etiqueta: string } }
+  | { tipo: 'barras'; unidad: '%' | 'U$' | 'u'; datos: { etiqueta: string; valor: number; destacado?: boolean }[]; referencia?: { valor: number; etiqueta: string } }
   | { tipo: 'serie'; unidad: 'u'; datos: { etiqueta: string; valor: number; actual: boolean }[] }
   | { tipo: 'progreso'; actual: number; meta: number; proyeccion: number }
 
@@ -65,6 +66,51 @@ export interface Indicador {
   /** Para pintar la variación: subir es bueno (ventas) o malo (días en stock). */
   mejorSiSube: boolean
   ayuda: string
+  /** Texto chico abajo, cuando no hay período anterior con qué comparar. */
+  nota?: string
+}
+
+/** Lo que hay en la calle: saldos de clientes (de cualquier fecha) y deudas de mayoristas. */
+export interface PorCobrar {
+  clientesUSD: number
+  clientes: number
+  mayoristasUSD: number
+  mayoristas: number
+  totalUSD: number
+}
+
+/**
+ * Plata por cobrar. Clientes: el saldo de cada venta (`balance_due`, que
+ * baja con cada cobro), incluidas las cuotas que todavía no vencieron.
+ * Mayoristas: igual que la pantalla Mayoristas, pedidos no cancelados menos
+ * lo que pagaron, por moneda. Todo a dólares con la cotización de hoy.
+ */
+export function calcularPorCobrar({ ventasConSaldo, pedidos, items, pagos, cotizacion }: {
+  ventasConSaldo: { balance_due?: number | null; currency?: string | null; customer_id?: string | number | null; customer?: { name?: string | null } | null }[]
+  pedidos: { id: string | number; wholesaler_id: string | number; status?: string | null; currency?: string | null }[]
+  items: { order_id: string | number; qty: number; unit_price: number }[]
+  pagos: { wholesaler_id: string | number; amount: number; currency?: string | null }[]
+  cotizacion: number
+}): PorCobrar {
+  const conSaldo = ventasConSaldo.filter(v => (Number(v.balance_due) || 0) > 0)
+  const clientesUSD = conSaldo.reduce((a, v) => a + enUSD(v.balance_due, v.currency, cotizacion), 0)
+  const clientes = new Set(conSaldo.map(v => String(v.customer_id ?? v.customer?.name ?? '').trim().toLowerCase() || '?')).size
+
+  const saldo = new Map<string, { USD: number; ARS: number }>()
+  const de = (w: string | number) => { const k = String(w); if (!saldo.has(k)) saldo.set(k, { USD: 0, ARS: 0 }); return saldo.get(k)! }
+  const totalPedido = new Map<string, number>()
+  for (const i of items) totalPedido.set(String(i.order_id), (totalPedido.get(String(i.order_id)) || 0) + i.qty * i.unit_price)
+  for (const o of pedidos) {
+    if (o.status === 'cancelled') continue
+    de(o.wholesaler_id)[o.currency === 'USD' ? 'USD' : 'ARS'] += totalPedido.get(String(o.id)) || 0
+  }
+  for (const p of pagos) de(p.wholesaler_id)[p.currency === 'USD' ? 'USD' : 'ARS'] -= Number(p.amount) || 0
+  let mayoristasUSD = 0, mayoristas = 0
+  for (const s of saldo.values()) {
+    const usdW = Math.max(0, s.USD) + Math.max(0, s.ARS) / (cotizacion || 1)
+    if (usdW >= 1) { mayoristasUSD += usdW; mayoristas += 1 }
+  }
+  return { clientesUSD, clientes, mayoristasUSD, mayoristas, totalUSD: clientesUSD + mayoristasUSD }
 }
 
 export type EquipoAnalisis = {
@@ -95,6 +141,8 @@ export interface DatosAnalisis {
   gastos?: GastoAnalisis[]
   reparaciones?: Pick<Repair, 'id' | 'cost' | 'status' | 'created_at' | 'updated_at'>[]
   cuotas?: CuotaGuardada[]
+  /** Lo que hay en la calle (sólo el dueño). */
+  porCobrar?: PorCobrar
   /** Ventas viejas con cuotas, fuera del período: sólo para la cobranza. */
   ventasDeCuotas?: VentaPostventa[]
   cobros?: (Pick<Cobro, 'amount' | 'currency' | 'exchange_rate'> & { installment_id?: string | number | null })[]
@@ -574,6 +622,239 @@ export function cobranza(d: DatosAnalisis): Consejo | null {
   }
 }
 
+/* ── 8. Días y horarios fuertes ──────────────────────────────────────── */
+
+const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+const ORDEN_SEMANA = [1, 2, 3, 4, 5, 6, 0]
+const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+/** "los lunes", "los sábados": los que ya terminan en s no cambian. */
+const losDias = (dia: string) => dia.endsWith('s') ? dia : `${dia}s`
+
+export function diasFuertes(d: DatosAnalisis): Consejo | null {
+  const desde = hace(d.hoy, 90)
+  const ventas = d.ventas.filter(s => esEquipo(s) && entre(s.created_at, desde, d.hoy))
+  if (ventas.length < 30) return null
+  const porDia = Array(7).fill(0) as number[]
+  const porHora = Array(24).fill(0) as number[]
+  for (const s of ventas) {
+    const f = new Date(s.created_at!)
+    porDia[f.getDay()] += 1
+    porHora[f.getHours()] += 1
+  }
+  // Un día sin ninguna venta en 90 días es un día cerrado: no se compara.
+  const abiertos = ORDEN_SEMANA.filter(i => porDia[i] > 0)
+  if (abiertos.length < 3) return null
+  const p = pValorParejo(abiertos.map(i => porDia[i]))
+  if (p >= 0.05) return null
+
+  const mejor = abiertos.reduce((a, b) => porDia[b] > porDia[a] ? b : a)
+  const peor = abiertos.reduce((a, b) => porDia[b] < porDia[a] ? b : a)
+  const veces = porDia[mejor] / Math.max(1, porDia[peor])
+  const promedio = ventas.length / abiertos.length
+  // La franja de dos horas que más vende.
+  let franja = 0
+  for (let h = 1; h < 23; h++) {
+    const suma = porHora[h] + porHora[h + 1], mejorSuma = porHora[franja] + porHora[franja + 1]
+    // A igual suma, la que arranca en la hora pico.
+    if (suma > mejorSuma || (suma === mejorSuma && porHora[h] > porHora[franja])) franja = h
+  }
+  const enFranja = (porHora[franja] + porHora[franja + 1]) / ventas.length
+
+  return {
+    id: 'dias-fuertes', area: 'ventas', nivel: 'oportunidad',
+    titulo: `Los ${losDias(DIAS_SEMANA[mejor])} vendés ${veces >= 1.95 ? `${Math.abs(veces - Math.round(veces)) < 0.05 ? Math.round(veces) : veces.toFixed(1).replace('.', ',')} veces más` : `${pct(veces - 1)} más`} que los ${losDias(DIAS_SEMANA[peor])}`,
+    detalle: `Ese día que no falte stock exhibido ni gente atendiendo. El día flojo sirve para reponer, publicar en el catálogo y llamar clientes.${enFranja >= 0.2 ? ` La franja que más vende es de ${franja} a ${franja + 2} h (${pct(enFranja)} de las ventas).` : ''}`,
+    impactoUSD: 0,
+    confianza: p < 0.01 ? 'alta' : 'media',
+    casos: ventas.length,
+    comoSeCalcula: `Repartí ${ventas.length} ventas de equipos de los últimos 90 días por día de la semana (sin contar días sin ninguna venta, que tomo como cerrados). Con un test estadístico (chi-cuadrado) calculé la chance de que las diferencias sean casualidad: ${p < 0.001 ? 'menos de 0,1%' : `${(p * 100).toFixed(1).replace('.', ',')}%`}.`,
+    evidencia: {
+      tipo: 'barras', unidad: 'u',
+      datos: abiertos.map(i => ({ etiqueta: capital(DIAS_SEMANA[i]), valor: porDia[i] })),
+      referencia: { valor: Math.round(promedio * 10) / 10, etiqueta: 'Promedio por día' },
+    },
+    firma: `${mejor}:${peor}`,
+  }
+}
+
+/* ── 9. Vendedores ───────────────────────────────────────────────────── */
+
+export function vendedores(d: DatosAnalisis): Consejo | null {
+  if (!d.verPlata) return null
+  const desde = hace(d.hoy, Math.max(d.dias, 60))
+  const grupos = new Map<string, { nombre: string; ventas: ReturnType<typeof numerosDeVenta>[] }>()
+  for (const s of d.ventas) {
+    if (!esEquipo(s) || !entre(s.created_at, desde, d.hoy)) continue
+    const nombre = String(s.seller_name || '').trim()
+    if (!nombre || nombre === 'Mayorista') continue
+    const g = grupos.get(nombre.toLowerCase()) || { nombre, ventas: [] }
+    g.ventas.push(numerosDeVenta(s, d.cotizacion))
+    grupos.set(nombre.toLowerCase(), g)
+  }
+  const con = [...grupos.values()].filter(g => g.ventas.length >= 8)
+  if (con.length < 2) return null
+
+  const medir = (vs: ReturnType<typeof numerosDeVenta>[]) => {
+    const cc = vs.filter(v => v.conCosto && v.precio > 0)
+    const precioCC = cc.reduce((a, v) => a + v.precio, 0)
+    return {
+      n: vs.length,
+      margen: precioCC > 0 ? cc.reduce((a, v) => a + v.ganancia, 0) / precioCC : null,
+      accesorio: vs.filter(v => v.tieneAccesorio).length / vs.length,
+      ticket: vs.reduce((a, v) => a + v.precio, 0) / vs.length,
+      precio: precioCC,
+    }
+  }
+  const filas = con.map(g => ({ nombre: g.nombre, ...medir(g.ventas), resto: medir(con.filter(x => x !== g).flatMap(x => x.ventas)) }))
+  // Lo que más pesa: margen bajo (8+ puntos menos que el resto) o pocas ventas con accesorio (15+ puntos menos).
+  const flojos = filas.map(f => {
+    const difMargen = f.margen != null && f.resto.margen != null ? f.resto.margen - f.margen : 0
+    const difAcc = f.resto.accesorio - f.accesorio
+    return { ...f, difMargen, difAcc, impacto: Math.max(0, difMargen) * f.precio }
+  }).filter(f => f.difMargen >= 0.08 || f.difAcc >= 0.15).sort((a, b) => b.impacto - a.impacto || b.difAcc - a.difAcc)
+
+  const tabla: Evidencia = {
+    tipo: 'tabla',
+    columnas: ['Vendedor', 'Ventas', 'Margen', 'Con accesorio', 'Ticket'],
+    filas: [...filas].sort((a, b) => b.n - a.n).map(f => [f.nombre, f.n, f.margen == null ? '—' : pct(f.margen), pct(f.accesorio), usd(f.ticket)]),
+    numericas: [1, 2, 3, 4],
+  }
+  const comoSeCalcula = `Comparé a cada vendedor con 8 ventas de equipos o más (últimos ${Math.max(d.dias, 60)} días) contra el resto del equipo: margen sobre ventas con costo, cuántas ventas llevaron accesorio y precio promedio. Marco una diferencia cuando el margen está 8 puntos abajo o las ventas con accesorio 15 puntos abajo.`
+
+  if (flojos.length === 0) {
+    return {
+      id: 'vendedores', area: 'equipo', nivel: 'bien',
+      titulo: 'Tu equipo vende parejo',
+      detalle: 'Ningún vendedor queda muy por debajo del resto en margen ni en accesorios.',
+      impactoUSD: 0, confianza: confianzaPorCasos(filas.reduce((a, f) => a + f.n, 0)), casos: filas.reduce((a, f) => a + f.n, 0),
+      comoSeCalcula, evidencia: tabla, firma: 'parejo',
+    }
+  }
+  const f = flojos[0]
+  const porMargen = f.difMargen >= 0.08
+  return {
+    id: 'vendedores', area: 'equipo', nivel: 'oportunidad',
+    titulo: porMargen
+      ? `${f.nombre} vende con ${pct(f.margen || 0)} de margen; el resto del equipo, ${pct(f.resto.margen || 0)}`
+      : `Sólo ${pct(f.accesorio)} de las ventas de ${f.nombre} llevan accesorio; el resto, ${pct(f.resto.accesorio)}`,
+    detalle: porMargen
+      ? `Puede estar haciendo descuentos de más o vendiendo lo que menos deja. Llevado al margen del resto, serían ${usd(f.impacto)} más en el período.${flojos.length > 1 ? ` Hay ${flojos.length - 1} más en la tabla.` : ''}`
+      : 'Un empujón para ofrecer funda y vidrio en cada venta suele alcanzar.',
+    impactoUSD: f.impacto,
+    confianza: confianzaPorCasos(f.n, 25, 8),
+    casos: filas.reduce((a, x) => a + x.n, 0),
+    comoSeCalcula, evidencia: tabla,
+    firma: flojos.map(x => `${x.nombre}:${Math.round(x.difMargen * 100)}:${Math.round(x.difAcc * 100)}`).join(','),
+  }
+}
+
+/* ── 10. Canje o proveedor ───────────────────────────────────────────── */
+
+export function canjeVsProveedor(d: DatosAnalisis): Consejo | null {
+  if (!d.verPlata) return null
+  // Equipos que entraron por canje: su IMEI figura en un pago de canje, o se
+  // cargaron sin IMEI con la marca TI-.
+  const deCanje = new Set<string>()
+  for (const s of d.ventas) for (const p of (s.payments || []) as { id?: string; device?: { imei?: string } }[]) {
+    if (p?.id === 'tradein' && p.device?.imei) deCanje.add(String(p.device.imei).trim())
+  }
+  for (const e of d.stock) if (e.imei && String(e.imei).startsWith('TI-')) deCanje.add(String(e.imei))
+  if (deCanje.size === 0) return null
+
+  const alta = new Map<string, string>()
+  for (const e of d.stock) if (e.imei && e.created_at) alta.set(String(e.imei).trim(), e.created_at)
+  const desde = hace(d.hoy, 180)
+  const grupos = { canje: [] as { m: number; p: number; dias: number | null }[], proveedor: [] as { m: number; p: number; dias: number | null }[] }
+  for (const s of d.ventas) {
+    if (!esEquipo(s) || !entre(s.created_at, desde, d.hoy)) continue
+    const v = numerosDeVenta(s, d.cotizacion)
+    if (!v.conCosto || v.precio <= 0) continue
+    const imei = String(s.imei || '').trim()
+    const creado = alta.get(imei)
+    const fila = { m: v.ganancia, p: v.precio, dias: creado ? diasEntre(creado, s.created_at!) : null }
+    ;(deCanje.has(imei) ? grupos.canje : grupos.proveedor).push(fila)
+  }
+  if (grupos.canje.length < 5 || grupos.proveedor.length < 5) return null
+  const margenDe = (g: { m: number; p: number }[]) => g.reduce((a, x) => a + x.m, 0) / g.reduce((a, x) => a + x.p, 0)
+  const diasDe = (g: { dias: number | null }[]) => mediana(g.map(x => x.dias).filter((x): x is number => x != null && x >= 0))
+  const mc = margenDe(grupos.canje), mp = margenDe(grupos.proveedor)
+  const dc = diasDe(grupos.canje), dp = diasDe(grupos.proveedor)
+  const dif = mc - mp
+  const dias = dc != null && dp != null ? ` Los de canje tardan ${Math.round(dc)} días en venderse; los de proveedor, ${Math.round(dp)}.` : ''
+
+  return {
+    id: 'canje-proveedor', area: 'margen',
+    nivel: Math.abs(dif) < 0.05 ? 'bien' : 'oportunidad',
+    titulo: Math.abs(dif) < 0.05
+      ? `Canje y proveedor te dejan parecido (${pct(mc)} y ${pct(mp)})`
+      : dif > 0
+        ? `Los equipos que tomás en canje te dejan ${pct(mc)}; los de proveedor, ${pct(mp)}`
+        : `Los canjes te dejan ${pct(mc)} y los de proveedor ${pct(mp)}`,
+    detalle: (Math.abs(dif) < 0.05
+      ? 'Tomar canjes no te hace perder margen.'
+      : dif > 0
+        ? 'Tomar canjes te conviene: un plan canje bien comunicado te trae equipos que dejan más.'
+        : 'Puede que estés tomando los usados caros. Revisá la tabla de valores de toma.') + dias,
+    impactoUSD: dif < 0 ? -dif * grupos.canje.reduce((a, x) => a + x.p, 0) : 0,
+    confianza: confianzaPorCasos(Math.min(grupos.canje.length, grupos.proveedor.length), 20, 5),
+    casos: grupos.canje.length + grupos.proveedor.length,
+    comoSeCalcula: `De las ventas de equipos con costo de los últimos 180 días, separé los ${grupos.canje.length} que entraron por canje (su IMEI figura en un pago de canje) de los ${grupos.proveedor.length} restantes, y comparé cuánto queda de cada dólar vendido. Con el costo de un canje se toma lo que se le reconoció al cliente.`,
+    accion: dif < -0.05 ? { label: 'Ver ajustes', href: '/settings' } : undefined,
+    evidencia: {
+      tipo: 'barras', unidad: '%',
+      datos: [
+        { etiqueta: 'Canje', valor: Math.round(mc * 1000) / 10, destacado: dif < -0.05 },
+        { etiqueta: 'Proveedor', valor: Math.round(mp * 1000) / 10 },
+      ],
+    },
+    firma: `${Math.round(mc * 20)}:${Math.round(mp * 20)}`,
+  }
+}
+
+/* ── 11. Recargos de tarjeta que absorbe el local ────────────────────── */
+
+export function recargosAbsorbidos(d: DatosAnalisis): Consejo | null {
+  if (!d.verPlata) return null
+  const desde = hace(d.hoy, d.dias)
+  const ventas = d.ventas.filter(s => entre(s.created_at, desde, d.hoy) && saleCategory(s) !== 'movement')
+  const planes = new Map<string, { usd: number; n: number }>()
+  for (const s of ventas) {
+    const rate = saleExchangeRate(s, d.cotizacion)
+    for (const p of (s.payments || []) as PagoGuardado[]) {
+      const costo = desglosePagoTarjeta(p).costoLocal
+      if (costo <= 0) continue
+      const nombre = String((p as { label?: string }).label || 'Tarjeta')
+      const g = planes.get(nombre) || { usd: 0, n: 0 }
+      g.usd += costo / (rate || 1); g.n += 1
+      planes.set(nombre, g)
+    }
+  }
+  const total = [...planes.values()].reduce((a, g) => a + g.usd, 0)
+  if (total < 20) return null
+  const b = categoryBreakdown(ventas, [], d.cotizacion)
+  const ganancia = totalsFromBreakdown(b).profit
+  const parte = ganancia > 0 ? total / (ganancia + total) : 1
+  const lista = [...planes.entries()].sort((a, b) => b[1].usd - a[1].usd)
+  const [peor, dato] = lista[0]
+  return {
+    id: 'recargos', area: 'margen',
+    nivel: parte >= 0.15 ? 'alerta' : 'oportunidad',
+    titulo: `Absorber recargos de tarjeta te costó ${usd(total)}`,
+    detalle: `Es el ${pct(parte)} de lo que te dejaron esas ventas. El plan que más te cuesta: ${peor} (${usd(dato.usd)} en ${plural(dato.n, 'pago', 'pagos')}). Si el recargo lo paga el cliente, esa plata queda para vos.`,
+    impactoUSD: total,
+    confianza: confianzaPorCasos([...planes.values()].reduce((a, g) => a + g.n, 0), 15, 4),
+    casos: [...planes.values()].reduce((a, g) => a + g.n, 0),
+    comoSeCalcula: `Sumé lo que se quedó la tarjeta o la financiera en los pagos de los últimos ${d.dias} días en los que el recargo lo absorbió el local, pasado a dólares con la cotización de cada venta.`,
+    accion: { label: 'Ver planes de tarjeta', href: '/settings' },
+    evidencia: {
+      tipo: 'tabla', columnas: ['Plan', 'Pagos', 'Te costó'],
+      filas: lista.slice(0, 10).map(([nombre, g]) => [nombre, g.n, usd(g.usd)]),
+      numericas: [1, 2],
+    },
+    firma: `${Math.round(total / 20)}:${peor}`,
+  }
+}
+
 /* ── Todo junto ──────────────────────────────────────────────────────── */
 
 const ORDEN_NIVEL: Record<Nivel, number> = { alerta: 0, oportunidad: 1, bien: 2 }
@@ -582,6 +863,7 @@ const PESO_CONFIANZA: Record<Confianza, number> = { alta: 1, media: 0.8, baja: 0
 export function analizar(d: DatosAnalisis): Consejo[] {
   const todos = [
     stockQuieto(d), seAcaba(d), ...margen(d), accesorios(d), equilibrio(d), tendencia(d), cobranza(d),
+    diasFuertes(d), vendedores(d), canjeVsProveedor(d), recargosAbsorbidos(d),
   ].filter((c): c is Consejo => !!c)
   return todos.sort((a, b) =>
     ORDEN_NIVEL[a.nivel] - ORDEN_NIVEL[b.nivel] ||
@@ -616,6 +898,11 @@ export function indicadores(d: DatosAnalisis): Indicador[] {
       { id: 'plata', etiqueta: 'Facturación en equipos', valor: act.plata, formato: 'U$', anterior: ant.plata, mejorSiSube: true, ayuda: 'Precio de los equipos vendidos, en dólares con la cotización de cada venta.' },
       { id: 'ganancia', etiqueta: 'Ganancia bruta', valor: act.ganancia, formato: 'U$', anterior: ant.ganancia, mejorSiSube: true, ayuda: 'Precio menos costo de los equipos y sus accesorios (sólo ventas con costo cargado).' },
       { id: 'margen', etiqueta: 'Margen en equipos', valor: act.margen, formato: '%', anterior: ant.margen, mejorSiSube: true, ayuda: 'Cuánto queda de cada dólar vendido en equipos.' },
+      ...(d.porCobrar ? [{
+        id: 'por-cobrar', etiqueta: 'Plata por cobrar', valor: d.porCobrar.totalUSD, formato: 'U$' as const, anterior: null, mejorSiSube: false,
+        ayuda: `Lo que tenés en la calle: ${usd(d.porCobrar.clientesUSD)} de clientes (saldos y cuotas, de cualquier fecha) y ${usd(d.porCobrar.mayoristasUSD)} de mayoristas. En pesos, a la cotización de hoy.`,
+        nota: [d.porCobrar.clientes > 0 ? plural(d.porCobrar.clientes, 'cliente', 'clientes') : '', d.porCobrar.mayoristas > 0 ? plural(d.porCobrar.mayoristas, 'mayorista', 'mayoristas') : ''].filter(Boolean).join(' · ') || 'nadie te debe',
+      }] : []),
       { id: 'capital', etiqueta: 'Plata en stock', valor: enLocal.reduce((x, e) => x + enUSD(e.cost_price || e.price, e.currency, d.cotizacion), 0), formato: 'U$', anterior: null, mejorSiSube: false, ayuda: 'Costo de los equipos disponibles (o el precio, si no tienen costo).' },
     )
   }

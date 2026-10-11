@@ -18,7 +18,7 @@ const PERIODOS: [Periodo, string][] = [['7d', '7 días'], ['30d', '30 días'], [
 const usd = (n: number) => `U$ ${Math.round(n).toLocaleString('es-AR')}`
 
 export function RentabilidadMobile({
-  periodo, setPeriodo, neta, delta, facturacion, bruta, margen, gastos, rubros, modelos, vendedores, tendencia, cotizacion, onRubro, intereses,
+  periodo, setPeriodo, neta, delta, facturacion, bruta, margen, gastos, rubros, modelos, vendedores, tendencia, cotizacion, onRubro, intereses, selector,
 }: {
   periodo: Periodo
   setPeriodo: (p: Periodo) => void
@@ -31,6 +31,8 @@ export function RentabilidadMobile({
   rubros: Record<Rubro, CategoryStats>
   /** Intereses de las ventas en cuotas, aparte de los rubros. */
   intereses?: CategoryStats
+  /** Elegir local (sólo si hay más de uno). */
+  selector?: React.ReactNode
   modelos: { model: string; profit: number; count: number; avg: number }[]
   vendedores: { name: string; profit: number; count: number; revenue: number }[]
   tendencia: number[]
@@ -43,6 +45,7 @@ export function RentabilidadMobile({
 
   return (
     <div className="m-pantalla rnm">
+      {selector}
       <div className="m-chips" role="tablist" aria-label="Período">
         {PERIODOS.map(([v, l]) => (
           <button key={v} role="tab" aria-selected={periodo === v} className={`m-chip ${periodo === v ? 'on' : ''}`} onClick={() => setPeriodo(v)}>{l}</button>

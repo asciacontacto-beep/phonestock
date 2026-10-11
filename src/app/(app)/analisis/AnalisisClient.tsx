@@ -9,6 +9,8 @@ import {
 import type { VentaPostventa } from '@/utils/postventa'
 import { TarjetaConsejo } from './TarjetaConsejo'
 import { createClient } from '@/utils/supabase/client'
+import { SelectorLocal } from '@/components/SelectorLocal'
+import { idsAparte, delLocal, type Local, type Deposito } from '@/utils/locales'
 
 const PERIODOS = [30, 60, 90] as const
 const CLAVE = 'stackr:analisis:vistos'
@@ -20,7 +22,7 @@ function leerVistos(): Record<string, string> {
 }
 
 export function AnalisisClient({
-  ahora, dueno, cotizacion, stock, ventas, ventasDeCuotas, gastos, reparaciones, cuotas, cobros, porCobrar = null,
+  ahora, dueno, cotizacion, stock: stockTodo, ventas: ventasTodas, ventasDeCuotas, gastos: gastosTodos, reparaciones, cuotas, cobros, porCobrar = null, depositos = [],
 }: {
   ahora: string
   dueno: boolean
@@ -33,7 +35,14 @@ export function AnalisisClient({
   cuotas: CuotaGuardada[]
   cobros: DatosAnalisis['cobros']
   porCobrar?: PorCobrar | null
+  depositos?: Deposito[]
 }) {
+  // Locales con cuentas aparte: "General" no los suma; eligiendo uno, sólo lo suyo.
+  const [local, setLocal] = useState<Local>('general')
+  const aparte = useMemo(() => idsAparte(depositos), [depositos])
+  const stock = useMemo(() => delLocal(stockTodo, local, aparte, 'deposit' as keyof EquipoAnalisis), [stockTodo, local, aparte])
+  const ventas = useMemo(() => delLocal(ventasTodas, local, aparte), [ventasTodas, local, aparte])
+  const gastos = useMemo(() => delLocal(gastosTodos as (GastoAnalisis & { deposit_id?: string })[], local, aparte), [gastosTodos, local, aparte])
   const [dias, setDias] = useState<number>(30)
   const [area, setArea] = useState<Area | 'todas'>('todas')
   const [nivel, setNivel] = useState<Nivel | 'todos'>('todos')
@@ -101,12 +110,15 @@ export function AnalisisClient({
           <h1 className="st">Análisis</h1>
           <div className="ss2">Consejos sacados de tus números. Cada uno muestra con qué datos se calculó.</div>
         </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        {dueno && <SelectorLocal depositos={depositos} valor={local} onChange={setLocal} />}
         <div className="an-periodo" role="group" aria-label="Período">
           {PERIODOS.map(p => (
             <button key={p} className={`btn-pill ${dias === p ? 'active' : ''}`} onClick={() => setDias(p)} aria-pressed={dias === p}>
               {p} días
             </button>
           ))}
+        </div>
         </div>
       </div>
 

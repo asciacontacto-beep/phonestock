@@ -17,11 +17,12 @@ export default async function MesAMesPage() {
   const hoy = new Date()
   const desde = new Date(hoy.getFullYear(), hoy.getMonth() - 12, 1).toISOString()
 
-  const [ventas, gastos, reparaciones, ajustes] = await Promise.all([
+  const [ventas, gastos, reparaciones, ajustes, depositos] = await Promise.all([
     traerTodo(() => supabase.from('sales').select('*').gte('created_at', desde).order('id')),
-    traerTodo(() => supabase.from('expenses').select('id,amount,currency,created_at').gte('created_at', desde).order('id')),
-    traerTodo(() => supabase.from('repairs').select('id,cost,status,created_at,updated_at').order('id')),
+    traerTodo(() => supabase.from('expenses').select('id,amount,currency,created_at,deposit_id').gte('created_at', desde).order('id')),
+    traerTodo(() => supabase.from('repairs').select('id,cost,status,created_at,updated_at,deposit_id').order('id')),
     configuracionDelLocal(supabase, profile?.org_id, 'exchange_rate'),
+    supabase.from('deposits').select('*').order('name'),
   ])
 
   return (
@@ -31,6 +32,7 @@ export default async function MesAMesPage() {
       ventas={ventas.data || []}
       gastos={gastos.data || []}
       reparaciones={reparaciones.data || []}
+      depositos={depositos.data || []}
     />
   )
 }

@@ -3066,3 +3066,14 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
   .mm-atajos::-webkit-scrollbar { display: none; }
   .mm-atajos .btn-pill { flex-shrink: 0; }
 }
+
+/* ── Locales con cuentas aparte ── */
+.cfg-aparte { display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; padding: 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); font-size: 12.5px; line-height: 1.5; color: var(--text-2); cursor: pointer; }
+.cfg-aparte input { margin-top: 3px; flex-shrink: 0; }
+.cfg-aparte strong { color: var(--text); }
+.selector-local { display: inline-flex; align-items: center; gap: 8px; color: var(--text-3); }
+.selector-local .inp { width: auto; min-width: 200px; max-width: 320px; padding-top: 8px; padding-bottom: 8px; }
+@media (max-width: 768px) {
+  .selector-local { width: 100%; }
+  .selector-local .inp { flex: 1; max-width: none; min-width: 0; }
+}

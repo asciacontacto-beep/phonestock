@@ -26,3 +26,31 @@ export function totalAccesoriosEnPesos(lineas: LineaAccesorio[], cotizacion: num
   if (hayDolares && !(cotizacion > 0)) return null
   return lineas.reduce((t, l) => t + (l.is_gift ? 0 : enPesos((Number(l.price) || 0) * (Number(l.qty) || 1), l.currency, cotizacion)), 0)
 }
+
+/**
+ * Tipos de accesorio sugeridos al cargar. La categoría es texto libre: un
+ * local de accesorios vende de todo (cargadores de auto, power banks,
+ * parlantes…) y la lista vieja de seis no alcanzaba.
+ */
+export const CATEGORIAS_ACCESORIO = [
+  'Funda', 'Vidrio templado', 'Cargador', 'Cargador de auto', 'Cable USB-C', 'Cable Lightning', 'Cable micro USB',
+  'Auriculares con cable', 'Auriculares Bluetooth', 'Power bank', 'Soporte', 'Smartwatch', 'Parlante',
+  'Memoria / Pendrive', 'Adaptador', 'Otro',
+]
+
+/** "Cargador 20W USB-C genérico Blanco": categoría, detalle (o modelo) y color. */
+export function nombreAccesorio(a: { category?: string | null; compatible_model?: string | null; color?: string | null }): string {
+  return [a.category, a.compatible_model, a.color].map(x => String(x || '').trim()).filter(Boolean).join(' ')
+}
+
+/** Las sugeridas más las que el local ya usa, sin repetir (sin importar mayúsculas). */
+export function categoriasSugeridas(usadas: (string | null | undefined)[]): string[] {
+  const vistas = new Set<string>()
+  const out: string[] = []
+  for (const c of [...CATEGORIAS_ACCESORIO, ...usadas]) {
+    const t = String(c || '').trim()
+    if (!t || vistas.has(t.toLowerCase())) continue
+    vistas.add(t.toLowerCase()); out.push(t)
+  }
+  return out
+}

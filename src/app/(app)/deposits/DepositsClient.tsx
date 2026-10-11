@@ -19,18 +19,24 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
   const [transferring, setTransferring] = useState(false);
   const [selectedDep, setSelectedDep] = useState<number | 'all'>('all');
 
-  const [form, setForm] = useState({ name: '', color: '#10b981' });
+  const [form, setForm] = useState({ name: '', color: '#10b981', cuentas_aparte: false });
   const supabase = createClient();
+  // "Cuentas aparte" necesita su columna (SQL 20261011_locales_cuentas_aparte): sin ella no se ofrece.
+  const [hayAparte, setHayAparte] = useState(false);
+  useEffect(() => {
+    supabase.from('deposits').select('cuentas_aparte').limit(0).then(({ error }) => setHayAparte(!error));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function addDeposit() {
     if (!form.name.trim()) return;
     setSaving(true);
-    const { data, error } = await supabase.from('deposits').insert({ name: form.name.trim(), color: form.color }).select().single();
+    const { data, error } = await supabase.from('deposits')
+      .insert({ name: form.name.trim(), color: form.color, ...(hayAparte ? { cuentas_aparte: form.cuentas_aparte } : {}) }).select().single();
     if (error) {
       toast.error('Error: ' + error.message);
     } else {
       setDeposits(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
-      setForm({ name: '', color: '#10b981' });
+      setForm({ name: '', color: '#10b981', cuentas_aparte: false });
       setShowAdd(false);
       toast.success('Depósito creado');
     }
@@ -40,7 +46,8 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
   async function saveEdit() {
     if (!editDep?.name?.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from('deposits').update({ name: editDep.name, color: editDep.color }).eq('id', editDep.id);
+    const { error } = await supabase.from('deposits')
+      .update({ name: editDep.name, color: editDep.color, ...(hayAparte ? { cuentas_aparte: !!editDep.cuentas_aparte } : {}) }).eq('id', editDep.id);
     if (error) {
       toast.error('Error: ' + error.message);
     } else {
@@ -114,7 +121,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                       <Warehouse size={20} style={{ color: d.color }} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 15 }}>{d.name}</div>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{d.name}{d.cuentas_aparte && <span className="badge b-neu" style={{ marginLeft: 8 }} title="Sus ventas y gastos no se suman a los del resto">Cuentas aparte</span>}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{plural(items.length, 'equipo disponible', 'equipos disponibles')}</div>
                       {(valUsd > 0 || valArs > 0) && (
                         <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 4 }}>
@@ -229,6 +236,12 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                   ))}
                 </div>
               </div>
+              {hayAparte && (
+                <label className="cfg-aparte">
+                  <input type="checkbox" checked={form.cuentas_aparte} onChange={e => setForm({ ...form, cuentas_aparte: e.target.checked })} />
+                  <span><strong>Cuentas aparte</strong> · para un local con su propio negocio (por ejemplo, sólo accesorios): sus ventas y gastos no se suman a los del resto. Se ven eligiéndolo arriba en Inicio, Rentabilidad, Mes a mes y Análisis.</span>
+                </label>
+              )}
               <button className="btn btn-dark btn-lg" style={{ width: '100%', marginTop: 12 }} onClick={addDeposit} disabled={saving}>
                 {saving ? <Loader2 size={18} className="spin" /> : <><Plus size={16} /> Crear Depósito</>}
               </button>
@@ -258,6 +271,12 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
                   ))}
                 </div>
               </div>
+              {hayAparte && (
+                <label className="cfg-aparte">
+                  <input type="checkbox" checked={!!editDep.cuentas_aparte} onChange={e => setEditDep({ ...editDep, cuentas_aparte: e.target.checked })} />
+                  <span><strong>Cuentas aparte</strong> · sus ventas y gastos no se suman a los del resto. Se ven eligiéndolo arriba en Inicio, Rentabilidad, Mes a mes y Análisis.</span>
+                </label>
+              )}
               <button className="btn btn-dark btn-lg" style={{ width: '100%', marginTop: 12 }} onClick={saveEdit} disabled={saving}>
                 {saving ? <Loader2 size={18} className="spin" /> : <><Check size={16} /> Guardar</>}
               </button>

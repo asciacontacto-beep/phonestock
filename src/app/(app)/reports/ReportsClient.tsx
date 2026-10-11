@@ -8,16 +8,26 @@ import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakd
 import { diaLocal } from '@/utils/fechas';
 import { useEsCelular } from '@/hooks/useEsCelular';
 import { RentabilidadMobile } from './RentabilidadMobile';
+import { SelectorLocal } from '@/components/SelectorLocal';
+import { idsAparte, delLocal, type Local } from '@/utils/locales';
 
 type Period = '7d' | '30d' | '90d' | 'all';
 
-export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs = [] }: {
+export function ReportsClient({ sales: ventasTodas, expenses: gastosTodos, deposits, exchangeRate, repairs: reparacionesTodas = [] }: {
   sales: any[];
   expenses: any[];
   deposits: any[];
   exchangeRate: number;
   repairs?: any[];
 }) {
+  /* Locales con cuentas aparte: "General" no los suma; eligiendo uno, sólo lo suyo. */
+  const [local, setLocal] = useState<Local>('general');
+  const aparte = useMemo(() => idsAparte(deposits), [deposits]);
+  const sales = useMemo(() => delLocal(ventasTodas, local, aparte), [ventasTodas, local, aparte]);
+  const expenses = useMemo(() => delLocal(gastosTodos, local, aparte), [gastosTodos, local, aparte]);
+  const repairs = useMemo(() => delLocal(reparacionesTodas, local, aparte), [reparacionesTodas, local, aparte]);
+  const selector = <SelectorLocal depositos={deposits} valor={local} onChange={setLocal} />;
+
   const [period, setPeriod] = useState<Period>('30d');
   const [detailCat, setDetailCat] = useState<'device' | 'accessory' | 'service' | null>(null);
   const celular = useEsCelular();
@@ -251,6 +261,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
     return (
       <div className="page">
         <RentabilidadMobile
+          selector={selector}
           periodo={period}
           setPeriodo={setPeriod}
           neta={netProfit}
@@ -285,10 +296,13 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
     <div className="page reports dash">
       <div className="sh rep-cab" style={{ marginBottom: 20 }}>
         <h1 className="st">Rentabilidad</h1>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        {selector}
         <div className="pills-scroll" style={{ display: 'flex', gap: 6 }}>
           {([['7d', '7 días'], ['30d', '30 días'], ['90d', '90 días'], ['all', 'Todo']] as [Period, string][]).map(([v, l]) => (
             <button key={v} className={`btn-pill ${period === v ? 'active' : ''}`} onClick={() => setPeriod(v)}>{l}</button>
           ))}
+        </div>
         </div>
       </div>
 

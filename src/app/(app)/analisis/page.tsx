@@ -27,18 +27,19 @@ export default async function AnalisisPage() {
   const desdeGastos = new Date(Date.now() - 95 * DIA).toISOString()
   const nada = Promise.resolve({ data: [] as never[] })
 
-  const [stock, ventas, ajustes, gastos, reparaciones, cuotas, cobros] = await Promise.all([
+  const [stock, ventas, ajustes, gastos, reparaciones, cuotas, cobros, depositos] = await Promise.all([
     traerTodo(() => supabase.from('stock')
-      .select(dueno ? 'id,brand,model,storage,color,imei,price,cost_price,currency,status,created_at' : 'id,brand,model,storage,color,imei,price,currency,status,created_at')
+      .select(dueno ? 'id,brand,model,storage,color,imei,price,cost_price,currency,status,created_at,deposit' : 'id,brand,model,storage,color,imei,price,currency,status,created_at,deposit')
       .order('id')),
     traerTodo(() => supabase.from('sales')
-      .select(dueno ? '*' : 'id,brand,model,storage,imei,created_at')
+      .select(dueno ? '*' : 'id,brand,model,storage,imei,created_at,deposit_id')
       .gte('created_at', desde).order('id')),
     configuracionDelLocal(supabase, profile?.org_id, 'exchange_rate'),
-    dueno ? traerTodo(() => supabase.from('expenses').select('id,amount,currency,created_at').gte('created_at', desdeGastos).order('id')) : nada,
+    dueno ? traerTodo(() => supabase.from('expenses').select('id,amount,currency,created_at,deposit_id').gte('created_at', desdeGastos).order('id')) : nada,
     dueno ? traerTodo(() => supabase.from('repairs').select('id,cost,status,created_at,updated_at').order('id')) : nada,
     dueno ? traerTodo(() => supabase.from('sale_installments').select('id,sale_id,number,due_date,amount,currency').order('id')) : nada,
     dueno ? traerTodo(() => supabase.from('customer_payments').select('id,installment_id,amount,currency,exchange_rate').order('id')) : nada,
+    dueno ? supabase.from('deposits').select('*').order('name') : nada,
   ])
 
   // Las cuotas vencidas pueden ser de ventas viejas, fuera del período: se
@@ -82,6 +83,7 @@ export default async function AnalisisPage() {
       cuotas={cuotas.data || []}
       cobros={cobros.data || []}
       porCobrar={porCobrar}
+      depositos={depositos.data || []}
     />
   )
 }

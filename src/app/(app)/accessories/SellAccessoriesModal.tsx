@@ -1,4 +1,5 @@
 "use client";
+import { nombreAccesorio } from '@/utils/accesoriosVenta';
 import { useState, useMemo } from 'react';
 import { Plus, Minus, Trash2, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -43,7 +44,7 @@ export function SellAccessoriesModal({ accessories, onClose, onSold }: {
       }
       return [...p, {
         id: a.id,
-        name: `${a.category}${a.compatible_model ? ' ' + a.compatible_model : ''}${a.color ? ' ' + a.color : ''}`,
+        name: nombreAccesorio(a),
         qty: 1,
         sale_price: a.sale_price || 0,
         cost_price: a.cost_price || 0,

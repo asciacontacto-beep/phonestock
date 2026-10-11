@@ -34,7 +34,7 @@ interface Alerta { key: string; text: string; tone: 'red' | 'amber'; onClick?: (
 
 export function InicioMobile({
   esDueno, range, setRange, ganancia, delta, facturacion, ventas, stock, capital, deuda, acreditar,
-  alertas, recientes, serie, haySerie, contactos = [], consejos = [],
+  alertas, recientes, serie, haySerie, contactos = [], consejos = [], selector = null,
 }: {
   esDueno: boolean
   range: Range
@@ -53,6 +53,8 @@ export function InicioMobile({
   haySerie: boolean
   contactos?: Contacto[]
   consejos?: Consejo[]
+  /** Elegir local (sólo el dueño, si hay más de uno). */
+  selector?: React.ReactNode
 }) {
   const hoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -60,6 +62,7 @@ export function InicioMobile({
     <div className="page solo-mob">
       <div className="m-pantalla">
         <div className="mi-saludo">{hoy.charAt(0).toUpperCase() + hoy.slice(1)}</div>
+        {selector}
 
         {/* El número que importa. Dueño: lo que ganó. Vendedor: lo que vendió. */}
         <section className="m-card m-hero mi-hero">

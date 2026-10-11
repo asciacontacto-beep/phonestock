@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { MODELS } from '@/constants/data';
 import { SellAccessoriesModal } from './SellAccessoriesModal';
 import { useConfirm } from '@/hooks/useConfirm';
+import { categoriasSugeridas, nombreAccesorio } from '@/utils/accesoriosVenta';
 
 const ALL_MODELS = [
   ...Object.values(MODELS).flat().filter(m => m.toLowerCase().startsWith('iphone')).sort(),
@@ -19,22 +20,26 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
   const supabase = createClient();
   const [accessories, setAccessories] = useState<any[]>(initialAccessories);
   const [q, setQ] = useState('');
+  // Por local: un local de sólo accesorios quiere ver lo suyo.
+  const [local, setLocal] = useState<string>('todos');
   const [isSellOpen, setIsSellOpen] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState<any>({ id: null, category: 'Funda', compatible_model: '', color: '', stock: '1', cost_price: '', sale_price: '', deposit_id: deposits[0]?.id || '', currency: 'USD' });
   const [loading, setLoading] = useState(false);
 
-  const CATEGORIES = ['Funda', 'Vidrio Templado', 'Cargador', 'Auricular Genérico', 'Cable', 'Otro'];
+  // Texto libre con sugerencias: las de siempre más las que ya usa el local.
+  const CATEGORIES = categoriasSugeridas(accessories.map(a => a.category));
 
   const handleSave = async (e: any) => {
     e.preventDefault();
-    if (!form.category || !form.deposit_id) return toast.error('Faltan datos obligatorios');
+    if (!String(form.category || '').trim()) return toast.error('Poné qué es: cargador, funda, cable…');
+    if (!form.deposit_id) return toast.error('Elegí en qué local está');
     setLoading(true);
 
     try {
       const payload = {
-        category: form.category,
+        category: String(form.category).trim(),
         compatible_model: form.compatible_model.trim() || null,
         color: form.color.trim() || null,
         stock: Number(form.stock),
@@ -85,8 +90,9 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
     setIsModalOpen(true);
   };
 
-  const filtered = accessories.filter(a => 
-    (a.category + ' ' + (a.compatible_model||'') + ' ' + (a.color||'')).toLowerCase().includes(q.toLowerCase())
+  const filtered = accessories.filter(a =>
+    (local === 'todos' || String(a.deposit_id) === local) &&
+    nombreAccesorio(a).toLowerCase().includes(q.trim().toLowerCase())
   );
 
   const totalValueUSD = filtered.filter(a => a.currency === 'USD').reduce((acc, a) => acc + (a.sale_price * a.stock), 0);
@@ -134,15 +140,25 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
 
       <div className="search-bar">
         <Search size={16} color="var(--text-3)" />
-        <input className="inp" placeholder="Buscar por categoría, modelo o color..." value={q} onChange={e => setQ(e.target.value)} />
+        <input className="inp" placeholder="Buscar: cargador, cable, funda iPhone 15…" value={q} onChange={e => setQ(e.target.value)} />
       </div>
+
+      {deposits.length > 1 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }} role="group" aria-label="Filtrar por local">
+          {[{ id: 'todos', name: 'Todos los locales' }, ...deposits].map((d: any) => (
+            <button key={String(d.id)} className={`btn-pill ${local === String(d.id) ? 'active' : ''}`} onClick={() => setLocal(String(d.id))} aria-pressed={local === String(d.id)}>
+              {d.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="tw">
         <table className="table">
           <thead>
             <tr>
               <th>Categoría</th>
-              <th>Modelo Compatible</th>
+              <th>Detalle</th>
               <th>Color</th>
               <th>Stock</th>
               <th>Depósito</th>
@@ -198,9 +214,10 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
               <div className="row">
                 <div className="col field">
                   <label className="lbl">Categoría</label>
-                  <select className="inp" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <input className="inp" list="acc-categorias" placeholder="Ej: Cargador, Auriculares Bluetooth" value={form.category} onChange={e => setForm({...form, category: e.target.value})} />
+                  <datalist id="acc-categorias">
+                    {CATEGORIES.map(c => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
                 <div className="col field">
                   <label className="lbl">Depósito</label>
@@ -211,8 +228,8 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
               </div>
               <div className="row">
                 <div className="col field">
-                  <label className="lbl">Modelo Compatible (Opcional)</label>
-                  <input className="inp" list="acc-models" placeholder="Ej: iPhone 15 Pro Max" value={form.compatible_model} onChange={e => setForm({...form, compatible_model: e.target.value})} />
+                  <label className="lbl">Detalle o modelo (opcional)</label>
+                  <input className="inp" list="acc-models" placeholder="Ej: 20W USB-C genérico · iPhone 15" value={form.compatible_model} onChange={e => setForm({...form, compatible_model: e.target.value})} />
                   <datalist id="acc-models">
                     {ALL_MODELS.map(m => <option key={m} value={m} />)}
                   </datalist>

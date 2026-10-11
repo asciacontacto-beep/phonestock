@@ -30,6 +30,7 @@ export default async function DashboardPage() {
     { data: installmentsData },
     { data: paymentsData },
     { data: gastosData },
+    { data: depositosData },
   ] = await Promise.all([
     traerTodo(() => supabase.from('stock')
       .select(esVendedor ? COLS_STOCK : `${COLS_STOCK},cost_price`)
@@ -53,8 +54,12 @@ export default async function DashboardPage() {
     // Gastos de los últimos 3 meses: para el punto de equilibrio del Análisis.
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
-      : traerTodo(() => supabase.from('expenses').select('id,amount,currency,created_at')
+      : traerTodo(() => supabase.from('expenses').select('id,amount,currency,created_at,deposit_id')
           .gte('created_at', new Date(Date.now() - 95 * 86_400_000).toISOString()).order('id')),
+    // Locales, para elegir de cuál ver los números (cuentas aparte).
+    esVendedor
+      ? Promise.resolve({ data: [] as any[] })
+      : supabase.from('deposits').select('*').order('name'),
   ])
 
   /* Cumpleaños de clientes (sólo el dueño). Si la base todavía no tiene las
@@ -89,6 +94,7 @@ export default async function DashboardPage() {
       installments={installmentsData || []}
       payments={paymentsData || []}
       gastos={gastosData || []}
+      depositos={depositosData || []}
       clientesConCumple={(cumplesRes as { data: any[] | null }).data || []}
       negocio={(ajustesCumple as { data: any }).data?.shop_name || ''}
       descuentoCumple={Number((ajustesCumple as { data: any }).data?.descuento_cumple ?? 10)}

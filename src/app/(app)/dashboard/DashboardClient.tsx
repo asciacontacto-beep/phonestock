@@ -18,6 +18,8 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { InicioMobile } from './InicioMobile';
 import { ParaContactar, type Contacto } from '@/components/ParaContactar';
 import { ConsejosInicio } from '@/components/ConsejosInicio';
+import { SelectorLocal } from '@/components/SelectorLocal';
+import { idsAparte, delLocal, type Local, type Deposito } from '@/utils/locales';
 import { analizar, type Consejo } from '@/utils/analisis/analisis';
 import { proximosCumples, cuandoCumple, textoCumple, mensajeCumple, type ClienteConCumple } from '@/utils/cumpleanos';
 import { cuotasVencidas, garantiasPorVencer, renovacionesDeLaSemana, mensajeCuotas, mensajeGarantia, mensajeRenovacion, fechaLocal, type VentaPostventa } from '@/utils/postventa';
@@ -69,15 +71,23 @@ function daysInStock(createdAt?: string | null): number | null {
 const sinSuscripcion = () => () => {};
 
 export function DashboardClient({
-  stock, sales, exchangeRate, userRole, repairs = [], installments = [], payments = [],
-  clientesConCumple = [], negocio = '', descuentoCumple = 10, garantiaDias = null, gastos = [],
+  stock: stockTodo, sales: ventasTodas, exchangeRate, userRole, repairs: reparacionesTodas = [], installments = [], payments = [],
+  clientesConCumple = [], negocio = '', descuentoCumple = 10, garantiaDias = null, gastos: gastosTodos = [], depositos = [],
 }: {
   stock: any[]; sales: any[]; exchangeRate: number; userRole?: string; repairs?: any[];
-  installments?: any[]; payments?: any[]; gastos?: any[];
+  installments?: any[]; payments?: any[]; gastos?: any[]; depositos?: Deposito[];
   clientesConCumple?: ClienteConCumple[]; negocio?: string; descuentoCumple?: number;
   /** null: la base no tiene garantías por venta todavía (no se avisan). */
   garantiaDias?: number | null;
 }) {
+  // Locales con cuentas aparte (sólo el dueño elige): "General" no los suma.
+  const [local, setLocal] = useState<Local>('general');
+  const aparte = useMemo(() => idsAparte(depositos), [depositos]);
+  const stock = useMemo(() => delLocal(stockTodo, local, aparte, 'deposit'), [stockTodo, local, aparte]);
+  const sales = useMemo(() => delLocal(ventasTodas, local, aparte), [ventasTodas, local, aparte]);
+  const repairs = useMemo(() => delLocal(reparacionesTodas, local, aparte), [reparacionesTodas, local, aparte]);
+  const gastos = useMemo(() => delLocal(gastosTodos, local, aparte), [gastosTodos, local, aparte]);
+  const selectorLocal = userRole !== 'seller' ? <SelectorLocal depositos={depositos} valor={local} onChange={setLocal} /> : null;
   // Análisis del negocio (sólo el dueño). Con la fecha del navegador: se
   // calcula recién ahí para que el servidor no pinte otros números.
   const enNavegador = useSyncExternalStore(sinSuscripcion, () => true, () => false);
@@ -507,6 +517,7 @@ export function DashboardClient({
       {/* Header */}
       <div className="sh" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12, justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {selectorLocal}
           <div className="filters-wrap" style={{ margin: 0 }}>
             {(Object.keys(RANGE_LABELS) as Range[]).map(r => (
               <button
@@ -827,6 +838,7 @@ export function DashboardClient({
       haySerie={hasSeries}
       contactos={contactos}
       consejos={consejos}
+      selector={selectorLocal}
     />
 
       {/* Fuera de las dos vistas: tienen que poder abrirse en cualquiera. */}

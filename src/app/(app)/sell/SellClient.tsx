@@ -1,6 +1,6 @@
 "use client"
 import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, type FuenteCotizacion } from '@/utils/cotizacion';
-import { totalAccesoriosEnPesos, enPesos, monedaAccesorio } from '@/utils/accesoriosVenta';
+import { totalAccesoriosEnPesos, enPesos, monedaAccesorio, nombreAccesorio } from '@/utils/accesoriosVenta';
 import { limpiarImei } from '@/utils/imei';
 import { CampoCumple } from '@/components/CampoCumple';
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -197,7 +197,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
      todos; primero los del depósito del equipo. */
   const accDelDeposito = (a: any) => accessoryOnly || !unit || String(a.deposit_id) === String(unit.deposit);
   const accVisibles = accessoriesList
-    .filter((a: any) => !accSearch.trim() || `${a.category} ${a.compatible_model || ''} ${a.color || ''}`.toLowerCase().includes(accSearch.toLowerCase()))
+    .filter((a: any) => !accSearch.trim() || nombreAccesorio(a).toLowerCase().includes(accSearch.trim().toLowerCase()))
     .sort((a: any, b: any) => Number(accDelDeposito(b)) - Number(accDelDeposito(a)));
 
   const price = parseFloat(sp) || 0;
@@ -787,7 +787,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
               {(() => {
                 const picked = accessoriesList.find(a => a.id === selectedAccId);
                 if (picked) {
-                  const label = `${picked.category}${picked.compatible_model ? ' ' + picked.compatible_model : ''}${picked.color ? ' ' + picked.color : ''}`;
+                  const label = nombreAccesorio(picked);
                   return (
                     <div className="acc-picked">
                       <div className="acc-picked-main">
@@ -820,7 +820,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                     {accSearchOpen && (
                       <div className="acc-dropdown">
                         {accVisibles.map(a => {
-                            const label = `${a.category}${a.compatible_model ? ' ' + a.compatible_model : ''}${a.color ? ' ' + a.color : ''}`;
+                            const label = nombreAccesorio(a);
                             const elegir = () => {
                               setSelectedAccId(a.id);
                               setAccSearch('');
@@ -886,7 +886,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                   setSelectedAccessories(p => {
                     const existing = p.find(x => x.id === selectedAccId && x.is_gift === (accType === 'regalo'));
                     if (existing) return p.map(x => x === existing ? { ...x, qty: x.qty + accQty } : x);
-                    return [...p, { id: selectedAccId, name: `${acc.category} ${acc.compatible_model || ''} ${acc.color || ''}`.trim(), qty: accQty, price: accType === 'regalo' ? 0 : acc.sale_price, is_gift: accType === 'regalo', cost_price: acc.cost_price, currency: monedaAccesorio(acc.currency) }];
+                    return [...p, { id: selectedAccId, name: nombreAccesorio(acc), qty: accQty, price: accType === 'regalo' ? 0 : acc.sale_price, is_gift: accType === 'regalo', cost_price: acc.cost_price, currency: monedaAccesorio(acc.currency) }];
                   });
                   setAccSearch(''); setSelectedAccId(''); setAccQty(1);
                 }}><Plus size={16}/> Agregar</button>

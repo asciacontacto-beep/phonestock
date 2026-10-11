@@ -5,6 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Refere
 import type { Sale, Repair } from '@/types/domain'
 import { ultimosMeses, hastaElDia, resumenDelMes, variacionMes, type ResumenMes, type Gasto } from '@/utils/mesAMes'
 import { filaCsv } from '@/utils/csv'
+import { SelectorLocal } from '@/components/SelectorLocal'
+import { idsAparte, delLocal, type Local, type Deposito } from '@/utils/locales'
 
 const sinCambios = () => () => {}
 
@@ -25,13 +27,20 @@ const usd = (n: number) => `${n < 0 ? '-' : ''}U$${Math.abs(Math.round(n)).toLoc
 const fmt = (v: number | null, f: 'U$' | 'u' | '%') =>
   v == null ? '—' : f === 'U$' ? usd(v) : f === '%' ? `${Math.round(v * 100)}%` : Math.round(v).toLocaleString('es-AR')
 
-export function MesAMesClient({ ahora, cotizacion, ventas, gastos, reparaciones }: {
+export function MesAMesClient({ ahora, cotizacion, ventas: ventasTodas, gastos: gastosTodos, reparaciones: reparacionesTodas, depositos = [] }: {
   ahora: string
   cotizacion: number
   ventas: Sale[]
-  gastos: Gasto[]
-  reparaciones: Pick<Repair, 'cost' | 'status' | 'created_at' | 'updated_at'>[]
+  gastos: (Gasto & { deposit_id?: string | null })[]
+  reparaciones: Pick<Repair, 'cost' | 'status' | 'created_at' | 'updated_at' | 'deposit_id'>[]
+  depositos?: Deposito[]
 }) {
+  // Locales con cuentas aparte: "General" no los suma; eligiendo uno, sólo lo suyo.
+  const [local, setLocal] = useState<Local>('general')
+  const aparte = useMemo(() => idsAparte(depositos), [depositos])
+  const ventas = useMemo(() => delLocal(ventasTodas, local, aparte), [ventasTodas, local, aparte])
+  const gastos = useMemo(() => delLocal(gastosTodos, local, aparte), [gastosTodos, local, aparte])
+  const reparaciones = useMemo(() => delLocal(reparacionesTodas, local, aparte), [reparacionesTodas, local, aparte])
   // Fechas del navegador: se arma recién ahí, para no pintar meses distintos.
   const listo = useSyncExternalStore(sinCambios, () => true, () => false)
   const hoy = useMemo(() => new Date(ahora), [ahora])
@@ -85,7 +94,10 @@ export function MesAMesClient({ ahora, cotizacion, ventas, gastos, reparaciones 
           <h1 className="st">Mes a mes</h1>
           <div className="ss2">Compará cómo te fue entre meses: ventas, ganancia, gastos y más.</div>
         </div>
-        {listo && <button className="btn btn-outline" onClick={descargar}><Download size={15} /> Descargar</button>}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <SelectorLocal depositos={depositos} valor={local} onChange={setLocal} />
+          {listo && <button className="btn btn-outline" onClick={descargar}><Download size={15} /> Descargar</button>}
+        </div>
       </div>
 
       {!listo || !ra || !rb ? (

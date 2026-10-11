@@ -1,6 +1,8 @@
 "use client"
 import { useState } from 'react';
-import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, TrendingUp, AtSign, Edit2, Trash2 } from 'lucide-react';
+import { CampoCumple } from '@/components/CampoCumple';
+import { cumpleValido, textoCumple } from '@/utils/cumpleanos';
+import { Search, User, Phone, Mail, CreditCard, ShoppingBag, ChevronRight, X, TrendingUp, AtSign, Edit2, Trash2, Cake } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { ventaEsDe } from '@/utils/customers';
 import { useRouter } from 'next/navigation';
@@ -68,12 +70,20 @@ export function CustomersClient({
     if (!editData.name) { toast.error('El nombre es obligatorio'); return; }
     try {
       setLoading(true);
+      // El cumpleaños sólo se manda si cambió (y si es una fecha real, o se borró).
+      const cumpleCambio = (editData.birth_day ?? null) !== (selected.birth_day ?? null)
+        || (editData.birth_month ?? null) !== (selected.birth_month ?? null);
+      const cumple = cumpleValido(editData.birth_day, editData.birth_month);
+      if (cumpleCambio && !cumple && (editData.birth_day || editData.birth_month)) {
+        toast.error('El cumpleaños no es una fecha válida'); setLoading(false); return;
+      }
       const { error } = await supabase.from('customers').update({
         name: editData.name,
         dni: editData.dni || null,
         phone: editData.phone || null,
         email: editData.email || null,
         instagram: editData.instagram || null,
+        ...(cumpleCambio ? { birth_day: cumple?.dia ?? null, birth_month: cumple?.mes ?? null } : {}),
       }).eq('id', selected.id);
       
       if (error) throw error;
@@ -323,6 +333,8 @@ export function CustomersClient({
                       <label className="lbl">Instagram (sin @)</label>
                       <input className="inp" placeholder="ej: juanperez" value={editData.instagram || ''} onChange={e => setEditData({...editData, instagram: e.target.value.replace('@', '')})} />
                     </div>
+                    <CampoCumple dia={editData.birth_day} mes={editData.birth_month}
+                      onChange={(dia, mes) => setEditData({ ...editData, birth_day: dia, birth_month: mes })} />
                     <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
                       <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setIsEditing(false)}>Cancelar</button>
                       <button className="btn btn-dark" style={{ flex: 1 }} onClick={handleUpdate} disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</button>
@@ -337,6 +349,7 @@ export function CustomersClient({
                     { icon: <Phone size={14} />, label: 'Teléfono', val: selected.phone },
                     { icon: <Mail size={14} />, label: 'Email', val: selected.email },
                     { icon: <AtSign size={14} />, label: 'Instagram', val: selected.instagram, isLink: true },
+                    { icon: <Cake size={14} />, label: 'Cumpleaños', val: cumpleValido(selected.birth_day, selected.birth_month) ? textoCumple(Number(selected.birth_day), Number(selected.birth_month)) : null },
                   ].map(r => (
                     <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                       <div style={{ color: 'var(--text-3)', width: 16 }}>{r.icon}</div>

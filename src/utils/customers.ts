@@ -11,6 +11,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { cumpleValido } from './cumpleanos'
 
 /**
  * Nombre de relleno que llevan las ventas sin cliente identificado. Se
@@ -80,6 +81,9 @@ export type CustomerInput = {
   phone?: string
   email?: string
   instagram?: string
+  /** Cumpleaños (día y mes). Sólo se guarda si es una fecha válida. */
+  birth_day?: number | string | null
+  birth_month?: number | string | null
 }
 
 /** Devuelve el id del cliente, creándolo o actualizándolo según corresponda. */
@@ -118,6 +122,8 @@ export async function upsertCustomer(supabase: SupabaseClient, cust: CustomerInp
     updated_at: new Date().toISOString(),
   }
   if (dni) payload.dni = dni
+  const cumple = cumpleValido(cust.birth_day, cust.birth_month)
+  if (cumple) { payload.birth_day = cumple.dia; payload.birth_month = cumple.mes }
 
   if (existing) {
     await supabase.from('customers').update(payload).eq('id', existing.id)

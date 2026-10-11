@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Save, Building2, MapPin, Camera, Phone, Mail, Globe, FileText, Loader2,
   DollarSign, Download, Hash, Image as ImageIcon, Palette, ReceiptText, Trash2, Copy,
-  CreditCard, Lock, Smartphone, Database, ArrowRight,
+  CreditCard, Lock, Smartphone, Database, ArrowRight, Cake,
 } from 'lucide-react';
 import { downloadBackup } from '@/utils/backup';
 import { CardPlansCard } from '@/components/CardPlansCard';
@@ -86,6 +86,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
   /* Que el vendedor cargue el costo al ingresar equipos: sólo si la base
      tiene la columna (migración 20261007_vendedor_carga_costo). */
   const [hayCostoVendedor, setHayCostoVendedor] = useState(false);
+  // Descuento del saludo de cumpleaños (migración 20261010_cumpleanos_clientes).
+  const [hayCumple, setHayCumple] = useState(false);
   /* Link de referidos del negocio. Si la migración no está aplicada, la
      tarjeta simplemente no aparece. */
   const [referral, setReferral] = useState<{ code: string; invitados: number; pagos: number } | null>(null);
@@ -124,6 +126,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       setHayCiegas(!sinCiegas);
       const { error: sinCostoVendedor } = await supabase.from('settings').select('vendedor_carga_costo').limit(0);
       setHayCostoVendedor(!sinCostoVendedor);
+      const { error: sinCumple } = await supabase.from('settings').select('descuento_cumple').limit(0);
+      setHayCumple(!sinCumple);
       const { error: sinCuentas } = await supabase.from('accounts').select('id').limit(0);
       setHayCuentas(!sinCuentas);
       if (data && data.length > 0) {
@@ -159,6 +163,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       if (hayFuente) full.cotizacion_fuente = fuente;
       if (hayCiegas) full.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
       if (hayCostoVendedor) full.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
+      if (hayCumple) full.descuento_cumple = Math.min(100, Math.max(0, Number(form.descuento_cumple ?? 10) || 0));
 
       type WriteResult = { error: { message?: string; code?: string } | null; data?: { id?: string } | null };
       const write = async (payload: Record<string, unknown>): Promise<WriteResult> => {
@@ -181,6 +186,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
         if (hayFuente) baseOnly.cotizacion_fuente = fuente;
         if (hayCiegas) baseOnly.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
         if (hayCostoVendedor) baseOnly.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
+        if (hayCumple) baseOnly.descuento_cumple = Math.min(100, Math.max(0, Number(form.descuento_cumple ?? 10) || 0));
         ({ error, data } = await write(baseOnly));
         if (!error) {
           toast.warning('Guardado. El logo y el diseño avanzado del recibo todavía no están activos en tu cuenta: escribinos y los activamos.', { duration: 9000 });
@@ -414,6 +420,24 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
           </div>
 
           </>}
+
+          {seccion === 'negocio' && hayCumple && (
+            <div className="card">
+              <div className="lbl" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Cake size={15} /> Cumpleaños de clientes
+              </div>
+              <div className="field" style={{ maxWidth: 260 }}>
+                <label className="lbl">Descuento que ofrecés en el saludo (%)</label>
+                <input className="inp" type="number" min="0" max="100" inputMode="numeric"
+                  value={String(form.descuento_cumple ?? 10)}
+                  onChange={e => setField('descuento_cumple', e.target.value === '' ? '' : Number(e.target.value))} />
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                En el Resumen aparecen los clientes que cumplen en los próximos 7 días, con un botón para saludarlos
+                por WhatsApp. Con 0 el saludo va sin descuento. Acordate de tocar <strong>Guardar</strong>.
+              </div>
+            </div>
+          )}
 
           {seccion === 'cotizacion' && (
           <div className="card">

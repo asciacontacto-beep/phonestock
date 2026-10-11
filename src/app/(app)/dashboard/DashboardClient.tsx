@@ -16,6 +16,8 @@ import { PrimerosPasos } from '@/components/PrimerosPasos';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 import { InicioMobile } from './InicioMobile';
+import { CumpleanosProximos } from '@/components/CumpleanosProximos';
+import { proximosCumples, type ClienteConCumple } from '@/utils/cumpleanos';
 
 type Range = 'today' | 'week' | 'month' | 'all';
 
@@ -63,10 +65,14 @@ function daysInStock(createdAt?: string | null): number | null {
 
 export function DashboardClient({
   stock, sales, exchangeRate, userRole, repairs = [], installments = [], payments = [],
+  clientesConCumple = [], negocio = '', descuentoCumple = 10,
 }: {
   stock: any[]; sales: any[]; exchangeRate: number; userRole?: string; repairs?: any[];
   installments?: any[]; payments?: any[];
+  clientesConCumple?: ClienteConCumple[]; negocio?: string; descuentoCumple?: number;
 }) {
+  // Cumpleaños de los próximos 7 días, con la fecha de este navegador.
+  const cumples = useMemo(() => proximosCumples(clientesConCumple, new Date(), 7), [clientesConCumple]);
   const router   = useRouter();
   const supabase = createClient();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -645,6 +651,10 @@ export function DashboardClient({
         </div>
       )}
 
+      {userRole !== 'seller' && (
+        <CumpleanosProximos cumples={cumples} negocio={negocio} descuento={descuentoCumple} variante="compu" />
+      )}
+
       {/* ── Qué conviene reponer ────────────────────────────────
            Reports explica la rentabilidad por modelo; acá se cruza con el
            stock para que la conclusión sea una acción, no un gráfico. */}
@@ -767,6 +777,9 @@ export function DashboardClient({
       recientes={allSales.slice(0, 6)}
       serie={profitSeries}
       haySerie={hasSeries}
+      cumples={userRole !== 'seller' ? cumples : []}
+      negocio={negocio}
+      descuentoCumple={descuentoCumple}
     />
 
       {/* Fuera de las dos vistas: tienen que poder abrirse en cualquiera. */}

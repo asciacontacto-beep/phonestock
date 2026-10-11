@@ -51,6 +51,16 @@ export default async function DashboardPage() {
       : traerTodo(() => supabase.from('customer_payments').select('id,installment_id,amount,currency,exchange_rate,paid_at').order('paid_at').order('id')),
   ])
 
+  /* Cumpleaños de clientes (sólo el dueño). Si la base todavía no tiene las
+     columnas, la consulta falla y la sección no aparece: nada más. */
+  const [cumplesRes, ajustesCumple] = esVendedor
+    ? [{ data: [] as any[] }, { data: null as any }]
+    : await Promise.all([
+        traerTodo(() => supabase.from('customers').select('id,name,phone,birth_day,birth_month')
+          .not('birth_month', 'is', null).order('id')),
+        supabase.from('settings').select('shop_name,descuento_cumple').eq('org_id', profile?.org_id || '').limit(1).maybeSingle(),
+      ])
+
   // Los accesorios de cada venta llevan su costo adentro (lo completa la
   // base para los reportes del dueño). Al vendedor se le manda sin él.
   const ventas = esVendedor
@@ -71,6 +81,9 @@ export default async function DashboardPage() {
       repairs={repairsData || []}
       installments={installmentsData || []}
       payments={paymentsData || []}
+      clientesConCumple={(cumplesRes as { data: any[] | null }).data || []}
+      negocio={(ajustesCumple as { data: any }).data?.shop_name || ''}
+      descuentoCumple={Number((ajustesCumple as { data: any }).data?.descuento_cumple ?? 10)}
     />
   )
 }

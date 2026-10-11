@@ -2,6 +2,7 @@
 import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, type FuenteCotizacion } from '@/utils/cotizacion';
 import { totalAccesoriosEnPesos, enPesos, monedaAccesorio } from '@/utils/accesoriosVenta';
 import { limpiarImei } from '@/utils/imei';
+import { CampoCumple } from '@/components/CampoCumple';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { ArrowRight, Plus, Printer, Search, AlertTriangle, FileText, X, MapPin, PackageOpen, CreditCard, ChevronRight, Receipt as ReceiptIcon, User as UserIcon, Loader2 } from 'lucide-react';
 import { PAY, BRANDS, MODELS, STORAGES, COLORS } from '@/constants/data';
@@ -47,7 +48,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   const [accessoryOnly, setAccessoryOnly] = useState(false);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
   const [selectedAccessories, setSelectedAccessories] = useState<any[]>([]);
-  const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '', instagram: '' });
+  const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '', instagram: '', birth_day: null as number | null, birth_month: null as number | null });
   const [notes, setNotes] = useState('');
   const [payments, setPayments] = useState<any[]>([]);
   const [sc, setSc] = useState('USD');
@@ -383,7 +384,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   };
 
   const applyCustSuggestion = (c: any) => {
-    setCust({ name: c.name || '', dni: c.dni || '', phone: c.phone || '', email: c.email || '', instagram: c.instagram || '' });
+    setCust({ name: c.name || '', dni: c.dni || '', phone: c.phone || '', email: c.email || '', instagram: c.instagram || '', birth_day: c.birth_day ?? null, birth_month: c.birth_month ?? null });
     setCustSearch('');
     setCustSuggestions([]);
   };
@@ -438,7 +439,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         );
       }
       setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto'); setValorCuota(''); setModoInteres('pct');
-      setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
+      setCust({ name: '', dni: '', phone: '', email: '', instagram: '', birth_day: null, birth_month: null });
       router.refresh();
     } catch (e: any) {
       toast.error(e.message || 'Error al procesar venta');
@@ -570,7 +571,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         );
       }
       setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto'); setValorCuota(''); setModoInteres('pct');
-      setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
+      setCust({ name: '', dni: '', phone: '', email: '', instagram: '', birth_day: null, birth_month: null });
       router.refresh();
     } catch (e: any) {
       toast.error(e?.message || 'No se pudo registrar la venta. Probá de nuevo.');
@@ -724,6 +725,11 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           <div className="row">
             <div className="col field"><label className="lbl">Email</label><input className="inp" value={cust.email} onChange={e => setCust(p => ({ ...p, email: e.target.value }))} /></div>
             <div className="col field"><label className="lbl">Instagram</label><input className="inp" value={cust.instagram} onChange={e => setCust(p => ({ ...p, instagram: e.target.value }))} placeholder="@usuario" /></div>
+          </div>
+          {/* Para avisar cuando se acerca y saludarlo con un descuento. */}
+          <div className="field" style={{ maxWidth: 320 }}>
+            <CampoCumple dia={cust.birth_day} mes={cust.birth_month}
+              onChange={(dia, mes) => setCust(p => ({ ...p, birth_day: dia, birth_month: mes }))} />
           </div>
           <div className="divider" />
           <div className="paso-acciones" style={{ display: 'flex', gap: 12 }}>

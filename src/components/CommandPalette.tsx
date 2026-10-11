@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
   Search, LayoutDashboard, BarChart3, Package, Headphones, Warehouse, ScanLine,
   ShoppingCart, FileText, Receipt, Wrench, CalendarDays, CreditCard, Wallet,
-  Users2, ShoppingBag, Truck, User as UserIcon, Settings, CornerDownLeft, Store, Sparkles,
+  Users2, ShoppingBag, Truck, User as UserIcon, Settings, CornerDownLeft, Store, Sparkles, CalendarRange,
 } from 'lucide-react';
 
 type Cmd = {
@@ -36,6 +36,7 @@ const ALL_COMMANDS: Cmd[] = [
   { id: 'suppliers',   label: 'Proveedores',       route: '/suppliers',   icon: <Truck size={16} />,      keywords: 'proveedores compras' },
   { id: 'users',       label: 'Usuarios',          route: '/users',       icon: <UserIcon size={16} />,   keywords: 'usuarios empleados equipo permisos' },
   { id: 'settings',    label: 'Configuración',     route: '/settings',    icon: <Settings size={16} />,   keywords: 'configuracion ajustes settings negocio' },
+  { id: 'mes-a-mes',   label: 'Mes a mes',         hint: 'Comparar meses',  route: '/mes-a-mes', icon: <CalendarRange size={16} />, keywords: 'mes meses comparar comparativa mensual historico informe' },
   { id: 'analisis',    label: 'Análisis',          hint: 'Consejos del negocio', route: '/analisis', icon: <Sparkles size={16} />, keywords: 'analisis consejos estadistica ia inteligencia negocio sugerencias' },
   { id: 'catalogo',    label: 'Catálogo',          hint: 'Fotos y vidriera', route: '/catalogo', icon: <Store size={16} />,  keywords: 'catalogo vidriera fotos publicar link' },
 ];

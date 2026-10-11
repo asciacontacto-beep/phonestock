@@ -1,5 +1,5 @@
 "use client"
-import { Bug, Gift, History, Sparkles,
+import { Bug, Gift, History, Sparkles, CalendarRange,
   LayoutDashboard, BarChart3, Package, Headphones, Warehouse, ScanLine, ShoppingCart, FileText, Receipt,
   CreditCard, Wallet, Wrench, CalendarDays, Users2, ShoppingBag, Truck, Settings, User as UserIcon, Store,
 } from 'lucide-react';
@@ -25,6 +25,7 @@ export const DUENO: Rama[] = [
   { label: 'Resumen', hijos: [
     { id: 'dashboard', label: 'Resumen', icon: <LayoutDashboard size={I} /> },
     { id: 'reports', label: 'Rentabilidad', icon: <BarChart3 size={I} /> },
+    { id: 'mes-a-mes', label: 'Mes a mes', icon: <CalendarRange size={I} /> },
     { id: 'analisis', label: 'Análisis', icon: <Sparkles size={I} /> },
   ] },
   { label: 'Ventas', hijos: [

@@ -2,7 +2,7 @@
 import { filaCsv } from '@/utils/csv';
 import { plural } from '@/utils/texto';
 import { useState, useMemo, useSyncExternalStore } from 'react';
-import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
+import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed, precioSinInteresUSD } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
 import { Sparkline } from '@/components/Sparkline';
 import { voidSale, voidSaleSummary } from '@/utils/voidSale';
@@ -359,7 +359,7 @@ export function DashboardClient({
     filteredSales.filter(s => saleCategory(s) === 'device').forEach(s => {
       const key = `${s.brand} ${s.model}`.trim();
       const rate = saleExchangeRate(s, exchangeRate);
-      const profit = toUSD(s.price || 0, s.currency, rate) - toUSD(s.cost_price || 0, s.currency, rate);
+      const profit = precioSinInteresUSD(s, rate) - toUSD(s.cost_price || 0, s.currency, rate);
       const cur = byModel.get(key) || { model: key, units: 0, profit: 0, stock: 0 };
       cur.units += 1;
       cur.profit += profit;
@@ -388,7 +388,7 @@ export function DashboardClient({
     .filter(s => saleCategory(s) === 'device')
     .map(s => {
       const rate = saleExchangeRate(s, exchangeRate);
-      const priceUSD = toUSD(s.price || 0, s.currency, rate);
+      const priceUSD = precioSinInteresUSD(s, rate);
       const costUSD = toUSD(s.cost_price || 0, s.currency, rate);
       return {
         id: String(s.id),
@@ -431,7 +431,7 @@ export function DashboardClient({
     filteredSales.filter(s => saleCategory(s) === 'service').forEach(s => {
       const key = (s.customer?.name || '').toLowerCase().trim();
       const rate = saleExchangeRate(s, exchangeRate);
-      revenueByCustomer.set(key, (revenueByCustomer.get(key) || 0) + toUSD(s.price || 0, s.currency, rate));
+      revenueByCustomer.set(key, (revenueByCustomer.get(key) || 0) + precioSinInteresUSD(s, rate));
     });
 
     return closed.map(r => {

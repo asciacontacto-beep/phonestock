@@ -34,6 +34,15 @@ export function toUSD(amount: number, currency: string | null | undefined, rate:
   return currency === 'USD' ? amount : amount / (rate || 1)
 }
 
+/**
+ * Precio de la venta en USD SIN el interés de las cuotas del local. El precio
+ * guardado lo trae adentro; para la ganancia del equipo (o del servicio) va
+ * aparte, igual que en categoryBreakdown.
+ */
+export function precioSinInteresUSD(sale: Pick<Sale, 'price' | 'currency' | 'financing_interest'>, rate: number): number {
+  return toUSD(sale.price || 0, sale.currency, rate) - toUSD(Number(sale.financing_interest) || 0, sale.currency, rate)
+}
+
 export function saleAccessoriesRevenueUSD(sale: Pick<Sale, 'accessories'>, rate: number): number {
   return (sale.accessories || []).reduce((acc: number, a: SaleAccessory) => {
     if (a.is_gift) return acc

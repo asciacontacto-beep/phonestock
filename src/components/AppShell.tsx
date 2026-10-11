@@ -5,6 +5,7 @@ import { Topbar } from './Topbar'
 import { MobileHeader, TabBar } from './mobile/MobileShell'
 import { CommandPalette } from './CommandPalette'
 import { AvisoDeCuenta } from '@/components/AvisoDeCuenta'
+import { AvisoVersionNueva } from '@/components/AvisoVersionNueva'
 import { SectionTabs } from './SectionTabs'
 import { CerrarConEsc } from './CerrarConEsc'
 import { createClient } from '@/utils/supabase/client'
@@ -67,6 +68,7 @@ export function AppShell({ user, children }: { user: any, children: React.ReactN
         <MobileHeader user={profile ? mergedUser : null} superadmin={isSuperAdmin} onLogout={handleLogout} />
         <Topbar page={page} user={mergedUser} onLogout={handleLogout} />
         <AvisoDeCuenta orgId={mergedUser.org_id} />
+        <AvisoVersionNueva />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
           {finalRole === 'owner' && !isSuperAdmin && <SectionTabs />}
           {children}

@@ -3011,3 +3011,58 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 @media (prefers-reduced-motion: reduce) {
   .an-card, .an-card-cuerpo { animation: none; }
 }
+
+/* ── Aviso de versión nueva ── */
+.aviso-version {
+  /* Centrado sin transform: la animación de entrada usa transform. */
+  position: fixed; left: 0; right: 0; margin: 0 auto; width: fit-content; bottom: 20px; z-index: 900;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px;
+  background: var(--surface); border: 1px solid var(--border-md); border-radius: 14px;
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .25); font-size: 13px; color: var(--text);
+  animation: aparecerAbajo .3s var(--ease) both; max-width: calc(100vw - 24px);
+}
+.aviso-version .btn { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+@media (max-width: 768px) {
+  /* Arriba de la barra de abajo del celular. */
+  .aviso-version { bottom: calc(96px + env(safe-area-inset-bottom)); }
+}
+
+/* ── Mes a mes ─────────────────────────────────────────────────────────── */
+.mm-comparar { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+.mm-selects { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.mm-selects label { display: flex; flex-direction: column; flex: 1 1 180px; max-width: 260px; }
+.mm-vs { font-size: 13px; color: var(--text-3); padding-bottom: 12px; }
+.mm-atajos { display: flex; gap: 6px; flex-wrap: wrap; }
+.mm-tramo { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--text-2); line-height: 1.5; cursor: pointer; }
+.mm-tramo input { margin-top: 3px; }
+.mm-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mm-desglose, .mm-grafico { margin-bottom: 14px; }
+.mm-desglose .mm-tabla { min-width: 0; }
+.mm-tit { font-size: 13.5px; font-weight: 650; margin-bottom: 10px; }
+.mm-tabla { min-width: 520px; font-size: 13px; }
+.mm-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mm-tabla th.mm-num { text-align: right; }
+.mm-fuerte td { font-weight: 650; border-top: 1px solid var(--border-md); }
+.mm-bien { color: var(--green); }
+.mm-mal { color: var(--red); }
+.mm-nota { margin: 10px 0 0; font-size: 12px; color: var(--text-3); line-height: 1.5; }
+.mm-graf-cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.mm-graf-cab .mm-tit { margin-bottom: 0; }
+.mm-doce .mm-tabla { min-width: 760px; }
+.mm-sel td { background: var(--surface-2); }
+.mm-curso { font-size: 11px; color: var(--text-3); }
+@media (max-width: 1100px) {
+  .mm-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+  .mm-selects label { max-width: none; }
+  .mm-vs { display: none; }
+  .mm-desglose .tw .table.mm-tabla { width: 100%; min-width: 0; font-size: 12px; }
+  .mm-desglose .tw .table.mm-tabla td:first-child { white-space: normal; }
+  /* En el celular la diferencia ya está en las tarjetas de arriba. */
+  .mm-desglose .tw .table.mm-tabla .mm-dif { display: none; }
+  .mm-desglose .mm-tabla th, .mm-desglose .mm-tabla td { padding-left: 8px; padding-right: 8px; }
+  .mm-atajos { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px; scrollbar-width: none; }
+  .mm-atajos::-webkit-scrollbar { display: none; }
+  .mm-atajos .btn-pill { flex-shrink: 0; }
+}

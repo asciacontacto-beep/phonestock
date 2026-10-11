@@ -15,6 +15,8 @@ const { version } = JSON.parse(readFileSync(new URL("./package.json", import.met
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: version,
+    // Identifica cada publicación: el commit en Vercel. Ver AvisoVersionNueva.
+    NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || `local-${Date.now()}`,
   },
   experimental: {
     // La caché de Turbopack entre builds (Vercel guarda .next/cache) servía un

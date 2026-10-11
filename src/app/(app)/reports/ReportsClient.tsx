@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { plural } from '@/utils/texto';
 import { TrendingUp, TrendingDown, DollarSign, Users, Smartphone, Warehouse, Calendar, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area, Legend } from 'recharts';
-import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
+import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed, precioSinInteresUSD } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
 import { diaLocal } from '@/utils/fechas';
 import { useEsCelular } from '@/hooks/useEsCelular';
@@ -57,7 +57,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
     .filter(s => saleCategory(s) === 'device')
     .map(s => {
       const rate = saleExchangeRate(s, exchangeRate);
-      const priceUSD = toUSD(s.price || 0, s.currency, rate);
+      const priceUSD = precioSinInteresUSD(s, rate);
       const costUSD = toUSD(s.cost_price || 0, s.currency, rate);
       return {
         id: String(s.id),
@@ -91,7 +91,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
     filteredSales.filter(s => saleCategory(s) === 'service').forEach(s => {
       const key = (s.customer?.name || '').toLowerCase().trim();
       const rate = saleExchangeRate(s, exchangeRate);
-      revenueByCustomer.set(key, (revenueByCustomer.get(key) || 0) + toUSD(s.price || 0, s.currency, rate));
+      revenueByCustomer.set(key, (revenueByCustomer.get(key) || 0) + precioSinInteresUSD(s, rate));
     });
     return closed.map(r => {
       const key = (r.customer_name || '').toLowerCase().trim();
@@ -154,7 +154,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
     if (!modelProfit[key]) modelProfit[key] = { model: key, revenue: 0, cost: 0, count: 0 };
     // Cotización del día de la venta, como en el resto del informe.
     const rate = saleExchangeRate(s, exchangeRate);
-    const rev = toUSD(s.price || 0, s.currency, rate);
+    const rev = precioSinInteresUSD(s, rate);
     const cost = toUSD(s.cost_price || 0, s.currency, rate);
     modelProfit[key].revenue += rev;
     modelProfit[key].cost += cost;
@@ -171,7 +171,7 @@ export function ReportsClient({ sales, expenses, deposits, exchangeRate, repairs
     const key = s.seller_id || s.seller_name || 'Desconocido';
     if (!sellerProfit[key]) sellerProfit[key] = { name: s.seller_name || 'Sin nombre', revenue: 0, cost: 0, count: 0 };
     const rate = saleExchangeRate(s, exchangeRate);
-    const rev = toUSD(s.price || 0, s.currency, rate);
+    const rev = precioSinInteresUSD(s, rate);
     const cost = toUSD(s.cost_price || 0, s.currency, rate);
     sellerProfit[key].revenue += rev;
     sellerProfit[key].cost += cost;

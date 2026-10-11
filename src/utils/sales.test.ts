@@ -8,6 +8,7 @@ import {
   isRepairClosed,
   categoryBreakdown,
   totalsFromBreakdown,
+  precioSinInteresUSD,
 } from './sales'
 
 const RATE = 1000
@@ -184,6 +185,14 @@ describe('totalsFromBreakdown', () => {
     expect(t.cost).toBe(800 + 10 + 30)
     expect(t.profit).toBe(t.revenue - t.cost)
     expect(t.profit).toBe(b.device.profit + b.accessory.profit + b.service.profit)
+  })
+})
+
+describe('precioSinInteresUSD', () => {
+  it('saca el interés del precio, en la moneda de la venta', () => {
+    expect(precioSinInteresUSD({ price: 1200, currency: 'USD', financing_interest: 200 }, RATE)).toBe(1000)
+    expect(precioSinInteresUSD({ price: 1_300_000, currency: 'ARS', financing_interest: 130_000 }, 1300)).toBeCloseTo(900)
+    expect(precioSinInteresUSD({ price: 500, currency: 'USD' }, RATE)).toBe(500)
   })
 })
 

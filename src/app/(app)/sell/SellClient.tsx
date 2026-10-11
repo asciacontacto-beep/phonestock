@@ -581,8 +581,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 
   return (
     <div className="page">
-      <div className="sh" style={{ marginBottom: 20 }}>
-        <h1 className="st">Nueva Venta</h1>
+      <div className="sh sh-movil" style={{ marginBottom: 20 }}>
+        <h1 className="st solo-desk">Nueva Venta</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {[1,2,3,4].map(n => (
             <div key={n} style={{
@@ -1175,7 +1175,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     <span style={{ fontFamily: 'JetBrains Mono' }}>{sc === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</span>
-                    <button className="btn-ghost" onClick={() => setPayments(ps => ps.filter((_, j) => j !== i))} style={{ padding: 0, color: 'var(--red)' }}>×</button>
+                    <button className="btn-icon" aria-label="Quitar pago" title="Quitar pago" onClick={() => setPayments(ps => ps.filter((_, j) => j !== i))} style={{ color: 'var(--red)' }}><X size={16} /></button>
                   </div>
                 </div>
               ))}
@@ -1255,21 +1255,21 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 
                       {enCuotas && (
                         <>
-                          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                            <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1 1 90px' }}>
                               <label className="lbl">Cuotas</label>
                               <select className="inp" value={cantCuotas} onChange={e => setCantCuotas(parseInt(e.target.value))}>
                                 {[2, 3, 4, 5, 6, 9, 12].map(n => <option key={n} value={n}>{n}</option>)}
                               </select>
                             </div>
-                            <div style={{ flex: 1 }}>
+                            <div style={{ flex: '1 1 90px' }}>
                               <label className="lbl">Interés %</label>
                               <input className="inp" type="number" min="0" step="0.5" value={pctMostrado}
                                 onChange={e => { setModoInteres('pct'); setInteresPct(e.target.value); }} placeholder="0" />
                             </div>
                             {/* "Son 3 de 100 mil": el vendedor carga la cuota
                                 y el interés se calcula solo. */}
-                            <div style={{ flex: 1.2 }}>
+                            <div style={{ flex: '1.2 1 150px' }}>
                               <label className="lbl">Valor de cada cuota</label>
                               <input className="inp" type="number" min="0" step="any" value={cuotaMostrada}
                                 onChange={e => { setModoInteres('cuota'); setValorCuota(e.target.value); }}

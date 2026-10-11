@@ -102,7 +102,7 @@ export function FotosEquipo({
             onClick={() => sacar(ruta)}
             aria-label="Sacar foto"
             style={{
-              position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%',
+              position: 'absolute', top: -8, right: -8, width: 28, height: 28, borderRadius: '50%',
               border: 'none', background: 'var(--text)', color: 'var(--bg)', cursor: 'pointer',
               display: 'grid', placeItems: 'center', padding: 0,
             }}

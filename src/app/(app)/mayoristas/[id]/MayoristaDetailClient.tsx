@@ -218,7 +218,7 @@ export function MayoristaDetailClient({
         <Link href="/mayoristas" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-3)', textDecoration: 'none', marginBottom: 12 }}>
           <ArrowLeft size={14} /> Mayoristas
         </Link>
-        <div className="sh" style={{ marginBottom: 0 }}>
+        <div className="sh sh-movil" style={{ marginBottom: 0 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <h1 className="st" style={{ marginBottom: 0 }}>{wholesaler.name}</h1>

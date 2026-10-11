@@ -94,7 +94,7 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
       </div>
 
       {/* KPIs */}
-      <div className="sg" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 24 }}>
+      <div className="sg" style={{ marginBottom: 24 }}>
         <div className="sc">
           <div className="sl">Total a cobrar</div>
           {renderTotalACobrar()}
@@ -139,7 +139,7 @@ export function MayoristasClient({ initialWholesalers, orgId }: { initialWholesa
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{w.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, display: 'flex', gap: 12 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, display: 'flex', gap: '2px 12px', flexWrap: 'wrap', minWidth: 0 }}>
                     {w.phone && <span><Phone size={11} style={{ marginRight: 3 }} />{w.phone}</span>}
                     {w.email && <span><Mail size={11} style={{ marginRight: 3 }} />{w.email}</span>}
                   </div>

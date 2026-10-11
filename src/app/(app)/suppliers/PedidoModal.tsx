@@ -150,11 +150,11 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
               Cargá los equipos que llegaron juntos. El total queda como deuda con el proveedor.
             </div>
           </div>
-          <button className="btn-ghost" onClick={onClose}><X size={18} /></button>
+          <button className="btn-icon" aria-label="Cerrar" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 1fr', gap: 10 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 110px 1fr', gap: 10 }}>
             <div><label className="lbl">Fecha</label><input className="inp" type="date" value={fecha} onChange={e => setFecha(e.target.value)} /></div>
             <div>
               <label className="lbl">Moneda</label>
@@ -184,7 +184,7 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
                     <button className="btn-icon" style={{ color: 'var(--red)' }} onClick={() => setLineas(ls => ls.filter((_, idx) => idx !== i))}><Trash2 size={14} /></button>
                   )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 10, marginBottom: 10 }}>
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 10, marginBottom: 10 }}>
                   <div><label className="lbl">Marca</label>
                     <select className="inp" value={l.brand} onChange={e => cambiarMarca(i, e.target.value)}>{BRANDS.map(b => <option key={b} value={b}>{b}</option>)}</select>
                   </div>
@@ -192,7 +192,7 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
                     <ModelPicker value={l.model} onChange={m => cambiarModelo(i, m)} options={MODELS[l.brand] || []} />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
                   <div><label className="lbl">Almacenamiento</label>
                     <select className="inp" value={l.storage} onChange={e => upd(i, { storage: e.target.value })}>{almacenamientosDe(l.model).map(s => <option key={s} value={s}>{s}</option>)}</select>
                   </div>
@@ -206,7 +206,7 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
                     </select>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 10 }}>
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 10 }}>
                   <div><label className="lbl">Cantidad</label>
                     <input className="inp" inputMode="numeric" value={l.qty} onChange={e => upd(i, { qty: e.target.value.replace(/\D/g, '') })} />
                   </div>
@@ -244,7 +244,7 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
               <span style={{ fontWeight: 600, fontSize: 13 }}>Ya le pagué una parte</span>
             </label>
             {pagoAhora && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 12 }}>
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 12 }}>
                 <div><label className="lbl">Monto ({moneda})</label>
                   <input className="inp" inputMode="decimal" placeholder={String(total || 0)} value={montoPago} onChange={e => setMontoPago(solo(e.target.value))} />
                 </div>

@@ -92,9 +92,9 @@ export function MiCajaClient({ user, ventas, cierres, hayCierres, ciegas }: {
 
   return (
     <div className="page" style={{ maxWidth: 640 }}>
-      <div className="sh" style={{ marginBottom: 16 }}>
+      <div className="sh sh-movil" style={{ marginBottom: 16 }}>
         <div>
-          <div className="st">Mi caja</div>
+          <div className="st solo-desk">Mi caja</div>
           <div className="helper-text">
             Turno desde las {hora(desde)} · {delTurno.length} {delTurno.length === 1 ? 'venta' : 'ventas'}
           </div>

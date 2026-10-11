@@ -1066,10 +1066,10 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button className="btn btn-outline" style={{ flex: 1 }} disabled={cerrando}
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                <button className="btn btn-outline" style={{ flex: '1 1 160px' }} disabled={cerrando}
                   onClick={() => cerrarPropia(false)}>Cancelar reparación</button>
-                <button className="btn btn-dark" style={{ flex: 1.4 }} disabled={cerrando}
+                <button className="btn btn-dark" style={{ flex: '1.4 1 200px' }} disabled={cerrando}
                   onClick={() => cerrarPropia(true)}>
                   {cerrando ? 'Cerrando...' : 'Cerrar y devolver al inventario'}
                 </button>

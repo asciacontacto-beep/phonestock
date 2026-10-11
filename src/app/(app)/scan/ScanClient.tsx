@@ -226,7 +226,7 @@ export function ScanClient({ initialDeposits, isOwner = false }: { initialDeposi
             <div style={{ fontWeight: 700, fontSize: 16 }}>{det.brand} {det.model}</div>
             <div style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 4 }}>{det.storage} · {det.color}</div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div className="field" style={{ margin: 0 }}>
               <label className="lbl">IMEI / Serie</label>
               <input ref={imeiRef} className="inp" value={imei} onChange={e => setImei(e.target.value)} placeholder="Pistoleá el IMEI"

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { EmptyState } from '@/components/EmptyState';
-import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign, ShoppingCart, Package } from 'lucide-react';
+import { Headphones, Plus, Search, Edit2, Trash2, ArrowRightLeft, DollarSign, ShoppingCart, Package, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { MODELS } from '@/constants/data';
 import { SellAccessoriesModal } from './SellAccessoriesModal';
@@ -192,7 +192,7 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
           <div className="mb">
             <div className="mh">
               <div className="mh-title">{form.id ? 'Editar Accesorio' : 'Nuevo Accesorio'}</div>
-              <button className="btn-icon" onClick={() => setIsModalOpen(false)}>×</button>
+              <button className="btn-icon" aria-label="Cerrar" onClick={() => setIsModalOpen(false)}><X size={18} /></button>
             </div>
             <form onSubmit={handleSave} className="mbd">
               <div className="row">

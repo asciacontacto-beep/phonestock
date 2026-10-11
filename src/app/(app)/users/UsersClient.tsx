@@ -246,7 +246,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
           <div className="mb" style={{ maxWidth: 480 }}>
             <div className="mh">
               <div className="mh-title">Alta de Nuevo Acceso</div>
-              <button className="btn-ghost" onClick={() => setShowAdd(false)}>×</button>
+              <button className="btn-icon" aria-label="Cerrar" onClick={() => setShowAdd(false)}><X size={18} /></button>
             </div>
             <div className="mbd">
               <div className="field">

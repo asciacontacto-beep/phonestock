@@ -348,7 +348,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
                     : (MODELS[brand] || [])}
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: verCampoCosto ? '1fr 1fr 100px' : '1fr 100px', gap: 12 }}>
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: verCampoCosto ? '1fr 1fr 100px' : '1fr 100px', gap: 12 }}>
                 <div><label className="lbl">Precio Venta</label><input ref={priceRef} className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>
                 {verCampoCosto && <div><label className="lbl">Precio Costo{!isOwner && ' (opcional)'}</label><input className="inp" type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="0" value={costPrice} onChange={e => setCostPrice(e.target.value.replace(/[^0-9.]/g, ''))} autoComplete="off" /></div>}
                 <div><label className="lbl">Moneda</label><select className="inp" value={cur} onChange={e => setCur(e.target.value)}><option value="USD">USD $</option><option value="ARS">ARS $</option></select></div>
@@ -369,7 +369,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
                 background: pagoCompra !== 'no' ? 'var(--surface-2)' : 'var(--blue-dim)',
               }}>
                 <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>¿Cómo pagaste esta compra?</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                   {([
                     ['no', 'No registrar'],
                     ['caja', 'Pagué de una caja'],

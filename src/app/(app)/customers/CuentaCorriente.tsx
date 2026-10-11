@@ -464,9 +464,11 @@ function ModalCobro({
       <div className="mb" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <div className="mh">
           <div className="mh-title">{cuota ? `Cobrar cuota ${cuota.number}` : venta ? 'Cobrar saldo' : 'Cobro a cuenta'}</div>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button className="btn-icon" aria-label="Cerrar" onClick={onClose}><X size={18} /></button>
         </div>
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* .mbd: se desplaza. Con un div común, en el celular con el teclado
+            abierto "Registrar cobro" quedaba fuera de la pantalla. */}
+        <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {venta && (
             <div className="card" style={{ padding: 12, background: 'var(--surface-3)' }}>
               <div style={{ fontWeight: 600, fontSize: 13 }}>{venta.brand} {venta.model}</div>

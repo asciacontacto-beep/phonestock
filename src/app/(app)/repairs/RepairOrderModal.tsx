@@ -60,15 +60,15 @@ export function RepairOrderModal({ shop, config }: { shop: ShopSettings; config:
   return (
     <div className="mo" onClick={() => setRepair(null)}>
       <div className="mb receipt-editor" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
-        <div className="mh no-print">
+        <div className="mh no-print" style={{ flexWrap: 'wrap', gap: 8 }}>
           <div className="mh-title">Orden de reparación</div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 'auto' }}>
             {(['ticket', 'a4'] as ReceiptFormat[]).map(f => (
               <button key={f} className={`btn-pill${format === f ? ' active' : ''}`} onClick={() => setFormat(f)}>
                 {f === 'ticket' ? 'Ticket' : 'A4'}
               </button>
             ))}
-            <button className="btn-icon" onClick={() => setRepair(null)}><X size={18} /></button>
+            <button className="btn-icon" aria-label="Cerrar" onClick={() => setRepair(null)}><X size={18} /></button>
           </div>
         </div>
 

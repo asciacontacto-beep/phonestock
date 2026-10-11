@@ -1078,7 +1078,7 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase, isO
           {/* Payment methods */}
           <div style={{ marginBottom: 12 }}>
             <label className="lbl">Método de cobro</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
               {PAY_METHODS.map((m: any) => (
                 <button
                   key={m.id}
@@ -1140,7 +1140,7 @@ function ConfirmSaleModal({ appt, deposits, user, onClose, onSave, supabase, isO
                     <span style={{ fontWeight: 700, fontSize: 14 }}>
                       {currency === 'USD' ? 'U$' : '$'} {p.amount.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                     </span>
-                    <button onClick={() => setPayments(ps => ps.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 0, fontSize: 16 }}>×</button>
+                    <button className="btn-icon" aria-label="Quitar pago" title="Quitar pago" onClick={() => setPayments(ps => ps.filter((_, j) => j !== i))} style={{ color: 'var(--red)' }}><X size={16} /></button>
                   </div>
                 </div>
               ))}

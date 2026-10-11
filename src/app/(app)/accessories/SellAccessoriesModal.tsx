@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from 'react';
-import { Plus, Minus, Trash2 } from 'lucide-react';
+import { Plus, Minus, Trash2, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
@@ -131,11 +131,11 @@ export function SellAccessoriesModal({ accessories, onClose, onSold }: {
       <div className="mb" style={{ maxWidth: 560 }}>
         <div className="mh">
           <div className="mh-title">Vender Accesorios</div>
-          <button className="btn-icon" onClick={onClose}>×</button>
+          <button className="btn-icon" aria-label="Cerrar" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd">
           <div className="lbl" style={{ marginBottom: 8 }}>Accesorios disponibles</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto', marginBottom: 16 }}>
+          <div className="lista-con-tope" style={{ display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', marginBottom: 16 }}>
             {available.length === 0 && (
               <div style={{ color: 'var(--text-3)', fontSize: 13, padding: '12px 0' }}>No hay accesorios con stock disponible.</div>
             )}

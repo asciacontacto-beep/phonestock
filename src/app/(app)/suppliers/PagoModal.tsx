@@ -71,7 +71,7 @@ export function PagoModal({ proveedor, pedidos, pagos, deposits, deuda, pedidoIn
       <div className="mb" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
         <div className="mh">
           <div className="mh-title">Pago a {proveedor.name}</div>
-          <button className="btn-ghost" onClick={onClose}><X size={18} /></button>
+          <button className="btn-icon" aria-label="Cerrar" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
@@ -80,7 +80,7 @@ export function PagoModal({ proveedor, pedidos, pagos, deposits, deuda, pedidoIn
             {deuda.ARS > 0 && <strong>${deuda.ARS.toLocaleString('es-AR')}</strong>}
             {deuda.USD <= 0 && deuda.ARS <= 0 && <strong>nada</strong>}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 10 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 10 }}>
             <div><label className="lbl">Moneda</label>
               <select className="inp" value={moneda} onChange={e => cambiarMoneda(e.target.value as Moneda)}>
                 <option value="USD">USD</option><option value="ARS">ARS</option>

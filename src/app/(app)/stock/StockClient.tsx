@@ -670,7 +670,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: editItem.condition === 'used' ? '1fr 1fr 1fr' : '1fr 1fr', gap: 10 }}>
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: editItem.condition === 'used' ? '1fr 1fr 1fr' : '1fr 1fr', gap: 10 }}>
                 <div>
                   <label className="lbl">Condición</label>
                   <select className="inp" value={editItem.condition} onChange={e => setEditItem({...editItem, condition: e.target.value})}>

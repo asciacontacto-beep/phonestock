@@ -212,7 +212,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
           <div className="mb" style={{ maxWidth: 420 }}>
             <div className="mh">
               <div className="mh-title">Nuevo Depósito</div>
-              <button className="btn-ghost" onClick={() => setShowAdd(false)}><X size={18} /></button>
+              <button className="btn-icon" aria-label="Cerrar" onClick={() => setShowAdd(false)}><X size={18} /></button>
             </div>
             <div className="mbd">
               <div className="field">
@@ -241,7 +241,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
           <div className="mb" style={{ maxWidth: 420 }}>
             <div className="mh">
               <div className="mh-title">Editar Depósito</div>
-              <button className="btn-ghost" onClick={() => setEditDep(null)}><X size={18} /></button>
+              <button className="btn-icon" aria-label="Cerrar" onClick={() => setEditDep(null)}><X size={18} /></button>
             </div>
             <div className="mbd">
               <div className="field">
@@ -271,7 +271,7 @@ export function DepositsClient({ initialStock, initialDeposits }: { initialStock
           <div className="mb" style={{ maxWidth: 440 }}>
             <div className="mh">
               <div className="mh-title">Transferir Equipo</div>
-              <button className="btn-ghost" onClick={() => setTransferModal(null)}><X size={18} /></button>
+              <button className="btn-icon" aria-label="Cerrar" onClick={() => setTransferModal(null)}><X size={18} /></button>
             </div>
             <div className="mbd">
               <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: 16, marginBottom: 20 }}>

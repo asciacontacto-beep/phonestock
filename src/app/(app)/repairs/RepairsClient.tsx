@@ -1,5 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
+import { limpiarImei } from '@/utils/imei';
+import { faltaColumna } from '@/utils/customers';
 import { Plus, Search, Edit2, Trash2, X, Wrench, CheckCircle, PackageSearch, PackageOpen, XCircle, Printer, Package } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { configuracionDelLocal } from '@/utils/configuracion';
@@ -65,6 +67,7 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
       const qs = q.toLowerCase();
       if (!r.customer_name?.toLowerCase().includes(qs) &&
           !r.device_model?.toLowerCase().includes(qs) &&
+          !String(r.device_imei || '').includes(limpiarImei(q)) &&
           !r.id?.toLowerCase().includes(qs)) return false;
     }
     return true;
@@ -491,7 +494,7 @@ function calcCostARS(parts: any[], exchangeRate: number): number {
 
 function NewRepairModal({ onClose, onSave, user }: any) {
   const [f, setF] = useState({
-    device_brand: 'Apple', device_model: '', device_color: '', device_password: '',
+    device_brand: 'Apple', device_model: '', device_color: '', device_password: '', device_imei: '',
     issue_description: '', visual_condition: '',
     budget: '', deposit_paid: '', deposit_id: ''
   });
@@ -544,7 +547,7 @@ function NewRepairModal({ onClose, onSave, user }: any) {
       const deposit_paid = parseFloat(f.deposit_paid) || 0;
       const budget = parseFloat(f.budget) || null;
 
-      const { data: repData, error } = await supabase.from('repairs').insert([{
+      const fila = {
         customer_id: customerId, customer_name: cust.name, customer_phone: cust.phone,
         device_brand: f.device_brand, device_model: f.device_model, device_color: f.device_color, device_password: f.device_password,
         issue_description: f.issue_description, visual_condition: f.visual_condition,
@@ -552,8 +555,16 @@ function NewRepairModal({ onClose, onSave, user }: any) {
         // parseInt guardaba un número sin sentido. De qué caja es la seña lo
         // dice el movimiento de abajo (sales.deposit_id), que sí es UUID.
         budget, deposit_paid, deposit_id: null
-      }]).select();
+      };
+      // El IMEI va al historial por IMEI. Si la base todavía no tiene la
+      // columna (migración 20261010_postventa), se guarda sin él.
+      const imei = limpiarImei(f.device_imei);
+      let { data: repData, error } = await supabase.from('repairs').insert([imei ? { ...fila, device_imei: imei } : fila]).select();
+      if (error && imei && faltaColumna(error)) {
+        ({ data: repData, error } = await supabase.from('repairs').insert([fila]).select());
+      }
       if (error) throw error;
+      if (!repData?.[0]) throw new Error('No se pudo crear la orden');
 
       if (deposit_paid > 0) {
         // Registrar movimiento en caja
@@ -629,6 +640,7 @@ function NewRepairModal({ onClose, onSave, user }: any) {
               <div className="col field"><label className="lbl">Color</label><input className="inp" value={f.device_color} onChange={e=>setF({...f, device_color: e.target.value})} /></div>
               <div className="col field"><label className="lbl">Contraseña/Pin (Opcional)</label><input className="inp" value={f.device_password} onChange={e=>setF({...f, device_password: e.target.value})} /></div>
             </div>
+            <div className="field"><label className="lbl">IMEI (opcional)</label><input className="inp" inputMode="numeric" autoComplete="off" value={f.device_imei} onChange={e=>setF({...f, device_imei: e.target.value})} placeholder="Para verlo en el historial por IMEI (*#06#)" /></div>
             <div className="field"><label className="lbl">Falla Reportada *</label><textarea className="inp" style={{ minHeight: 60, padding: '10px 14px' }} value={f.issue_description} onChange={e=>setF({...f, issue_description: e.target.value})} placeholder="No prende, cambiar pantalla..." /></div>
             <div className="field"><label className="lbl">Estado Visual (Opcional)</label><input className="inp" value={f.visual_condition} onChange={e=>setF({...f, visual_condition: e.target.value})} placeholder="Rayado atrás, vidrio roto..." /></div>
           </div>

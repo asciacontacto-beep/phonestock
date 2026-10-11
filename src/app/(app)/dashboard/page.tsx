@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     esVendedor
       ? traerTodo(() => supabase.from('sales').select(COLS_VENTAS).eq('seller_id', user.id)
           .order('created_at', { ascending: false }).order('id'))
-      : traerTodo(() => supabase.from('sales').select(`${COLS_VENTAS},cost_price`)
+      : traerTodo(() => supabase.from('sales').select('*')
           .order('created_at', { ascending: false }).order('id')),
     configuracionDelLocal(supabase, profile?.org_id, 'exchange_rate'),
     esVendedor
@@ -58,7 +58,8 @@ export default async function DashboardPage() {
     : await Promise.all([
         traerTodo(() => supabase.from('customers').select('id,name,phone,birth_day,birth_month')
           .not('birth_month', 'is', null).order('id')),
-        supabase.from('settings').select('shop_name,descuento_cumple').eq('org_id', profile?.org_id || '').limit(1).maybeSingle(),
+        // '*': trae lo que exista (descuento, garantía) sin fallar si falta una columna.
+        supabase.from('settings').select('*').eq('org_id', profile?.org_id || '').limit(1).maybeSingle(),
       ])
 
   // Los accesorios de cada venta llevan su costo adentro (lo completa la
@@ -84,6 +85,7 @@ export default async function DashboardPage() {
       clientesConCumple={(cumplesRes as { data: any[] | null }).data || []}
       negocio={(ajustesCumple as { data: any }).data?.shop_name || ''}
       descuentoCumple={Number((ajustesCumple as { data: any }).data?.descuento_cumple ?? 10)}
+      garantiaDias={(() => { const a = (ajustesCumple as { data: any }).data; return a && 'garantia_dias' in a ? Number(a.garantia_dias) : null })()}
     />
   )
 }

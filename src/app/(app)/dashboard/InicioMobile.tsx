@@ -8,8 +8,7 @@
  * la compu, sólo cambia cómo se muestran.
  */
 import Link from 'next/link'
-import { CumpleanosProximos } from '@/components/CumpleanosProximos';
-import type { ClienteConCumple } from '@/utils/cumpleanos';
+import { ParaContactar, type Contacto } from '@/components/ParaContactar';
 import { ArrowDownRight, ArrowUpRight, ChevronRight, ScanLine, Search, ShoppingCart, Users2, Wallet } from 'lucide-react'
 import { Sparkline } from '@/components/Sparkline'
 import { haceCuanto } from '@/utils/tiempo'
@@ -33,7 +32,7 @@ interface Alerta { key: string; text: string; tone: 'red' | 'amber'; onClick?: (
 
 export function InicioMobile({
   esDueno, range, setRange, ganancia, delta, facturacion, ventas, stock, capital, deuda, acreditar,
-  alertas, recientes, serie, haySerie, cumples = [], negocio = '', descuentoCumple = 10,
+  alertas, recientes, serie, haySerie, contactos = [],
 }: {
   esDueno: boolean
   range: Range
@@ -50,9 +49,7 @@ export function InicioMobile({
   recientes: VentaFila[]
   serie: number[]
   haySerie: boolean
-  cumples?: (ClienteConCumple & { faltan: number })[]
-  negocio?: string
-  descuentoCumple?: number
+  contactos?: Contacto[]
 }) {
   const hoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -163,7 +160,7 @@ export function InicioMobile({
           </section>
         )}
 
-        <CumpleanosProximos cumples={cumples} negocio={negocio} descuento={descuentoCumple} variante="celular" />
+        <ParaContactar contactos={contactos} variante="celular" />
 
         <section>
           <div className="m-sec">

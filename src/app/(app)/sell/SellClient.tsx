@@ -50,6 +50,11 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
   const [selectedAccessories, setSelectedAccessories] = useState<any[]>([]);
   const [cust, setCust] = useState({ name: '', dni: '', phone: '', email: '', instagram: '', birth_day: null as number | null, birth_month: null as number | null });
   const [notes, setNotes] = useState('');
+  /* Garantía de la venta (días). Sólo si la base tiene la columna
+     (migración 20261010_postventa): el local la trae de Ajustes. */
+  const [hayGarantia, setHayGarantia] = useState(false);
+  const [garantiaLocal, setGarantiaLocal] = useState(90);
+  const [garantiaDias, setGarantiaDias] = useState('90');
   const [payments, setPayments] = useState<any[]>([]);
   const [sc, setSc] = useState('USD');
   const [sp, setSp] = useState('');
@@ -142,6 +147,11 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       /* La cotización arranca en la del local. Antes quedaba fija en 1000:
          un equipo en dólares vendido en pesos pasaba su costo a pesos con un
          dólar inventado y la ganancia salía cualquier cosa. */
+      if (settingsData && 'garantia_dias' in settingsData) {
+        const g = Number(settingsData.garantia_dias);
+        const dias = Number.isFinite(g) && g >= 0 ? g : 90;
+        setHayGarantia(true); setGarantiaLocal(dias); setGarantiaDias(String(dias));
+      }
       const cotLocal = parseFloat(String(settingsData?.exchange_rate));
       if (cotLocal > 0) setExchangeRate(String(cotLocal));
       const fuenteLocal = fuenteValida(settingsData?.cotizacion_fuente);
@@ -438,7 +448,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           { duration: 10000 }
         );
       }
-      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto'); setValorCuota(''); setModoInteres('pct');
+      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setGarantiaDias(String(garantiaLocal)); setUnderpay('descuento'); setOverpay('vuelto'); setValorCuota(''); setModoInteres('pct');
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '', birth_day: null, birth_month: null });
       router.refresh();
     } catch (e: any) {
@@ -491,7 +501,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
         // hacían imposible saber después si una venta tenía cliente o no.
         customer: cust.name.trim() ? cust : { name: CLIENTE_ANONIMO },
         notes: notes.trim() || null,
-        accessories: selectedAccessories
+        accessories: selectedAccessories,
+        ...(hayGarantia ? { warranty_days: Math.max(0, parseInt(garantiaDias, 10) || 0) } : {}),
       };
 
       /* Primero se toma el equipo, y sólo si sigue disponible. Antes se
@@ -570,7 +581,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
           { duration: 10000 }
         );
       }
-      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setUnderpay('descuento'); setOverpay('vuelto'); setValorCuota(''); setModoInteres('pct');
+      setStep(1); setUnit(null); setAccessoryOnly(false); setPayments([]); setSp(''); setQ(''); setNotes(''); setSelectedAccessories([]); setGarantiaDias(String(garantiaLocal)); setUnderpay('descuento'); setOverpay('vuelto'); setValorCuota(''); setModoInteres('pct');
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '', birth_day: null, birth_month: null });
       router.refresh();
     } catch (e: any) {
@@ -1378,11 +1389,21 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
               )}
             </div>
           )}
+          {hayGarantia && !accessoryOnly && (
+            <div className="field" style={{ marginTop: 16, maxWidth: 280 }}>
+              <label className="lbl">Garantía</label>
+              <select className="inp" value={garantiaDias} onChange={e => setGarantiaDias(e.target.value)}>
+                {[...new Set([0, 30, 60, 90, 180, 365, garantiaLocal])].sort((a, b) => a - b).map(d => (
+                  <option key={d} value={d}>{d === 0 ? 'Sin garantía' : d === 365 ? '1 año' : `${d} días`}{d === garantiaLocal ? ' (la del local)' : ''}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="field" style={{ marginTop: 16 }}>
             <label className="lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <FileText size={14} /> Notas / Garantía (opcional)
+              <FileText size={14} /> {hayGarantia ? 'Notas (opcional)' : 'Notas / Garantía (opcional)'}
             </label>
-            <textarea className="inp" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ej: Garantía 30 días..." rows={2} style={{ resize: 'none' }} />
+            <textarea className="inp" value={notes} onChange={e => setNotes(e.target.value)} placeholder={hayGarantia ? 'Ej: se entrega con caja y cargador' : 'Ej: Garantía 30 días...'} rows={2} style={{ resize: 'none' }} />
           </div>
           <div className="paso-acciones" style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             <button className="btn btn-ghost" onClick={() => setStep(3)}>Atrás</button>

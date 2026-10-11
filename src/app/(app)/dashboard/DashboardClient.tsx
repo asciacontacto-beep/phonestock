@@ -16,8 +16,9 @@ import { PrimerosPasos } from '@/components/PrimerosPasos';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 import { InicioMobile } from './InicioMobile';
-import { CumpleanosProximos } from '@/components/CumpleanosProximos';
-import { proximosCumples, type ClienteConCumple } from '@/utils/cumpleanos';
+import { ParaContactar, type Contacto } from '@/components/ParaContactar';
+import { proximosCumples, cuandoCumple, textoCumple, mensajeCumple, type ClienteConCumple } from '@/utils/cumpleanos';
+import { cuotasVencidas, garantiasPorVencer, renovacionesDeLaSemana, mensajeCuotas, mensajeGarantia, mensajeRenovacion, fechaLocal, type VentaPostventa } from '@/utils/postventa';
 
 type Range = 'today' | 'week' | 'month' | 'all';
 
@@ -65,14 +66,50 @@ function daysInStock(createdAt?: string | null): number | null {
 
 export function DashboardClient({
   stock, sales, exchangeRate, userRole, repairs = [], installments = [], payments = [],
-  clientesConCumple = [], negocio = '', descuentoCumple = 10,
+  clientesConCumple = [], negocio = '', descuentoCumple = 10, garantiaDias = null,
 }: {
   stock: any[]; sales: any[]; exchangeRate: number; userRole?: string; repairs?: any[];
   installments?: any[]; payments?: any[];
   clientesConCumple?: ClienteConCumple[]; negocio?: string; descuentoCumple?: number;
+  /** null: la base no tiene garantías por venta todavía (no se avisan). */
+  garantiaDias?: number | null;
 }) {
   // Cumpleaños de los próximos 7 días, con la fecha de este navegador.
   const cumples = useMemo(() => proximosCumples(clientesConCumple, new Date(), 7), [clientesConCumple]);
+
+  /* A quién contactar esta semana (sólo el dueño): cuotas vencidas,
+     garantías por vencer, aniversarios de compra y cumpleaños. */
+  const contactos = useMemo<Contacto[]>(() => {
+    if (userRole === 'seller') return [];
+    const hoy = fechaLocal(new Date());
+    const ventasPv = sales as VentaPostventa[];
+    const nombre = (v: VentaPostventa) => v.customer?.name || 'Cliente';
+    const fecha = (f: string) => f.slice(0, 10).split('-').reverse().slice(0, 2).join('/');
+    const lista: Contacto[] = [];
+    for (const d of cuotasVencidas(installments as any, payments as any, ventasPv, hoy)) {
+      lista.push({ key: `c-${d.venta.id}`, tipo: 'cuota', nombre: nombre(d.venta), telefono: d.venta.customer?.phone,
+        detalle: `${plural(d.cuotas, 'cuota', 'cuotas')} · ${d.moneda === 'USD' ? 'U$' : '$'} ${Math.round(d.monto).toLocaleString('es-AR')} · ${plural(d.diasDeAtraso, 'día', 'días')} de atraso`,
+        mensaje: mensajeCuotas(d, negocio) });
+    }
+    if (garantiaDias !== null) {
+      for (const g of garantiasPorVencer(ventasPv, garantiaDias, hoy)) {
+        lista.push({ key: `g-${g.venta.id}`, tipo: 'garantia', nombre: nombre(g.venta), telefono: g.venta.customer?.phone,
+          detalle: `${g.venta.model || 'equipo'} · vence ${g.garantia.faltan === 0 ? 'hoy' : `el ${fecha(g.garantia.vence)}`}`,
+          mensaje: mensajeGarantia(g, negocio) });
+      }
+    }
+    for (const r of renovacionesDeLaSemana(ventasPv, hoy)) {
+      lista.push({ key: `r-${r.venta.id}-${r.anios}`, tipo: 'renovacion', nombre: nombre(r.venta), telefono: r.venta.customer?.phone,
+        detalle: `${r.anios === 1 ? '1 año' : `${r.anios} años`} con su ${r.venta.model || 'equipo'}${r.faltan === 0 ? ' · hoy' : ` · en ${plural(r.faltan, 'día', 'días')}`}`,
+        mensaje: mensajeRenovacion(r, negocio) });
+    }
+    for (const c of cumples) {
+      lista.push({ key: `b-${c.id}`, tipo: 'cumple', nombre: c.name, telefono: c.phone,
+        detalle: `${cuandoCumple(c.faltan)} · ${textoCumple(Number(c.birth_day), Number(c.birth_month))}`,
+        mensaje: mensajeCumple(c.name, negocio, descuentoCumple, c.faltan) });
+    }
+    return lista;
+  }, [userRole, sales, installments, payments, garantiaDias, negocio, cumples, descuentoCumple]);
   const router   = useRouter();
   const supabase = createClient();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -651,9 +688,7 @@ export function DashboardClient({
         </div>
       )}
 
-      {userRole !== 'seller' && (
-        <CumpleanosProximos cumples={cumples} negocio={negocio} descuento={descuentoCumple} variante="compu" />
-      )}
+      {userRole !== 'seller' && <ParaContactar contactos={contactos} variante="compu" />}
 
       {/* ── Qué conviene reponer ────────────────────────────────
            Reports explica la rentabilidad por modelo; acá se cruza con el
@@ -777,9 +812,7 @@ export function DashboardClient({
       recientes={allSales.slice(0, 6)}
       serie={profitSeries}
       haySerie={hasSeries}
-      cumples={userRole !== 'seller' ? cumples : []}
-      negocio={negocio}
-      descuentoCumple={descuentoCumple}
+      contactos={contactos}
     />
 
       {/* Fuera de las dos vistas: tienen que poder abrirse en cualquiera. */}

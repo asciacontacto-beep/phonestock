@@ -88,6 +88,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
   const [hayCostoVendedor, setHayCostoVendedor] = useState(false);
   // Descuento del saludo de cumpleaños (migración 20261010_cumpleanos_clientes).
   const [hayCumple, setHayCumple] = useState(false);
+  // Garantía por defecto (migración 20261010_postventa).
+  const [hayGarantia, setHayGarantia] = useState(false);
   /* Link de referidos del negocio. Si la migración no está aplicada, la
      tarjeta simplemente no aparece. */
   const [referral, setReferral] = useState<{ code: string; invitados: number; pagos: number } | null>(null);
@@ -128,6 +130,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       setHayCostoVendedor(!sinCostoVendedor);
       const { error: sinCumple } = await supabase.from('settings').select('descuento_cumple').limit(0);
       setHayCumple(!sinCumple);
+      const { error: sinGarantia } = await supabase.from('settings').select('garantia_dias').limit(0);
+      setHayGarantia(!sinGarantia);
       const { error: sinCuentas } = await supabase.from('accounts').select('id').limit(0);
       setHayCuentas(!sinCuentas);
       if (data && data.length > 0) {
@@ -164,6 +168,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       if (hayCiegas) full.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
       if (hayCostoVendedor) full.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
       if (hayCumple) full.descuento_cumple = Math.min(100, Math.max(0, Number(form.descuento_cumple ?? 10) || 0));
+      if (hayGarantia) full.garantia_dias = Math.min(3650, Math.max(0, Math.round(Number(form.garantia_dias ?? 90) || 0)));
 
       type WriteResult = { error: { message?: string; code?: string } | null; data?: { id?: string } | null };
       const write = async (payload: Record<string, unknown>): Promise<WriteResult> => {
@@ -187,6 +192,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
         if (hayCiegas) baseOnly.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
         if (hayCostoVendedor) baseOnly.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
         if (hayCumple) baseOnly.descuento_cumple = Math.min(100, Math.max(0, Number(form.descuento_cumple ?? 10) || 0));
+        if (hayGarantia) baseOnly.garantia_dias = Math.min(3650, Math.max(0, Math.round(Number(form.garantia_dias ?? 90) || 0)));
         ({ error, data } = await write(baseOnly));
         if (!error) {
           toast.warning('Guardado. El logo y el diseño avanzado del recibo todavía no están activos en tu cuenta: escribinos y los activamos.', { duration: 9000 });
@@ -421,20 +427,33 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
 
           </>}
 
-          {seccion === 'negocio' && hayCumple && (
+          {seccion === 'negocio' && (hayCumple || hayGarantia) && (
             <div className="card">
               <div className="lbl" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Cake size={15} /> Cumpleaños de clientes
+                <Cake size={15} /> Postventa
               </div>
-              <div className="field" style={{ maxWidth: 260 }}>
-                <label className="lbl">Descuento que ofrecés en el saludo (%)</label>
-                <input className="inp" type="number" min="0" max="100" inputMode="numeric"
-                  value={String(form.descuento_cumple ?? 10)}
-                  onChange={e => setField('descuento_cumple', e.target.value === '' ? '' : Number(e.target.value))} />
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {hayGarantia && (
+                  <div className="field" style={{ margin: 0 }}>
+                    <label className="lbl">Garantía de los equipos (días)</label>
+                    <input className="inp" type="number" min="0" max="3650" inputMode="numeric"
+                      value={String(form.garantia_dias ?? 90)}
+                      onChange={e => setField('garantia_dias', e.target.value === '' ? '' : Number(e.target.value))} />
+                  </div>
+                )}
+                {hayCumple && (
+                  <div className="field" style={{ margin: 0 }}>
+                    <label className="lbl">Descuento en el saludo de cumpleaños (%)</label>
+                    <input className="inp" type="number" min="0" max="100" inputMode="numeric"
+                      value={String(form.descuento_cumple ?? 10)}
+                      onChange={e => setField('descuento_cumple', e.target.value === '' ? '' : Number(e.target.value))} />
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
-                En el Resumen aparecen los clientes que cumplen en los próximos 7 días, con un botón para saludarlos
-                por WhatsApp. Con 0 el saludo va sin descuento. Acordate de tocar <strong>Guardar</strong>.
+              <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, marginTop: 12 }}>
+                La garantía es la que se propone en cada venta (se puede cambiar ahí). En el Resumen aparecen los clientes
+                para contactar en la semana: cuotas vencidas, garantías por vencer, aniversarios de compra y cumpleaños.
+                Acordate de tocar <strong>Guardar</strong>.
               </div>
             </div>
           )}

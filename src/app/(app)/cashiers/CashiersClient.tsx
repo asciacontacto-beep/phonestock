@@ -175,7 +175,28 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
 
   // ─── handlers ────────────────────────────────────────────────────────────
 
-  const handleClose = () => {
+  /* El cierre queda guardado, igual que el del vendedor en Mi caja: antes
+     sólo se calculaba en pantalla y "Finalizar Turno" no guardaba nada. */
+  const handleClose = async () => {
+    if (declared.ars_cash === '' && declared.usd_cash === '') {
+      toast.error('Contá el efectivo y cargalo (poné 0 si no hay)');
+      return;
+    }
+    const inicioDelDia = new Date(); inicioDelDia.setHours(0, 0, 0, 0);
+    const { error: cErr } = await supabase.from('cash_closures').insert({
+      user_name: user.name || null,
+      deposit_id: null,
+      desde: inicioDelDia.toISOString(),
+      declared_ars: Math.max(0, parseFloat(declared.ars_cash) || 0),
+      declared_usd: Math.max(0, parseFloat(declared.usd_cash) || 0),
+    });
+    if (cErr) {
+      const sinTabla = /cash_closures|does not exist|42P01|PGRST205/i.test(`${cErr.code} ${cErr.message}`);
+      if (!sinTabla) { toast.error('No se pudo guardar el cierre: ' + cErr.message); return; }
+    } else {
+      toast.success('Cierre guardado');
+      router.refresh();
+    }
     const mySales = fSales.filter(v => (v.seller_id || v.sellerId) === user.id);
     const expected: Record<string, number> = {};
     PAY.forEach(p => { expected[p.id] = 0; });
@@ -222,7 +243,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
       setExForm({ fromCur: 'ARS', fromAmt: '', toCur: 'USD', toAmt: '', deposit_id: actualDepositId });
       router.refresh();
     } catch (e: any) {
-      toast.error('Error al registrar movimiento: ' + (e?.message || JSON.stringify(e)));
+      toast.error('No se pudo registrar el movimiento: ' + (e?.message || 'probá de nuevo'));
     } finally {
       setExLoading(false);
     }
@@ -269,7 +290,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
       });
       router.refresh();
     } catch (e: any) {
-      toast.error('Error: ' + (e.message || JSON.stringify(e)));
+      toast.error(e?.message || 'No se pudo guardar. Probá de nuevo.');
     } finally {
       setTrLoading(false);
     }
@@ -297,7 +318,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
       setMvForm({ type: 'IN', deposit_id: deposits[0]?.id?.toString() || '', amount: '', currency: 'ARS', payment_method: 'ars_cash', notes: '' });
       router.refresh();
     } catch (e: any) {
-      toast.error('Error: ' + (e.message || JSON.stringify(e)));
+      toast.error(e?.message || 'No se pudo guardar. Probá de nuevo.');
     } finally {
       setMvLoading(false);
     }
@@ -661,24 +682,24 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
         <div className="mo">
           <div className="mb" style={{ maxWidth: 450 }}>
             <div className="mh">
-              <div className="mh-title">Cierre de Caja "Ciego"</div>
-              <button className="btn-ghost" onClick={() => setShowClose(false)}>×</button>
+              <div className="mh-title">Cierre de turno</div>
+              <button className="btn-icon" aria-label="Cerrar" onClick={() => setShowClose(false)}><X size={18} /></button>
             </div>
             <div className="mbd">
-              <div className="badge b-amber" style={{ marginBottom: 20, display: 'flex', gap: 10, padding: 12 }}>
-                <AlertTriangle size={16} /> Declare el monto físico exacto en caja. El sistema verificará diferencias.
+              <div style={{ marginBottom: 20, display: 'flex', gap: 10, padding: 12, borderRadius: 'var(--r-sm)', background: 'var(--amber-dim)', color: 'var(--amber)', fontSize: 13, lineHeight: 1.5 }}>
+                <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} /> Contá el efectivo y cargá el total exacto. El sistema te muestra la diferencia con lo vendido.
               </div>
               <div className="field">
                 <label className="lbl">Total Efectivo Pesos (ARS)</label>
-                <input className="inp" type="number" placeholder="Ingrese monto..." value={declared.ars_cash} onChange={e => setDeclared({ ...declared, ars_cash: e.target.value })} />
+                <input className="inp" type="number" min="0" inputMode="decimal" placeholder="0" value={declared.ars_cash} onChange={e => setDeclared({ ...declared, ars_cash: e.target.value })} />
               </div>
               <div className="field">
                 <label className="lbl">Total Efectivo Dólares (U$)</label>
-                <input className="inp" type="number" placeholder="Ingrese monto..." value={declared.usd_cash} onChange={e => setDeclared({ ...declared, usd_cash: e.target.value })} />
+                <input className="inp" type="number" min="0" inputMode="decimal" placeholder="0" value={declared.usd_cash} onChange={e => setDeclared({ ...declared, usd_cash: e.target.value })} />
               </div>
               <div className="divider" />
               <button className="btn btn-dark btn-lg" style={{ width: '100%' }} onClick={handleClose}>
-                Confirmar y Ver Diferencias
+                Cerrar turno y ver diferencias
               </button>
             </div>
           </div>
@@ -690,7 +711,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
           <div className="mb" style={{ maxWidth: 500 }}>
             <div className="mh">
               <div className="mh-title">Resultado del Cierre</div>
-              <button className="btn-ghost" onClick={() => { setClosureResult(null); setShowClose(false); }}>×</button>
+              <button className="btn-icon" aria-label="Cerrar" onClick={() => { setClosureResult(null); setShowClose(false); }}><X size={18} /></button>
             </div>
             <div className="mbd">
               <div className="sg" style={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -726,7 +747,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                   </div>
                 )}
                 <button className="btn btn-dark" style={{ width: '100%', marginTop: 20 }} onClick={() => { setClosureResult(null); setShowClose(false); }}>
-                  Finalizar Turno
+                  Listo
                 </button>
               </div>
             </div>

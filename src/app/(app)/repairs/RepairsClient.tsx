@@ -96,11 +96,6 @@ export function RepairsClient({ isOwner, user, shop = {} }: { isOwner: boolean, 
               <Plus size={16} /> Nuevo Ingreso
             </button>
           )}
-          {activeTab === 'parts' && isOwner && (
-            <button className="btn btn-dark" onClick={() => {/* handled inside SparePartsTab */}}>
-              <Plus size={16} /> Nuevo Repuesto
-            </button>
-          )}
         </div>
       </div>
 
@@ -797,12 +792,15 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
 
   const handleRemovePart = async (rp: any) => {
     try {
-      await supabase.from('repair_parts').delete().eq('id', rp.id);
-      await supabase.rpc('increment_spare_part_stock', { part_id: rp.spare_part_id, qty: rp.qty });
+      const { error: dErr } = await supabase.from('repair_parts').delete().eq('id', rp.id);
+      if (dErr) throw dErr;
+      const { error: sErr } = await supabase.rpc('increment_spare_part_stock', { part_id: rp.spare_part_id, qty: rp.qty });
+      if (sErr) throw sErr;
 
       const remaining = repairParts.filter(p => p.id !== rp.id);
       const newCost = calcCostARS(remaining, exchangeRate) + (laborCost || 0);
-      await supabase.from('repairs').update({ cost: newCost }).eq('id', repair.id);
+      const { error: uErr } = await supabase.from('repairs').update({ cost: newCost }).eq('id', repair.id);
+      if (uErr) throw uErr;
 
       toast.success('Repuesto quitado');
       await fetchRepairParts();
@@ -849,11 +847,13 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
           payments: [{ id: 'ars_cash', amount: pending_balance, original_amount: pending_balance, label: 'Efectivo ARS (Cobro)' }],
           customer: { name: repair.customer_name, phone: repair.customer_phone, id: repair.customer_id }
         };
-        await supabase.from('sales').insert([saleData]);
-        toast.success(`Saldo de $${pending_balance} cobrado a caja.`);
+        // Antes el error se ignoraba y decía "cobrado" igual.
+        const { error: cobroErr } = await supabase.from('sales').insert([saleData]);
+        if (cobroErr) throw new Error('La orden se guardó, pero no se pudo registrar el cobro del saldo: ' + cobroErr.message);
+        toast.success(`Entregado · cobrado $ ${pending_balance.toLocaleString('es-AR')}`);
+      } else {
+        toast.success('Orden actualizada');
       }
-
-      toast.success('Actualizado');
       onSave();
       onClose();
     } catch(e:any) { toast.error(e.message); }
@@ -863,8 +863,9 @@ function RepairDetailModal({ repair, onClose, onSave, isOwner, STATUSES, user }:
   const handleDelete = async () => {
     if(!await confirm('¿Eliminar orden?')) return;
     try {
-      await supabase.from('repairs').delete().eq('id', f.id);
-      toast.success('Eliminada');
+      const { error } = await supabase.from('repairs').delete().eq('id', f.id);
+      if (error) throw error;
+      toast.success('Orden eliminada');
       onSave();
       onClose();
     } catch(e:any) { toast.error(e.message); }

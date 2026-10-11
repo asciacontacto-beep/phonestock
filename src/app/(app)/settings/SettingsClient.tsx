@@ -183,7 +183,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
         if (hayCostoVendedor) baseOnly.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
         ({ error, data } = await write(baseOnly));
         if (!error) {
-          toast.warning('Guardado. Para activar el logo y la personalización avanzada del recibo, aplicá la migración settings (docs/mejoras).', { duration: 9000 });
+          toast.warning('Guardado. El logo y el diseño avanzado del recibo todavía no están activos en tu cuenta: escribinos y los activamos.', { duration: 9000 });
         }
       }
 
@@ -468,7 +468,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
               <Lock size={15} /> Cierre de turno
             </div>
             {!hayCiegas ? (
-              <div className="cfg-aviso">Para usar el cierre a ciegas hay que aplicar la migración 20260930_cuentas_financieras_y_caja.sql (ver docs/mejoras/README.md).</div>
+              <div className="cfg-aviso">Esta función todavía no está activa en tu cuenta. Escribinos por WhatsApp y la activamos.</div>
             ) : (
               <>
                 <label style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}>
@@ -532,8 +532,12 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
                   style={{ flex: 1, minWidth: 220, fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}
                 />
                 <button className="btn btn-dark" onClick={() => {
-                  navigator.clipboard?.writeText(referralLink);
-                  toast.success('Link copiado');
+                  // Sólo "copiado" si de verdad se copió.
+                  if (!navigator.clipboard) { toast.error('No se pudo copiar: seleccioná el link y copialo a mano'); return; }
+                  navigator.clipboard.writeText(referralLink).then(
+                    () => toast.success('Link copiado'),
+                    () => toast.error('No se pudo copiar: seleccioná el link y copialo a mano'),
+                  );
                 }}>
                   <Copy size={15} /> Copiar
                 </button>

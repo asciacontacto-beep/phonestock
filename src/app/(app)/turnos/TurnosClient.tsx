@@ -332,7 +332,7 @@ function AppointmentCard({ appt, index, onEdit, onConfirm, onCancel, onDelete }:
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: appt.notes ? 8 : 0 }}>
             {appt.phone_brand && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 10, background: 'var(--blue)15', border: '1px solid var(--blue)33', padding: '2px 7px', borderRadius: 4, color: 'var(--blue)', fontWeight: 700, letterSpacing: 0.3, flexShrink: 0 }}>COMPRA</span>
+                <span style={{ fontSize: 10, background: 'var(--blue-dim)', border: '1px solid color-mix(in srgb, var(--blue) 25%, transparent)', padding: '2px 7px', borderRadius: 4, color: 'var(--blue)', fontWeight: 700, letterSpacing: 0.3, flexShrink: 0 }}>COMPRA</span>
                 <span style={{ fontSize: 13, color: 'var(--text-2)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {appt.phone_brand} {appt.phone_model} {appt.phone_storage}{appt.phone_color ? ` · ${appt.phone_color}` : ''}
                 </span>
@@ -345,7 +345,7 @@ function AppointmentCard({ appt, index, onEdit, onConfirm, onCancel, onDelete }:
             )}
             {hasTradein && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 10, background: 'var(--purple)15', border: '1px solid var(--purple)33', padding: '2px 7px', borderRadius: 4, color: 'var(--purple)', fontWeight: 700, letterSpacing: 0.3, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <span style={{ fontSize: 10, background: 'var(--purple-dim)', border: '1px solid color-mix(in srgb, var(--purple) 25%, transparent)', padding: '2px 7px', borderRadius: 4, color: 'var(--purple)', fontWeight: 700, letterSpacing: 0.3, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
                   <ArrowLeftRight size={8} /> CANJE
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--text-2)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

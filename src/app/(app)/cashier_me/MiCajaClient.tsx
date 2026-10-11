@@ -84,7 +84,7 @@ export function MiCajaClient({ user, ventas, cierres, hayCierres, ciegas }: {
       const esperado = esperadoDelTurno(ventas.map(v => ({ ...v, seller_id: user.id })), user.id, desde, ahora)
       setResultado({ esperado, declarado })
     }
-    if (!hayCierres) toast.warning('El cierre no quedó guardado: falta aplicar la migración de cierres de turno.', { duration: 8000 })
+    if (!hayCierres) toast.warning('El cierre no quedó guardado: esta función todavía no está activa en tu cuenta. Avisale al dueño.', { duration: 8000 })
     router.refresh()
   }
 

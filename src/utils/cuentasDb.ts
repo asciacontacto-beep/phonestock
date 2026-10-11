@@ -26,4 +26,4 @@ export function faltaMigracion(error: { code?: string; message?: string } | null
 
 /** Aviso único para las pantallas que dependen de la migración nueva. */
 export const AVISO_MIGRACION_CUENTAS =
-  'Para usar esto hay que aplicar la migración 20260930_cuentas_financieras_y_caja.sql (ver docs/mejoras/README.md).'
+  'Esta función todavía no está activa en tu cuenta. Escribinos por WhatsApp y la activamos.'

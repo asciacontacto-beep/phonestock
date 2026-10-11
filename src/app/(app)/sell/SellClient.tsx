@@ -573,7 +573,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
       setCust({ name: '', dni: '', phone: '', email: '', instagram: '' });
       router.refresh();
     } catch (e: any) {
-      toast.error(e.message || JSON.stringify(e) || 'Error al procesar venta');
+      toast.error(e?.message || 'No se pudo registrar la venta. Probá de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -1420,7 +1420,7 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
 function TradeInForm({ currency, onConfirm, valores = [] }: any) {
   const [appleCategory, setAppleCategory] = useState('iPhone');
   const [f, setF] = useState({
-    brand: 'Apple', model: 'iPhone 12', storage: '128GB', color: 'Negro',
+    brand: 'Apple', model: '', storage: '', color: '',
     imei: '', condition: 'used', battery: '', notes: '', salePrice: '', value: '', valueCurrency: currency
   });
 
@@ -1464,7 +1464,7 @@ function TradeInForm({ currency, onConfirm, valores = [] }: any) {
           />
         </div>
       </div>
-      <div className="row"><div className="col field"><label className="lbl">GB</label><select className="inp" value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))}>{STORAGES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+      <div className="row"><div className="col field"><label className="lbl">GB</label><select className="inp" value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))}><option value="">Elegí</option>{STORAGES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
         <div className="col field">
           <label className="lbl">Color</label>
           <input className="inp" list="tradein-colors" placeholder="Ej: Azul" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} />
@@ -1475,7 +1475,7 @@ function TradeInForm({ currency, onConfirm, valores = [] }: any) {
       </div>
       <div className="row">
         <div className="col field"><label className="lbl">IMEI / N° Serie</label><input className="inp" value={f.imei} onChange={e => setF(p => ({ ...p, imei: e.target.value }))} placeholder="15 dígitos o alfanumérico..." /></div>
-        <div className="col field"><label className="lbl">% Batería</label><input className="inp" type="number" placeholder="Ej: 85" value={f.battery} onChange={e => setF(p => ({ ...p, battery: e.target.value }))} /></div>
+        <div className="col field"><label className="lbl">% Batería</label><input className="inp" type="number" min="0" max="100" inputMode="numeric" placeholder="Ej: 85" value={f.battery} onChange={e => setF(p => ({ ...p, battery: e.target.value }))} /></div>
       </div>
       <div className="field"><label className="lbl">Detalles / Observaciones</label><input className="inp" value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} placeholder="Ej: Pantalla con rayas..." /></div>
       {/* Valor de toma según la tabla de Ajustes: se propone, no se impone. */}
@@ -1496,11 +1496,20 @@ function TradeInForm({ currency, onConfirm, valores = [] }: any) {
         );
       })()}
       <div className="row">
-        <div className="col field"><label className="lbl">Precio Venta Sugerido</label><input className="inp" type="number" value={f.salePrice} onChange={e => setF(p => ({ ...p, salePrice: e.target.value }))} placeholder="0" /></div>
-        <div className="col field"><label className="lbl">Costo (Valor toma)</label><input className="inp" type="number" value={f.value} onChange={e => setF(p => ({ ...p, value: e.target.value }))} placeholder="0" /></div>
+        <div className="col field"><label className="lbl">Precio Venta Sugerido</label><input className="inp" type="number" min="0" inputMode="decimal" value={f.salePrice} onChange={e => setF(p => ({ ...p, salePrice: e.target.value }))} placeholder="0" /></div>
+        <div className="col field"><label className="lbl">Valor de toma</label><input className="inp" type="number" min="0" inputMode="decimal" value={f.value} onChange={e => setF(p => ({ ...p, value: e.target.value }))} placeholder="0" /></div>
         <div className="col field"><label className="lbl">Moneda</label><input className="inp" value={f.valueCurrency} disabled /></div>
       </div>
-      <button className="btn btn-dark btn-lg" style={{ width: '100%' }} onClick={() => onConfirm(f)}>Agregar a la venta</button>
+      {/* Sin modelo o sin valor, el pago quedaba "NaN". */}
+      {(() => {
+        const falta = !f.model.trim() ? 'Elegí el modelo del equipo que entra' : !(Number(f.value) > 0) ? 'Poné el valor de toma' : '';
+        return (
+          <>
+            <button className="btn btn-dark btn-lg" style={{ width: '100%' }} disabled={!!falta} onClick={() => onConfirm(f)}>Agregar a la venta</button>
+            {falta && <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', marginTop: 8 }}>{falta}</div>}
+          </>
+        );
+      })()}
     </>
   );
 }

@@ -1,4 +1,5 @@
 "use client"
+import { WHATSAPP } from '@/components/landing/precios'
 import { useEffect, useState } from 'react'
 import { AlertTriangle, Clock } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
@@ -39,17 +40,19 @@ export function AvisoDeCuenta({ orgId }: { orgId: string | null }) {
       display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
       padding: '10px 18px', fontSize: 13, lineHeight: 1.5,
       background: grave ? 'var(--red-dim)' : 'var(--amber-dim)',
-      color: grave ? '#991b1b' : '#92400e',
+      // Con los colores del tema: los rojos/ámbar fijos no se leían en oscuro.
+      color: grave ? 'var(--red)' : 'var(--amber)',
       borderBottom: `1px solid ${grave ? 'rgba(220,38,38,.2)' : 'rgba(217,119,6,.2)'}`,
     }}>
       {grave ? <AlertTriangle size={15} style={{ flexShrink: 0 }} /> : <Clock size={15} style={{ flexShrink: 0 }} />}
       <span style={{ flex: 1, minWidth: 200 }}>{cuenta.mensaje}</span>
       <a
         className="btn btn-sm"
-        href={`https://wa.me/?text=${encodeURIComponent('Hola, quiero renovar mi cuenta de Stackr.')}`}
+        // Con el número de Stackr: sin él, WhatsApp pedía elegir a quién mandarle.
+        href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent('Hola, quiero renovar mi cuenta de Stackr.')}`}
         target="_blank" rel="noopener noreferrer"
         style={{
-          background: grave ? '#991b1b' : '#92400e', color: '#fff',
+          background: grave ? 'var(--red)' : 'var(--amber)', color: '#fff',
           padding: '5px 12px', fontSize: 12, fontWeight: 600, textDecoration: 'none', borderRadius: 8,
         }}
       >

@@ -158,7 +158,7 @@ export function MayoristaDetailClient({
       if (error) {
         // Column might not exist yet
         if (error.message?.toLowerCase().includes('column') || error.code === '42703') {
-          toast.error('Ejecutá la migración SQL para habilitar esta función')
+          toast.error('Esta función todavía no está activa en tu cuenta. Escribinos por WhatsApp y la activamos.')
         } else {
           throw error
         }

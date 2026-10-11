@@ -34,7 +34,7 @@ export function CuentaModal({ proveedor, pedidos, pagos, onClose, onNuevoPedido,
     <div className="mo" style={{ zIndex: 1000 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="mb" style={{ maxWidth: 640, width: '95vw' }} onClick={e => e.stopPropagation()}>
         <div className="mh">
-          <div className="mt">Cuenta corriente · {proveedor.name}</div>
+          <div className="mh-title">Cuenta corriente · {proveedor.name}</div>
           <button className="btn-ghost" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

@@ -270,7 +270,7 @@ export function CustomersClient({
           <div className="mb" style={{ maxWidth: 520, marginLeft: 'auto', marginRight: 0, height: '100vh', borderRadius: '16px 0 0 16px', overflow: 'auto' }}
             onClick={e => e.stopPropagation()}>
             <div className="mh" style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div className="mt" style={{ fontWeight: 600 }}>Perfil de Cliente</div>
+              <div className="mh-title" style={{ fontWeight: 600 }}>Perfil de Cliente</div>
               <div style={{ display: 'flex', gap: 10 }}>
                 {!isEditing && (
                   <>

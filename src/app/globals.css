@@ -35,6 +35,11 @@
   --red-dim:   #fef2f2;
   --blue:      #2563eb;
   --blue-dim:  #eff6ff;
+  --purple:     #7c3aed;
+  --purple-dim: #f5f3ff;
+  --orange:     #ea580c;
+  --orange-dim: #fff7ed;
+  --green-bg:   var(--green-dim);
 
   /* Radii */
   --r-sm: 8px;
@@ -101,6 +106,11 @@
   --red-dim:   rgba(248,113,113,0.12);
   --blue:      #60a5fa;
   --blue-dim:  rgba(96,165,250,0.12);
+  --purple:     #a78bfa;
+  --purple-dim: rgba(167,139,250,0.12);
+  --orange:     #fb923c;
+  --orange-dim: rgba(251,146,60,0.12);
+  --green-bg:   var(--green-dim);
 
   --shadow-xs: none;
   --shadow-sm: none;
@@ -328,6 +338,22 @@ input, select, textarea { outline: none; }
 .btn-outline:hover { border-color: var(--border-lg); color: var(--text); }
 
 .btn-ghost { background: transparent; color: var(--text-2); }
+
+/* Deshabilitado, en todas las pantallas (antes sólo en celular: en la compu
+   un botón deshabilitado se veía igual que uno activo). */
+.btn:disabled, .btn[aria-disabled="true"], .btn-icon:disabled, .btn-pill:disabled {
+  opacity: .45; cursor: not-allowed; transform: none; box-shadow: none;
+}
+
+/* Foco visible con teclado (el outline estaba apagado sin reemplazo). */
+.btn:focus-visible, .btn-icon:focus-visible, .btn-pill:focus-visible {
+  outline: 2px solid var(--text); outline-offset: 2px;
+}
+
+/* Acciones destructivas: un solo estilo en vez de rojos sueltos en línea. */
+.btn-danger { background: var(--red); color: #fff; border: 1px solid transparent; }
+.btn-danger:hover { filter: brightness(1.06); }
+[data-theme="dark"] .btn-danger { color: #1a0505; }
 .btn-ghost:hover { color: var(--text); background: var(--surface-3); }
 
 .btn-sm  { padding: 6px 12px; font-size: 12px; border-radius: 7px; }

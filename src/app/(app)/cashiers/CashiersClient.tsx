@@ -661,7 +661,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
         <div className="mo">
           <div className="mb" style={{ maxWidth: 450 }}>
             <div className="mh">
-              <div className="mt">Cierre de Caja "Ciego"</div>
+              <div className="mh-title">Cierre de Caja "Ciego"</div>
               <button className="btn-ghost" onClick={() => setShowClose(false)}>×</button>
             </div>
             <div className="mbd">
@@ -689,7 +689,7 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
         <div className="mo">
           <div className="mb" style={{ maxWidth: 500 }}>
             <div className="mh">
-              <div className="mt">Resultado del Cierre</div>
+              <div className="mh-title">Resultado del Cierre</div>
               <button className="btn-ghost" onClick={() => { setClosureResult(null); setShowClose(false); }}>×</button>
             </div>
             <div className="mbd">

@@ -185,7 +185,7 @@ export function SuppliersClient({ initialSuppliers, initialPedidos = [], initial
         <div className="mo">
           <div className="mb" style={{ maxWidth: 420 }}>
             <div className="mh">
-              <div className="mt">Nuevo Proveedor</div>
+              <div className="mh-title">Nuevo Proveedor</div>
               <button className="btn-ghost" onClick={() => setShowAdd(false)}><X size={18} /></button>
             </div>
             <div className="mbd">
@@ -205,7 +205,7 @@ export function SuppliersClient({ initialSuppliers, initialPedidos = [], initial
         <div className="mo">
           <div className="mb" style={{ maxWidth: 420 }}>
             <div className="mh">
-              <div className="mt">Editar Proveedor</div>
+              <div className="mh-title">Editar Proveedor</div>
               <button className="btn-ghost" onClick={() => setEditSup(null)}><X size={18} /></button>
             </div>
             <div className="mbd">

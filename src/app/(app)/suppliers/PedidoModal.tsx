@@ -145,7 +145,7 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
       <div className="mb" style={{ maxWidth: 720, width: '95vw' }} onClick={e => e.stopPropagation()}>
         <div className="mh">
           <div>
-            <div className="mt">Nuevo pedido · {proveedor.name}</div>
+            <div className="mh-title">Nuevo pedido · {proveedor.name}</div>
             <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
               Cargá los equipos que llegaron juntos. El total queda como deuda con el proveedor.
             </div>

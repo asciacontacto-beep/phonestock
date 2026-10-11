@@ -246,7 +246,7 @@ export function UsersClient({ initialUsers, deposits, currentOrgId }: { initialU
         <div className="mo">
           <div className="mb" style={{ maxWidth: 480 }}>
             <div className="mh">
-              <div className="mt">Alta de Nuevo Acceso</div>
+              <div className="mh-title">Alta de Nuevo Acceso</div>
               <button className="btn-ghost" onClick={() => setShowAdd(false)}>×</button>
             </div>
             <div className="mbd">

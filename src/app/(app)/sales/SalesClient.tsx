@@ -387,7 +387,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
         <div className="mo">
           <div className="mb" style={{ maxWidth: 450 }}>
             <div className="mh no-print">
-              <div className="mt" style={{ fontWeight: 600 }}>{isEditing ? 'Editar Venta' : 'Detalle de Venta'}</div>
+              <div className="mh-title" style={{ fontWeight: 600 }}>{isEditing ? 'Editar Venta' : 'Detalle de Venta'}</div>
               <div style={{ display: 'flex', gap: 10 }}>
                 {!isEditing && isOwner && (
                   <button

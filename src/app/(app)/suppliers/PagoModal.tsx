@@ -70,7 +70,7 @@ export function PagoModal({ proveedor, pedidos, pagos, deposits, deuda, pedidoIn
     <div className="mo" style={{ zIndex: 1100 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="mb" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
         <div className="mh">
-          <div className="mt">Pago a {proveedor.name}</div>
+          <div className="mh-title">Pago a {proveedor.name}</div>
           <button className="btn-ghost" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

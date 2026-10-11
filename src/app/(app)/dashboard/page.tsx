@@ -28,7 +28,8 @@ export default async function DashboardPage() {
     { data: settingsData },
     { data: repairsData },
     { data: installmentsData },
-    { data: paymentsData }
+    { data: paymentsData },
+    { data: gastosData },
   ] = await Promise.all([
     traerTodo(() => supabase.from('stock')
       .select(esVendedor ? COLS_STOCK : `${COLS_STOCK},cost_price`)
@@ -41,7 +42,7 @@ export default async function DashboardPage() {
     configuracionDelLocal(supabase, profile?.org_id, 'exchange_rate'),
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
-      : traerTodo(() => supabase.from('repairs').select('id, cost, created_at, updated_at').order('id')),
+      : traerTodo(() => supabase.from('repairs').select('id, cost, status, created_at, updated_at').order('id')),
     // Cuotas y cobros sólo alimentan alertas que el vendedor no ve.
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
@@ -49,6 +50,11 @@ export default async function DashboardPage() {
     esVendedor
       ? Promise.resolve({ data: [] as any[] })
       : traerTodo(() => supabase.from('customer_payments').select('id,installment_id,amount,currency,exchange_rate,paid_at').order('paid_at').order('id')),
+    // Gastos de los últimos 3 meses: para el punto de equilibrio del Análisis.
+    esVendedor
+      ? Promise.resolve({ data: [] as any[] })
+      : traerTodo(() => supabase.from('expenses').select('id,amount,currency,created_at')
+          .gte('created_at', new Date(Date.now() - 95 * 86_400_000).toISOString()).order('id')),
   ])
 
   /* Cumpleaños de clientes (sólo el dueño). Si la base todavía no tiene las
@@ -82,6 +88,7 @@ export default async function DashboardPage() {
       repairs={repairsData || []}
       installments={installmentsData || []}
       payments={paymentsData || []}
+      gastos={gastosData || []}
       clientesConCumple={(cumplesRes as { data: any[] | null }).data || []}
       negocio={(ajustesCumple as { data: any }).data?.shop_name || ''}
       descuentoCumple={Number((ajustesCumple as { data: any }).data?.descuento_cumple ?? 10)}

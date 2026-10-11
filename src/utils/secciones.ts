@@ -24,7 +24,7 @@ export interface Seccion {
 }
 
 export const SECCIONES: Seccion[] = [
-  { menu: 'dashboard', pestanas: [{ id: 'dashboard', label: 'Resumen' }, { id: 'reports', label: 'Rentabilidad' }] },
+  { menu: 'dashboard', pestanas: [{ id: 'dashboard', label: 'Resumen' }, { id: 'reports', label: 'Rentabilidad' }, { id: 'analisis', label: 'Análisis' }] },
   { menu: 'stock', pestanas: [{ id: 'stock', label: 'Equipos' }, { id: 'accessories', label: 'Accesorios' }, { id: 'deposits', label: 'Depósitos' }], tambien: ['scan', 'historial'] },
   { menu: 'sales', pestanas: [{ id: 'sales', label: 'Ventas' }, { id: 'recibos', label: 'Recibo manual' }] },
   { menu: 'cashiers', pestanas: [{ id: 'cashiers', label: 'Cajas' }, { id: 'expenses', label: 'Gastos' }] },

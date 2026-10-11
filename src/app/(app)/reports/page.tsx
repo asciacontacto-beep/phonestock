@@ -25,7 +25,7 @@ export default async function ReportsPage() {
     traerTodo(() => supabase.from('expenses').select('*').order('created_at', { ascending: false }).order('id')),
     supabase.from('deposits').select('*').order('name'),
     configuracionDelLocal(supabase, profile?.org_id),
-    traerTodo(() => supabase.from('repairs').select('id, cost, created_at, updated_at').order('id'))
+    traerTodo(() => supabase.from('repairs').select('id, cost, status, created_at, updated_at').order('id'))
   ])
 
   const exchangeRate = settingsData?.exchange_rate || 1200;

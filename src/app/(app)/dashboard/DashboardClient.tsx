@@ -1,7 +1,7 @@
 "use client"
 import { filaCsv } from '@/utils/csv';
 import { plural } from '@/utils/texto';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useSyncExternalStore } from 'react';
 import { categoryBreakdown, totalsFromBreakdown, saleCategory, saleExchangeRate, toUSD, isRepairClosed } from '@/utils/sales';
 import { ProfitBreakdownModal, type ProfitLine } from '@/components/ProfitBreakdownModal';
 import { Sparkline } from '@/components/Sparkline';
@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 import { InicioMobile } from './InicioMobile';
 import { ParaContactar, type Contacto } from '@/components/ParaContactar';
+import { ConsejosInicio } from '@/components/ConsejosInicio';
+import { analizar, type Consejo } from '@/utils/analisis/analisis';
 import { proximosCumples, cuandoCumple, textoCumple, mensajeCumple, type ClienteConCumple } from '@/utils/cumpleanos';
 import { cuotasVencidas, garantiasPorVencer, renovacionesDeLaSemana, mensajeCuotas, mensajeGarantia, mensajeRenovacion, fechaLocal, type VentaPostventa } from '@/utils/postventa';
 
@@ -64,16 +66,26 @@ function daysInStock(createdAt?: string | null): number | null {
   return Math.floor(ms / 86_400_000);
 }
 
+const sinSuscripcion = () => () => {};
+
 export function DashboardClient({
   stock, sales, exchangeRate, userRole, repairs = [], installments = [], payments = [],
-  clientesConCumple = [], negocio = '', descuentoCumple = 10, garantiaDias = null,
+  clientesConCumple = [], negocio = '', descuentoCumple = 10, garantiaDias = null, gastos = [],
 }: {
   stock: any[]; sales: any[]; exchangeRate: number; userRole?: string; repairs?: any[];
-  installments?: any[]; payments?: any[];
+  installments?: any[]; payments?: any[]; gastos?: any[];
   clientesConCumple?: ClienteConCumple[]; negocio?: string; descuentoCumple?: number;
   /** null: la base no tiene garantías por venta todavía (no se avisan). */
   garantiaDias?: number | null;
 }) {
+  // Análisis del negocio (sólo el dueño). Con la fecha del navegador: se
+  // calcula recién ahí para que el servidor no pinte otros números.
+  const enNavegador = useSyncExternalStore(sinSuscripcion, () => true, () => false);
+  const consejos = useMemo<Consejo[]>(() => !enNavegador || userRole === 'seller' ? [] : analizar({
+    hoy: new Date(), dias: 30, verPlata: true, cotizacion: exchangeRate,
+    stock, ventas: sales, gastos, reparaciones: repairs, cuotas: installments, cobros: payments,
+  }), [enNavegador, userRole, exchangeRate, stock, sales, gastos, repairs, installments, payments]);
+
   // Cumpleaños de los próximos 7 días, con la fecha de este navegador.
   const cumples = useMemo(() => proximosCumples(clientesConCumple, new Date(), 7), [clientesConCumple]);
 
@@ -689,6 +701,7 @@ export function DashboardClient({
       )}
 
       {userRole !== 'seller' && <ParaContactar contactos={contactos} variante="compu" />}
+      {userRole !== 'seller' && <ConsejosInicio consejos={consejos} variante="compu" />}
 
       {/* ── Qué conviene reponer ────────────────────────────────
            Reports explica la rentabilidad por modelo; acá se cruza con el
@@ -813,6 +826,7 @@ export function DashboardClient({
       serie={profitSeries}
       haySerie={hasSeries}
       contactos={contactos}
+      consejos={consejos}
     />
 
       {/* Fuera de las dos vistas: tienen que poder abrirse en cualquiera. */}

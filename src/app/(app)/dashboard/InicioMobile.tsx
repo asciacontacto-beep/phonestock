@@ -8,7 +8,9 @@
  * la compu, sólo cambia cómo se muestran.
  */
 import Link from 'next/link'
-import { ParaContactar, type Contacto } from '@/components/ParaContactar';
+import { ParaContactar, type Contacto } from '@/components/ParaContactar'
+import { ConsejosInicio } from '@/components/ConsejosInicio'
+import type { Consejo } from '@/utils/analisis/analisis';
 import { ArrowDownRight, ArrowUpRight, ChevronRight, ScanLine, Search, ShoppingCart, Users2, Wallet } from 'lucide-react'
 import { Sparkline } from '@/components/Sparkline'
 import { haceCuanto } from '@/utils/tiempo'
@@ -32,7 +34,7 @@ interface Alerta { key: string; text: string; tone: 'red' | 'amber'; onClick?: (
 
 export function InicioMobile({
   esDueno, range, setRange, ganancia, delta, facturacion, ventas, stock, capital, deuda, acreditar,
-  alertas, recientes, serie, haySerie, contactos = [],
+  alertas, recientes, serie, haySerie, contactos = [], consejos = [],
 }: {
   esDueno: boolean
   range: Range
@@ -50,6 +52,7 @@ export function InicioMobile({
   serie: number[]
   haySerie: boolean
   contactos?: Contacto[]
+  consejos?: Consejo[]
 }) {
   const hoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -161,6 +164,7 @@ export function InicioMobile({
         )}
 
         <ParaContactar contactos={contactos} variante="celular" />
+        {esDueno && <ConsejosInicio consejos={consejos} variante="celular" />}
 
         <section>
           <div className="m-sec">

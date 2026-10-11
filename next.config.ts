@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: version,
   },
   experimental: {
+    // La caché de Turbopack entre builds (Vercel guarda .next/cache) servía un
+    // globals.css viejo: los cambios de JS entraban y los de CSS no. Un build
+    // tarda unos segundos más, pero lo publicado es siempre lo actual.
+    turbopackFileSystemCacheForBuild: false,
     staleTimes: {
       dynamic: 0, // Sin caché de cliente para páginas dinámicas (default Next): datos siempre frescos al navegar (stock, ventas, dashboard reflejan cambios al instante)
       static: 180,

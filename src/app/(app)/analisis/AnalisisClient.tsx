@@ -10,6 +10,7 @@ import type { VentaPostventa } from '@/utils/postventa'
 import { TarjetaConsejo } from './TarjetaConsejo'
 import { createClient } from '@/utils/supabase/client'
 import { SelectorLocal } from '@/components/SelectorLocal'
+import { useLocal } from '@/hooks/useLocal'
 import { idsAparte, delLocal, type Local, type Deposito } from '@/utils/locales'
 
 const PERIODOS = [30, 60, 90] as const
@@ -38,7 +39,7 @@ export function AnalisisClient({
   depositos?: Deposito[]
 }) {
   // Locales con cuentas aparte: "General" no los suma; eligiendo uno, sólo lo suyo.
-  const [local, setLocal] = useState<Local>('general')
+  const [local, setLocal] = useLocal(depositos)
   const aparte = useMemo(() => idsAparte(depositos), [depositos])
   const stock = useMemo(() => delLocal(stockTodo, local, aparte, 'deposit' as keyof EquipoAnalisis), [stockTodo, local, aparte])
   const ventas = useMemo(() => delLocal(ventasTodas, local, aparte), [ventasTodas, local, aparte])

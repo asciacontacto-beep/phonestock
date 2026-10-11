@@ -28,8 +28,25 @@ export function delLocal<T>(items: T[], local: Local, aparte: Set<string>, campo
   return items.filter(x => String(x[campo] ?? '') === local)
 }
 
-/** Cómo se llama la vista general: "Todos los locales", o "General (sin Accesorios Centro)". */
+/**
+ * Cómo se llama la vista general. Sin locales aparte: "Todos los locales".
+ * Con locales aparte, los que quedan adentro por su nombre: "Goyena", o
+ * "Goyena y Olazabal". Para el dueño son locales, no "general y otro".
+ */
 export function nombreGeneral(depositos: Deposito[]): string {
-  const aparte = depositos.filter(d => d.cuentas_aparte).map(d => d.name || 'local aparte')
-  return aparte.length === 0 ? 'Todos los locales' : `General (sin ${aparte.join(', ')})`
+  if (!depositos.some(d => d.cuentas_aparte)) return 'Todos los locales'
+  const adentro = depositos.filter(d => !d.cuentas_aparte).map(d => d.name || 'Local')
+  if (adentro.length === 0) return 'Sin local asignado'
+  return adentro.length === 1 ? adentro[0] : `${adentro.slice(0, -1).join(', ')} y ${adentro[adentro.length - 1]}`
+}
+
+/** Las opciones del selector: la vista general y cada local, sin repetir el único local que ya es la general. */
+export function opcionesDeLocal(depositos: Deposito[]): { valor: Local; nombre: string }[] {
+  const hayAparte = depositos.some(d => d.cuentas_aparte)
+  const adentro = depositos.filter(d => !d.cuentas_aparte)
+  const sueltos = hayAparte && adentro.length === 1 ? depositos.filter(d => d.cuentas_aparte) : depositos
+  return [
+    { valor: 'general', nombre: nombreGeneral(depositos) },
+    ...sueltos.map(d => ({ valor: String(d.id), nombre: d.name || 'Local' })),
+  ]
 }

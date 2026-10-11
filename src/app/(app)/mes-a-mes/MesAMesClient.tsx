@@ -6,6 +6,7 @@ import type { Sale, Repair } from '@/types/domain'
 import { ultimosMeses, hastaElDia, resumenDelMes, variacionMes, type ResumenMes, type Gasto } from '@/utils/mesAMes'
 import { filaCsv } from '@/utils/csv'
 import { SelectorLocal } from '@/components/SelectorLocal'
+import { useLocal } from '@/hooks/useLocal'
 import { idsAparte, delLocal, type Local, type Deposito } from '@/utils/locales'
 
 const sinCambios = () => () => {}
@@ -36,7 +37,7 @@ export function MesAMesClient({ ahora, cotizacion, ventas: ventasTodas, gastos: 
   depositos?: Deposito[]
 }) {
   // Locales con cuentas aparte: "General" no los suma; eligiendo uno, sólo lo suyo.
-  const [local, setLocal] = useState<Local>('general')
+  const [local, setLocal] = useLocal(depositos)
   const aparte = useMemo(() => idsAparte(depositos), [depositos])
   const ventas = useMemo(() => delLocal(ventasTodas, local, aparte), [ventasTodas, local, aparte])
   const gastos = useMemo(() => delLocal(gastosTodos, local, aparte), [gastosTodos, local, aparte])

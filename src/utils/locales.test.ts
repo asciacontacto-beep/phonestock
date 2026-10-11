@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { idsAparte, delLocal, nombreGeneral } from './locales'
+import { idsAparte, delLocal, nombreGeneral, opcionesDeLocal } from './locales'
 
 const depositos = [
   { id: 'a', name: 'Goyena' },
@@ -23,8 +23,16 @@ describe('locales con cuentas aparte', () => {
     const stock = [{ id: 9, deposit: 'b' }, { id: 8, deposit: 'a' }]
     expect(delLocal(stock, 'general', idsAparte(depositos), 'deposit').map(s => s.id)).toEqual([8])
   })
-  it('nombre de la vista general', () => {
-    expect(nombreGeneral(depositos)).toBe('General (sin Accesorios Centro)')
+  it('la vista general se llama como los locales que tiene adentro', () => {
+    expect(nombreGeneral(depositos)).toBe('Goyena')
+    expect(nombreGeneral([...depositos, { id: 'c', name: 'Olazabal' }])).toBe('Goyena y Olazabal')
     expect(nombreGeneral([{ id: 'a' }])).toBe('Todos los locales')
+  })
+  it('dos locales separados: dos opciones, sin repetir', () => {
+    expect(opcionesDeLocal(depositos).map(o => o.nombre)).toEqual(['Goyena', 'Accesorios Centro'])
+    expect(opcionesDeLocal(depositos).map(o => o.valor)).toEqual(['general', 'b'])
+  })
+  it('sin locales aparte: todos, y cada uno', () => {
+    expect(opcionesDeLocal([{ id: 'a', name: 'A' }, { id: 'c', name: 'C' }]).map(o => o.nombre)).toEqual(['Todos los locales', 'A', 'C'])
   })
 })

@@ -9,6 +9,7 @@ import { diaLocal } from '@/utils/fechas';
 import { useEsCelular } from '@/hooks/useEsCelular';
 import { RentabilidadMobile } from './RentabilidadMobile';
 import { SelectorLocal } from '@/components/SelectorLocal';
+import { useLocal } from '@/hooks/useLocal';
 import { idsAparte, delLocal, type Local } from '@/utils/locales';
 
 type Period = '7d' | '30d' | '90d' | 'all';
@@ -21,7 +22,7 @@ export function ReportsClient({ sales: ventasTodas, expenses: gastosTodos, depos
   repairs?: any[];
 }) {
   /* Locales con cuentas aparte: "General" no los suma; eligiendo uno, sólo lo suyo. */
-  const [local, setLocal] = useState<Local>('general');
+  const [local, setLocal] = useLocal(deposits);
   const aparte = useMemo(() => idsAparte(deposits), [deposits]);
   const sales = useMemo(() => delLocal(ventasTodas, local, aparte), [ventasTodas, local, aparte]);
   const expenses = useMemo(() => delLocal(gastosTodos, local, aparte), [gastosTodos, local, aparte]);

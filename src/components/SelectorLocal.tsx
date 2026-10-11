@@ -1,6 +1,6 @@
 "use client"
 import { Store } from 'lucide-react'
-import { nombreGeneral, type Deposito, type Local } from '@/utils/locales'
+import { opcionesDeLocal, type Deposito, type Local } from '@/utils/locales'
 
 /**
  * Elegir de qué local ver los números. Sólo aparece si hay más de un local.
@@ -16,10 +16,7 @@ export function SelectorLocal({ depositos, valor, onChange }: {
     <label className="selector-local">
       <Store size={14} aria-hidden />
       <select className="inp" value={valor} onChange={e => onChange(e.target.value)} aria-label="Ver los números de">
-        <option value="general">{nombreGeneral(depositos)}</option>
-        {depositos.map(d => (
-          <option key={String(d.id)} value={String(d.id)}>{d.name}{d.cuentas_aparte ? ' (cuentas aparte)' : ''}</option>
-        ))}
+        {opcionesDeLocal(depositos).map(o => <option key={o.valor} value={o.valor}>{o.nombre}</option>)}
       </select>
     </label>
   )

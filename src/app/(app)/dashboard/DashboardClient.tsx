@@ -19,6 +19,7 @@ import { InicioMobile } from './InicioMobile';
 import { ParaContactar, type Contacto } from '@/components/ParaContactar';
 import { ConsejosInicio } from '@/components/ConsejosInicio';
 import { SelectorLocal } from '@/components/SelectorLocal';
+import { useLocal } from '@/hooks/useLocal';
 import { idsAparte, delLocal, type Local, type Deposito } from '@/utils/locales';
 import { analizar, type Consejo } from '@/utils/analisis/analisis';
 import { proximosCumples, cuandoCumple, textoCumple, mensajeCumple, type ClienteConCumple } from '@/utils/cumpleanos';
@@ -81,7 +82,7 @@ export function DashboardClient({
   garantiaDias?: number | null;
 }) {
   // Locales con cuentas aparte (sólo el dueño elige): "General" no los suma.
-  const [local, setLocal] = useState<Local>('general');
+  const [local, setLocal] = useLocal(depositos);
   const aparte = useMemo(() => idsAparte(depositos), [depositos]);
   const stock = useMemo(() => delLocal(stockTodo, local, aparte, 'deposit'), [stockTodo, local, aparte]);
   const sales = useMemo(() => delLocal(ventasTodas, local, aparte), [ventasTodas, local, aparte]);

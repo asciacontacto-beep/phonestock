@@ -2845,7 +2845,7 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 
 /* ── Análisis del negocio ─────────────────────────────────────────────── */
 .an-periodo { display: flex; gap: 6px; flex-wrap: wrap; }
-.an-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.an-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .an-kpi {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
   padding: 14px 16px; box-shadow: var(--shadow-sm); min-height: 96px;

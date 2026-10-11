@@ -7,6 +7,7 @@ import { crearPedido, totalDelPedido } from '@/utils/proveedores';
 import { ModelPicker } from './ModelPicker';
 import { limpiarImei, repetidosEnLote, buscarImeisEnStock, avisoDuplicado, esErrorImeiRepetido } from '@/utils/imei';
 import { buscarEquipoPorCodigo, codigoCanonico, variantesDeCodigo, esImei } from '@/utils/codigos';
+import { imeiDeUnidad, imeisDeLaCarga, precioDeVariante, costoDeVariante, cantidad } from '@/utils/cargaEquipos';
 import { Check, X, ChevronRight, ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,7 +29,12 @@ const isOldPro = (m: string) => {
 };
 
 function emptyVariant() {
-  return { storage: '128GB', color: 'Negro', condition: 'new' as 'new' | 'used', battery: '100%', imei: '', qty: 1, price: '', costPrice: '', notes: '' };
+  return {
+    storage: '128GB', color: 'Negro', condition: 'new' as 'new' | 'used', battery: '100%',
+    qty: 1 as number | string, imeis: [] as string[],
+    // Precio/costo distinto a los del paso 1: sólo si se lo pide.
+    precioPropio: false, price: '', costPrice: '', notes: '',
+  };
 }
 
 export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, upcInicial = '' }: ManualEntryModalProps) {
@@ -99,7 +105,13 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
     // Se pistoleó el IMEI en el campo del código: va al IMEI del equipo.
     if (esImei(code)) {
       setUpc('');
-      setVariants(vs => vs.map((v, i) => i === 0 ? { ...v, imei: limpiarImei(code), qty: 1 } : v));
+      setVariants(vs => vs.map((v, i) => {
+        if (i !== 0) return v;
+        const imeis = [...(v.imeis || [])];
+        const libre = Array.from({ length: Math.max(1, cantidad(v)) }, (_, k) => k).find(k => !imeis[k]?.trim());
+        imeis[libre ?? cantidad(v)] = limpiarImei(code);
+        return { ...v, imeis, qty: Math.max(cantidad(v), (libre ?? cantidad(v)) + 1) };
+      }));
       toast.success('Era el IMEI: lo cargué en el equipo. El código del modelo es otro (UPC/EAN).');
       return;
     }
@@ -181,9 +193,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
       // El IMEI identifica al aparato: dos disponibles con el mismo número
       // son el mismo teléfono contado dos veces. Se avisa antes de guardar,
       // nombrando el equipo; el índice de la base es la garantía final.
-      const imeisCargados = variants
-        .filter(v => (Number(v.qty) || 0) === 1)
-        .map(v => limpiarImei(v.imei));
+      const imeisCargados = imeisDeLaCarga(variants);
 
       const repes = repetidosEnLote(imeisCargados);
       if (repes.length > 0) {
@@ -202,17 +212,16 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
       const units: any[] = [];
       variants.forEach(v => {
         const qty = Number(v.qty) || 0;
-        Array.from({ length: qty }).forEach(() => {
+        Array.from({ length: qty }).forEach((_, k) => {
           units.push({
             brand, model, storage: v.storage, color: v.color,
             condition: v.condition,
             battery: v.condition === 'used' ? v.battery : null,
-            imei: qty === 1 && limpiarImei(v.imei) ? limpiarImei(v.imei) : null,
-            price: v.price ? parseFloat(v.price) : parseFloat(price), 
+            // Cada unidad con su IMEI (antes sólo se podía con cantidad 1).
+            imei: imeiDeUnidad(v, k),
+            price: precioDeVariante(v, price),
             // Dueño: obligatorio. Vendedor habilitado: opcional. Si no, sin costo.
-            cost_price: !verCampoCosto ? null
-              : v.costPrice ? parseFloat(v.costPrice)
-              : costPrice ? parseFloat(costPrice) : null,
+            cost_price: !verCampoCosto ? null : costoDeVariante(v, costPrice),
             currency: cur,
             deposit: dep, supplier_id: sup, status: 'available', upc: upc || null,
             notes: v.notes?.trim() || null
@@ -468,22 +477,71 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
                       <input className="inp" list="battery-options" placeholder="Ej: 87%" value={v.battery} onChange={e => updV(i, 'battery', e.target.value)} />
                     </div>
                   )}
-                  <div style={{ display: 'grid', gridTemplateColumns: verCampoCosto ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 12 }}>
-                    <div>
-                      <label className="lbl">Precio Venta (opcional)</label>
-                      <input className="inp" type="text" inputMode="decimal" placeholder={`Base: $${price || '0'}`} value={v.price || ''} onChange={e => updV(i, 'price', e.target.value.replace(/[^0-9.]/g, ''))} />
+                  {/* Precio y costo se cargan una vez, en el paso 1. Una variante
+                      distinta (otra memoria, usado) los cambia sólo si se pide. */}
+                  {!v.precioPropio ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
+                      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '10px 12px', marginBottom: 12 }}>
+                      <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
+                        Precio {cur === 'USD' ? 'U$' : '$'} {price || '—'}
+                        {verCampoCosto && <> · Costo {cur === 'USD' ? 'U$' : '$'} {costPrice || '—'}</>}
+                        <span style={{ color: 'var(--text-3)' }}> (los del paso 1)</span>
+                      </span>
+                      <button type="button" className="btn btn-sm btn-outline"
+                        onClick={() => setVariants(vs => vs.map((x, idx) => idx === i ? { ...x, precioPropio: true, price, costPrice } : x))}>
+                        Otro precio para esta variante
+                      </button>
                     </div>
-                    {verCampoCosto && (
-                    <div>
-                      <label className="lbl">Precio Costo (opcional)</label>
-                      <input className="inp" type="text" inputMode="decimal" placeholder={`Base: $${costPrice || '0'}`} value={v.costPrice || ''} onChange={e => updV(i, 'costPrice', e.target.value.replace(/[^0-9.]/g, ''))} />
+                  ) : (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: verCampoCosto ? '1fr 1fr' : '1fr', gap: 10 }}>
+                        <div>
+                          <label className="lbl">Precio de venta de esta variante</label>
+                          <input className="inp" type="text" inputMode="decimal" value={v.price || ''} onChange={e => updV(i, 'price', e.target.value.replace(/[^0-9.]/g, ''))} />
+                        </div>
+                        {verCampoCosto && (
+                          <div>
+                            <label className="lbl">Costo de esta variante</label>
+                            <input className="inp" type="text" inputMode="decimal" value={v.costPrice || ''} onChange={e => updV(i, 'costPrice', e.target.value.replace(/[^0-9.]/g, ''))} />
+                          </div>
+                        )}
+                      </div>
+                      <button type="button" className="btn btn-sm btn-ghost" style={{ marginTop: 6 }}
+                        onClick={() => setVariants(vs => vs.map((x, idx) => idx === i ? { ...x, precioPropio: false, price: '', costPrice: '' } : x))}>
+                        Usar los del paso 1
+                      </button>
                     </div>
-                    )}
+                  )}
+                  <div style={{ marginBottom: 12, maxWidth: 140 }}>
+                    <label className="lbl">Cantidad</label>
+                    <input className="inp" type="text" inputMode="numeric" value={v.qty} onChange={e => { const val = e.target.value.replace(/\D/g, ''); updV(i, 'qty', val === '' ? '' : Math.min(parseInt(val, 10), 200)); }} />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                    <div><label className="lbl">Cantidad</label><input className="inp" type="text" inputMode="numeric" value={v.qty} onChange={e => { const val = e.target.value.replace(/\D/g, ''); updV(i, 'qty', val === '' ? '' : parseInt(val, 10)); }} /></div>
-                    {Number(v.qty) === 1 && (<div><label className="lbl">IMEI (opcional)</label><input className="inp" type="text" inputMode="numeric" value={v.imei} placeholder="15 dígitos" onChange={e => updV(i, 'imei', e.target.value)} /></div>)}
-                  </div>
+                  {/* Un IMEI por unidad. Con la pistola: escaneás, Enter, y pasa al siguiente. */}
+                  {cantidad(v) > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <label className="lbl">{cantidad(v) === 1 ? 'IMEI (opcional)' : `IMEI de cada unidad (opcional · ${imeisDeLaCarga([v]).length} de ${cantidad(v)})`}</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 190px), 1fr))', gap: 8 }}>
+                        {Array.from({ length: cantidad(v) }, (_, k) => (
+                          <input key={k} className="inp" type="text" inputMode="numeric" autoComplete="off"
+                            data-imei={`${i}-${k}`}
+                            placeholder={cantidad(v) === 1 ? '15 dígitos' : `Unidad ${k + 1}`}
+                            value={v.imeis?.[k] || ''}
+                            onChange={e => setVariants(vs => vs.map((x, idx) => {
+                              if (idx !== i) return x;
+                              const imeis = [...(x.imeis || [])];
+                              imeis[k] = e.target.value;
+                              return { ...x, imeis };
+                            }))}
+                            onKeyDown={e => {
+                              if (e.key !== 'Enter') return;
+                              e.preventDefault();
+                              const sig = document.querySelector<HTMLInputElement>(`[data-imei="${i}-${k + 1}"]`);
+                              sig?.focus();
+                            }} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div><label className="lbl">Observaciones (opcional)</label><input className="inp" placeholder="Ej: golpe en marco, sin caja..." value={v.notes} onChange={e => updV(i, 'notes', e.target.value)} /></div>
                 </div>
               ))}

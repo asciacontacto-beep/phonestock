@@ -1533,9 +1533,11 @@ select.inp {
 
 .settings-preview { position: sticky; top: 16px; }
 
-@media (max-width: 900px) {
+/* Con los dos menús al costado, la vista previa al lado dejaba el formulario
+   en ~250 px (direcciones y teléfonos cortados). Hasta 1280 px va abajo. */
+@media (max-width: 1280px) {
   .settings-grid { grid-template-columns: 1fr !important; }
-  .settings-preview { position: static; }
+  .settings-preview { position: static; max-width: 420px; }
 }
 
 /* ── Configuración: menú lateral por secciones ── */

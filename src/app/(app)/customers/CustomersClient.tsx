@@ -261,10 +261,10 @@ export function CustomersClient({
                     <td data-label="Última compra" style={{ fontSize: 12, color: 'var(--text-2)' }}>
                       {ls ? new Date(ls.created_at).toLocaleDateString('es-AR') : '—'}
                     </td>
-                    <td data-label="Total" className={ts > 0 ? undefined : 'tm-vacio'} style={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>
+                    <td data-label="Total" className={ts > 0 ? undefined : 'tm-vacio'} style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, whiteSpace: 'nowrap' }}>
                       {ts > 0 ? `U$ ${ts.toLocaleString('es-AR')}` : <span style={{ color: 'var(--text-3)' }}>—</span>}
                     </td>
-                    <td data-label="Debe" className={d.USD <= 0 && d.ARS <= 0 ? 'tm-vacio' : undefined} style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, fontSize: 12 }}>
+                    <td data-label="Debe" className={d.USD <= 0 && d.ARS <= 0 ? 'tm-vacio' : undefined} style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' }}>
                       {d.USD <= 0 && d.ARS <= 0 ? (
                         <span style={{ color: 'var(--text-3)' }}>—</span>
                       ) : (

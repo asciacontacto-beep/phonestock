@@ -211,11 +211,14 @@ export function stockQuieto(d: DatosAnalisis): Consejo | null {
   if (enLocal.length === 0) return null
   const tiempos = tiemposDeVenta(d)
   const p80 = tiempos.length >= 8 ? percentil(tiempos, 0.8) : null
-  const umbral = p80 != null ? Math.max(21, Math.round(p80)) : 45
+  // Sin historial propio, 60 días: lo mismo que usan Inicio y Equipos.
+  const umbral = p80 != null ? Math.max(21, Math.round(p80)) : 60
 
   const conEdad = enLocal.map(e => ({ e, edad: diasEntre(e.created_at!, d.hoy) }))
   const quietos = conEdad.filter(x => x.edad > umbral).sort((a, b) => b.edad - a.edad)
-  const valor = (e: EquipoAnalisis) => d.verPlata && e.cost_price
+  // Plata parada = lo que costaron, igual que "Capital" en Inicio y Equipos.
+  // Un equipo sin costo cargado no suma (se avisa cuántos son).
+  const valor = (e: EquipoAnalisis) => d.verPlata
     ? enUSD(e.cost_price, e.currency, d.cotizacion)
     : enUSD(e.price, e.currency, d.cotizacion)
   const capitalTotal = enLocal.reduce((a, e) => a + valor(e), 0)
@@ -223,7 +226,7 @@ export function stockQuieto(d: DatosAnalisis): Consejo | null {
 
   const comoSeCalcula = p80 != null
     ? `Uní tus últimas ${tiempos.length} ventas de equipos con su ingreso al stock (por IMEI) y medí cuántos días estuvo cada uno. 8 de cada 10 se vendieron en ${umbral} días o menos: los que pasan ese tiempo están quietos.`
-    : `Todavía hay pocas ventas con IMEI para medir tu ritmo (${tiempos.length}); mientras tanto uso 45 días como referencia. Cargando el IMEI en cada venta, la medida pasa a ser la de tu local.`
+    : `Todavía hay pocas ventas con IMEI para medir tu ritmo (${tiempos.length}); mientras tanto uso 60 días como referencia, igual que Inicio. Cargando el IMEI en cada venta, la medida pasa a ser la de tu local.`
 
   if (quietos.length === 0) {
     return {
@@ -236,6 +239,7 @@ export function stockQuieto(d: DatosAnalisis): Consejo | null {
   }
 
   const n = quietos.length
+  const sinCosto = d.verPlata ? quietos.filter(x => !x.e.cost_price).length : 0
   const filas = quietos.slice(0, 15).map(({ e, edad }) => d.verPlata
     ? [nombreModelo(e), edad, e.cost_price ? usd(enUSD(e.cost_price, e.currency, d.cotizacion)) : '—', usd(enUSD(e.price, e.currency, d.cotizacion))]
     : [nombreModelo(e), edad, usd(enUSD(e.price, e.currency, d.cotizacion))])
@@ -243,10 +247,10 @@ export function stockQuieto(d: DatosAnalisis): Consejo | null {
   return {
     id: 'stock-quieto', area: 'stock',
     nivel: n >= 3 || (capitalTotal > 0 && capital / capitalTotal >= 0.2) ? 'alerta' : 'oportunidad',
-    titulo: d.verPlata
+    titulo: d.verPlata && capital >= 1
       ? `${usd(capital)} parados en ${plural(n, 'equipo', 'equipos')}`
       : `${plural(n, 'equipo lleva', 'equipos llevan')} más de ${umbral} días sin venderse`,
-    detalle: `${plural(n, 'equipo lleva', 'equipos llevan')} más de ${umbral} días en el local${d.verPlata && capitalTotal > 0 ? ` (el ${pct(capital / capitalTotal)} de la plata que tenés en stock)` : ''}. Bajales un poco el precio, ofrecelos primero o subilos al catálogo con fotos.`,
+    detalle: `${plural(n, 'equipo lleva', 'equipos llevan')} más de ${umbral} días en el local${d.verPlata && capitalTotal > 0 ? ` (el ${pct(capital / capitalTotal)} de la plata que tenés en stock)` : ''}.${sinCosto > 0 ? ` ${sinCosto === n ? 'Ninguno tiene' : `${sinCosto} no tienen`} el costo cargado: ${sinCosto === n ? 'no se puede saber cuánta plata hay parada' : 'no suman a esa plata'}.` : ''} Bajales un poco el precio, ofrecelos primero o subilos al catálogo con fotos.`,
     impactoUSD: capital,
     confianza: confianzaPorCasos(tiempos.length, 30, 8),
     casos: tiempos.length,
@@ -897,13 +901,15 @@ export function indicadores(d: DatosAnalisis): Indicador[] {
     lista.push(
       { id: 'plata', etiqueta: 'Facturación en equipos', valor: act.plata, formato: 'U$', anterior: ant.plata, mejorSiSube: true, ayuda: 'Precio de los equipos vendidos, en dólares con la cotización de cada venta.' },
       { id: 'ganancia', etiqueta: 'Ganancia bruta', valor: act.ganancia, formato: 'U$', anterior: ant.ganancia, mejorSiSube: true, ayuda: 'Precio menos costo de los equipos y sus accesorios (sólo ventas con costo cargado).' },
-      { id: 'margen', etiqueta: 'Margen en equipos', valor: act.margen, formato: '%', anterior: ant.margen, mejorSiSube: true, ayuda: 'Cuánto queda de cada dólar vendido en equipos.' },
+      { id: 'margen', etiqueta: 'Margen en equipos', valor: act.margen, formato: '%', anterior: ant.margen, mejorSiSube: true, ayuda: 'Cuánto queda de cada dólar vendido en equipos.', nota: act.margen == null ? 'sin ventas con costo' : undefined },
       ...(d.porCobrar ? [{
         id: 'por-cobrar', etiqueta: 'Plata por cobrar', valor: d.porCobrar.totalUSD, formato: 'U$' as const, anterior: null, mejorSiSube: false,
         ayuda: `Lo que tenés en la calle: ${usd(d.porCobrar.clientesUSD)} de clientes (saldos y cuotas, de cualquier fecha) y ${usd(d.porCobrar.mayoristasUSD)} de mayoristas. En pesos, a la cotización de hoy.`,
         nota: [d.porCobrar.clientes > 0 ? plural(d.porCobrar.clientes, 'cliente', 'clientes') : '', d.porCobrar.mayoristas > 0 ? plural(d.porCobrar.mayoristas, 'mayorista', 'mayoristas') : ''].filter(Boolean).join(' · ') || 'nadie te debe',
       }] : []),
-      { id: 'capital', etiqueta: 'Plata en stock', valor: enLocal.reduce((x, e) => x + enUSD(e.cost_price || e.price, e.currency, d.cotizacion), 0), formato: 'U$', anterior: null, mejorSiSube: false, ayuda: 'Costo de los equipos disponibles (o el precio, si no tienen costo).' },
+      { id: 'capital', etiqueta: 'Plata en stock', valor: enLocal.reduce((x, e) => x + enUSD(e.cost_price, e.currency, d.cotizacion), 0), formato: 'U$', anterior: null, mejorSiSube: false,
+        ayuda: 'Lo que costaron los equipos disponibles (igual que "Capital" en Inicio). Los que no tienen costo cargado no suman.',
+        nota: (n => n > 0 ? `${n} sin costo cargado` : 'hoy')(enLocal.filter(e => !e.cost_price).length) },
     )
   }
   lista.push({

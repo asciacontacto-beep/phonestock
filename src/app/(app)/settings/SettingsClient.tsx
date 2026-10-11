@@ -121,30 +121,35 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
     const load = async () => {
       if (!profile?.org_id) { setFetching(false); return; }
       setFetching(true);
-      const { data } = await supabase.from('settings').select('*').eq('org_id', profile.org_id).limit(1);
-      const { error: sinColumna } = await supabase.from('settings').select('cotizacion_fuente').limit(0);
+      // Todo a la vez: una tras otra eran ocho idas y vueltas (varios segundos
+      // con la pantalla en blanco).
+      const columna = (c: string) => supabase.from('settings').select(c).limit(0);
+      const [
+        { data }, { error: sinColumna }, { error: sinCiegas }, { error: sinCostoVendedor },
+        { error: sinCumple }, { error: sinGarantia }, { error: sinCuentas }, referidos,
+      ] = await Promise.all([
+        supabase.from('settings').select('*').eq('org_id', profile.org_id).limit(1),
+        columna('cotizacion_fuente'), columna('cierre_a_ciegas'), columna('vendedor_carga_costo'),
+        columna('descuento_cumple'), columna('garantia_dias'),
+        supabase.from('accounts').select('id').limit(0),
+        // Sin la migración de referidos la función no existe: se ignora.
+        Promise.resolve(supabase.rpc('my_referrals')).catch(() => ({ data: null })),
+      ]);
       setHayFuente(!sinColumna);
-      const { error: sinCiegas } = await supabase.from('settings').select('cierre_a_ciegas').limit(0);
       setHayCiegas(!sinCiegas);
-      const { error: sinCostoVendedor } = await supabase.from('settings').select('vendedor_carga_costo').limit(0);
       setHayCostoVendedor(!sinCostoVendedor);
-      const { error: sinCumple } = await supabase.from('settings').select('descuento_cumple').limit(0);
       setHayCumple(!sinCumple);
-      const { error: sinGarantia } = await supabase.from('settings').select('garantia_dias').limit(0);
       setHayGarantia(!sinGarantia);
-      const { error: sinCuentas } = await supabase.from('accounts').select('id').limit(0);
       setHayCuentas(!sinCuentas);
       if (data && data.length > 0) {
         const { id, org_id, receipt_config, ...rest } = data[0];
         setRowId(id ?? null);
         setForm({ ...DEFAULTS, ...rest, receipt_config: normalizeReceiptConfig(receipt_config) });
       }
-      try {
-        const { data: ref } = await supabase.rpc('my_referrals');
-        if (ref && ref[0]?.code) {
-          setReferral({ code: ref[0].code, invitados: Number(ref[0].invitados) || 0, pagos: Number(ref[0].pagos) || 0 });
-        }
-      } catch { /* migración de referidos sin aplicar */ }
+      const ref = referidos.data as { code?: string; invitados?: number; pagos?: number }[] | null;
+      if (ref && ref[0]?.code) {
+        setReferral({ code: ref[0].code, invitados: Number(ref[0].invitados) || 0, pagos: Number(ref[0].pagos) || 0 });
+      }
       setFetching(false);
     };
     load();

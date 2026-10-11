@@ -41,8 +41,8 @@ describe('tiempos de venta', () => {
 })
 
 describe('stock quieto', () => {
-  it('con pocas ventas usa 45 días y avisa los que pasan', () => {
-    const c = stockQuieto(datos({ stock: [equipo(60), equipo(50), equipo(10)] }))!
+  it('con pocas ventas usa 60 días (como Inicio) y avisa los que pasan', () => {
+    const c = stockQuieto(datos({ stock: [equipo(80), equipo(70), equipo(10)] }))!
     expect(c.nivel).toBe('alerta') // 2 de 3: dos tercios de la plata parada
     expect(c.titulo).toBe('U$800 parados en 2 equipos')
     expect(c.evidencia?.tipo).toBe('tabla')
@@ -61,15 +61,26 @@ describe('stock quieto', () => {
     expect(c.nivel).toBe('alerta') // 2 de 3 equipos = mucho capital parado
   })
   it('uno solo entre muchos: oportunidad', () => {
-    const c = stockQuieto(datos({ stock: [equipo(60), ...[1, 2, 3, 4, 5].map(n => equipo(n))] }))!
+    const c = stockQuieto(datos({ stock: [equipo(80), ...[1, 2, 3, 4, 5].map(n => equipo(n))] }))!
     expect(c.nivel).toBe('oportunidad')
     expect(c.titulo).toBe('U$400 parados en 1 equipo')
+  })
+  it('sin costo cargado: no inventa plata, dice cuántos son', () => {
+    const c = stockQuieto(datos({ stock: [equipo(80, { cost_price: null }), equipo(90, { cost_price: null }), equipo(95, { cost_price: null })] }))!
+    expect(c.titulo).toBe('3 equipos llevan más de 60 días sin venderse')
+    expect(c.detalle).toContain('Ninguno tiene el costo cargado')
+    expect(c.impactoUSD).toBe(0)
+  })
+  it('la plata en stock es el costo, y avisa los que no lo tienen', () => {
+    const k = indicadores(datos({ stock: [equipo(1), equipo(2, { cost_price: null })] })).find(i => i.id === 'capital')!
+    expect(k.valor).toBe(400)
+    expect(k.nota).toBe('1 sin costo cargado')
   })
   it('sin equipos viejos: bien', () => {
     expect(stockQuieto(datos({ stock: [equipo(3)] }))!.nivel).toBe('bien')
   })
   it('el vendedor no ve costos ni simulador', () => {
-    const c = stockQuieto(datos({ verPlata: false, stock: [equipo(60)] }))!
+    const c = stockQuieto(datos({ verPlata: false, stock: [equipo(80)] }))!
     expect(c.titulo).not.toContain('U$')
     expect(c.simulador).toBeUndefined()
     expect(c.evidencia?.tipo === 'tabla' && c.evidencia.columnas).toEqual(['Equipo', 'Días', 'Precio'])

@@ -11,6 +11,11 @@
  */
 
 import { reportarError } from '@/utils/reportarError'
+import { instalarFormatoEstable } from '@/utils/formatoEstable'
+
+/* Números y fechas iguales a los del servidor, en cualquier navegador
+   (ver utils/formatoEstable). Tiene que estar antes de que React dibuje. */
+instalarFormatoEstable()
 
 if (typeof Object.hasOwn !== 'function') {
   Object.defineProperty(Object, 'hasOwn', {

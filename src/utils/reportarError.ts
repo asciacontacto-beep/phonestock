@@ -17,6 +17,8 @@ const RUIDO = [
   /chrome-extension:|moz-extension:|safari-extension:|safari-web-extension:/i,
   /NEXT_REDIRECT|NEXT_NOT_FOUND|NEXT_HTTP_ERROR_FALLBACK/,
   /^AbortError|The (user|operation) aborted|aborted a request/i,
+  // El navegador de Instagram/Facebook en Android, al cerrarse la pestaña.
+  /iabjs:\/\/|Java object is gone/i,
 ]
 
 const MAX_POR_VISITA = 20

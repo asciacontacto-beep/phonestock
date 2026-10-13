@@ -9,7 +9,13 @@
  *
  * Node toma el cambio de TZ en caliente, así que alcanza con fijarlo al
  * arrancar. Stackr trabaja con locales argentinos (pesos, dólar blue).
+ *
+ * Además, números y fechas en 'es-AR' los arma utils/formatoEstable igual
+ * que en el navegador (instrumentation-client.ts): Safari viejo los
+ * escribía distinto y pasaba lo mismo.
  */
+import { instalarFormatoEstable } from '@/utils/formatoEstable'
+
 export function register() {
   // En Vercel/AWS ya viene TZ=":UTC": se reemplaza. Otra zona puesta a
   // propósito en el entorno se respeta.
@@ -17,4 +23,5 @@ export function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs' && (!tz || /utc/i.test(tz))) {
     process.env.TZ = 'America/Argentina/Buenos_Aires'
   }
+  if (process.env.NEXT_RUNTIME === 'nodejs') instalarFormatoEstable()
 }

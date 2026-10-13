@@ -8,6 +8,7 @@ describe('reportarError', () => {
     expect(esRuido('Script error.')).toBe(true)
     expect(esRuido('x is undefined', 'at foo (chrome-extension://abc/inject.js:1:2)')).toBe(true)
     expect(esRuido('NEXT_REDIRECT')).toBe(true)
+    expect(esRuido('Error invoking postMessage: Java object is gone', 'at iabjs://navigation_performance_logger_android:1:1')).toBe(true)
     expect(esRuido('AbortError: The user aborted a request.')).toBe(true)
   })
   it('deja pasar los errores reales', () => {

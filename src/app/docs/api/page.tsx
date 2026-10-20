@@ -99,6 +99,28 @@ export default function ApiDocsPage() {
   "paginacion": { "total": 37, "limite": 20, "offset": 0 }
 }`}</pre>
 
+      <h3 style={s.h3}>Fotos de los equipos</h3>
+      <p style={s.p}>
+        Cada equipo de <C>stock</C> trae las fotos del catálogo como links completos, listos para poner en una etiqueta <C>img</C>.
+        No hace falta ningún permiso extra: alcanza con <C>stock:read</C>.
+      </p>
+      <table style={s.table}>
+        <tbody>
+          <tr><td style={{ ...s.td, width: 180 }}><C>fotos</C></td><td style={s.td}>Links a las fotos grandes (hasta 1600 px). La primera es la portada.</td></tr>
+          <tr><td style={s.td}><C>miniaturas</C></td><td style={s.td}>Los mismos links en miniatura (480 px), para listados y grillas.</td></tr>
+          <tr><td style={s.td}><C>fotos_origen</C></td><td style={s.td}>
+            <C>equipo</C>: fotos de ese equipo. <C>modelo</C>: el equipo todavía no tiene fotos y se usan las de otro igual
+            (mismo modelo, del mismo color si hay): mostralas como "foto ilustrativa". <C>null</C>: no hay ninguna.
+          </td></tr>
+        </tbody>
+      </table>
+      <pre style={s.pre}>{`{
+  "id": 812, "brand": "Apple", "model": "iPhone 15 Pro Max", ...
+  "fotos": ["https://.../catalogo/ab12/812/9f3c.webp"],
+  "miniaturas": ["https://.../catalogo/ab12/812/9f3c-mini.webp"],
+  "fotos_origen": "equipo"
+}`}</pre>
+
       <h2 style={s.h2}>Recursos</h2>
       {Object.entries(RECURSOS).map(([nombre, r]) => (
         <section key={nombre}>

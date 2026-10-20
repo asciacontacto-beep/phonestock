@@ -23,6 +23,7 @@ import { SCOPES } from '@/utils/api/compartido'
 import { esErrorImeiRepetido } from '@/utils/imei'
 import { upsertCustomer } from '@/utils/customers'
 import { logAudit } from '@/utils/audit'
+import { agregarFotos } from '@/utils/api/fotos'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,8 +107,10 @@ async function listar(ctx: ContextoApi, r: Recurso, url: URL) {
   if (err) throw err
 
   const conCostos = ctx.scopes.includes('costs:read')
+  const filas = (data || []).map(f => limpiarFila(f, r, conCostos))
   return json({
-    data: (data || []).map(f => limpiarFila(f, r, conCostos)),
+    // En stock, además de las rutas internas, van los links a las fotos (ver utils/api/fotos.ts).
+    data: r.tabla === 'stock' ? await agregarFotos(ctx.db, filas) : filas,
     paginacion: { total: count ?? null, limite, offset: desde },
   })
 }
@@ -117,7 +120,8 @@ async function obtener(ctx: ContextoApi, r: Recurso, id: string) {
   const { data, error: err } = await ctx.db.from(r.tabla).select('*').eq('id', id).maybeSingle()
   // Un id con formato inválido también es "no existe" para quien pregunta.
   if (err || !data) throw new ErrorApi(404, 'no_encontrado', 'No existe o no pertenece a tu negocio.')
-  return json({ data: limpiarFila(data, r, ctx.scopes.includes('costs:read')) })
+  const fila = limpiarFila(data, r, ctx.scopes.includes('costs:read'))
+  return json({ data: r.tabla === 'stock' ? (await agregarFotos(ctx.db, [fila]))[0] : fila })
 }
 
 async function leerCuerpo(req: Request): Promise<unknown> {

@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useMemo } from 'react';
 import { plural } from '@/utils/texto';
-import { BRANDS, STORAGES, COLORS, opcionesDeAlmacenamiento, nombreAlmacenamiento, tieneAlmacenamiento } from '@/constants/data';
+import { BRANDS, STORAGES, COLORS, almacenamientosDe, opcionesDeAlmacenamiento, nombreAlmacenamiento, tieneAlmacenamiento, SIN_ALMACENAMIENTO } from '@/constants/data';
 import { Edit2, Trash2, X, Search, PenLine, Package, Clock, Plus, ScanLine } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
@@ -44,6 +44,7 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
   const [dataLoaded, setDataLoaded] = useState(false);
   const [filter, setFilter] = useState({ brand: 'all', model: 'all', storage: 'all', sortPrice: 'none', q: '', status: 'available', condition: 'all', deposit: 'all' });
   const [editItem, setEditItem] = useState<any>(null);
+  const sinCapacidadEdit = !!editItem && almacenamientosDe(editItem.model)[0] === SIN_ALMACENAMIENTO && !tieneAlmacenamiento(editItem.storage);
   const [detailItem, setDetailItem] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [fallaReparar, setFallaReparar] = useState('');
@@ -625,13 +626,15 @@ export function StockClient({ isOwner, orgId }: { isOwner?: boolean; orgId?: str
               <button aria-label="Cerrar" className="btn-icon" onClick={() => setEditItem(null)}><X size={18} /></button>
             </div>
             <div className="mbd" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div>
+              {/* Auriculares sin capacidad no la muestran; si quedó una mal
+                  cargada (AirPods con "32GB"), sí, para poder sacarla. */}
+              <div style={{ display: 'grid', gridTemplateColumns: sinCapacidadEdit ? '1fr' : '1fr 1fr', gap: 10 }}>
+                {!sinCapacidadEdit && <div>
                   <label className="lbl">Almacenamiento</label>
                   <select className="inp" value={editItem.storage} onChange={e => setEditItem({...editItem, storage: e.target.value})}>
                     {opcionesDeAlmacenamiento(editItem.model, editItem.storage).map((s: string) => <option key={s} value={s}>{nombreAlmacenamiento(s)}</option>)}
                   </select>
-                </div>
+                </div>}
                 <div>
                   <label className="lbl">Color</label>
                   <input className="inp" list="edit-colors" placeholder="Ej: Azul" value={editItem.color} onChange={e => setEditItem({...editItem, color: e.target.value})} />

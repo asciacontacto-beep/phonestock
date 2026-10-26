@@ -233,6 +233,10 @@ export const MODEL_STORAGES: Record<string, string[]> = {
 };
 
 export const COLORS: Record<string, string[]> = {
+  // Los AirPods son blancos; sólo los Max vienen en colores.
+  'AirPods 4': ['Blanco'], 'AirPods 3': ['Blanco'], 'AirPods 2': ['Blanco'],
+  'AirPods Pro 3': ['Blanco'], 'AirPods Pro 2': ['Blanco'], 'AirPods Pro': ['Blanco'],
+  'AirPods Max': ['Medianoche', 'Blanco Estelar', 'Azul', 'Morado', 'Naranja'],
   'iPhone 18 Pro Max': ['Negro', 'Plata', 'Glaciar', 'Bordó'],
   'iPhone 18 Pro': ['Negro', 'Plata', 'Glaciar', 'Bordó'],
   'iPhone Duo': ['Blanco Estelar', 'Cielo Nocturno'],

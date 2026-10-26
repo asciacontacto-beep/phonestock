@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/utils/supabase/client';
-import { BRANDS, MODELS, COLORS, almacenamientosDe, opcionesDeAlmacenamiento, nombreAlmacenamiento } from '@/constants/data';
+import { BRANDS, MODELS, COLORS, almacenamientosDe, opcionesDeAlmacenamiento, nombreAlmacenamiento, SIN_ALMACENAMIENTO } from '@/constants/data';
 import { ModelPicker } from '@/components/ModelPicker';
 import { repetidosEnLote, buscarImeisEnStock, avisoDuplicado } from '@/utils/imei';
 import { imeiDeUnidad, imeisDeLaCarga } from '@/utils/cargaEquipos';
@@ -42,6 +42,10 @@ const METODOS: Record<Moneda, [string, string][]> = {
 
 const num = (v: string) => parseFloat(v.replace(',', '.')) || 0;
 const solo = (v: string) => v.replace(/[^0-9.,]/g, '');
+
+
+/** Auriculares y demás: no llevan almacenamiento, no se pregunta. */
+const sinCapacidad = (model: string) => almacenamientosDe(model)[0] === SIN_ALMACENAMIENTO
 
 export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
   proveedor: { id: string | number; name: string };
@@ -194,10 +198,10 @@ export function PedidoModal({ proveedor, deposits, onClose, onSaved }: {
                     <ModelPicker value={l.model} onChange={m => cambiarModelo(i, m)} options={MODELS[l.brand] || []} />
                   </div>
                 </div>
-                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
-                  <div><label className="lbl">Almacenamiento</label>
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: sinCapacidad(l.model) ? '1fr 1fr' : '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  {!sinCapacidad(l.model) && <div><label className="lbl">Almacenamiento</label>
                     <select className="inp" value={l.storage} onChange={e => upd(i, { storage: e.target.value })}>{opcionesDeAlmacenamiento(l.model, l.storage).map(s => <option key={s} value={s}>{nombreAlmacenamiento(s)}</option>)}</select>
-                  </div>
+                  </div>}
                   <div><label className="lbl">Color</label>
                     <input className="inp" list={`ped-colores-${i}`} value={l.color} onChange={e => upd(i, { color: e.target.value })} />
                     <datalist id={`ped-colores-${i}`}>{colores.map(c => <option key={c} value={c} />)}</datalist>

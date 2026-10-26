@@ -133,8 +133,15 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
     const capacidades = almacenamientosDe(found.model);
     const storage = capacidades[0] === SIN_ALMACENAMIENTO ? SIN_ALMACENAMIENTO : (found.storage || capacidades[0]);
     setVariants(vs => vs.map((v: any) => ({ ...v, color: found.color || v.color, storage, condition: isOldPro(found.model) ? 'used' : 'new' })));
-    toast.success(`Reconocido: ${found.brand} ${found.model} ${found.storage} ${found.color}`.trim());
+    toast.success(`Reconocido: ${[found.brand, found.model, storage === SIN_ALMACENAMIENTO ? '' : storage, found.color].filter(Boolean).join(' ')}`);
   };
+
+  /* Auriculares y demás no tienen almacenamiento: ni se pregunta. Con la
+     línea "AirPods" elegida, lo que se escriba de modelo cuenta como tal. */
+  const sinCapacidadDe = (m: string, b = brand, linea = appleCategory) =>
+    (b === 'Apple' && linea === 'AirPods') || almacenamientosDe(m)[0] === SIN_ALMACENAMIENTO;
+  const capacidadInicial = (m: string, b = brand, linea = appleCategory) =>
+    sinCapacidadDe(m, b, linea) ? SIN_ALMACENAMIENTO : almacenamientosDe(m)[0];
 
   const handleBrand = (b: string) => {
     setBrand(b);
@@ -146,7 +153,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
     setVariants(vs => vs.map((v: any) => ({
       ...v,
       color: (COLORS[m] || COLORS[b] || ['Negro'])[0],
-      storage: almacenamientosDe(m)[0],
+      storage: capacidadInicial(m, b),
       condition: isOldPro(m) ? 'used' : 'new'
     })));
   };
@@ -154,15 +161,17 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
   const handleAppleCategory = (cat: string) => {
     setAppleCategory(cat);
     const m = MODELS['Apple']?.find(x => x.startsWith(cat)) || '';
-    handleModel(m);
+    handleModel(m, cat);
   };
 
-  const handleModel = (m: string) => {
+  const handleModel = (m: string, linea = appleCategory) => {
     setModel(m);
+    // Un modelo de AirPods escrito a mano: blancos, como los de la lista.
+    const airpods = brand === 'Apple' && linea === 'AirPods' ? COLORS['AirPods 4'] : null;
     setVariants(vs => vs.map((v: any) => ({
       ...v,
-      color: (COLORS[m] || COLORS[brand] || ['Negro'])[0],
-      storage: almacenamientosDe(m)[0],
+      color: (COLORS[m] || airpods || COLORS[brand] || ['Negro'])[0],
+      storage: capacidadInicial(m, brand, linea),
       condition: isOldPro(m) ? 'used' : 'new'
     })));
   };
@@ -171,7 +180,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
     setVariants(vs => vs.map((v, idx) => idx === i ? { ...v, [key]: val } : v));
 
   const addVariant = () =>
-    setVariants(vs => [...vs, { ...emptyVariant(), storage: almacenamientosDe(model)[0], color: (COLORS[model] || COLORS[brand] || ['Negro'])[0], condition: isOldPro(model) ? 'used' : 'new' }]);
+    setVariants(vs => [...vs, { ...emptyVariant(), storage: capacidadInicial(model), color: (COLORS[model] || COLORS[brand] || ['Negro'])[0], condition: isOldPro(model) ? 'used' : 'new' }]);
 
   const removeVariant = (i: number) =>
     setVariants(vs => vs.filter((_, idx) => idx !== i));
@@ -194,7 +203,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
           const unica = variants.length === 1 ? variants[0] : null;
           await supabase.from('product_catalog').insert({
             upc: canonico, brand, model,
-            ...(unica ? { storage: unica.storage, color: unica.color } : {}),
+            ...(unica ? { storage: sinCapacidadDe(model) ? SIN_ALMACENAMIENTO : unica.storage, color: unica.color } : {}),
           });
         }
       }
@@ -222,7 +231,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
         const qty = Number(v.qty) || 0;
         Array.from({ length: qty }).forEach((_, k) => {
           units.push({
-            brand, model, storage: v.storage, color: v.color,
+            brand, model, storage: sinCapacidadDe(model) ? SIN_ALMACENAMIENTO : v.storage, color: v.color,
             condition: v.condition,
             battery: v.condition === 'used' ? v.battery : null,
             // Cada unidad con su IMEI (antes sólo se podía con cantidad 1).
@@ -277,7 +286,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
           }
         }
         // Sigue el mismo modelo: la variante nueva arranca con sus opciones.
-        setVariants([{ ...emptyVariant(), storage: almacenamientosDe(model)[0], color: (COLORS[model] || COLORS[brand] || ['Negro'])[0], condition: isOldPro(model) ? 'used' : 'new' }]); setPrice(''); setCostPrice(''); setUpc('');
+        setVariants([{ ...emptyVariant(), storage: capacidadInicial(model), color: (COLORS[model] || COLORS[brand] || ['Negro'])[0], condition: isOldPro(model) ? 'used' : 'new' }]); setPrice(''); setCostPrice(''); setUpc('');
         if (onSuccess) onSuccess();
         if (seguir) {
           setEnTanda(n => n + total);
@@ -301,6 +310,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
   const totalUnits = variants.reduce((a, v) => a + (Number(v.qty) || 0), 0);
   const colors = COLORS[model] || COLORS[brand] || ['Negro'];
   const storages = almacenamientosDe(model);
+  const sinCapacidad = sinCapacidadDe(model);
   const isStep1Valid = !!model && !!price && (!isOwner || !!costPrice) && !!dep && (suppliers.length === 0 || !!sup);
 
   const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 6, display: 'block' };
@@ -472,8 +482,8 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
                       </div>
                     </div>
                   ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                    <div><label className="lbl">Almacenamiento</label><select className="inp" value={v.storage} onChange={e => updV(i, 'storage', e.target.value)}>{opcionesDeAlmacenamiento(model, v.storage).map(s => <option key={s} value={s}>{nombreAlmacenamiento(s)}</option>)}</select></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: sinCapacidad ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                    {!sinCapacidad && <div><label className="lbl">Almacenamiento</label><select className="inp" value={v.storage} onChange={e => updV(i, 'storage', e.target.value)}>{opcionesDeAlmacenamiento(model, v.storage).map(s => <option key={s} value={s}>{nombreAlmacenamiento(s)}</option>)}</select></div>}
                     <div>
                       <label className="lbl">Color</label>
                       <input className="inp" list={`colors-list-${i}`} placeholder="Ej: Azul" value={v.color} onChange={e => updV(i, 'color', e.target.value)} />

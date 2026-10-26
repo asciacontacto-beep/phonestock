@@ -3077,3 +3077,42 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
   .selector-local { width: 100%; }
   .selector-local .inp { flex: 1; max-width: none; min-width: 0; }
 }
+
+/* ── Vender accesorios (pantalla Accesorios) ─────────────────────────── */
+.sav { display: flex; flex-direction: column; max-height: min(92vh, 860px); }
+.sav-sub { font-size: 12.5px; color: var(--text-3); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.sav-cuerpo { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; min-height: 0; }
+.sav-buscar { box-shadow: none; flex: none; }
+.sav-chips { margin: 0; padding: 0; flex: none; }
+.sav-chips .m-chip { height: 32px; font-size: 13px; padding: 0 13px; }
+.sav-lista { box-shadow: none; flex: none; max-height: 340px; overflow-y: auto; }
+.sav-fila { min-height: 58px; padding: 0 10px 0 0; gap: 4px; }
+.sav-fila.on { background: var(--surface-2); }
+.sav-tocar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px 6px 10px 16px; text-align: left; color: inherit; background: transparent; }
+.sav-tocar .m-row-num { font-size: 14px; color: var(--text-2); }
+.sav-mas, .sav-paso button {
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  display: grid; place-items: center; color: var(--text);
+  background: var(--surface-3); transition: transform .12s ease, background .15s ease;
+}
+.sav-mas:active, .sav-paso button:active { transform: scale(.92); }
+.sav-paso { display: flex; align-items: center; gap: 4px; flex: none; }
+.sav-paso span { min-width: 22px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sav-paso button:last-child { background: var(--text); color: var(--bg); }
+.sav-paso button:disabled { opacity: .35; }
+.sav-vacio { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 30px 16px; text-align: center; font-size: 13px; color: var(--text-3); }
+.sav-vacio strong { color: var(--text); font-size: 14px; margin-top: 4px; }
+.sav-cobro { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
+.sav-titulo { font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }
+.sav-cobro .m-list { box-shadow: none; }
+.sav-item { min-height: 50px; padding: 8px 8px 8px 16px; }
+.sav-cant { font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 26px; }
+.sav-item .m-row-t { font-size: 14px; }
+.sav-total { min-height: 52px; background: var(--surface-2); }
+.sav-total .m-row-num { font-size: 18px; font-weight: 700; }
+.sav-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.sav-campos .field { margin: 0; }
+.sav-pagos { display: flex; flex-wrap: wrap; gap: 8px; }
+.sav-pagos .m-chip { height: 36px; font-size: 13.5px; }
+.sav-nota { font-size: 12.5px; color: var(--text-3); }
+.sav-pie { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); flex: none; background: var(--surface); }

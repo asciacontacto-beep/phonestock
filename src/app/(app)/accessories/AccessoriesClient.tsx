@@ -15,7 +15,7 @@ const ALL_MODELS = [
   ...Object.values(MODELS).flat().filter(m => !m.toLowerCase().startsWith('iphone')).sort(),
 ];
 
-export default function AccessoriesClient({ initialAccessories, deposits, user }: any) {
+export default function AccessoriesClient({ initialAccessories, deposits, user, cotizacion = 0 }: any) {
   const { confirm, ConfirmDialog } = useConfirm();
   const supabase = createClient();
   const [accessories, setAccessories] = useState<any[]>(initialAccessories);
@@ -273,6 +273,8 @@ export default function AccessoriesClient({ initialAccessories, deposits, user }
       {isSellOpen && (
         <SellAccessoriesModal
           accessories={accessories}
+          cotizacion={cotizacion}
+          vendedor={user}
           onClose={() => setIsSellOpen(false)}
           onSold={(updates) => {
             setAccessories(p => p.map(a => {

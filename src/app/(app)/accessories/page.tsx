@@ -2,6 +2,7 @@ import { createClient, getUser, getProfile } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import AccessoriesClient from './AccessoriesClient';
 import { soloDueno } from "@/utils/permisos"
+import { configuracionDelLocal } from '@/utils/configuracion'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,8 +26,11 @@ export default async function AccessoriesPage() {
     .select('*')
     .order('name');
 
+  const { data: ajustes } = await configuracionDelLocal(supabase, profile.org_id, 'exchange_rate');
+
   return (
     <AccessoriesClient 
+      cotizacion={Number(ajustes?.exchange_rate) || 0}
       initialAccessories={accessories || []} 
       deposits={deposits || []} 
       user={profile} 

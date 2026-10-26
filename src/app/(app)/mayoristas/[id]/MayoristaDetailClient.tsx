@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
-import { buildWholesaleSaleItems, completarUnidades, type UnidadDisponible } from '@/utils/wholesaleSale'
+import { buildWholesaleSaleItems, buildWholesaleAccessorySale, completarUnidades, convertir, type UnidadDisponible } from '@/utils/wholesaleSale'
+import { nombreAccesorio } from '@/utils/accesoriosVenta'
 
-type Item = { id: string; stock_id: number | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean; received?: boolean }
+type Item = { id: string; stock_id: number | null; accessory_id?: string | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean; received?: boolean }
 type Order = { id: string; status: string; currency: string; notes: string | null; created_at: string; items: Item[]; total: number; paid: number; balance: number }
 type Payment = { id: string; order_id: string; amount: number; currency: string; method: string; notes: string | null; created_at: string }
 type StockItem = { id: number; brand: string; model: string; storage: string; color: string; status: string; price: number; currency: string }
+type Accesorio = { id: string; category: string | null; compatible_model: string | null; color: string | null; stock: number; sale_price: number | null; cost_price: number | null; currency: string | null }
 type Wholesaler = { id: string; org_id: string; name: string; phone: string | null; email: string | null; notes: string | null; created_at: string }
 
 const STATUS_LABEL: Record<string, string> = { draft: 'Borrador', confirmed: 'Confirmado', delivered: 'Entregado', cancelled: 'Cancelado' }
@@ -18,12 +20,13 @@ const STATUS_CLASS: Record<string, string> = { draft: 'b-neu', confirmed: 'b-blu
 const METHOD_LABEL: Record<string, string> = { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta' }
 
 export function MayoristaDetailClient({
-  wholesaler: initialWholesaler, initialOrders, initialPayments, availableStock, exchangeRate,
+  wholesaler: initialWholesaler, initialOrders, initialPayments, availableStock, availableAccessories = [], exchangeRate,
 }: {
   wholesaler: Wholesaler
   initialOrders: Order[]
   initialPayments: Payment[]
   availableStock: StockItem[]
+  availableAccessories?: Accesorio[]
   exchangeRate: number
   totalOwed: { USD: number; ARS: number }
 }) {
@@ -58,6 +61,17 @@ export function MayoristaDetailClient({
       .flatMap(o => o.items.map(i => i.stock_id).filter((x): x is number => x != null))
   )
 
+  /* Accesorios ya pedidos en otro pedido abierto: se descuentan recién al
+     entregar, así que lo que queda para ofrecer es el stock menos eso. */
+  const accComprometidos = new Map<string, number>()
+  for (const o of orders) {
+    if (o.status !== 'confirmed' && o.status !== 'draft') continue
+    for (const i of o.items) if (i.accessory_id && !i.is_backorder) accComprometidos.set(i.accessory_id, (accComprometidos.get(i.accessory_id) || 0) + i.qty)
+  }
+  const accesoriosLibres = availableAccessories
+    .map(a => ({ ...a, stock: a.stock - (accComprometidos.get(a.id) || 0) }))
+    .filter(a => a.stock > 0)
+
   const handleDeliver = (order: Order) => {
     setConfirmDialog({
       message: '¿Marcar como entregado?',
@@ -79,6 +93,27 @@ export function MayoristaDetailClient({
     const order: Order = { ...pedido, items: completo.items }
     setDelivering(order.id)
     try {
+      /* Accesorios: antes de tocar nada, que alcance el stock de cada uno y
+         que la venta se pueda armar (precio en la moneda del accesorio). */
+      const accIds = [...new Set(order.items.filter(i => i.accessory_id && !i.is_backorder).map(i => i.accessory_id!))]
+      let ventaAccesorios: Record<string, unknown> | null = null
+      if (accIds.length > 0) {
+        const { data: accRows, error: aErr } = await supabase.from('accessories').select('id,category,compatible_model,color,stock,cost_price,currency').in('id', accIds)
+        if (aErr) throw aErr
+        const accById = new Map((accRows || []).map(a => [a.id as string, a]))
+        const pedidos = new Map<string, number>()
+        for (const i of order.items) if (i.accessory_id && !i.is_backorder) pedidos.set(i.accessory_id, (pedidos.get(i.accessory_id) || 0) + i.qty)
+        const faltan = [...pedidos].filter(([id, q]) => (Number(accById.get(id)?.stock) || 0) < q)
+          .map(([id, q]) => { const a = accById.get(id); return `${a ? nombreAccesorio(a) : 'un accesorio'} (pedido ${q}, hay ${Number(a?.stock) || 0})` })
+        if (faltan.length > 0) {
+          toast.error(`No alcanza el stock de accesorios: ${faltan.join(', ')}.`, { duration: 9000 })
+          return
+        }
+        const armado = buildWholesaleAccessorySale({ order, wholesaler, accById, rate: exchangeRate })
+        if (!armado.ok) { toast.error(armado.error, { duration: 9000 }); return }
+        ventaAccesorios = armado.venta
+      }
+
       const { error: oErr } = await supabase.from('wholesale_orders').update({ status: 'delivered' }).eq('id', order.id)
       if (oErr) throw oErr
 
@@ -108,6 +143,19 @@ export function MayoristaDetailClient({
       if (saleItems.length > 0) {
         const { error: salErr } = await supabase.from('sales').insert(saleItems)
         if (salErr) throw salErr
+      }
+
+      if (ventaAccesorios) {
+        const sinDescontar: string[] = []
+        for (const i of order.items) {
+          if (!i.accessory_id || i.is_backorder) continue
+          const { data: ok, error: dErr } = await supabase.rpc('decrement_accessory_stock', { acc_id: i.accessory_id, qty: i.qty })
+          if (dErr) throw dErr
+          if (ok === false) sinDescontar.push(i.model)
+        }
+        const { error: vaErr } = await supabase.from('sales').insert(ventaAccesorios)
+        if (vaErr) throw vaErr
+        if (sinDescontar.length > 0) toast.warning(`No se pudo descontar el stock de: ${sinDescontar.join(', ')}. Revisalo en Accesorios.`, { duration: 10000 })
       }
 
       setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'delivered' } : o))
@@ -459,6 +507,8 @@ export function MayoristaDetailClient({
         <NewOrderModal
           wholesaler={wholesaler}
           availableStock={availableStock.filter(s => !enPedidoAbierto.has(s.id))}
+          availableAccessories={accesoriosLibres}
+          exchangeRate={exchangeRate}
           onClose={() => setShowNewOrder(false)}
           onCreated={(order) => {
             setOrders(prev => [order, ...prev])
@@ -528,17 +578,20 @@ export function MayoristaDetailClient({
   )
 }
 
-function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
+type Linea = { stock_id: number | null; accessory_id: string | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean }
+const lineaVacia = (): Linea => ({ stock_id: null, accessory_id: null, brand: '', model: '', storage: '', color: '', qty: 1, unit_price: 0, is_backorder: false })
+
+function NewOrderModal({ wholesaler, availableStock, availableAccessories, exchangeRate, onClose, onCreated }: {
   wholesaler: Wholesaler
   availableStock: StockItem[]
+  availableAccessories: Accesorio[]
+  exchangeRate: number
   onClose: () => void
   onCreated: (order: Order) => void
 }) {
   const [currency, setCurrency] = useState<'USD' | 'ARS'>('USD')
   const [notes, setNotes] = useState('')
-  const [lines, setLines] = useState<{ stock_id: number | null; brand: string; model: string; storage: string; color: string; qty: number; unit_price: number; is_backorder: boolean }[]>([
-    { stock_id: null, brand: '', model: '', storage: '', color: '', qty: 1, unit_price: 0, is_backorder: false }
-  ])
+  const [lines, setLines] = useState<Linea[]>([lineaVacia()])
   const [stockQ, setStockQ] = useState<string[]>([''])
   // Qué renglón tiene la lista de resultados abierta. Antes la lista no se
   // cerraba al elegir y tapaba cantidad y precio: parecía trabado.
@@ -552,11 +605,29 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
     // Un renglón del stock es UNA unidad: con cantidad 3 se vendían tres
     // pero sólo una salía del stock. Para más, "Sumar otra igual".
     setLines(prev => prev.map((l, i) => i === idx ? {
-      ...l, stock_id: item.id, brand: item.brand, model: item.model,
+      ...l, stock_id: item.id, accessory_id: null, brand: item.brand, model: item.model,
       storage: item.storage, color: item.color, unit_price: item.price, qty: 1,
     } : l))
     setStockQ(prev => prev.map((q, i) => i === idx ? [item.brand, item.model, item.storage].filter(Boolean).join(' ') : q))
     setAbierta(null)
+  }
+
+  /* Un accesorio va con cantidad (hasta lo que hay) y su precio de venta
+     como punto de partida para el precio mayorista. */
+  const disponibleDe = (id: string | null) => availableAccessories.find(a => a.id === id)?.stock ?? 0
+  const selectAccesorio = (idx: number, a: Accesorio) => {
+    const precio = convertir(Number(a.sale_price) || 0, a.currency === 'ARS' ? 'ARS' : 'USD', currency, exchangeRate)
+    setLines(prev => prev.map((l, i) => i === idx ? {
+      ...l, stock_id: null, accessory_id: a.id, brand: 'Accesorio', model: nombreAccesorio(a),
+      storage: '', color: '', qty: 1, unit_price: precio === null ? 0 : Math.round(precio * 100) / 100, is_backorder: false,
+    } : l))
+    setStockQ(prev => prev.map((q, i) => i === idx ? nombreAccesorio(a) : q))
+    setAbierta(null)
+  }
+  const accesoriosQueCoinciden = (idx: number) => {
+    const q = stockQ[idx].trim().toLowerCase()
+    const usados = new Set(lines.filter((l, i) => i !== idx && l.accessory_id).map(l => l.accessory_id))
+    return availableAccessories.filter(a => !usados.has(a.id) && nombreAccesorio(a).toLowerCase().includes(q)).slice(0, 8)
   }
 
   /* Lo que se puede elegir en un renglón: lo que coincide con lo escrito,
@@ -590,7 +661,7 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
   }
 
   const addLine = () => {
-    setLines(prev => [...prev, { stock_id: null, brand: '', model: '', storage: '', color: '', qty: 1, unit_price: 0, is_backorder: false }])
+    setLines(prev => [...prev, lineaVacia()])
     setStockQ(prev => [...prev, ''])
   }
 
@@ -600,7 +671,9 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
   }
 
   const handleCreate = async () => {
-    if (lines.some(l => !l.brand)) { toast.error('Elegí un equipo del stock (o marcá Encargue) en cada ítem'); return }
+    if (lines.some(l => !l.brand)) { toast.error('Elegí un equipo o accesorio del stock (o marcá Encargue) en cada ítem'); return }
+    const sobra = lines.find(l => l.accessory_id && l.qty > disponibleDe(l.accessory_id))
+    if (sobra) { toast.error(`De ${sobra.model} hay ${disponibleDe(sobra.accessory_id)} disponibles.`); return }
     setLoading(true)
     try {
       const { data: orderData, error: oErr } = await supabase.from('wholesale_orders').insert([{
@@ -609,10 +682,19 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
       if (oErr) throw oErr
       const order = orderData![0]
 
+      // accessory_id sólo va si hay accesorios: así los pedidos de equipos
+      // andan aunque la base todavía no tenga la columna.
       const { data: itemsData, error: iErr } = await supabase.from('wholesale_order_items').insert(
-        lines.map(l => ({ order_id: order.id, ...l }))
+        lines.map(({ accessory_id, ...l }) => ({ order_id: order.id, ...l, ...(accessory_id ? { accessory_id } : {}) }))
       ).select()
-      if (iErr) throw iErr
+      if (iErr) {
+        await supabase.from('wholesale_orders').delete().eq('id', order.id)
+        if (iErr.code === 'PGRST204' || iErr.code === '42703') {
+          toast.error('Los accesorios en pedidos todavía no están activos en tu cuenta. Escribinos por WhatsApp y los activamos.', { duration: 9000 })
+          return
+        }
+        throw iErr
+      }
 
       const fullOrder: Order = {
         ...order, items: itemsData || [],
@@ -653,9 +735,9 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                     <div style={{ flex: 1, position: 'relative' }}>
                       <input
                         className="inp"
-                        placeholder={line.is_backorder ? 'Escribí marca/modelo (encargue)' : 'Buscar en stock...'}
+                        placeholder={line.is_backorder ? 'Escribí marca/modelo (encargue)' : 'Buscar equipo o accesorio…'}
                         value={stockQ[idx]}
-                        onFocus={() => { if (!line.is_backorder && !line.stock_id) setAbierta(idx) }}
+                        onFocus={() => { if (!line.is_backorder && !line.stock_id && !line.accessory_id) setAbierta(idx) }}
                         onBlur={() => setAbierta(a => (a === idx ? null : a))}
                         onChange={e => {
                           const v = e.target.value
@@ -666,18 +748,35 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                           } else {
                             // Cambiar el texto suelta el equipo elegido: nunca queda
                             // un equipo distinto del que se lee en el campo.
-                            if (line.stock_id) setLines(prev => prev.map((l, i) => i === idx ? { ...l, stock_id: null, brand: '', model: '', storage: '', color: '' } : l))
+                            if (line.stock_id || line.accessory_id) setLines(prev => prev.map((l, i) => i === idx ? { ...l, stock_id: null, accessory_id: null, brand: '', model: '', storage: '', color: '' } : l))
                             setAbierta(idx)
                           }
                         }}
                       />
                       {!line.is_backorder && abierta === idx && stockQ[idx].trim().length > 1 && (() => {
                         const opciones = resultados(idx)
+                        const accs = accesoriosQueCoinciden(idx)
                         return (
                           <div className="mp-res" role="listbox">
-                            {opciones.length === 0 ? (
-                              <div className="mp-res-vacio">No hay equipos disponibles con ese nombre. Si lo vas a conseguir, marcá <strong>Encargue</strong>.</div>
-                            ) : opciones.map(s => (
+                            {opciones.length === 0 && accs.length === 0 ? (
+                              <div className="mp-res-vacio">No hay equipos ni accesorios disponibles con ese nombre. Si lo vas a conseguir, marcá <strong>Encargue</strong>.</div>
+                            ) : null}
+                            {accs.map(a => (
+                              <button
+                                key={a.id}
+                                type="button"
+                                role="option"
+                                aria-selected={false}
+                                className="mp-res-op"
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={() => selectAccesorio(idx, a)}
+                              >
+                                <strong>{nombreAccesorio(a)}</strong>
+                                <span>Accesorio · hay {a.stock}</span>
+                                <span className="mp-res-precio">{a.currency === 'ARS' ? '$' : 'U$'} {Number(a.sale_price || 0).toLocaleString('es-AR')}</span>
+                              </button>
+                            ))}
+                            {opciones.map(s => (
                               <button
                                 key={s.id}
                                 type="button"
@@ -715,9 +814,11 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                           type="number"
                           min={1}
                           value={line.qty}
+                          max={line.accessory_id ? disponibleDe(line.accessory_id) : undefined}
                           onChange={e => setLines(prev => prev.map((l, i) => i === idx ? { ...l, qty: parseInt(e.target.value) || 1 } : l))}
                         />
                       )}
+                      {line.accessory_id && <div style={{ fontSize: 11, color: line.qty > disponibleDe(line.accessory_id) ? 'var(--red)' : 'var(--text-3)', marginTop: 3 }}>de {disponibleDe(line.accessory_id)}</div>}
                     </div>
                     <div>
                       <label className="lbl">Precio mayorista</label>
@@ -739,8 +840,8 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                             // un equipo de la lista, así que se limpia el renglón.
                             const parts = stockQ[idx].trim().split(' ')
                             setLines(prev => prev.map((l, i) => i === idx ? (encargue
-                              ? { ...l, is_backorder: true, stock_id: null, brand: parts[0] || '', model: parts.slice(1).join(' ') }
-                              : { ...l, is_backorder: false, stock_id: null, brand: '', model: '', storage: '', color: '' }) : l))
+                              ? { ...l, is_backorder: true, stock_id: null, accessory_id: null, brand: parts[0] || '', model: parts.slice(1).join(' ') }
+                              : { ...l, is_backorder: false, stock_id: null, accessory_id: null, brand: '', model: '', storage: '', color: '' }) : l))
                             if (!encargue) setStockQ(prev => prev.map((q, i) => i === idx ? '' : q))
                             setAbierta(null)
                           }}
@@ -760,7 +861,7 @@ function NewOrderModal({ wholesaler, availableStock, onClose, onCreated }: {
                 </div>
               ))}
               <button className="btn btn-outline btn-sm" onClick={addLine} style={{ alignSelf: 'flex-start' }}>
-                <Plus size={13} /> Agregar otro modelo
+                <Plus size={13} /> Agregar otro ítem
               </button>
             </div>
           </div>

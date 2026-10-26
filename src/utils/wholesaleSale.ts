@@ -28,6 +28,8 @@ export interface StockCost {
 
 export interface WholesaleItem {
   stock_id: number | null
+  /** Renglón de accesorio (no sale del stock de equipos). */
+  accessory_id?: string | null
   brand: string
   model: string
   storage: string
@@ -153,4 +155,100 @@ export function completarUnidades<T extends WholesaleItem>(
     if (resta > 0) faltan.push({ nombre: [i.brand, i.model, i.storage, i.color].filter(Boolean).join(' '), faltan: resta })
   }
   return faltan.length ? { ok: false, faltan } : { ok: true, items: out }
+}
+
+/* ── Accesorios en pedidos mayoristas ─────────────────────────────────
+   Un revendedor también se lleva accesorios al por mayor (fundas, vidrios,
+   cargadores). En el pedido van como renglones con `accessory_id` y
+   cantidad; al entregar se descuenta esa cantidad del stock del accesorio
+   y se anota UNA venta de accesorios (marca "ACCESORIOS"), igual que las de
+   la pantalla Vender, para que sume en Rentabilidad con su costo. */
+
+/** Lo que hace falta del accesorio al entregarlo. */
+export interface AccesorioCosto {
+  id: string
+  category?: string | null
+  compatible_model?: string | null
+  color?: string | null
+  cost_price?: number | null
+  currency?: string | null
+}
+
+export interface RenglonAccesorio {
+  accessory_id?: string | null
+  is_backorder: boolean
+  model: string
+  qty: number
+  unit_price: number
+}
+
+/** Pasa un monto de una moneda a otra. Sin cotización no hay número honesto: null. */
+export function convertir(monto: number, de: string, a: string, rate: number): number | null {
+  if (de === a) return monto
+  if (!(rate > 0)) return null
+  return de === 'USD' ? monto * rate : monto / rate
+}
+
+/**
+ * La venta de accesorios de un pedido entregado, o null si el pedido no
+ * lleva accesorios.
+ *
+ * Cada accesorio va en el detalle (`accessories`) en SU moneda, que es como
+ * lo leen los reportes y como la base le completa el costo; el precio
+ * mayorista se pasa a esa moneda. El total de la venta queda en la moneda
+ * del pedido.
+ */
+export function buildWholesaleAccessorySale({
+  order, wholesaler, accById, rate, ahora = Date.now(),
+}: {
+  order: { id: string; currency: string; items: RenglonAccesorio[] }
+  wholesaler: { name: string; phone: string | null }
+  accById: Map<string, AccesorioCosto>
+  rate: number
+  ahora?: number
+}): { ok: true; venta: Record<string, unknown> | null } | { ok: false; error: string } {
+  const renglones = order.items.filter(i => i.accessory_id && !i.is_backorder)
+  if (renglones.length === 0) return { ok: true, venta: null }
+
+  const detalle = []
+  let total = 0
+  let costo = 0
+  let hayCosto = true
+  for (const r of renglones) {
+    const acc = accById.get(r.accessory_id!)
+    const moneda = acc?.currency === 'ARS' ? 'ARS' : 'USD'
+    const precio = convertir(r.unit_price, order.currency, moneda, rate)
+    if (precio === null) return { ok: false, error: 'Falta la cotización del dólar (Ajustes) para pasar el precio de los accesorios a su moneda.' }
+    const nombre = acc ? [acc.category, acc.compatible_model, acc.color].map(x => String(x || '').trim()).filter(Boolean).join(' ') : r.model
+    detalle.push({
+      id: r.accessory_id, name: nombre || r.model, qty: r.qty,
+      price: Math.round(precio * 100) / 100, is_gift: false,
+      cost_price: acc?.cost_price ?? null, currency: moneda,
+    })
+    total += r.unit_price * r.qty
+    const c = acc?.cost_price ? convertir(acc.cost_price * r.qty, moneda, order.currency, rate) : null
+    if (c === null) hayCosto = false
+    else costo += c
+  }
+
+  const resumen = detalle.map(d => `${d.qty}x ${d.name}`).join(' · ')
+  return {
+    ok: true,
+    venta: {
+      brand: 'ACCESORIOS',
+      model: resumen.slice(0, 120),
+      storage: '-', color: '-',
+      imei: `ACC-${ahora}`,
+      price: total,
+      // Sin el costo de alguno, queda vacío: lo marca el reporte como "sin costo".
+      cost_price: hayCosto ? Math.round(costo * 100) / 100 : null,
+      currency: order.currency,
+      seller_id: null,
+      seller_name: 'Mayorista',
+      customer: { name: wholesaler.name, phone: wholesaler.phone },
+      payments: [{ id: 'wholesale', amount: total, label: 'Mayorista' }],
+      notes: `Pedido mayorista #${order.id.slice(0, 8)}`,
+      accessories: detalle,
+    },
+  }
 }

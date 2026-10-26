@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { costoEnMonedaDeVenta, buildWholesaleSaleItems, completarUnidades } from './wholesaleSale'
+import { costoEnMonedaDeVenta, buildWholesaleSaleItems, completarUnidades, buildWholesaleAccessorySale, type AccesorioCosto } from './wholesaleSale'
 
 describe('costoEnMonedaDeVenta', () => {
   it('deja el costo igual cuando el equipo y el pedido usan la misma moneda', () => {
@@ -125,5 +125,57 @@ describe('completarUnidades (pedidos viejos con cantidad sobre un equipo)', () =
     const items = [item({}), item({ stock_id: null, is_backorder: true, qty: 5 })]
     const r = completarUnidades(items, [])
     expect(r.ok && r.items).toEqual(items)
+  })
+})
+
+describe('buildWholesaleAccessorySale', () => {
+  const wholesaler = { name: 'Revendedor Norte', phone: '3511234567' }
+  const funda = { id: 'acc-1', category: 'Funda', compatible_model: 'iPhone 15', color: 'Negra', cost_price: 2, currency: 'USD' }
+  const vidrio = { id: 'acc-2', category: 'Vidrio templado', compatible_model: null, color: null, cost_price: 1500, currency: 'ARS' }
+  const accById = new Map<string, AccesorioCosto>([[funda.id, funda], [vidrio.id, vidrio]])
+  const renglon = (accessory_id: string | null, qty: number, unit_price: number, extra = {}) =>
+    ({ accessory_id, qty, unit_price, model: 'x', is_backorder: false, ...extra })
+
+  it('sin accesorios no arma nada', () => {
+    const r = buildWholesaleAccessorySale({ order: { id: 'abcdef1234', currency: 'USD', items: [renglon(null, 1, 500)] }, wholesaler, accById, rate: 1000 })
+    expect(r).toEqual({ ok: true, venta: null })
+  })
+
+  it('una venta de accesorios con el precio mayorista, la cantidad y el costo', () => {
+    const r = buildWholesaleAccessorySale({ order: { id: 'abcdef1234', currency: 'USD', items: [renglon('acc-1', 10, 4)] }, wholesaler, accById, rate: 1000, ahora: 1 })
+    if (!r.ok || !r.venta) throw new Error('debía armar la venta')
+    expect(r.venta).toMatchObject({
+      brand: 'ACCESORIOS', model: '10x Funda iPhone 15 Negra', price: 40, cost_price: 20, currency: 'USD',
+      seller_name: 'Mayorista', customer: { name: 'Revendedor Norte', phone: '3511234567' },
+      payments: [{ id: 'wholesale', amount: 40, label: 'Mayorista' }],
+      accessories: [{ id: 'acc-1', name: 'Funda iPhone 15 Negra', qty: 10, price: 4, cost_price: 2, currency: 'USD', is_gift: false }],
+    })
+  })
+
+  it('el detalle va en la moneda del accesorio; el total, en la del pedido', () => {
+    // Pedido en dólares, vidrio cargado en pesos: U$ 3 c/u a $1000 = $3000.
+    const r = buildWholesaleAccessorySale({ order: { id: 'abcdef1234', currency: 'USD', items: [renglon('acc-2', 5, 3)] }, wholesaler, accById, rate: 1000 })
+    if (!r.ok || !r.venta) throw new Error('debía armar la venta')
+    expect(r.venta.price).toBe(15)
+    expect(r.venta.cost_price).toBe(7.5) // 5 × $1500 = $7500 = U$ 7,5
+    expect((r.venta.accessories as { price: number; currency: string }[])[0]).toMatchObject({ price: 3000, currency: 'ARS' })
+  })
+
+  it('sin cotización y con monedas distintas, no inventa números', () => {
+    const r = buildWholesaleAccessorySale({ order: { id: 'abcdef1234', currency: 'USD', items: [renglon('acc-2', 1, 3)] }, wholesaler, accById, rate: 0 })
+    expect(r.ok).toBe(false)
+  })
+
+  it('los encargues y los equipos quedan afuera', () => {
+    const r = buildWholesaleAccessorySale({ order: { id: 'abcdef1234', currency: 'USD', items: [renglon('acc-1', 2, 4), renglon('acc-1', 3, 4, { is_backorder: true }), renglon(null, 1, 900)] }, wholesaler, accById, rate: 1000 })
+    if (!r.ok || !r.venta) throw new Error('debía armar la venta')
+    expect(r.venta.price).toBe(8)
+  })
+
+  it('sin costo cargado, la venta queda sin costo (no en cero)', () => {
+    const sinCosto = new Map<string, AccesorioCosto>([['acc-3', { id: 'acc-3', category: 'Cable', cost_price: null, currency: 'USD' }]])
+    const r = buildWholesaleAccessorySale({ order: { id: 'abcdef1234', currency: 'USD', items: [renglon('acc-3', 2, 4)] }, wholesaler, accById: sinCosto, rate: 1000 })
+    if (!r.ok || !r.venta) throw new Error('debía armar la venta')
+    expect(r.venta.cost_price).toBeNull()
   })
 })

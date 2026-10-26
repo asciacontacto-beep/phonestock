@@ -26,13 +26,15 @@ export default async function MayoristaDetailPage({ params }: { params: Promise<
 
   const orderIds = (orders || []).map(o => o.id)
 
-  const [{ data: allItems }, { data: payments }, { data: stockItems }, { data: settings }] = await Promise.all([
+  const [{ data: allItems }, { data: payments }, { data: stockItems }, { data: settings }, { data: accessories }] = await Promise.all([
     orderIds.length > 0
       ? supabase.from('wholesale_order_items').select('*').in('order_id', orderIds)
       : Promise.resolve({ data: [] }),
     supabase.from('wholesale_payments').select('*').eq('wholesaler_id', id).order('created_at', { ascending: false }),
     traerTodo(() => supabase.from('stock').select('id,brand,model,storage,color,status,price,currency').eq('status', 'available').order('id')),
     configuracionDelLocal(supabase, (await getProfile(user.id))?.org_id, 'exchange_rate'),
+    // Los revendedores también se llevan accesorios.
+    traerTodo(() => supabase.from('accessories').select('id,category,compatible_model,color,stock,sale_price,cost_price,currency').gt('stock', 0).order('id')),
   ])
 
   const paymentsByOrder: Record<string, number> = {}
@@ -64,6 +66,7 @@ export default async function MayoristaDetailPage({ params }: { params: Promise<
       initialOrders={ordersWithBalance}
       initialPayments={payments || []}
       availableStock={stockItems || []}
+      availableAccessories={accessories || []}
       totalOwed={totalOwed}
       exchangeRate={settings?.exchange_rate || 0}
     />

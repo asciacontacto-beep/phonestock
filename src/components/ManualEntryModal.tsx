@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, almacenamientosDe } from '@/constants/data';
+import { BRANDS, MODELS, STORAGES, COLORS, MODEL_STORAGES, almacenamientosDe, opcionesDeAlmacenamiento, nombreAlmacenamiento, SIN_ALMACENAMIENTO } from '@/constants/data';
 import { createClient } from '@/utils/supabase/client';
 import { registrarCompra } from '@/utils/compras';
 import { crearPedido, totalDelPedido } from '@/utils/proveedores';
@@ -128,7 +128,11 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
       if (linea) setAppleCategory(linea);
     }
     setModel(found.model);
-    setVariants(vs => vs.map((v: any) => ({ ...v, color: found.color, storage: found.storage, condition: isOldPro(found.model) ? 'used' : 'new' })));
+    // Un código aprendido con una capacidad que el producto no tiene (unos
+    // AirPods guardados con "32GB") no la vuelve a poner.
+    const capacidades = almacenamientosDe(found.model);
+    const storage = capacidades[0] === SIN_ALMACENAMIENTO ? SIN_ALMACENAMIENTO : (found.storage || capacidades[0]);
+    setVariants(vs => vs.map((v: any) => ({ ...v, color: found.color || v.color, storage, condition: isOldPro(found.model) ? 'used' : 'new' })));
     toast.success(`Reconocido: ${found.brand} ${found.model} ${found.storage} ${found.color}`.trim());
   };
 
@@ -167,7 +171,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
     setVariants(vs => vs.map((v, idx) => idx === i ? { ...v, [key]: val } : v));
 
   const addVariant = () =>
-    setVariants(vs => [...vs, { ...emptyVariant(), color: COLORS[brand]?.[0] || 'Negro', condition: isOldPro(model) ? 'used' : 'new' }]);
+    setVariants(vs => [...vs, { ...emptyVariant(), storage: almacenamientosDe(model)[0], color: (COLORS[model] || COLORS[brand] || ['Negro'])[0], condition: isOldPro(model) ? 'used' : 'new' }]);
 
   const removeVariant = (i: number) =>
     setVariants(vs => vs.filter((_, idx) => idx !== i));
@@ -272,7 +276,8 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
             toast.warning(`Los equipos se cargaron, pero no se anotó la deuda con el proveedor: ${r.error}`, { duration: 9000 });
           }
         }
-        setVariants([emptyVariant()]); setPrice(''); setCostPrice(''); setUpc('');
+        // Sigue el mismo modelo: la variante nueva arranca con sus opciones.
+        setVariants([{ ...emptyVariant(), storage: almacenamientosDe(model)[0], color: (COLORS[model] || COLORS[brand] || ['Negro'])[0], condition: isOldPro(model) ? 'used' : 'new' }]); setPrice(''); setCostPrice(''); setUpc('');
         if (onSuccess) onSuccess();
         if (seguir) {
           setEnTanda(n => n + total);
@@ -468,7 +473,7 @@ export function ManualEntryModal({ open, onClose, onSuccess, isOwner = false, up
                     </div>
                   ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                    <div><label className="lbl">Almacenamiento</label><select className="inp" value={v.storage} onChange={e => updV(i, 'storage', e.target.value)}>{storages.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                    <div><label className="lbl">Almacenamiento</label><select className="inp" value={v.storage} onChange={e => updV(i, 'storage', e.target.value)}>{opcionesDeAlmacenamiento(model, v.storage).map(s => <option key={s} value={s}>{nombreAlmacenamiento(s)}</option>)}</select></div>
                     <div>
                       <label className="lbl">Color</label>
                       <input className="inp" list={`colors-list-${i}`} placeholder="Ej: Azul" value={v.color} onChange={e => updV(i, 'color', e.target.value)} />

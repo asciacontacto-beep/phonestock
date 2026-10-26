@@ -140,8 +140,9 @@ export const STORAGES = ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB'
  */
 export const SIN_ALMACENAMIENTO = '—';
 
-/** Productos que no tienen capacidad: no se les pregunta. */
-const SIN_CAPACIDAD = /airpods|beats|homepod|magic (mouse|keyboard|trackpad)|apple pencil|pencil|funda|cargador|auricular|parlante|smartwatch band/i;
+/** Productos que no tienen capacidad: no se les pregunta. Tolera cómo se
+ *  escribe a mano ("Airpod Pro", "Air Pods", "Galaxy Buds"). */
+const SIN_CAPACIDAD = /air\s*pods?|earpods|beats|buds|homepod|airtag|magic (mouse|keyboard|trackpad)|pencil|funda|cargador|cable|auricular|parlante|smartwatch band|malla|correa/i;
 
 /** ¿Ese valor de almacenamiento es real, o el marcador de "no tiene"? */
 export function tieneAlmacenamiento(valor?: string | null): boolean {
@@ -158,6 +159,25 @@ export function almacenamientosDe(model?: string | null): string[] {
   if (MODEL_STORAGES[m]) return MODEL_STORAGES[m];
   if (SIN_CAPACIDAD.test(m)) return [SIN_ALMACENAMIENTO];
   return STORAGES;
+}
+
+/**
+ * Las opciones del selector de almacenamiento. Siempre se puede elegir
+ * "No tiene": un producto escrito a mano que no reconocemos (unos
+ * auriculares, un parlante) no queda obligado a llevar una capacidad. Si el
+ * valor que ya tiene no está en la lista, se suma, para que el selector
+ * muestre lo que de verdad se va a guardar.
+ */
+export function opcionesDeAlmacenamiento(model?: string | null, actual?: string | null): string[] {
+  const lista = [...almacenamientosDe(model)];
+  if (!lista.includes(SIN_ALMACENAMIENTO)) lista.push(SIN_ALMACENAMIENTO);
+  if (actual && !lista.includes(actual)) lista.unshift(actual);
+  return lista;
+}
+
+/** Cómo se lee una opción del selector: "No tiene" en vez de la raya. */
+export function nombreAlmacenamiento(valor: string): string {
+  return tieneAlmacenamiento(valor) ? valor : 'No tiene';
 }
 
 export const MODEL_STORAGES: Record<string, string[]> = {

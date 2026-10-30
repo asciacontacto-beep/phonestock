@@ -3116,3 +3116,40 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 .sav-pagos .m-chip { height: 36px; font-size: 13.5px; }
 .sav-nota { font-size: 12.5px; color: var(--text-3); }
 .sav-pie { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); flex: none; background: var(--surface); }
+
+/* ── Ajustes → Cotización: fuentes como tarjetas con el valor de hoy ── */
+.cfg-fuentes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .cfg-fuentes { grid-template-columns: 1fr; } }
+.cfg-fuente {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; text-align: left; min-width: 0; width: 100%;
+  background: var(--surface); border: 1px solid var(--border-md); border-radius: 14px;
+  color: var(--text); cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.cfg-fuente:hover { border-color: var(--text-3); }
+.cfg-fuente.on { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); background: var(--surface-2); }
+.cfg-fuente-punto {
+  width: 18px; height: 18px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--border-md); transition: border .15s ease;
+}
+.cfg-fuente.on .cfg-fuente-punto { border: 5.5px solid var(--text); }
+.cfg-fuente-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cfg-fuente-t { font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
+.cfg-fuente-s { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cfg-fuente-v { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: var(--green); white-space: nowrap; }
+.cfg-fuente:not(.on) .cfg-fuente-v { color: var(--text-2); }
+.cfg-switch {
+  display: flex; align-items: center; gap: 16px; margin: 4px 0 18px; padding: 14px 16px;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); cursor: pointer;
+}
+.cfg-switch-txt { flex: 1; display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; line-height: 1.4; }
+.cfg-switch-txt span { font-size: 12px; color: var(--text-3); }
+.cfg-switch input[role="switch"] {
+  appearance: none; -webkit-appearance: none; flex: none; position: relative; cursor: pointer;
+  width: 42px; height: 24px; border-radius: 999px; background: var(--border-md); transition: background .18s ease;
+}
+.cfg-switch input[role="switch"]::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .18s ease;
+}
+.cfg-switch input[role="switch"]:checked { background: var(--green); }
+.cfg-switch input[role="switch"]:checked::after { transform: translateX(18px); }

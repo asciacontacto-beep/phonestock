@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { ApiKeysCard } from '@/components/ApiKeysCard';
-import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, type FuenteCotizacion } from '@/utils/cotizacion';
+import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, ORIGEN_FUENTE, FUENTES, type FuenteCotizacion } from '@/utils/cotizacion';
 import {
   type ShopSettings, type ReceiptConfig,
   DEFAULT_RECEIPT_CONFIG, normalizeReceiptConfig,
@@ -100,15 +100,22 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
   /* Cotización automática: sólo si la base ya tiene la columna (migración
      20260928_cotizacion_automatica). Sin ella, todo sigue como siempre. */
   const [hayFuente, setHayFuente] = useState(false);
-  const [valorHoy, setValorHoy] = useState<number | null>(null);
+  // Blue de Córdoba y cotización general automática (migración 20261030).
+  const [hayCordoba, setHayCordoba] = useState(false);
   const fuente = fuenteValida(form.cotizacion_fuente);
 
+  /* El valor de hoy de cada fuente automática, para mostrarlo en su
+     tarjeta y poder comparar antes de elegir. */
+  const [valores, setValores] = useState<Partial<Record<FuenteCotizacion, number | null>>>({});
   useEffect(() => {
-    if (fuente === 'manual') { setValorHoy(null); return; }
+    if (!hayFuente) return;
     let vivo = true;
-    cotizacionDelDia(fuente).then(v => { if (vivo) setValorHoy(v); });
+    const auto = FUENTES.filter(f => f !== 'manual' && (f !== 'blue_cordoba' || hayCordoba));
+    Promise.all(auto.map(f => cotizacionDelDia(f).then(v => [f, v] as const)))
+      .then(r => { if (vivo) setValores(Object.fromEntries(r)); });
     return () => { vivo = false; };
-  }, [fuente]);
+  }, [hayFuente, hayCordoba]);
+  const valorHoy = fuente === 'manual' ? null : valores[fuente] ?? null;
 
   const cfg = useMemo(() => normalizeReceiptConfig(form.receipt_config), [form.receipt_config]);
 
@@ -126,7 +133,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       const columna = (c: string) => supabase.from('settings').select(c).limit(0);
       const [
         { data }, { error: sinColumna }, { error: sinCiegas }, { error: sinCostoVendedor },
-        { error: sinCumple }, { error: sinGarantia }, { error: sinCuentas }, referidos,
+        { error: sinCumple }, { error: sinGarantia }, { error: sinCuentas }, referidos, { error: sinCordoba },
       ] = await Promise.all([
         supabase.from('settings').select('*').eq('org_id', profile.org_id).limit(1),
         columna('cotizacion_fuente'), columna('cierre_a_ciegas'), columna('vendedor_carga_costo'),
@@ -134,8 +141,10 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
         supabase.from('accounts').select('id').limit(0),
         // Sin la migración de referidos la función no existe: se ignora.
         Promise.resolve(supabase.rpc('my_referrals')).catch(() => ({ data: null })),
+        columna('cotizacion_auto_general'),
       ]);
       setHayFuente(!sinColumna);
+      setHayCordoba(!sinCordoba);
       setHayCiegas(!sinCiegas);
       setHayCostoVendedor(!sinCostoVendedor);
       setHayCumple(!sinCumple);
@@ -169,7 +178,10 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
     try {
       const full: Record<string, unknown> = { org_id: profile.org_id };
       [...BASE_COLUMNS, ...EXTRA_COLUMNS].forEach(col => { full[col] = (form as Record<string, unknown>)[col]; });
-      if (hayFuente) full.cotizacion_fuente = fuente;
+      if (hayFuente) full.cotizacion_fuente = fuente === 'blue_cordoba' && !hayCordoba ? 'manual' : fuente;
+      if (hayCordoba) full.cotizacion_auto_general = fuente !== 'manual' && Boolean(form.cotizacion_auto_general);
+      // Con la general automática, se guarda ya el valor de hoy.
+      if (hayCordoba && fuente !== 'manual' && form.cotizacion_auto_general && valorHoy) full.exchange_rate = valorHoy;
       if (hayCiegas) full.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
       if (hayCostoVendedor) full.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
       if (hayCumple) full.descuento_cumple = Math.min(100, Math.max(0, Number(form.descuento_cumple ?? 10) || 0));
@@ -193,7 +205,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       if (missingColumn) {
         const baseOnly: Record<string, unknown> = { org_id: profile.org_id };
         BASE_COLUMNS.forEach(col => { baseOnly[col] = (form as Record<string, unknown>)[col]; });
-        if (hayFuente) baseOnly.cotizacion_fuente = fuente;
+        if (hayFuente) baseOnly.cotizacion_fuente = fuente === 'blue_cordoba' && !hayCordoba ? 'manual' : fuente;
         if (hayCiegas) baseOnly.cierre_a_ciegas = Boolean(form.cierre_a_ciegas);
         if (hayCostoVendedor) baseOnly.vendedor_carga_costo = Boolean(form.vendedor_carga_costo);
         if (hayCumple) baseOnly.descuento_cumple = Math.min(100, Math.max(0, Number(form.descuento_cumple ?? 10) || 0));
@@ -470,25 +482,38 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
             </div>
             {hayFuente && (
               <div className="field">
-                <label className="lbl">De dónde sale la cotización de las ventas nuevas</label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {(['manual', 'blue', 'cripto'] as FuenteCotizacion[]).map(f => (
-                    <button key={f} type="button" className={`btn btn-sm ${fuente === f ? 'btn-dark' : 'btn-outline'}`}
-                      onClick={() => setField('cotizacion_fuente', f)}>
-                      {f === 'manual' ? 'La que escribo abajo' : `${NOMBRE_FUENTE[f]} del día (automática)`}
-                    </button>
-                  ))}
+                <label className="lbl">De dónde sale la cotización</label>
+                <div className="cfg-fuentes" role="radiogroup" aria-label="Fuente de la cotización">
+                  {FUENTES.filter(f => f !== 'blue_cordoba' || hayCordoba).map(f => {
+                    const v = f === 'manual' ? (Number(form.exchange_rate) || null) : valores[f];
+                    return (
+                      <button key={f} type="button" role="radio" aria-checked={fuente === f}
+                        className={`cfg-fuente ${fuente === f ? 'on' : ''}`}
+                        onClick={() => setField('cotizacion_fuente', f)}>
+                        <span className="cfg-fuente-punto" aria-hidden="true" />
+                        <span className="cfg-fuente-txt">
+                          <span className="cfg-fuente-t">{f === 'manual' ? 'A mano' : NOMBRE_FUENTE[f]}</span>
+                          <span className="cfg-fuente-s">{f === 'manual' ? 'La escribís vos' : `Automática · ${ORIGEN_FUENTE[f]}`}</span>
+                        </span>
+                        <span className="cfg-fuente-v">{v ? `$ ${v.toLocaleString('es-AR')}` : f === 'manual' ? '—' : v === null ? 'sin dato' : '…'}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
-            {fuente !== 'manual' && (
-              <div style={{ marginBottom: 14 }}>
-                <div className="helper-text">{NOMBRE_FUENTE[fuente]} de hoy · automático (dolarapi.com)</div>
-                <div className="cfg-cotiz-grande">{valorHoy ? `$ ${valorHoy.toLocaleString('es-AR')}` : '…'} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-3)' }}>ARS por USD</span></div>
-              </div>
+            {fuente !== 'manual' && hayCordoba && (
+              <label className="cfg-switch">
+                <span className="cfg-switch-txt">
+                  <strong>Usarla también para gastos, stock y reportes</strong>
+                  <span>La cotización general se pone al día sola cada vez que se abre Stackr. Las ventas viejas que no guardaron su cotización se recalculan con la de hoy.</span>
+                </span>
+                <input type="checkbox" role="switch" checked={Boolean(form.cotizacion_auto_general)}
+                  onChange={e => { setField('cotizacion_auto_general', e.target.checked); if (e.target.checked && valorHoy) setField('exchange_rate', valorHoy); }} />
+              </label>
             )}
             <div className="field" style={{ maxWidth: 320 }}>
-              <label className="lbl">{fuente === 'manual' ? 'Cotización USD → ARS' : 'Cotización de respaldo'}</label>
+              <label className="lbl">{fuente === 'manual' ? 'Cotización USD → ARS' : form.cotizacion_auto_general ? 'Cotización general (se actualiza sola)' : 'Cotización de respaldo'}</label>
               {iconField(<DollarSign size={16} />, <input className="inp" style={{ paddingLeft: 40 }} type="number" value={form.exchange_rate ?? ''} onChange={e => setField('exchange_rate', parseFloat(e.target.value) || 0)} />)}
             </div>
             {/* El número solo no se entiende; el ejemplo sí. */}
@@ -500,7 +525,9 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
             <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 12, lineHeight: 1.5 }}>
               {fuente === 'manual'
                 ? 'Las ventas usan la cotización que escribiste. Acordate de actualizarla cuando cambia el dólar.'
-                : 'Cada venta nueva toma el valor del momento (valor de venta). La cotización de respaldo se usa si no hay internet, y es con la que se calculan las ventas viejas que no guardaron la suya: por eso no se cambia sola.'}
+                : form.cotizacion_auto_general
+                  ? 'Cada venta nueva toma el valor del momento, y la cotización general (la de gastos, stock y reportes) se pone al día sola con el mismo valor.'
+                  : 'Cada venta nueva toma el valor del momento (valor de venta). La cotización de respaldo se usa si no hay internet, y es con la que se pasan a dólares los gastos, el stock y las ventas viejas que no guardaron la suya: por eso no se cambia sola, salvo que marques la opción de arriba.'}
             </div>
           </div>
           )}

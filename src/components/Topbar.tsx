@@ -29,6 +29,7 @@ function IconoSoporte({ size = 15 }: { size?: number }) {
   )
 }
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
 
 interface TopbarProps {
   page: string;
@@ -306,10 +307,22 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
   /* Blue y cripto: muchos locales compran y cobran en USDT, y el cripto
      suele estar unos pesos por encima del blue. Se piden juntos; si uno
      falla, el otro se muestra igual. */
-  const fetchBlue = () => {
+  /* El local que se maneja con el blue de Córdoba (Ajustes → Cotización)
+     ve ése acá: el número de arriba tiene que ser el que usan las ventas. */
+  const [esCordoba, setEsCordoba] = useState(false)
+  useEffect(() => {
+    if (!user?.org_id) return
+    createClient().from('settings').select('cotizacion_fuente').eq('org_id', user.org_id).limit(1).maybeSingle()
+      .then(({ data }) => setEsCordoba(data?.cotizacion_fuente === 'blue_cordoba'))
+  }, [user?.org_id])
+
+  const fetchBlue = (cordoba = esCordoba) => {
     setRateLoading(true)
     const pedir = (casa: string) => fetch(`https://dolarapi.com/v1/dolares/${casa}`).then(r => r.json())
-    Promise.allSettled([pedir('blue'), pedir('cripto')])
+    const pedirBlue = () => cordoba
+      ? fetch('/api/cotizacion/cordoba').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => ({ compra: d.compra, venta: d.venta, fechaActualizacion: d.fecha }))
+      : pedir('blue')
+    Promise.allSettled([pedirBlue(), pedir('cripto')])
       .then(([blue, cripto]) => {
         if (blue.status === 'fulfilled') setBlueRate({ compra: blue.value.compra, venta: blue.value.venta, updatedAt: blue.value.fechaActualizacion })
         if (cripto.status === 'fulfilled') setCryptoRate({ compra: cripto.value.compra, venta: cripto.value.venta })
@@ -317,7 +330,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
       .finally(() => setRateLoading(false))
   }
 
-  useEffect(() => { fetchBlue() }, [])
+  useEffect(() => { fetchBlue(esCordoba) }, [esCordoba]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = (panel: 'bell' | 'rate' | 'avatar' | 'help') =>
     setOpenPanel(v => v === panel ? null : panel)
@@ -448,7 +461,7 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
             }}
           >
             <DollarSign size={13} style={{ color: 'var(--green)' }} />
-            <span>Blue</span>
+            <span>{esCordoba ? 'Blue Cba' : 'Blue'}</span>
             <span style={{ color: 'var(--green)', fontFamily: 'JetBrains Mono' }}>
               {blueRate ? `$${blueRate.venta.toLocaleString('es-AR')}` : '...'}
             </span>
@@ -467,9 +480,9 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
               minWidth: 220, overflow: 'hidden',
             }}>
               <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, fontSize: 13 }}>Dólar Blue</span>
+                <span style={{ fontWeight: 700, fontSize: 13 }}>{esCordoba ? 'Dólar Blue Córdoba' : 'Dólar Blue'}</span>
                 <button
-                  onClick={fetchBlue}
+                  onClick={() => fetchBlue()}
                   style={{ color: 'var(--text-3)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                   title="Actualizar"
                 >

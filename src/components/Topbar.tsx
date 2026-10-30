@@ -29,7 +29,7 @@ function IconoSoporte({ size = 15 }: { size?: number }) {
   )
 }
 import Link from 'next/link';
-import { createClient } from '@/utils/supabase/client';
+import { useFuenteCotizacion, pedirBlue } from '@/hooks/useFuenteCotizacion';
 
 interface TopbarProps {
   page: string;
@@ -309,28 +309,24 @@ export function Topbar({ page, user, onLogout }: TopbarProps) {
      falla, el otro se muestra igual. */
   /* El local que se maneja con el blue de Córdoba (Ajustes → Cotización)
      ve ése acá: el número de arriba tiene que ser el que usan las ventas. */
-  const [esCordoba, setEsCordoba] = useState(false)
-  useEffect(() => {
-    if (!user?.org_id) return
-    createClient().from('settings').select('cotizacion_fuente').eq('org_id', user.org_id).limit(1).maybeSingle()
-      .then(({ data }) => setEsCordoba(data?.cotizacion_fuente === 'blue_cordoba'))
-  }, [user?.org_id])
+  const fuente = useFuenteCotizacion(user?.org_id)
+  const esCordoba = fuente === 'blue_cordoba'
 
-  const fetchBlue = (cordoba = esCordoba) => {
+  const fetchBlue = () => {
+    // Hasta saber la fuente del local no se pide: si no, arriba aparecía
+    // un instante el blue nacional y después cambiaba.
+    if (fuente === null) return
     setRateLoading(true)
     const pedir = (casa: string) => fetch(`https://dolarapi.com/v1/dolares/${casa}`).then(r => r.json())
-    const pedirBlue = () => cordoba
-      ? fetch('/api/cotizacion/cordoba').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => ({ compra: d.compra, venta: d.venta, fechaActualizacion: d.fecha }))
-      : pedir('blue')
-    Promise.allSettled([pedirBlue(), pedir('cripto')])
+    Promise.allSettled([pedirBlue(fuente), pedir('cripto')])
       .then(([blue, cripto]) => {
-        if (blue.status === 'fulfilled') setBlueRate({ compra: blue.value.compra, venta: blue.value.venta, updatedAt: blue.value.fechaActualizacion })
+        if (blue.status === 'fulfilled') setBlueRate({ compra: blue.value.compra, venta: blue.value.venta, updatedAt: blue.value.fecha || '' })
         if (cripto.status === 'fulfilled') setCryptoRate({ compra: cripto.value.compra, venta: cripto.value.venta })
       })
       .finally(() => setRateLoading(false))
   }
 
-  useEffect(() => { fetchBlue(esCordoba) }, [esCordoba]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchBlue() }, [fuente]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = (panel: 'bell' | 'rate' | 'avatar' | 'help') =>
     setOpenPanel(v => v === panel ? null : panel)

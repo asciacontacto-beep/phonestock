@@ -6,6 +6,7 @@
  * En la compu nada de esto se ve (ver .solo-mob en globals.css): ahí
  * siguen el menú lateral y la barra superior de siempre.
  */
+import { useFuenteCotizacion, pedirBlue } from '@/hooks/useFuenteCotizacion'
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -18,7 +19,7 @@ import { DUENO, VENDEDOR, SUPERADMIN } from '@/components/Sidebar'
 import { pestanaDe, rutaDe } from '@/utils/secciones'
 import { CLAVE_TEMA } from '@/components/BotonTema'
 
-interface Usuario { name?: string; email?: string; role?: string; initials?: string; color?: string }
+interface Usuario { name?: string; email?: string; role?: string; initials?: string; color?: string; org_id?: string | null }
 
 type Pestana = { id: string; label: string; icon: ReactNode; activaEn: string[] }
 
@@ -140,12 +141,12 @@ export function MobileHeader({ user, superadmin, onLogout }: { user: Usuario | n
 /** La cuenta: quién está, el dólar del día, tema, soporte y salir. */
 function HojaCuenta({ open, onClose, user, onLogout }: { open: boolean; onClose: () => void; user: Usuario | null; onLogout: () => void }) {
   const [blue, setBlue] = useState<{ compra: number; venta: number } | null>(null)
+  const fuente = useFuenteCotizacion(user?.org_id)
   const [oscuro, setOscuro] = useState(() => typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark')
   useEffect(() => {
-    if (!open) return
-    fetch('https://dolarapi.com/v1/dolares/blue').then(r => r.json())
-      .then(d => setBlue({ compra: d.compra, venta: d.venta })).catch(() => {})
-  }, [open])
+    if (!open || fuente === null) return
+    pedirBlue(fuente).then(d => setBlue({ compra: d.compra, venta: d.venta })).catch(() => {})
+  }, [open, fuente])
 
   const cambiarTema = () => {
     const nuevo = oscuro ? 'light' : 'dark'
@@ -171,7 +172,7 @@ function HojaCuenta({ open, onClose, user, onLogout }: { open: boolean; onClose:
       <div className="m-list">
         <div className="m-row">
           <span className="m-row-ico"><DollarSign size={18} /></span>
-          <div className="m-row-main"><div className="m-row-t">Dólar blue</div><div className="m-row-s">{blue ? `Compra $${blue.compra.toLocaleString('es-AR')}` : 'Cargando…'}</div></div>
+          <div className="m-row-main"><div className="m-row-t">{fuente === 'blue_cordoba' ? 'Dólar blue Córdoba' : 'Dólar blue'}</div><div className="m-row-s">{blue ? `Compra $${blue.compra.toLocaleString('es-AR')}` : 'Cargando…'}</div></div>
           <div className="m-row-num">{blue ? `$${blue.venta.toLocaleString('es-AR')}` : '—'}</div>
         </div>
         <button className="m-row" onClick={cambiarTema}>

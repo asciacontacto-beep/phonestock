@@ -16,6 +16,7 @@ import { ReceiptDocument, type ReceiptData } from '@/components/Receipt';
 import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { ApiKeysCard } from '@/components/ApiKeysCard';
 import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, ORIGEN_FUENTE, FUENTES, type FuenteCotizacion } from '@/utils/cotizacion';
+import { avisarCambioDeCotizacion } from '@/hooks/useFuenteCotizacion';
 import {
   type ShopSettings, type ReceiptConfig,
   DEFAULT_RECEIPT_CONFIG, normalizeReceiptConfig,
@@ -219,6 +220,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
       if (error) throw error;
       if (data?.id && !rowId) setRowId(data.id);
       if (!missingColumn) toast.success('Configuración guardada');
+      // El dólar de arriba pasa a ser el de la fuente elegida, sin recargar.
+      if (hayFuente) avisarCambioDeCotizacion();
     } catch (e) {
       toast.error('No se pudo guardar: ' + (e instanceof Error ? e.message : ''));
     } finally {

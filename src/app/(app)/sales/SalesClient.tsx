@@ -1,4 +1,6 @@
 "use client"
+import { paraInputFechaHora, fechaEditada } from '@/utils/fechas';
+import { opcionesDeGarantia, nombreGarantia } from '@/utils/garantia';
 import { useState, useMemo, useRef } from 'react';
 import { Search, ShoppingCart, Plus, Building2, User as UserIcon, Printer, X, Trash2, Loader2, Edit2 } from 'lucide-react';
 import Link from 'next/link';
@@ -53,6 +55,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
   /* Cotización de respaldo para pasar a dólares las ventas viejas que no
      guardaron la suya (la ganancia se muestra en dólares, como el dashboard). */
   const cotizacion = Number(shop?.exchange_rate) || 1;
+  const garantiaLocal = Number(shop?.garantia_dias ?? 90) || 0;
 
   // Solo consideramos ventas reales, no MOVIMIENTOS
   const validSales = useMemo(() => sales.filter(s => s.brand !== 'MOVIMIENTO'), [sales]);
@@ -112,6 +115,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
   const abrirEdicion = (sale: typeof selectedSale) => {
     setEditData({
       seller_id: sale.seller_id,
+      // La fecha en hora del local, como la muestra el campo.
+      fecha: paraInputFechaHora(sale.created_at),
+      warranty_days: sale.warranty_days ?? null,
       notes: sale.notes || '',
       customer: sale.customer || { name: '', dni: '', phone: '', email: '' },
       currency: sale.currency,
@@ -411,6 +417,28 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
             <div className="mbd" style={{ padding: '20px' }}>
               {isEditing ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {/* Una venta cargada otro día (se olvidaron de anotarla, o se
+                      anotó al día siguiente) no tenía cómo ponerse en su fecha. */}
+                  <div>
+                    <label className="lbl">Fecha de la venta</label>
+                    <input className="inp" type="datetime-local" value={editData.fecha || ''}
+                      max={paraInputFechaHora(new Date())}
+                      onChange={e => setEditData({ ...editData, fecha: e.target.value })} />
+                    {editData.fecha && editData.fecha !== paraInputFechaHora(selectedSale.created_at) && (
+                      <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>
+                        La venta y lo que se cobró pasan a ese día en Ventas, Cajas y los reportes.
+                      </div>
+                    )}
+                  </div>
+                  {'warranty_days' in selectedSale && !['ACCESORIOS', 'SERVICIO', 'MOVIMIENTO'].includes(String(selectedSale.brand || '').toUpperCase()) && (
+                    <div>
+                      <label className="lbl">Garantía</label>
+                      <select className="inp" value={editData.warranty_days ?? ''} onChange={e => setEditData({ ...editData, warranty_days: e.target.value === '' ? null : Number(e.target.value) })}>
+                        {editData.warranty_days == null && <option value="">La del local</option>}
+                        {opcionesDeGarantia(garantiaLocal, editData.warranty_days).map(d => <option key={d} value={d}>{nombreGarantia(d)}</option>)}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label className="lbl">Vendedor</label>
                     <select className="inp" value={editData.seller_id || ''} onChange={e => setEditData({...editData, seller_id: e.target.value})}>
@@ -430,7 +458,7 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                     <input className="inp" value={editData.customer?.phone || ''} onChange={e => setEditData({...editData, customer: {...editData.customer, phone: e.target.value}})} />
                   </div>
                   <div>
-                    <label className="lbl">Notas / Garantía</label>
+                    <label className="lbl">{'warranty_days' in selectedSale ? 'Notas' : 'Notas / Garantía'}</label>
                     <textarea className="inp" value={editData.notes || ''} onChange={e => setEditData({...editData, notes: e.target.value})} rows={3} style={{ resize: 'none' }} />
                   </div>
                   {/* Una venta cargada sin costo (p. ej. el vendedor ingresó el
@@ -661,6 +689,10 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           return { ...p, original_amount: origAmt, amount, exchange_rate };
                         });
                         const newPrice = finalPayments.reduce((a: number, p: any) => a + p.amount, 0);
+                        // Fecha: sólo si la cambiaron (si no, se guarda la de siempre, con sus segundos).
+                        const { fecha: nuevaFecha, error: errorFecha } = fechaEditada(selectedSale.created_at, editData.fecha);
+                        if (errorFecha) throw new Error(errorFecha);
+                        const garantiaCambiada = 'warranty_days' in selectedSale && (editData.warranty_days ?? null) !== (selectedSale.warranty_days ?? null);
                         const costoCrudo = String(editData.cost_price ?? '').trim();
                         const newCost = costoCrudo === '' ? null : parseFloat(costoCrudo.replace(',', '.'));
                         if (newCost !== null && !(newCost >= 0)) throw new Error('El costo no es un número válido');
@@ -694,6 +726,8 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                           currency: saleCurrency,
                           payments: finalPayments,
                           cost_price: newCost,
+                          ...(nuevaFecha ? { created_at: nuevaFecha.toISOString() } : {}),
+                          ...(garantiaCambiada ? { warranty_days: editData.warranty_days } : {}),
                         }).eq('id', selectedSale.id);
                         if (error) throw error;
 
@@ -705,7 +739,9 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                         // El registro de auditoría lo leen también los vendedores:
                         // se anota que cambió el costo, nunca el monto.
                         const cambioCosto = (selectedSale.cost_price ?? null) !== newCost ? 'actualizó el costo' : '';
-                        const resumen = [cambios, cambioCosto].filter(Boolean).join(' · ');
+                        const cambioFecha = nuevaFecha ? `fecha: ${new Date(selectedSale.created_at).toLocaleDateString('es-AR')} → ${nuevaFecha.toLocaleDateString('es-AR')}` : '';
+                        const cambioGarantia = garantiaCambiada ? `garantía: ${editData.warranty_days == null ? 'la del local' : nombreGarantia(editData.warranty_days)}` : '';
+                        const resumen = [cambios, cambioCosto, cambioFecha, cambioGarantia].filter(Boolean).join(' · ');
                         if (resumen) {
                           await logAudit(supabase, {
                             user, action: 'venta_editada', entity: 'sale', entityId: String(selectedSale.id),
@@ -716,7 +752,8 @@ export function SalesClient({ sales, deposits, realSellers, user, shop }: Props)
                         toast.success(nuevosCanjes.length > 0
                           ? `Venta actualizada · ${nuevosCanjes.length === 1 ? 'el equipo del canje entró' : 'los equipos del canje entraron'} al inventario`
                           : 'Venta actualizada');
-                        setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes, price: newPrice, currency: saleCurrency, payments: finalPayments, cost_price: newCost });
+                        setSelectedSale({ ...selectedSale, seller_id: editData.seller_id, seller_name: sellerName, customer: editData.customer, notes: editData.notes, price: newPrice, currency: saleCurrency, payments: finalPayments, cost_price: newCost,
+                          ...(nuevaFecha ? { created_at: nuevaFecha.toISOString() } : {}), ...(garantiaCambiada ? { warranty_days: editData.warranty_days } : {}) });
                         setIsEditing(false);
                         router.refresh();
                       } catch(e: any) { toast.error(e.message); } finally { setEditLoading(false); }

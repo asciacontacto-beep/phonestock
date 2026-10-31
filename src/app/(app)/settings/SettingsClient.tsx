@@ -1,4 +1,5 @@
 "use client"
+import { textoGarantia } from '@/utils/garantia';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Save, Building2, MapPin, Camera, Phone, Mail, Globe, FileText, Loader2,
@@ -258,7 +259,7 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
     currency: 'ARS',
     total: 1_225_000,
     paid: 1_225_000,
-    warranty: cfg.warrantyDefault,
+    warranty: hayGarantia ? textoGarantia(Number(form.garantia_dias ?? 90), cfg.warrantyDefault) : cfg.warrantyDefault,
     notes: 'IMEI/Serie: 358901234567891',
   };
 
@@ -414,8 +415,13 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
               <input className="inp" value={cfg.thankYouText} onChange={e => setCfg('thankYouText', e.target.value)} placeholder="¡Gracias por tu compra!" />
             </div>
             <div className="field">
-              <label className="lbl">Garantía por defecto</label>
+              <label className="lbl">{hayGarantia ? 'Texto de la garantía en el recibo' : 'Garantía por defecto'}</label>
               <input className="inp" value={cfg.warrantyDefault} onChange={e => setCfg('warrantyDefault', e.target.value)} placeholder="90 días por fallas de fábrica" />
+              {hayGarantia && (
+                <div className="helper-text" style={{ marginTop: 4 }}>
+                  Los días los pone cada venta (por defecto, los de “Garantía de los equipos”, más abajo): con {Number(form.garantia_dias ?? 90)} días el recibo dice “{textoGarantia(Number(form.garantia_dias ?? 90), cfg.warrantyDefault)}”.
+                </div>
+              )}
             </div>
             <div className="field">
               <label className="lbl">Texto legal / términos (pie)</label>

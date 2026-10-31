@@ -1,4 +1,5 @@
 "use client";
+import { garantiaDeLaVenta } from '@/utils/garantia';
 import { useState, useMemo, useRef } from 'react';
 import { Search, Printer, X, Receipt as ReceiptIcon, Share2, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -83,7 +84,7 @@ export function RecibosClient({ sales, shop }: { sales: Sale[]; shop: ShopSettin
     setLines(saleToLines(sale));
     setPayments((sale.payments || []).map((p: any) => ({ label: String(p.label || p.id || 'Pago'), amount: Number(p.amount) || 0 })));
     setManualTotal('');
-    setWarranty(String(sale.notes || '') || baseConfig.warrantyDefault);
+    setWarranty(garantiaDeLaVenta(sale, baseConfig.warrantyDefault, (shop as { garantia_dias?: number | null })?.garantia_dias));
     setNotes(sale.imei ? `IMEI/Serie: ${sale.imei}` : '');
     setExtraFields([]);
   };

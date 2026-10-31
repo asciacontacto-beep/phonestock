@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { diaLocal, paraInputFechaHora } from './fechas'
+import { diaLocal, paraInputFechaHora, fechaEditada } from './fechas'
 
 /* Los dos casos que fallaban de verdad ocurren de noche: en Argentina
    (UTC-3) todo lo posterior a las 21:00 ya es "mañana" en UTC. */
@@ -47,5 +47,22 @@ describe('paraInputFechaHora', () => {
   it('no rompe con un turno sin fecha', () => {
     expect(paraInputFechaHora(null)).toBe('')
     expect(paraInputFechaHora('')).toBe('')
+  })
+})
+
+describe('fechaEditada', () => {
+  const original = '2026-10-30T18:05:42Z' // 15:05 en Argentina
+  const ahora = new Date('2026-10-31T12:00:00Z')
+  it('sin tocar el campo no cambia (conserva los segundos)', () => {
+    expect(fechaEditada(original, '2026-10-30T15:05', ahora)).toEqual({ fecha: null })
+    expect(fechaEditada(original, '', ahora)).toEqual({ fecha: null })
+  })
+  it('una fecha anterior, en hora del local', () => {
+    const r = fechaEditada(original, '2026-10-28T10:30', ahora)
+    expect(r.fecha?.toISOString()).toBe('2026-10-28T13:30:00.000Z')
+  })
+  it('no acepta futuras ni inválidas', () => {
+    expect(fechaEditada(original, '2026-11-05T10:00', ahora).error).toBe('La fecha no puede ser futura')
+    expect(fechaEditada(original, 'cualquier cosa', ahora).error).toBe('La fecha no es válida')
   })
 })

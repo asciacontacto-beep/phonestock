@@ -1,4 +1,5 @@
 import type { ReceiptConfig, ReceiptLine, ReceiptExtraField, ShopSettings } from '@/types/receipt';
+import { garantiaDeLaVenta } from '@/utils/garantia';
 import { DEFAULT_RECEIPT_CONFIG, normalizeReceiptConfig } from '@/types/receipt';
 import { tieneAlmacenamiento } from '@/constants/data';
 import { desglosePagoTarjeta } from '@/utils/tarjetas';
@@ -313,8 +314,13 @@ export function Receipt({ sale, shop }: { sale: Record<string, unknown>; shop: R
         client, lines,
         payments: config.showPayments ? payments.map(p => ({ label: String(p.label || p.id || 'Pago'), amount: Number(p.amount) || 0, note: p.exchange_rate ? `(${p.currency === 'USD' ? 'U$' : 'ARS'} ${Number(p.original_amount || 0).toLocaleString('es-AR')} @ ${p.exchange_rate})` : undefined })) : undefined,
         currency, total: Number(s.price) || 0, paid, surcharge,
-        warranty: config.showWarranty ? (String(s.notes || '') || config.warrantyDefault) : undefined,
-        notes: config.showImei && s.imei ? `IMEI/Serie: ${s.imei}` : undefined,
+        // Los días de garantía son los de la venta (o los del local); las
+        // notas, si la venta ya tiene sus días, van como notas.
+        warranty: config.showWarranty ? garantiaDeLaVenta(s as { warranty_days?: number | null; notes?: string | null }, config.warrantyDefault, settings.garantia_dias as number | null | undefined) : undefined,
+        notes: [
+          config.showImei && s.imei ? `IMEI/Serie: ${s.imei}` : '',
+          s.warranty_days !== null && s.warranty_days !== undefined ? String(s.notes || '').trim() : '',
+        ].filter(Boolean).join(' · ') || undefined,
       }}
     />
   );

@@ -36,3 +36,16 @@ export function paraInputFechaHora(fecha: Date | string | null | undefined): str
   if (Number.isNaN(d.getTime())) return ''
   return `${diaLocal(d)}T${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}`
 }
+
+/**
+ * La fecha nueva de una venta editada, a partir del campo datetime-local.
+ * `null` si no se cambió (se conserva la original, con sus segundos). No se
+ * acepta una fecha futura ni una inválida.
+ */
+export function fechaEditada(original: string | Date | null | undefined, valorDelCampo: string, ahora: Date = new Date()): { fecha: Date | null; error?: string } {
+  if (!valorDelCampo || valorDelCampo === paraInputFechaHora(original)) return { fecha: null }
+  const fecha = new Date(valorDelCampo)
+  if (Number.isNaN(fecha.getTime())) return { fecha: null, error: 'La fecha no es válida' }
+  if (fecha.getTime() > ahora.getTime() + 60_000) return { fecha: null, error: 'La fecha no puede ser futura' }
+  return { fecha }
+}

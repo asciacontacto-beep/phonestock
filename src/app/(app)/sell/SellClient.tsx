@@ -1,4 +1,5 @@
 "use client"
+import { opcionesDeGarantia, nombreGarantia } from '@/utils/garantia';
 import { cotizacionDelDia, fuenteValida, NOMBRE_FUENTE, type FuenteCotizacion } from '@/utils/cotizacion';
 import { totalAccesoriosEnPesos, enPesos, monedaAccesorio, nombreAccesorio } from '@/utils/accesoriosVenta';
 import { limpiarImei } from '@/utils/imei';
@@ -1415,8 +1416,8 @@ export function SellClient({ isOwner, assignedDeposits = [], sellerName, orgId }
             <div className="field" style={{ marginTop: 16, maxWidth: 280 }}>
               <label className="lbl">Garantía</label>
               <select className="inp" value={garantiaDias} onChange={e => setGarantiaDias(e.target.value)}>
-                {[...new Set([0, 30, 60, 90, 180, 365, garantiaLocal])].sort((a, b) => a - b).map(d => (
-                  <option key={d} value={d}>{d === 0 ? 'Sin garantía' : d === 365 ? '1 año' : `${d} días`}{d === garantiaLocal ? ' (la del local)' : ''}</option>
+                {opcionesDeGarantia(garantiaLocal).map(d => (
+                  <option key={d} value={d}>{nombreGarantia(d)}{d === garantiaLocal ? ' (la del local)' : ''}</option>
                 ))}
               </select>
             </div>

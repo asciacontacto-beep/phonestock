@@ -1,4 +1,5 @@
 "use client"
+import { repartoDelMes, type Socio, type RetiroSocio } from '@/utils/socios'
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import { ArrowUpRight, ArrowDownRight, Download, Info } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
@@ -28,13 +29,15 @@ const usd = (n: number) => `${n < 0 ? '-' : ''}U$${Math.abs(Math.round(n)).toLoc
 const fmt = (v: number | null, f: 'U$' | 'u' | '%') =>
   v == null ? '—' : f === 'U$' ? usd(v) : f === '%' ? `${Math.round(v * 100)}%` : Math.round(v).toLocaleString('es-AR')
 
-export function MesAMesClient({ ahora, cotizacion, ventas: ventasTodas, gastos: gastosTodos, reparaciones: reparacionesTodas, depositos = [] }: {
+export function MesAMesClient({ ahora, cotizacion, ventas: ventasTodas, gastos: gastosTodos, reparaciones: reparacionesTodas, depositos = [], socios = [], retiros = [] }: {
   ahora: string
   cotizacion: number
   ventas: Sale[]
   gastos: (Gasto & { deposit_id?: string | null })[]
   reparaciones: Pick<Repair, 'cost' | 'status' | 'created_at' | 'updated_at' | 'deposit_id'>[]
   depositos?: Deposito[]
+  socios?: Socio[]
+  retiros?: RetiroSocio[]
 }) {
   // Locales con cuentas aparte: "General" no los suma; eligiendo uno, sólo lo suyo.
   const [local, setLocal] = useLocal(depositos)
@@ -63,6 +66,16 @@ export function MesAMesClient({ ahora, cotizacion, ventas: ventasTodas, gastos: 
     [listo, meses, ventas, gastos, reparaciones, cotizacion])
 
   const etiqueta = (clave: string) => meses.find(m => m.clave === clave)?.etiqueta || clave
+
+  /* Reparto entre socios del mes elegido, siempre el mes entero (sin cortar
+     "al mismo día"): es lo que hay para repartir. */
+  const reparto = useMemo(() => {
+    // Sólo con "General": el reparto es de la ganancia del negocio, no de un local.
+    if (!listo || socios.length === 0 || local !== 'general') return null
+    const m = meses.find(x => x.clave === a) || meses[0]
+    const neta = resumenDelMes(m, ventas, reparaciones, gastos, cotizacion).gananciaNeta
+    return { neta, filas: repartoDelMes(neta, socios, retiros, m, cotizacion) }
+  }, [listo, socios, retiros, meses, a, local, ventas, reparaciones, gastos, cotizacion])
   const atajos = [
     { label: 'Este mes vs. el anterior', a: meses[0].clave, b: meses[1].clave },
     { label: 'Mes pasado vs. el anterior', a: meses[1].clave, b: meses[2].clave },
@@ -192,6 +205,30 @@ export function MesAMesClient({ ahora, cotizacion, ventas: ventasTodas, gastos: 
               <p className="mm-nota">Hay ventas sin costo cargado ({ra.sinCosto} en {etiqueta(a)}, {rb.sinCosto} en {etiqueta(b)}): su ganancia figura más alta que la real.</p>
             )}
           </div>
+
+          {/* ── Reparto entre socios ── */}
+          {reparto && (
+            <div className="card">
+              <div className="mm-socios-cab">
+                <div className="mm-tit">Reparto entre socios · {etiqueta(a)}{a === actual ? ' (en curso)' : ''}</div>
+                <div className="mm-socios-neta">Ganancia neta del mes <strong>{usd(reparto.neta)}</strong></div>
+              </div>
+              <div className="mm-socios">
+                {reparto.filas.map(f => (
+                  <div key={f.socio.id} className="mm-socio">
+                    <div className="mm-socio-nom">{f.socio.nombre}<span>{f.socio.pct.toLocaleString('es-AR')}%</span></div>
+                    <div className="mm-socio-toca">{usd(f.toca)}</div>
+                    <div className="mm-socio-fila"><span>Retiró este mes</span><b>{usd(f.retiro)}</b></div>
+                    <div className={`mm-socio-fila queda ${f.queda < 0 ? 'neg' : ''}`}><span>{f.queda < 0 ? 'Retiró de más' : 'Le queda por retirar'}</span><b>{usd(Math.abs(f.queda))}</b></div>
+                  </div>
+                ))}
+              </div>
+              <p className="mm-nota">
+                {reparto.neta < 0 ? 'Este mes dio pérdida: no hay ganancia para repartir. ' : ''}
+                Los retiros se anotan en Cajas → Ingreso / Egreso, marcando de qué socio es. Los socios y sus porcentajes, en Ajustes → Socios.
+              </p>
+            </div>
+          )}
 
           {/* ── Los últimos 12 meses ── */}
           <div className="card mm-grafico">

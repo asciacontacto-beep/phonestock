@@ -1,4 +1,5 @@
 "use client"
+import type { Socio } from '@/utils/socios';
 import { useState } from 'react';
 import { plural } from '@/utils/texto';
 import { PAY } from '@/constants/data';
@@ -23,6 +24,8 @@ interface Props {
   movements: any[];
   cuentas?: Cuenta[];
   cierres?: (Cierre & { user_name?: string | null })[];
+  /** Socios del local (Ajustes → Socios): un egreso puede ser el retiro de uno. */
+  socios?: Socio[];
 }
 
 type PayMethod = { id: string; l: string; p: string };
@@ -38,7 +41,7 @@ const PAY_LABELS: PayMethod[] = [
   { id: 'tarjeta',    l: 'Tarjeta / financiera', p: '$' },
 ];
 
-export function CashiersClient({ sales, user, realSellers, deposits, transfers, movements, cuentas = [], cierres = [] }: Props) {
+export function CashiersClient({ sales, user, realSellers, deposits, transfers, movements, cuentas = [], cierres = [], socios = [] }: Props) {
   const [showClose, setShowClose] = useState(false);
   const [showExchange, setShowExchange] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -65,7 +68,8 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
     amount: '',
     currency: 'ARS',
     payment_method: 'ars_cash',
-    notes: ''
+    notes: '',
+    socio_id: '',
   });
 
   const supabase = createClient();
@@ -298,7 +302,8 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
   };
 
   const handleMovement = async () => {
-    const { type, deposit_id, amount, currency, payment_method, notes } = mvForm;
+    const { type, deposit_id, amount, currency, payment_method, notes, socio_id } = mvForm;
+    const socio = type === 'OUT' ? socios.find(s => s.id === socio_id) : undefined;
     if (!amount || parseFloat(amount) <= 0) { toast.error('Ingresá un monto válido'); return; }
     if (!deposit_id) { toast.error('Seleccioná un depósito'); return; }
     setMvLoading(true);
@@ -309,14 +314,15 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
         amount:          parseFloat(amount),
         currency,
         payment_method,
-        notes:           notes.trim() || null,
+        notes:           notes.trim() || (socio ? `Retiro de ${socio.nombre}` : null),
+        ...(socio ? { socio_id: socio.id } : {}),
         created_by:      user.id,
         created_by_name: user.name,
       }]);
       if (error) throw error;
-      toast.success(type === 'IN' ? 'Ingreso registrado' : 'Egreso registrado');
+      toast.success(type === 'IN' ? 'Ingreso registrado' : socio ? `Retiro de ${socio.nombre} registrado` : 'Egreso registrado');
       setShowMovement(false);
-      setMvForm({ type: 'IN', deposit_id: deposits[0]?.id?.toString() || '', amount: '', currency: 'ARS', payment_method: 'ars_cash', notes: '' });
+      setMvForm({ type: 'IN', deposit_id: deposits[0]?.id?.toString() || '', amount: '', currency: 'ARS', payment_method: 'ars_cash', notes: '', socio_id: '' });
       router.refresh();
     } catch (e: any) {
       toast.error(e?.message || 'No se pudo guardar. Probá de nuevo.');
@@ -931,6 +937,17 @@ export function CashiersClient({ sales, user, realSellers, deposits, transfers, 
                   </select>
                 </div>
               </div>
+
+              {mvForm.type === 'OUT' && socios.length > 0 && (
+                <div className="field" style={{ margin: 0 }}>
+                  <label className="lbl">¿Es el retiro de un socio?</label>
+                  <select className="inp" value={mvForm.socio_id} onChange={e => setMvForm(p => ({ ...p, socio_id: e.target.value }))}>
+                    <option value="">No, es otro egreso</option>
+                    {socios.map(s => <option key={s.id} value={s.id}>Sí, retiro de {s.nombre}</option>)}
+                  </select>
+                  {mvForm.socio_id && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>Se descuenta de lo que le toca ese mes (Mes a mes → Reparto entre socios).</div>}
+                </div>
+              )}
 
               <div className="field" style={{ margin: 0 }}>
                 <label className="lbl">Notas / Motivo (opcional)</label>

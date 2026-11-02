@@ -3153,3 +3153,30 @@ button.m-row:active, a.m-row:active { background: var(--surface-2); }
 }
 .cfg-switch input[role="switch"]:checked { background: var(--green); }
 .cfg-switch input[role="switch"]:checked::after { transform: translateX(18px); }
+
+/* ── Ajustes → Socios ─────────────────────────────────────── */
+.soc-intro { font-size: 13px; color: var(--text-2); line-height: 1.5; margin: 0 0 14px; }
+.soc-vacio { display: flex; align-items: center; gap: 8px; padding: 14px; border: 1px dashed var(--border-md); border-radius: 12px; font-size: 13px; color: var(--text-3); }
+.soc-lista { display: flex; flex-direction: column; gap: 8px; }
+.soc-fila { display: grid; grid-template-columns: minmax(0, 1fr) 110px 36px; gap: 8px; align-items: center; }
+.soc-pct { position: relative; }
+.soc-pct .inp { padding-right: 28px; text-align: right; }
+.soc-pct span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: 13px; }
+.soc-total { font-size: 12.5px; font-weight: 600; text-align: right; padding-right: 44px; }
+.soc-total.ok { color: var(--green); }
+.soc-total.mal { color: var(--red); }
+.soc-acciones { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+/* ── Mes a mes → Reparto entre socios ─────────────────────── */
+.mm-socios-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.mm-socios-neta { font-size: 13px; color: var(--text-3); }
+.mm-socios-neta strong { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.mm-socios { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.mm-socio { border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; background: var(--surface-2); }
+.mm-socio-nom { font-weight: 650; font-size: 14px; display: flex; justify-content: space-between; gap: 8px; }
+.mm-socio-nom span { color: var(--text-3); font-weight: 500; font-size: 12.5px; }
+.mm-socio-toca { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 800; margin: 6px 0 8px; letter-spacing: -.02em; }
+.mm-socio-fila { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); padding: 3px 0; }
+.mm-socio-fila b { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text); }
+.mm-socio-fila.queda b { color: var(--green); }
+.mm-socio-fila.queda.neg b { color: var(--red); }

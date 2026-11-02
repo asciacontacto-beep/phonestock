@@ -1,10 +1,12 @@
 "use client"
+import { SociosCard } from '@/components/SociosCard';
 import { textoGarantia } from '@/utils/garantia';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Save, Building2, MapPin, Camera, Phone, Mail, Globe, FileText, Loader2,
   DollarSign, Download, Hash, Image as ImageIcon, Palette, ReceiptText, Trash2, Copy,
   CreditCard, Lock, Smartphone, Database, ArrowRight, Cake,
+  Users,
 } from 'lucide-react';
 import { downloadBackup } from '@/utils/backup';
 import { CardPlansCard } from '@/components/CardPlansCard';
@@ -54,12 +56,13 @@ const TOGGLES: { key: keyof ReceiptConfig; label: string }[] = [
   { key: 'showFooterBrand', label: '“Generado con Stackr”' },
 ];
 
-type Seccion = 'negocio' | 'cotizacion' | 'cobros' | 'caja' | 'toma' | 'datos';
+type Seccion = 'negocio' | 'cotizacion' | 'cobros' | 'socios' | 'caja' | 'toma' | 'datos';
 
 const SECCIONES: { v: Seccion; l: string; desc: string; icon: React.ReactNode }[] = [
   { v: 'negocio',    l: 'Negocio y recibo', desc: 'La identidad de tu negocio y el diseño del recibo.', icon: <Building2 size={16} /> },
   { v: 'cotizacion', l: 'Cotización',       desc: 'El dólar con el que se pasan precios y costos a pesos.', icon: <DollarSign size={16} /> },
   { v: 'cobros',     l: 'Cobros',           desc: 'Dónde entra la plata y los planes de tarjeta o financiera.', icon: <CreditCard size={16} /> },
+  { v: 'socios',     l: 'Socios',           desc: 'Quiénes son los dueños y cómo se reparten la ganancia.', icon: <Users size={16} /> },
   { v: 'caja',       l: 'Vendedores',       desc: 'Cómo cierran el turno y qué pueden cargar.', icon: <Lock size={16} /> },
   { v: 'toma',       l: 'Valores de toma',  desc: 'Cuánto pagás por un usado que entra en parte de pago.', icon: <Smartphone size={16} /> },
   { v: 'datos',      l: 'Datos y accesos',  desc: 'Respaldo, claves de acceso y tu link de invitación.', icon: <Database size={16} /> },
@@ -540,6 +543,8 @@ export function SettingsClient({ profile }: { profile: { org_id?: string; role?:
             </div>
           </div>
           )}
+
+          {seccion === 'socios' && <SociosCard orgId={profile?.org_id} />}
 
           {seccion === 'cobros' && <>
             <CuentasCard onChange={setCuentas} />

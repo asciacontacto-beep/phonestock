@@ -1,4 +1,6 @@
 import { createClient, getUser, getProfile } from "@/utils/supabase/server"
+import { configuracionDelLocal } from '@/utils/configuracion'
+import { sociosValidos } from '@/utils/socios'
 import { CashiersClient } from "./CashiersClient"
 import { soloDueno } from "@/utils/permisos"
 import { traerTodo } from '@/utils/supabase/todo'
@@ -26,6 +28,7 @@ export default async function CashiersPage() {
     { data: movementsData },
     cuentasRes,
     { data: cierresData },
+    sociosRes,
   ] = await Promise.all([
     traerTodo(() => supabase.from('sales').select('*').order('created_at', { ascending: false }).order('id')),
     vendedores,
@@ -36,6 +39,8 @@ export default async function CashiersPage() {
     // error y se muestran vacías.
     supabase.from('accounts').select('id,name,kind,currency,active').order('name'),
     supabase.from('cash_closures').select('*').order('created_at', { ascending: false }).limit(30),
+    // Sin la migración de socios la columna no existe: vuelve con error.
+    configuracionDelLocal(supabase, orgId, 'socios'),
   ])
 
   const isSuperAdmin = user?.email === 'asciacontacto@gmail.com'
@@ -60,6 +65,7 @@ export default async function CashiersPage() {
       movements={movementsData || []}
       cuentas={cuentasRes.error ? [] : (cuentasRes.data || [])}
       cierres={cierresData || []}
+      socios={sociosRes.error ? [] : sociosValidos(sociosRes.data?.socios)}
     />
   )
 }
